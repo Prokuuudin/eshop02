@@ -17,6 +17,7 @@ import { OrderEditForm } from './OrderEditForm';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { getOrderDeliveryDestination } from '@/lib/order-delivery-destination';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { localizeVariantLabel } from '@/lib/variant-group-label';
 import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
 import { useToast } from '@/lib/toast-context';
@@ -25,7 +26,7 @@ type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
 
 export function OrderListItem({ order, state }: { order: Order; state: OrdersState }): React.ReactElement {
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { l } = useAdminLocale();
     const { showToast } = useToast();
     const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -261,7 +262,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                         </p>
                                                         {item.variantLabel && (
                                                             <p className="text-xs text-muted-foreground truncate">
-                                                                {item.variantLabel}
+                                                                {localizeVariantLabel(item.variantLabel, language)}
                                                             </p>
                                                         )}
                                                     </div>

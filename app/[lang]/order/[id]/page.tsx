@@ -11,6 +11,7 @@ import { COMPANY } from '@/data/company';
 import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { localizePath } from '@/lib/i18n-routing';
 import { getOrderDeliveryDestination } from '@/lib/order-delivery-destination';
+import { localizeVariantLabel } from '@/lib/variant-group-label';
 
 type PageProps = {
     params: Promise<{
@@ -226,7 +227,7 @@ return (
                                             </Link>
                                             {item.variantLabel && (
                                                 <p className="text-xs text-muted-foreground truncate">
-                                                    {item.variantLabel}
+                                                    {localizeVariantLabel(item.variantLabel, language)}
                                                 </p>
                                             )}
                                             <p className="text-sm text-muted-foreground">

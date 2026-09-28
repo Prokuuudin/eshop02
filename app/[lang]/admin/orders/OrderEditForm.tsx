@@ -9,13 +9,14 @@ import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDelivery
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import { localizeVariantLabel } from '@/lib/variant-group-label';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
 
 export function OrderEditForm({ order, state }: { order: Order; state: OrdersState }): React.ReactElement | null {
     const { l } = useAdminLocale();
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const shippingSettings = useShippingSettings();
     const {
         editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity,
@@ -122,7 +123,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                                 </p>
                                                                 {item.variantLabel && (
                                                                     <p className="text-xs text-muted-foreground truncate">
-                                                                        {item.variantLabel}
+                                                                        {localizeVariantLabel(item.variantLabel, language)}
                                                                     </p>
                                                                 )}
                                                             </div>

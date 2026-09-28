@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { VariantGroup, VariantOption, SelectedVariant } from '@/data/products'
 import { useTranslation } from '@/lib/use-translation'
 import { formatEuro } from '@/lib/utils'
+import { localizeVariantGroupName } from '@/lib/variant-group-label'
 
 type ProductVariantSelectorProps = {
   groups: VariantGroup[]
@@ -25,17 +26,19 @@ function PriceAdjustmentLabel({ adjustment, locale }: { adjustment?: number; loc
 
 function ImageSquaresGroup({
   group,
+  groupLabel,
   currentValue,
   locale,
   onSelect,
 }: {
   group: VariantGroup
+  groupLabel: string
   currentValue?: string
   locale: string
   onSelect: (option: VariantOption) => void
 }) {
   return (
-    <div className="product-variant-selector__squares flex flex-wrap gap-2" role="radiogroup" aria-label={group.name}>
+    <div className="product-variant-selector__squares flex flex-wrap gap-2" role="radiogroup" aria-label={groupLabel}>
       {group.options.map((option) => {
         const isSelected = option.value === currentValue
         return (
@@ -91,7 +94,7 @@ export function ProductVariantSelector({ groups, selected, onChange }: ProductVa
         return (
           <div key={group.name} className="flex flex-col gap-1">
             <label className="text-sm font-medium text-foreground">
-              {group.name}
+              {localizeVariantGroupName(group.name, language)}
               {group.required && <span className="text-red-600 ml-1">*</span>}
               {asSquares && currentValue && (
                 <span className="ml-2 text-muted-foreground font-normal">{currentValue}</span>
@@ -100,6 +103,7 @@ export function ProductVariantSelector({ groups, selected, onChange }: ProductVa
             {asSquares ? (
               <ImageSquaresGroup
                 group={group}
+                groupLabel={localizeVariantGroupName(group.name, language)}
                 currentValue={currentValue}
                 locale={locale}
                 onSelect={(option) => handleSelect(group, option, option.value)}

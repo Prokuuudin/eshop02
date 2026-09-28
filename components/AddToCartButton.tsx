@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/use-translation'
+import { localizeVariantGroupName } from '@/lib/variant-group-label'
 import { Product, SelectedVariant } from '@/data/products'
 import { Button } from './ui/button'
 import { useCart } from '@/lib/cart-store'
@@ -24,7 +25,7 @@ type Props = {
 }
 
 export default function AddToCartButton({ product, selectedVariants, onQuantityChange }: Props): React.ReactElement {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { showToast } = useToast()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const isHydrated = useAuthStore((s) => s.isHydrated)
@@ -95,7 +96,7 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
     }
 
     if (missingRequired.length > 0) {
-      showToast(`${t('product.selectVariantRequired')}: ${missingRequired.map((g) => g.name).join(', ')}`, 'error')
+      showToast(`${t('product.selectVariantRequired')}: ${missingRequired.map((g) => localizeVariantGroupName(g.name, language)).join(', ')}`, 'error')
       return
     }
 

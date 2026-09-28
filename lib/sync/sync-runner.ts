@@ -4,7 +4,7 @@ import { upsertProducts } from './upsert-products'
 import { getErpExtraData, mergeEnabledPriceTiers, replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { getSyncRules } from './sync-rules'
 import { withRetry } from './retry'
-import { SyncLogger } from './logger'
+import { SyncLogger, type SyncError } from './logger'
 import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
 
 const BATCH_SIZE = 200
@@ -13,18 +13,44 @@ const MAX_CONSECUTIVE_FETCH_ERRORS = 5
 
 export interface SyncRunResult {
   runId: string
-  status: 'completed' | 'failed'
+  status: 'completed' | 'failed' | 'skipped'
   productsSynced: number
   deactivated: number
   errorCount: number
   unlinkedXml?: number
   softDeletedSkipped?: number
+  /** Why the run did not start, e.g. 'already_running' for status 'skipped'. */
+  reason?: string
+  /** Short fatal error message for a failed run. */
+  fatal?: string
+}
+
+export interface RunSyncOptions {
+  /**
+   * Secret-free diagnostics (preflight metrics, warnings, XML SHA-256) persisted
+   * in SyncRun.errorSample as an object. Without it errorSample keeps the
+   * historical SyncError[] shape.
+   */
+  diagnostics?: Record<string, unknown>
+}
+
+function buildErrorSample(
+  options: RunSyncOptions,
+  batchErrors: SyncError[],
+  outcome: { fatal?: string; unlinkedXml: number; softDeletedSkipped: number },
+): unknown {
+  if (!options.diagnostics) {
+    const sample = outcome.fatal ? [...batchErrors, { batch: -1, message: outcome.fatal }] : batchErrors
+    return sample.length > 0 ? sample : undefined
+  }
+  return { ...options.diagnostics, ...outcome, batchErrors }
 }
 
 export async function runSync(
   adapter: ErpAdapter,
   db: ExtendedPrismaClient,
   triggeredBy: 'cron' | 'manual' | 'webhook' = 'cron',
+  options: RunSyncOptions = {},
 ): Promise<SyncRunResult> {
   const logger = new SyncLogger()
 
@@ -33,8 +59,22 @@ export async function runSync(
 
   const acquired = await acquireSyncLock(db, runId, STALE_THRESHOLD_MS)
   if (!acquired) {
-    await db.syncRun.update({ where: { id: runId }, data: { status: 'failed', finishedAt: new Date() } })
-    throw new Error('Sync already running')
+    // Overlapping schedules are expected, not a failure: record the skip, touch
+    // no Product and leave the lease to its owner.
+    await db.syncRun.update({
+      where: { id: runId },
+      data: { status: 'skipped', finishedAt: new Date(), errorSample: { reason: 'already_running' } as unknown as never },
+    })
+    logger.info('Sync skipped: another run holds the lock', { runId, reason: 'already_running' })
+    return { runId, status: 'skipped', productsSynced: 0, deactivated: 0, errorCount: 0, reason: 'already_running' }
+  }
+
+  // Heartbeat before every unit of Product work: a run that lost its lease must
+  // not start another batch or the final metadata/completion transaction.
+  const heartbeat = async () => {
+    if (!await refreshSyncLock(db, runId, STALE_THRESHOLD_MS)) {
+      throw new Error('Sync lock ownership lost')
+    }
   }
 
   // Only the process that acquired the lock may retire stale run records. A
@@ -86,9 +126,7 @@ export async function runSync(
         continue
       }
 
-      if (!await refreshSyncLock(db, runId, STALE_THRESHOLD_MS)) {
-        throw new Error('Sync lock ownership lost')
-      }
+      await heartbeat()
 
       const { products, hasMore: more, nextCursor } = fetchResult
       productsTotal += products.length
@@ -122,6 +160,8 @@ export async function runSync(
         }
 
         if (feedUnique.length === 0) continue
+
+        await heartbeat()
 
         // Exact externalId is the only permitted identity relation. Unknown XML
         // records and soft-deleted claimants are diagnostics, never inserts.
@@ -182,6 +222,7 @@ export async function runSync(
 
     if (errorCount > 0) {
       logger.error('Sync completed with batch errors — skipping deactivation', { errorCount })
+      const sample = buildErrorSample(options, errorSample, { unlinkedXml, softDeletedSkipped })
       await db.syncRun.update({
         where: { id: runId },
         data: {
@@ -192,12 +233,17 @@ export async function runSync(
           deactivated: 0,
           errorCount,
           // cast required: Prisma Json field does not accept typed arrays directly
-          ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
+          ...(sample !== undefined && { errorSample: sample as unknown as never }),
         },
       })
       await releaseSyncLock(db, runId).catch(() => {})
-      return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
+      return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount, unlinkedXml, softDeletedSkipped }
     }
+
+    await heartbeat()
+    const completedSample = options.diagnostics
+      ? buildErrorSample(options, [], { unlinkedXml, softDeletedSkipped })
+      : undefined
 
     // Missing/local-only Products retain their publication state. Metadata and
     // the completed marker commit together, so a partial run cannot look done.
@@ -207,7 +253,10 @@ export async function runSync(
       }
       await tx.syncRun.update({
         where: { id: runId },
-        data: { status: 'completed', finishedAt: new Date(), productsTotal, productsSynced, deactivated: 0, errorCount: 0 },
+        data: {
+          status: 'completed', finishedAt: new Date(), productsTotal, productsSynced, deactivated: 0, errorCount: 0,
+          ...(completedSample !== undefined && { errorSample: completedSample as unknown as never }),
+        },
       })
     }, { timeout: 60_000 })
 
@@ -216,7 +265,8 @@ export async function runSync(
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })
 
-    const errorSample = logger.getErrorSample()
+    const fatal = err instanceof Error ? err.message : String(err)
+    const sample = buildErrorSample(options, logger.getErrorSample(), { fatal, unlinkedXml, softDeletedSkipped })
     await db.syncRun
       .update({
         where: { id: runId },
@@ -226,7 +276,7 @@ export async function runSync(
           productsSynced,
           productsTotal,
           errorCount: logger.getErrorCount() + 1,
-          ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
+          ...(sample !== undefined && { errorSample: sample as unknown as never }),
         },
       })
       .catch(() => {})
@@ -239,6 +289,9 @@ export async function runSync(
       productsSynced,
       deactivated,
       errorCount: logger.getErrorCount() + 1,
+      unlinkedXml,
+      softDeletedSkipped,
+      fatal,
     }
   }
 }

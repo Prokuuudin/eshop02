@@ -68,13 +68,107 @@ describe('runSync', () => {
     expect(result.status).toBe('completed')
   })
 
-  it('throws when another sync is actively running', async () => {
+  it('records skipped (not failed, no throw) when another sync holds the lock', async () => {
     const db = makeMockDb()
     ;(db as unknown as { $queryRawUnsafe: ReturnType<typeof vi.fn> }).$queryRawUnsafe = vi
       .fn()
       .mockResolvedValue([])
-    await expect(runSync(makeAdapter(), db)).rejects.toThrow('already running')
+    const adapter = makeAdapter([{ externalId: 'e1', title: 'x', price: 1, stock: 1 }])
+    const result = await runSync(adapter, db)
+    expect(result).toMatchObject({ status: 'skipped', reason: 'already_running', productsSynced: 0 })
+    expect(db.syncRun.update).toHaveBeenCalledWith({
+      where: { id: 'run-1' },
+      data: expect.objectContaining({ status: 'skipped', finishedAt: expect.any(Date), errorSample: { reason: 'already_running' } }),
+    })
+    expect(adapter.fetchPage).not.toHaveBeenCalled()
+    expect(db.product.findMany).not.toHaveBeenCalled()
+    expect(upsertProducts).not.toHaveBeenCalled()
+    expect(db.$transaction).not.toHaveBeenCalled()
     expect(db.syncRun.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('lets exactly one of two concurrent starts run; the other is skipped', async () => {
+    let held = false
+    let nextId = 0
+    const db = makeMockDb()
+    ;(db.syncRun.create as ReturnType<typeof vi.fn>).mockImplementation(async () => ({ id: `run-${++nextId}` }))
+    ;(db as unknown as { $queryRawUnsafe: ReturnType<typeof vi.fn> }).$queryRawUnsafe = vi.fn(async () => {
+      if (held) return []
+      held = true
+      return [{ key: 'sync-run-lock' }]
+    })
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    const products = [{ externalId: 'e1', title: 'x', price: 1, stock: 1 }]
+    const results = await Promise.all([runSync(makeAdapter(products), db), runSync(makeAdapter(products), db)])
+    expect(results.map(result => result.status).sort()).toEqual(['completed', 'skipped'])
+    expect(upsertProducts).toHaveBeenCalledTimes(1)
+  })
+
+  it('acquires a stale lease left by a dead process and retires its running record', async () => {
+    const db = makeMockDb() // CAS returns a row: the stale lockedUntil predicate matched
+    const result = await runSync(makeAdapter(), db)
+    expect(result.status).toBe('completed')
+    expect(db.syncRun.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: 'running', startedAt: { lt: expect.any(Date) } }),
+      data: expect.objectContaining({ status: 'failed' }),
+    }))
+  })
+
+  it('refreshes the lock before every batch and before the final transaction', async () => {
+    const db = makeMockDb()
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    const products = Array.from({ length: 401 }, (_, index) => ({ externalId: `e${index}`, title: 'x', price: 1, stock: 1 }))
+    await runSync(makeAdapter(products), db)
+    const refreshes = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls
+      .filter(([sql, value]) => String(sql).includes('UPDATE "KeyValueSetting"') && !String(value).includes('1970-01-01'))
+    // 1 after fetch + 3 batches + 1 before the final metadata/completion transaction
+    expect(refreshes).toHaveLength(5)
+  })
+
+  it('stops at the next batch and never completes when lock ownership is lost mid-run', async () => {
+    const db = makeMockDb()
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    ;(db.$executeRawUnsafe as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce(1) // after fetch
+      .mockResolvedValueOnce(1) // batch 1
+      .mockResolvedValueOnce(0) // batch 2: lease taken over
+      .mockResolvedValue(0)
+    const products = Array.from({ length: 401 }, (_, index) => ({ externalId: `e${index}`, title: 'x', price: 1, stock: 1 }))
+    const result = await runSync(makeAdapter(products), db)
+    expect(result).toMatchObject({ status: 'failed', productsSynced: 200, fatal: 'Sync lock ownership lost' })
+    expect(upsertProducts).toHaveBeenCalledTimes(1)
+    expect(replaceErpExtraData).not.toHaveBeenCalled()
+    expect(db.syncRun.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+  })
+
+  it('persists the fatal message in the historical errorSample array shape', async () => {
+    const db = makeMockDb()
+    ;(db.product.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { externalId: 'dup-db', isDeleted: false }, { externalId: 'dup-db', isDeleted: false },
+    ])
+    await runSync(makeAdapter([{ externalId: 'dup-db', title: 'x', price: 1, stock: 1 }]), db)
+    expect(db.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'failed', errorSample: [{ batch: -1, message: 'Duplicate externalId claimants: dup-db' }] }),
+    }))
+  })
+
+  it('persists diagnostics as an object on failed and completed runs when provided', async () => {
+    const diagnostics = { kind: 'scheduled-full-sync', xmlSha256: 'abc', warnings: ['w'] }
+    const failingDb = makeMockDb()
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('db timeout'))
+    await runSync(makeAdapter([{ externalId: 'e1', title: 'x', price: 1, stock: 1 }]), failingDb, 'cron', { diagnostics })
+    expect(failingDb.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        status: 'failed',
+        errorSample: expect.objectContaining({ ...diagnostics, unlinkedXml: 0, softDeletedSkipped: 0, batchErrors: [expect.objectContaining({ message: 'db timeout' })] }),
+      }),
+    }))
+
+    const okDb = makeMockDb()
+    await runSync(makeAdapter(), okDb, 'cron', { diagnostics })
+    expect(okDb.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'completed', errorSample: expect.objectContaining({ xmlSha256: 'abc', batchErrors: [] }) }),
+    }))
   })
 
   it('marks stale running syncs only after acquiring the lock', async () => {

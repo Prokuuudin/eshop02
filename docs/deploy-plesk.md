@@ -175,20 +175,63 @@ write-доступ к своей log-директории — **VERIFY ON SERVER
 Prisma Client путь). **VERIFY ON SERVER**: исходящий 443 до Neon с самого
 Plesk-сервера не заблокирован файрволом/прокси хостинга.
 
-## 9) ERP Scheduled Task (на будущее, НЕ включать сейчас)
+## 9) ERP hourly FULL sync — Plesk Scheduled Task (включается вручную)
 
-ERP-синк (GRINS FTPS adapter) реализован в коде, но выключен: нет активного
-cron/scheduled task, `GRINS_FTPS_*` не обязаны быть заданы для обычной
-работы сайта. Когда синк будет включён:
+externalId-бэкфилл выполнен, первый production FULL sync доказан вручную
+(2026-09-28). Почасовой режим реализован как `--scheduled` того же скрипта и
+того же `runSync()`; второго sync-механизма нет. Scheduler **не включается
+автоматически** — только отдельным ручным шагом после деплоя.
 
--   Задача должна запускаться как отдельный Scheduled Task в Plesk (не как
-    часть веб-процесса iisnode), вызывающий существующий sync-скрипт.
--   До включения — обязательно свериться с открытыми вопросами из памяти
-    (`project_live_db_sync_design`): externalId-бэкфилл ещё не сделан,
-    single-writer дизайн синка не рассчитан на несколько магазинов, пишущих в
-    одну живую БД.
--   Не включать production-синк/write-back без отдельного явного запроса —
-    это прямо исключено из объёма текущей задачи.
+Что делает один запуск: kill-switch → проверка lock → скачивание `export.xml`
+по FTPS → полный парсинг → read-only preflight (HARD-пороги) → `runSync()`
+(UPDATE-only price/stock по точному externalId, без INSERT/деактивации).
+Любой HARD-сбой preflight останавливает запуск до первой записи Product.
+Итог каждого запуска — строка `SyncRun` (`triggeredBy='cron'`,
+`status` = `completed` | `failed` | `skipped`, детали в `errorSample`).
+
+**Задача Plesk** (Websites & Domains → Scheduled Tasks → Add Task → Run a command):
+
+-   Расписание: раз в час (cron `7 * * * *` — не ровно в :00).
+-   Working directory: корень приложения (где лежат `package.json` и `.env.local`).
+-   Команда (VERIFY ON SERVER путь к node/npx):
+    ```
+    cmd /c "cd /d <APP_ROOT> && npx tsx scripts/sync-products.ts --scheduled"
+    ```
+-   Коды выхода: `0` — completed / skipped (уже идёт другой run) / disabled;
+    `1` — failed (записан `SyncRun` failed и отправлен алерт).
+-   Таймаут задачи: **50 минут** (нормальный run ≈ 1 мин; lease lock — 30 мин
+    с heartbeat на каждый batch; не должен пересекаться со следующим часом).
+
+**Env.** Скрипт читает `.env.local` из working directory через dotenv.
+Переменные, заданные в панели Plesk Node.js для iisnode-процесса, Scheduled
+Task **может не наследовать** — поэтому на сервере в `.env.local` должны быть:
+
+-   `DATABASE_URL` — production Neon;
+-   `GRINS_FTPS_HOST`, `GRINS_FTPS_USER`, `GRINS_FTPS_PASSWORD`, `GRINS_FTPS_REMOTE_PATH`;
+-   `SMTP_*` (для алерта) и `SYNC_ALERT_EMAIL`;
+-   `SYNC_PULL_ENABLED=true` — **только в момент ручного включения**. Любое
+    другое значение = kill-switch: запуск завершается с кодом 0, ничего не
+    скачивает и не пишет в БД (лог `sync_disabled`).
+
+Файл `.env.local` не должен быть доступен через веб (он вне `public/`, но
+проверить правила IIS). Права — только пользователь сайта/задачи.
+
+**Сеть (VERIFY ON SERVER):**
+
+-   FTPS (explicit TLS) до `GRINS_FTPS_HOST`: порт 21 + пассивный диапазон
+    портов сервера GrinS исходящими; таймаут сокета клиента — 30 с.
+-   Neon: исходящий 443 (Prisma adapter-neon, WebSocket).
+-   SMTP-порт из `SMTP_PORT`.
+
+**Зависимости:** `tsx` — devDependency, поэтому на сервере нужен `npm ci`
+с dev-зависимостями (или без `--omit=dev`).
+
+**Проверка перед включением** (read-only):
+`npx tsx scripts/sync-products.ts --dry-run` на сервере — должен скачать фид
+и напечатать отчёт без записи в БД.
+
+Не включать write-back (`SYNC_WRITEBACK_ENABLED` не реализован намеренно).
+Ручной путь `--execute --file <xml>` с SHA-pin остаётся без изменений.
 
 ## 10) `web.config` / iisnode — VERIFY ON SERVER
 

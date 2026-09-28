@@ -1,5 +1,5 @@
 import { vi, describe, it, expect } from 'vitest'
-import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
+import { acquireSyncLock, isSyncLockHeld, refreshSyncLock, releaseSyncLock } from './sync-lock'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 
 function makeMockDb(queryRawResult: unknown[]) {
@@ -88,5 +88,17 @@ describe('releaseSyncLock', () => {
   it('reports lost ownership when the heartbeat updates no row', async () => {
     const db = { $executeRawUnsafe: vi.fn().mockResolvedValue(0) } as never
     await expect(refreshSyncLock(db, 'old-run', 30_000)).resolves.toBe(false)
+  })
+})
+
+describe('isSyncLockHeld', () => {
+  it('reports a live lease as held and a released/stale or missing one as free, read-only', async () => {
+    for (const [rows, expected] of [[[{ held: true }], true], [[{ held: false }], false], [[], false]] as const) {
+      const db = makeMockDb([...rows] as unknown[])
+      expect(await isSyncLockHeld(db)).toBe(expected)
+      const sql = String((db.$queryRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      expect(sql).toMatch(/^\s*SELECT/u)
+      expect(db.$executeRawUnsafe).not.toHaveBeenCalled()
+    }
   })
 })

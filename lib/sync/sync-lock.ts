@@ -24,6 +24,19 @@ export async function acquireSyncLock(
   return rows.length > 0
 }
 
+/**
+ * Read-only probe used before scheduled preflight. It is advisory only: the
+ * authoritative, race-free guard remains acquireSyncLock inside runSync.
+ */
+export async function isSyncLockHeld(db: ExtendedPrismaClient): Promise<boolean> {
+  const rows = await db.$queryRawUnsafe<Array<{ held: boolean }>>(
+    `SELECT ((value->>'lockedUntil')::timestamptz >= now()) AS held
+       FROM "KeyValueSetting" WHERE key = $1`,
+    SYNC_LOCK_KEY,
+  )
+  return rows[0]?.held === true
+}
+
 export async function releaseSyncLock(db: ExtendedPrismaClient, runId: string): Promise<void> {
   const releasedValue = JSON.stringify({ runId, lockedUntil: new Date(0).toISOString() })
   await db.$executeRawUnsafe(

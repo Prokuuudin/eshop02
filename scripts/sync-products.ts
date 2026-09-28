@@ -30,6 +30,7 @@ import { auditGrinsXml, parseGrinsXml } from '@/lib/sync/grins-xml-parser'
 import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv } from '@/lib/sync/ftps-client'
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
+import { structuralFailures } from '@/lib/sync/sync-preflight'
 
 config({ path: '.env.local' })
 
@@ -56,15 +57,7 @@ async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): P
     : { ...(await downloadFtpsFileWithMetadata(getFtpsConfigFromEnv())), kind: 'ftps' }
   const checksum = createHash('sha256').update(source.content, 'utf-8').digest('hex')
   const audit = auditGrinsXml(source.content)
-  const critical: string[] = []
-  if (!audit.validXml) critical.push(`invalid XML: ${audit.validationError ?? 'unknown validation error'}`)
-  if (audit.itemCount === 0) critical.push('XML contains no products')
-  if (audit.emptySkus > 0) critical.push(`${audit.emptySkus} products have an empty SKU/externalId`)
-  if (audit.duplicateExternalIds.length > 0) critical.push(`${audit.duplicateExternalIds.length} duplicate externalId/SKU groups`)
-  if (audit.invalidPrices.length > 0) critical.push(`${audit.invalidPrices.length} invalid price values`)
-  if (audit.invalidStocks.length > 0) critical.push(`${audit.invalidStocks.length} invalid stock values`)
-  if (audit.missingWarehouseIndexes.length > 0) critical.push(`required warehouse indexes missing: ${audit.missingWarehouseIndexes.join(', ')}`)
-  if (audit.unexpectedWarehouseIndexes.length > 0) critical.push(`unexpected warehouse indexes: ${audit.unexpectedWarehouseIndexes.join(', ')}`)
+  const critical: string[] = structuralFailures(audit)
 
   if (!audit.validXml || audit.itemCount === 0) {
     const catalogAfter = await fingerprint()
@@ -114,7 +107,36 @@ async function assertBackfillDone(prisma: import('@/lib/prisma').ExtendedPrismaC
   }
 }
 
+// Hourly Plesk Scheduled Task entry point. Downloads the fresh feed and runs the
+// same runSync() as --execute, but only after the fail-closed preflight passes.
+// The SHA-pinned --execute path below is intentionally untouched.
+async function runScheduled(): Promise<number> {
+  const { runScheduledSync } = await import('@/lib/sync/scheduled-sync')
+  const { runSync } = await import('@/lib/sync/sync-runner')
+  const { sendSyncFailureAlert } = await import('@/lib/sync/sync-alert')
+  let db: import('@/lib/prisma').ExtendedPrismaClient | undefined
+  try {
+    const outcome = await runScheduledSync({
+      env: process.env,
+      getDb: async () => (db = (await import('@/lib/prisma')).prisma),
+      download: () => downloadFtpsFileWithMetadata(getFtpsConfigFromEnv()),
+      runSync,
+      sendAlert: sendSyncFailureAlert,
+    })
+    return outcome.exitCode
+  } finally {
+    await db?.$disconnect()
+  }
+}
+
 async function main() {
+  if (process.argv.includes('--scheduled')) {
+    if (process.argv.includes('--execute') || process.argv.includes('--dry-run') || process.argv.includes('--file')) {
+      throw new Error('--scheduled cannot be combined with --execute, --dry-run or --file')
+    }
+    process.exitCode = await runScheduled()
+    return
+  }
   const { prisma } = await import('@/lib/prisma')
   try {
     if (process.argv.includes('--dry-run')) {

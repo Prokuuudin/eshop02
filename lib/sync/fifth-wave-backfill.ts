@@ -49,4 +49,4 @@ export function validateFifthWave(content:string|Buffer,xml:string,products:Fift
 }
 
 export type FifthWaveAtomicStore={transaction:<T>(operation:(tx:{loadAll:()=>Promise<FifthWaveProduct[]>;updateExternalIds:(entries:FifthWaveEntry[])=>Promise<number>})=>Promise<T>)=>Promise<T>}
-export async function applyFifthWaveAtomic(store:FifthWaveAtomicStore,content:string|Buffer,xml:string):Promise<number>{return store.transaction(async tx=>{const all=await tx.loadAll(),allowlist=validateFifthWave(content,xml,all),affected=await tx.updateExternalIds(allowlist.entries);if(affected!==FIFTH_WAVE_SIZE)throw new Error(`ATOMIC_UPDATE_COUNT_MISMATCH:${affected}`);return affected})}
+export async function applyFifthWaveAtomic(store:FifthWaveAtomicStore,content:string|Buffer,xml:string,policy:{allowlistSha256?:string;xmlSha256?:string}={}):Promise<number>{return store.transaction(async tx=>{const all=await tx.loadAll(),allowlist=validateFifthWave(content,xml,all,'pre-backfill',policy),affected=await tx.updateExternalIds(allowlist.entries);if(affected!==FIFTH_WAVE_SIZE)throw new Error(`ATOMIC_UPDATE_COUNT_MISMATCH:${affected}`);return affected})}

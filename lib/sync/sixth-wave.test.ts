@@ -6,15 +6,15 @@ import {
     assertSixthPostBackfillBaseline,
     assertSixthPostSyncBaseline,
     SIXTH_WAVE_ALLOWLIST_SHA,
-    SIXTH_WAVE_XML_SHA,
+    sixthSha,
     validateSixth,
     type SixthAllowlist,
     type SixthProduct,
 } from './sixth-wave';
 import { prepareSixthPlan } from './controlled-sixth-wave';
 const content = readFileSync('sixth-wave-allowlist.json'),
-    xml = readFileSync('export.xml', 'utf8'),
     a = JSON.parse(content.toString()) as SixthAllowlist;
+const xml = `<root>${a.entries.map((e) => `<item><sku>${e.xmlSku}</sku><code>${e.xmlEan ?? ''}</code></item>`).join('')}</root>`;
 const products = (): SixthProduct[] =>
     a.entries.map((e) => ({
         id: e.productId,
@@ -38,15 +38,15 @@ const products = (): SixthProduct[] =>
         stock: e.baseline.stock,
         createdAt: new Date(e.baseline.createdAt),
     }));
-const policy = { allowlistSha: SIXTH_WAVE_ALLOWLIST_SHA, xmlSha: SIXTH_WAVE_XML_SHA };
+const policy = { allowlistSha: SIXTH_WAVE_ALLOWLIST_SHA, xmlSha: sixthSha(xml) };
 describe('sixth-wave immutable gates', () => {
     it('accepts only immutable SAFE scope', () =>
-        expect(validateSixth(content, xml, products()).entries).toHaveLength(30));
+        expect(validateSixth(content, xml, products(), 'pre-backfill', policy).entries).toHaveLength(30));
     it('rejects XML SHA drift', () =>
-        expect(() => validateSixth(content, xml + ' ', products())).toThrow('XML_SHA'));
+        expect(() => validateSixth(content, xml + ' ', products(), 'pre-backfill', policy)).toThrow('XML_SHA'));
     it('rejects allowlist SHA drift', () =>
         expect(() =>
-            validateSixth(Buffer.concat([content, Buffer.from(' ')]), xml, products())
+            validateSixth(Buffer.concat([content, Buffer.from(' ')]), xml, products(), 'pre-backfill', policy)
         ).toThrow('ALLOWLIST_SHA'));
     it('rejects baseline drift', () =>
         expect(() => assertSixthBaseline({ ...a.baseline, externalIdCount: 1 })).toThrow(
@@ -79,37 +79,37 @@ describe('sixth-wave immutable gates', () => {
         ).not.toThrow();
     });
     it('rejects missing Product', () =>
-        expect(() => validateSixth(content, xml, products().slice(1))).toThrow('missing Product'));
+        expect(() => validateSixth(content, xml, products().slice(1), 'pre-backfill', policy)).toThrow('missing Product'));
     it('rejects filled externalId', () => {
         const p = products();
         p[0].externalId = 'claimed';
-        expect(() => validateSixth(content, xml, p)).toThrow('externalId gate');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('externalId gate');
     });
     it('rejects claimant conflict', () => {
         const p = products();
         p.push({ ...p[0], id: 'other', externalId: a.entries[0].xmlSku });
-        expect(() => validateSixth(content, xml, p)).toThrow('externalId claimant');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('externalId claimant');
     });
     it('rejects EAN uniqueness drift', () => {
         const e = a.entries.find((e) => e.matchType === 'UNIQUE_EAN')!;
         const p = products();
         p.push({ ...p[0], id: 'other', barcode: e.xmlEan });
-        expect(() => validateSixth(content, xml, p)).toThrow('EAN uniqueness drift');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('EAN uniqueness drift');
     });
     it('rejects Product identity drift', () => {
         const p = products();
         p[0].sku = 'changed';
-        expect(() => validateSixth(content, xml, p)).toThrow('source identity drift');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('source identity drift');
     });
     it('rejects soft-deleted Product', () => {
         const p = products();
         p[0].isDeleted = true;
-        expect(() => validateSixth(content, xml, p)).toThrow('soft-deleted');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('soft-deleted');
     });
     it('rejects protected baseline drift', () => {
         const p = products();
         p[0].title += ' changed';
-        expect(() => validateSixth(content, xml, p)).toThrow('protected baseline drift');
+        expect(() => validateSixth(content, xml, p, 'pre-backfill', policy)).toThrow('protected baseline drift');
     });
     it('rejects manual/deferred intersection', () => {
         const value = JSON.parse(content.toString()) as SixthAllowlist;
@@ -145,7 +145,7 @@ describe('sixth-wave atomic contract', () => {
                 }
             },
         };
-        await expect(applySixthAtomic(store, content, xml)).rejects.toThrow(
+        await expect(applySixthAtomic(store, content, xml, policy)).rejects.toThrow(
             'ATOMIC_UPDATE_COUNT_MISMATCH'
         );
         expect(committed).toBe(false);

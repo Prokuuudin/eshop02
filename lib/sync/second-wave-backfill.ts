@@ -11,9 +11,9 @@ export type SecondWaveProduct = { id: string; sku: string | null; externalId: st
 export const sha256 = (content: string | Buffer): string => createHash('sha256').update(content).digest('hex')
 const fold = (value: string): string => value.toLocaleLowerCase('en-US')
 
-export function validateSecondWave(allowlistContent: string | Buffer, xml: string, products: SecondWaveProduct[]): SecondWaveAllowlist {
+export function validateSecondWave(allowlistContent: string | Buffer, xml: string, products: SecondWaveProduct[], expectedXmlSha = SECOND_WAVE_XML_SHA256): SecondWaveAllowlist {
   if (sha256(allowlistContent) !== SECOND_WAVE_ALLOWLIST_SHA256) throw new Error('Second-wave validation failed: allowlist SHA mismatch')
-  if (sha256(xml) !== SECOND_WAVE_XML_SHA256) throw new Error('Second-wave validation failed: XML SHA mismatch')
+  if (sha256(xml) !== expectedXmlSha) throw new Error('Second-wave validation failed: XML SHA mismatch')
   const errors: string[] = []
   const allowlist = JSON.parse(allowlistContent.toString()) as SecondWaveAllowlist
   if (allowlist.schemaVersion !== 1 || allowlist.wave !== 'second-wave-case-only') errors.push('allowlist schema/wave mismatch')

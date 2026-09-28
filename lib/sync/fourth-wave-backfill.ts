@@ -64,4 +64,4 @@ export function validateFourthWave(content:string|Buffer, xml:string, allProduct
 }
 
 export type FourthWaveAtomicStore={transaction:<T>(operation:(tx:{loadAll:()=>Promise<FourthWaveProduct[]>;updateExternalIds:(entries:FourthWaveEntry[])=>Promise<number>})=>Promise<T>)=>Promise<T>}
-export async function applyFourthWaveAtomic(store:FourthWaveAtomicStore,content:string|Buffer,xml:string):Promise<number>{return store.transaction(async tx=>{const all=await tx.loadAll();const allowlist=validateFourthWave(content,xml,all);const affected=await tx.updateExternalIds(allowlist.entries);if(affected!==FOURTH_WAVE_SIZE)throw new Error(`ATOMIC_UPDATE_COUNT_MISMATCH:${affected}`);return affected})}
+export async function applyFourthWaveAtomic(store:FourthWaveAtomicStore,content:string|Buffer,xml:string,policy:FourthWaveValidationPolicy={}):Promise<number>{return store.transaction(async tx=>{const all=await tx.loadAll();const allowlist=validateFourthWave(content,xml,all,'pre-backfill',policy);const affected=await tx.updateExternalIds(allowlist.entries);if(affected!==FOURTH_WAVE_SIZE)throw new Error(`ATOMIC_UPDATE_COUNT_MISMATCH:${affected}`);return affected})}

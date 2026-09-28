@@ -39,7 +39,8 @@
     "restore:database": "tsx scripts/restore-database.ts",
     "import:client-types": "tsx scripts/import-client-types.ts",
     "test:search-plan": "tsx scripts/check-search-plan.ts",
-    "sync:products": "tsx scripts/sync-products.ts --dry-run"
+    "sync:products": "tsx scripts/sync-products.ts --dry-run",
+    "sync:products:scheduled": "tsx scripts/sync-products.ts --scheduled"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

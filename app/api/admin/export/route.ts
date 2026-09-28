@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getMergedProductsWithPrices } from '@/lib/product-overrides-store'
 import type { Product } from '@/data/products'
 
 export const runtime = 'nodejs'
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     ]
     csvBody = example.map(escapeCell).join(',')
   } else {
-    const products = await getMergedProducts()
+    const products = await getMergedProductsWithPrices()
     csvBody = products
       .map((p) => COLUMNS.map((col) => escapeCell(p[col])).join(','))
       .join('\n')

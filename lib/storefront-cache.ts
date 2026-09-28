@@ -14,6 +14,7 @@ import type { Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { attachCampaignOffers, isCampaignActive, readPromoCampaigns } from '@/lib/promo-campaigns'
+import { toStorefrontProducts, VALID_B2B_PRICE_WHERE } from '@/lib/product-sellability'
 import productSubcategories from '@/data/product-subcategories.json'
 import type { Prisma } from '@/generated/prisma/client'
 
@@ -81,8 +82,8 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
     const product = byId.get(id)
     return product ? [mapDbToProduct(product)] : []
   }).slice(0, 16)
-  return attachCampaignOffers(mapped, await readPromoCampaigns(prisma))
-}, ['storefront-bestsellers-v2'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
+  return toStorefrontProducts(attachCampaignOffers(mapped, await readPromoCampaigns(prisma)))
+}, ['storefront-bestsellers-v3'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
   const campaigns = await readPromoCampaigns(prisma)
@@ -95,19 +96,20 @@ export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]>
         .filter(([, subcategory]) => campaign.targetSubcategories.includes(subcategory)).map(([id]) => id) } } : {}),
     }))
   const campaignRows = campaignFilters.length ? await prisma.product.findMany({
-    where: { isActive: true, isDeleted: false, image: { not: null }, OR: campaignFilters },
+    where: { isActive: true, isDeleted: false, image: { not: null }, AND: [VALID_B2B_PRICE_WHERE, { OR: campaignFilters }] },
     orderBy: { id: 'asc' }, take: 24,
   }) : []
   // Product.oldPrice and the derived `sale` badge contain values migrated from the
   // retail Hairshop database. They are not proof of a Hairshop Pro promotion.
   // Homepage deals are therefore sourced exclusively from active Pro campaigns.
-  return attachCampaignOffers(campaignRows.map(mapDbToProduct), campaigns)
-    .filter((product) => product.campaignOffers?.length)
+  // A campaign never makes a product without a valid B2B price sellable (query filter above).
+  return toStorefrontProducts(attachCampaignOffers(campaignRows.map(mapDbToProduct), campaigns))
+    .filter((product) => !product.priceUnavailable && product.campaignOffers?.length)
     .sort((a, b) => {
       const discount = (product: Product) => product.campaignOffers?.[0]?.discountPercent ?? 0
       return discount(b) - discount(a)
     }).slice(0, 24)
-}, ['storefront-sale-products-v3'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
+}, ['storefront-sale-products-v4'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
 
 export const getCachedLocaleConfig = unstable_cache(getLocaleConfig, ['storefront-locale-v1'], {
   revalidate: 600,

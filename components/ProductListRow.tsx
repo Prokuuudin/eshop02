@@ -22,7 +22,8 @@ type Props = { product: Product };
 export default function ProductListRow({ product }: Props): React.ReactElement {
   const { t, language } = useTranslation();
   const locale = getLocaleFromLanguage(language);
-  const isOutOfStock = product.stock === 0;
+  const isNotForSale = product.priceUnavailable === true;
+  const isOutOfStock = product.stock === 0 || isNotForSale;
 
   const localizedTitle =
     language === 'en' && product.titleEn
@@ -61,7 +62,7 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
           )}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">{t('product.outOfStock')}</span>
+              <span className="text-white text-xs font-semibold">{isNotForSale ? t('product.notForSale') : t('product.outOfStock')}</span>
             </div>
           )}
         </Link>
@@ -101,7 +102,9 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
 
       {/* Price + Action */}
       <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto sm:flex-shrink-0 sm:min-w-[140px]">
-        {!isHydrated || (isAuthenticated && !Number.isFinite(displayPrice)) ? (
+        {isNotForSale ? (
+          <div className="product-list-row__not-for-sale text-sm font-medium text-muted-foreground">{t('product.notForSale')}</div>
+        ) : !isHydrated || (isAuthenticated && !Number.isFinite(displayPrice)) ? (
           <div className="h-6 w-20 rounded bg-muted animate-pulse" />
         ) : isAuthenticated ? (
           <div className="sm:text-right">

@@ -71,6 +71,8 @@ export async function GET(req: NextRequest): Promise<Response> {
       image: product.image,
       price: product.price,
       oldPrice: product.oldPrice,
+      // No valid ERP B2B price: price fields are absent and the product cannot be ordered.
+      ...(product.priceUnavailable ? { priceUnavailable: true } : {}),
       rating: product.rating,
       stock: product.stock,
       technicalSpecs: Object.fromEntries(

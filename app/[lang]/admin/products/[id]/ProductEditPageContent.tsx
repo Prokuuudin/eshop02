@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';
 import AddProductForm from '@/components/admin/products/AddProductForm';
+import ErpPriceStatusNotice from '@/components/admin/products/ErpPriceStatusNotice';
 import type { AddProductFormValues } from '@/components/admin/products/productFormSchema';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 
@@ -14,6 +15,7 @@ interface ProductEditPageContentProps {
     productTitle: string;
     initialValues: AddProductFormValues;
     revision: number;
+    erpPriceStatus: { price: number; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice?: number };
     seoContext?: {
         returnTo: string;
         duplicateMetaTitle: boolean;
@@ -28,6 +30,7 @@ export default function ProductEditPageContent({
     productTitle,
     initialValues,
     revision,
+    erpPriceStatus,
     seoContext,
 }: ProductEditPageContentProps): React.ReactElement {
     const { l } = useAdminLocale();
@@ -46,6 +49,7 @@ export default function ProductEditPageContent({
                     <h1 className="text-2xl font-bold mb-6">
                         {l('Редактирование:', 'Editing:', 'Rediģēšana:')} {productTitle}
                     </h1>
+                    <ErpPriceStatusNotice productId={productId} revision={revision} {...erpPriceStatus} />
                     <AddProductForm
                         mode="edit"
                         productId={productId}

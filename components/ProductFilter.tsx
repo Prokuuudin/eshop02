@@ -109,7 +109,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products,
     // redactProductPrices) — product.price is undefined for them at runtime
     // even though the type says number. Trust server-side filtering instead
     // of excluding the product from counts/results.
-    const priceHidden = product.price === undefined
+    const priceHidden = product.price === undefined && !product.priceUnavailable
     const matchCategory = !current.group || product.category === current.group
     const matchSubcat = !current.subcat || product.subcategory === current.subcat
     const matchOnSale = !current.onSale || priceHidden || isProductOnSale(product)

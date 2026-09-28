@@ -181,7 +181,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       companyId: existingCustomer?.companyId ?? undefined,
     }
 
-    const created = await createServerOrder(orderBase)
+    // Staff typed every unit price: customer sellability (ERP B2B price) does not apply here.
+    const created = await createServerOrder(orderBase, undefined, { staffPricedSale: true })
 
     // Staff already processed this sale, so it starts confirmed (not pending)
     // and, unlike a status transition on an existing order, this can't fail

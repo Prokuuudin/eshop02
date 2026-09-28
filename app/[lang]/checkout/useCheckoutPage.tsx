@@ -321,6 +321,8 @@ function useCheckoutPageState() {
         if (!createResult.ok) {
             const message = createResult.reason === 'payment_gateway_error'
                 ? t('checkout.errors.paymentGateway')
+                : createResult.reason === 'product_unavailable'
+                ? t('checkout.errors.productUnavailable')
                 : createResult.reason === 'insufficient_stock'
                 ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
                 : createResult.reason === 'network'

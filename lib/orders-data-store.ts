@@ -15,6 +15,7 @@ import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
 import { buildOrderData, mapDbToServerOrder } from '@/lib/orders-data-mapping'
+import { PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
 export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -31,8 +32,17 @@ export function canAccessOrder(
   return !!caller.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
 }
 
+export type CreateOrderOptions = {
+  /**
+   * Staff-entered sale (admin manual order): the admin typed every unit price, so the
+   * customer sellability rule (active + valid ERP B2B price) is not applied — only
+   * existence and stock are. Never set this for customer-initiated orders.
+   */
+  staffPricedSale?: boolean
+}
+
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
-const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder): Promise<PrismaOrder> => {
+const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder, options: CreateOrderOptions = {}): Promise<PrismaOrder> => {
   return prisma.$transaction(async (tx) => {
     if (initialOrder.userId) await expireBonusPoints(tx, initialOrder.userId)
     const currentUser = initialOrder.userId
@@ -69,15 +79,16 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
       })
     }
 
-    // Decrement stock for each item. updateMany's where clause (isDeleted: false,
-    // stock >= quantity) is the actual guard — if it matches 0 rows the product is
-    // missing, deleted, or doesn't have enough stock. That must fail the whole
-    // order, not silently create it with unaccounted-for items.
+    // Decrement stock for each item. updateMany's where clause is the actual guard — if
+    // it matches 0 rows the product is missing, deleted, inactive, has no valid B2B price
+    // (customer orders) or doesn't have enough stock. That must fail the whole order,
+    // not silently create it with unaccounted-for items.
+    const sellableWhere = options.staffPricedSale ? { isDeleted: false } : PURCHASABLE_PRODUCT_WHERE
     const outOfStockIds: string[] = []
     for (const item of order.items) {
       if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
         const result = await tx.product.updateMany({
-          where: { id: item.id, isDeleted: false, stock: { gte: item.quantity } },
+          where: { id: item.id, ...sellableWhere, stock: { gte: item.quantity } },
           data: { stock: { decrement: item.quantity } },
         })
         if (result.count === 0) outOfStockIds.push(item.id)
@@ -163,12 +174,12 @@ const generateNextOrderId = async (): Promise<string> => {
  * per-browser counters collide across customers and would silently overwrite foreign orders.
  * A concurrent insert can win the generated id — retry with a fresh one.
  */
-export const createServerOrder = async (order: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder): Promise<ServerOrder> => {
+export const createServerOrder = async (order: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder, options: CreateOrderOptions = {}): Promise<ServerOrder> => {
   let lastError: unknown
   for (let attempt = 0; attempt < 3; attempt++) {
     const id = await generateNextOrderId()
     try {
-      const row = await createOrderWithSideEffects(id, order, prepare)
+      const row = await createOrderWithSideEffects(id, order, prepare, options)
       return mapDbToServerOrder(row)
     } catch (e) {
       if (!isUniqueConflict(e)) throw e

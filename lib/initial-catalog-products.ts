@@ -29,8 +29,9 @@ function matchesSubcategories(product: Product, subcategories: string[]): boolea
 
 function sortProducts(products: Product[], order: string | undefined, language: Language, hasBrandFilter: boolean): Product[] {
   if (!order) return hasBrandFilter ? sortBrandProductsNewestFirst(products) : products
-  if (order === 'price-asc') return [...products].sort((a, b) => a.price - b.price)
-  if (order === 'price-desc') return [...products].sort((a, b) => b.price - a.price)
+  // Not-for-sale products carry no price (see lib/product-sellability.ts) and sort last.
+  if (order === 'price-asc') return [...products].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))
+  if (order === 'price-desc') return [...products].sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity))
   if (order === 'name-asc') {
     return [...products].sort((a, b) => localizedTitle(a, language).localeCompare(localizedTitle(b, language)))
   }
@@ -73,8 +74,8 @@ export async function getInitialCatalogProducts({
     if (category && product.category !== category) return false
     if (!matchesSubcategories(product, subcategories)) return false
     if (brands.length > 0 && !brands.includes(brandSlug(product.brand))) return false
-    if (minPrice !== undefined && product.price < minPrice) return false
-    if (maxPrice !== undefined && product.price > maxPrice) return false
+    if (minPrice !== undefined && !(product.price >= minPrice)) return false
+    if (maxPrice !== undefined && !(product.price <= maxPrice)) return false
     if (onSale && !isProductOnSale(product)) return false
 
     if (normalizedSearch) {

@@ -40,6 +40,7 @@ const enCatalog: Record<string, string> = {
   'product.rating': 'Rating',
   'product.title': 'Title',
   'product.addToCart': 'Add to Cart',
+  'product.notForSale': 'Not available for sale',
   'product.loginToSeePrice': 'Log in to see the price',
   'product.selectVariant': 'Select option',
   'product.selectVariantRequired': 'Please select',

@@ -35,6 +35,12 @@ export default async function ProductEditPage({ params, searchParams }: PageProp
             productTitle={product.title}
             initialValues={initialValues}
             revision={product.revision ?? 1}
+            erpPriceStatus={{
+                price: product.price,
+                erpPriceMissing: product.erpPriceMissing ?? false,
+                manualPriceApproved: product.manualPriceApproved ?? false,
+                manualApprovedPrice: product.manualApprovedPrice,
+            }}
             seoContext={returnTo ? {
                 returnTo,
                 duplicateMetaTitle,

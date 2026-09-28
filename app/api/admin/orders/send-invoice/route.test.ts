@@ -10,7 +10,7 @@ vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
 vi.mock('@/lib/invoice-template', () => ({ buildInvoiceHtml: vi.fn(() => '<html>invoice</html>') }))
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://hairshoppro.lv') }))
 vi.mock('@/lib/orders-data-store', () => ({ getServerOrderById: vi.fn() }))
-vi.mock('@/lib/product-overrides-store', () => ({ getMergedProducts: vi.fn(async () => []) }))
+vi.mock('@/lib/product-overrides-store', () => ({ getMergedProductsWithPrices: vi.fn(async () => []) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: txMock } }))
 
 import { requireAdminPermission } from '@/lib/server-auth'

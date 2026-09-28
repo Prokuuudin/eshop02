@@ -3,6 +3,7 @@ import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns';
+import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>;
 
@@ -10,7 +11,15 @@ export function applyProductOverride(
     base: Product,
     override: ProductOverride | undefined
 ): Product {
-    return override ? { ...base, ...override } : base;
+    if (!override) return base;
+    // Sellability state is DB-derived only; a stored override can never re-enable a price.
+    const { priceUnavailable: _unavailable, erpPriceMissing: _missing, manualPriceApproved: _approved, manualApprovedPrice: _approvedPrice, ...safeOverride } = override;
+    // Without an ERP price the only sellable price is the approved Product.price, which is
+    // also what checkout charges — an override must not show a different one.
+    if (base.erpPriceMissing) {
+        for (const field of ERP_PRICE_LOCKED_OVERRIDE_FIELDS) delete (safeOverride as Record<string, unknown>)[field];
+    }
+    return { ...base, ...safeOverride };
 }
 
 export function mergeProductsWithOverrides(
@@ -68,10 +77,16 @@ export async function getDbProductsPaginated(opts: {
         getProductOverrides().catch(() => ({})),
     ]);
 
-    return { products: attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma)), total };
+    return { products: toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma))), total };
 }
 
+// Storefront/public catalog: products without a valid B2B price carry no monetary fields.
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
+    return toStorefrontProducts(await getDbProducts());
+});
+
+// Admin-only consumers (export/import/invoices) that must see the stored local price.
+export const getMergedProductsWithPrices = cache(async (): Promise<Product[]> => {
     return getDbProducts();
 });
 

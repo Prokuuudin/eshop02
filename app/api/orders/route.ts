@@ -9,7 +9,7 @@ import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
-import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
 import { translations } from '@/data/translations'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
@@ -447,6 +447,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }
       }
       return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true })
+    }
+    if (error instanceof ProductUnavailableError) {
+      return NextResponse.json({ error: 'product_unavailable', items: error.items }, { status: 409 })
     }
     logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {

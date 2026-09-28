@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { logApiError } from '@/lib/observability'
+import { approvalAfterPriceChange } from '@/lib/product-sellability'
 
 export const runtime = 'nodejs'
 
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest, context: RouteContext): Promise
       const { id: _id, isCustom: _custom, isDeleted: _deleted, ...data } = mapped
       const result = await tx.product.updateMany({
         where: { id, revision: body.revision },
-        data: { ...data, revision: { increment: 1 } },
+        data: { ...data, ...approvalAfterPriceChange(current, data.price), revision: { increment: 1 } },
       })
       if (result.count !== 1) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
 

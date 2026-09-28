@@ -9,6 +9,7 @@ interface ProductPricesProps {
     stock: number;
     productId: string;
     productTitle: string;
+    notForSale?: boolean;
 }
 
 export const ProductPrices: React.FC<ProductPricesProps> = ({
@@ -18,6 +19,7 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
     stock,
     productId,
     productTitle,
+    notForSale = false,
 }) => {
     return (
         <div className="product-detail__prices mt-6">
@@ -25,8 +27,9 @@ export const ProductPrices: React.FC<ProductPricesProps> = ({
                 price={price}
                 oldPrice={oldPrice}
                 priceLocale={priceLocale}
+                notForSale={notForSale}
             />
-            <ProductStock stock={stock} productId={productId} productTitle={productTitle} />
+            {!notForSale && <ProductStock stock={stock} productId={productId} productTitle={productTitle} />}
         </div>
     );
 };

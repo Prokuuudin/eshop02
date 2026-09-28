@@ -29,6 +29,9 @@ vi.mock('@/lib/turnstile-server', () => ({
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
+  ProductUnavailableError: class ProductUnavailableError extends Error {
+    constructor(public readonly items: string[]) { super('unavailable') }
+  },
 }))
 vi.mock('@/lib/locale-config-server-store', () => ({
   getLocaleConfig: vi.fn(),
@@ -43,7 +46,7 @@ import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
-import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { DEFAULT_COMMERCE_SETTINGS } from '@/lib/commerce-settings'
@@ -210,6 +213,14 @@ describe('POST /api/orders — admin notification', () => {
     expect(html).toContain('1001')
     expect(html).toContain('Ivan')
     expect(html).toContain('64')
+  })
+
+  it('F: rejects a stale-cart product without a valid B2B price with 409 and sends no email', async () => {
+    vi.mocked(recomputeOrderPricing).mockRejectedValue(new ProductUnavailableError(['p1']))
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'product_unavailable', items: ['p1'] })
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('ignores the client-supplied id and returns the server-generated orderId', async () => {

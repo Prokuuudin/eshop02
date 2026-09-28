@@ -21,6 +21,7 @@ type AddableProduct = {
   image?: string
   images?: string[]
   price: number
+  priceUnavailable?: boolean
   bonusRate?: number
   bulkPricingTiers?: Array<{ quantity: number; pricePerUnit: number }>
   minOrderQuantities?: Record<string, number>
@@ -88,6 +89,9 @@ export const useCart = create<CartStore>()(
         // Корзина только для авторизованных: UI-гейты это уже обеспечивают,
         // здесь — последний рубеж для любых обходных путей (консоль, старый код).
         if (typeof window === 'undefined' || !getCurrentUser()) return
+        // Not for sale (no valid B2B price) or no price at all — nothing sensible to add.
+        // Checkout rejects such lines server-side anyway; this keeps the cart honest.
+        if (product.priceUnavailable || !Number.isFinite(product.price)) return
         const lineKey = buildLineKey(product.id, selectedVariants)
         const priceAdjustment = sumPriceAdjustment(selectedVariants ?? [])
         const variantLabel = selectedVariants?.length

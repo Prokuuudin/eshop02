@@ -11,7 +11,10 @@ vi.mock('@/lib/api-helpers', () => ({
   errorResponse: (error: string, status = 400) => NextResponse.json({ error }, { status }),
   successResponse: (data: unknown, status = 200) => NextResponse.json({ success: true, data }, { status }),
 }))
-vi.mock('@/lib/server-pricing', () => ({ recomputeOrderPricing: pricingMock }))
+vi.mock('@/lib/server-pricing', () => ({
+  recomputeOrderPricing: pricingMock,
+  ProductUnavailableError: class ProductUnavailableError extends Error { constructor(public items: string[]) { super('unavailable') } },
+}))
 vi.mock('@/lib/orders-data-store', async () => {
   class InsufficientStockError extends Error { constructor(public items: string[]) { super('stock') } }
   class ExistingCheckoutOrderError extends Error { constructor(public order: { id: string }) { super('existing') } }
@@ -88,6 +91,14 @@ describe('/api/v1/orders', () => {
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'Insufficient stock for: p1' })
     expect(persistMock).toHaveBeenCalledOnce()
+  })
+
+  it('rejects products that are not for sale (no ERP B2B price / inactive) with 409', async () => {
+    const { ProductUnavailableError } = await import('@/lib/server-pricing')
+    pricingMock.mockRejectedValue(new ProductUnavailableError(['p1']))
+    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], address: {} }))
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'Products not available for sale: p1' })
   })
 
   it('returns an existing tenant order for a repeated idempotency key', async () => {

@@ -23,7 +23,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({
     const [quantity, setQuantity] = useState(minOrderQuantity);
     return (
         <div className="product-detail__actions mt-8">
-            <ProductBonusInfo product={product} quantity={quantity} unitPrice={displayPrice} />
+            {!product.priceUnavailable && <ProductBonusInfo product={product} quantity={quantity} unitPrice={displayPrice} />}
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[220px]">
                     <AddToCartButton

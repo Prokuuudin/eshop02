@@ -22,6 +22,7 @@ import { readFileSync } from 'fs'
 import { parseGrinsXml } from '@/lib/sync/grins-xml-parser'
 import { getFtpsConfigFromEnv, downloadFtpsFile } from '@/lib/sync/ftps-client'
 import { isKnownWrongExternalIdLink } from '@/lib/sync/known-wrong-external-id-links'
+import { buildExternalIdLinkUpdate } from '@/lib/sync/external-id-link'
 // lib/prisma.ts and lib/sync/xml-snapshot-store.ts construct the Prisma client
 // eagerly at module-eval time. Static imports get hoisted above config() by the
 // bundler regardless of source order, so DATABASE_URL wouldn't be loaded yet —
@@ -78,10 +79,12 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   // sku === externalId in this feed (see lib/sync/grins-xml-parser.ts), so matching
   // Product.sku against feed sku is exactly matching against feed externalId.
   const feedBySku = new Map<string, number>()
+  const feedPriceBySku = new Map<string, number>()
   for (const p of feedProducts) {
     const sku = p.sku?.trim()
     if (!sku) continue
     feedBySku.set(sku, (feedBySku.get(sku) ?? 0) + 1)
+    feedPriceBySku.set(sku, p.price)
   }
   const feedDuplicateSkus = new Set(
     [...feedBySku.entries()].filter(([, count]) => count > 1).map(([sku]) => sku),
@@ -232,16 +235,15 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
     return
   }
 
-  const ids = matched.map(m => m.productId)
-  const skus = matched.map(m => m.sku)
-  const updated = await prisma.$executeRawUnsafe(
-    `UPDATE "Product" AS p
-     SET "externalId" = v.sku, "updatedAt" = now()
-     FROM (SELECT unnest($1::text[]) AS id, unnest($2::text[]) AS sku) AS v
-     WHERE p.id = v.id`,
-    ids,
-    skus,
-  )
+  // Link and initialise erpPriceMissing from the same feed row in one statement: a new
+  // link is never sellable at a kept local price while waiting for the next FULL sync.
+  const { sql, params } = buildExternalIdLinkUpdate(matched.map(m => ({
+    productId: m.productId,
+    externalId: m.sku,
+    // Feed-duplicate SKUs are refused above, so this is the one feed row for the SKU.
+    erpPrimaryPrice: feedPriceBySku.get(m.sku),
+  })))
+  const updated = await prisma.$executeRawUnsafe(sql, ...params)
 
   console.log(JSON.stringify({ event: 'backfill_applied', updated }))
 }

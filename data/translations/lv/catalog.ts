@@ -40,6 +40,7 @@ const lvCatalog: Record<string, string> = {
   'product.rating': 'Novērtējums',
   'product.title': 'Nosaukums',
   'product.addToCart': 'Pievienot grozam',
+  'product.notForSale': 'Nav pārdošanā',
   'product.loginToSeePrice': 'Piesakieties, lai redzētu cenu',
   'product.selectVariant': 'Izvēlēties variantu',
   'product.selectVariantRequired': 'Izvēlieties',

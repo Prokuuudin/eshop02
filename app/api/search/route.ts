@@ -5,6 +5,7 @@ import { toNum } from '@/lib/decimal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getServerUser } from '@/lib/server-auth'
 import { getClientIp } from '@/lib/request-ip'
+import { hasValidB2BPrice } from '@/lib/product-sellability'
 
 const SEARCH_LIMIT = { windowMs: 60 * 1000, maxAttempts: 30 }
 const MAX_QUERY_LENGTH = 160
@@ -47,6 +48,10 @@ export async function GET(req: NextRequest): Promise<Response> {
       category: string
       stock: number
       similarity: number
+      externalId: string | null
+      erpPriceMissing: boolean
+      manualPriceApproved: boolean
+      manualApprovedPrice: unknown
     }
 
     const whereCategory = category ? `AND "category" = $3` : ''
@@ -54,7 +59,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (category) params.push(category)
 
     const results = await prisma.$queryRawUnsafe<ProductRow[]>(
-      `SELECT id, title, brand, price, image, category, stock,
+      `SELECT id, title, brand, price, image, category, stock, "externalId", "erpPriceMissing", "manualPriceApproved", "manualApprovedPrice",
               similarity(
                 COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
                 $1
@@ -76,7 +81,12 @@ export async function GET(req: NextRequest): Promise<Response> {
     // $queryRawUnsafe bypasses the Prisma Client Extension in lib/prisma-money-extension.ts,
     // so `price` (a Decimal column) needs manual conversion back to a plain number here.
     const canSeePrices = Boolean(await getServerUser())
-    const products = results.map((row) => {
+    const products = results.map(({ externalId, erpPriceMissing, manualPriceApproved, manualApprovedPrice, ...row }) => {
+      // No valid ERP B2B price: never expose the kept local price, not even to customers.
+      if (!hasValidB2BPrice({ externalId, erpPriceMissing, manualPriceApproved, manualApprovedPrice, price: row.price })) {
+        const { price: _price, ...notForSale } = row
+        return { ...notForSale, stock: 0, priceUnavailable: true }
+      }
       const product = { ...row, price: toNum(row.price) }
       if (canSeePrices) return product
       const { price: _price, ...publicProduct } = product

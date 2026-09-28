@@ -7,6 +7,7 @@ import { parseOffsetPagination } from '@/lib/pagination'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { z } from 'zod'
 import type { Prisma } from '@/generated/prisma/client'
+import { hasValidB2BPrice } from '@/lib/product-sellability'
 
 const rfqItemSchema = z.object({
   productId: z.string().trim().min(1).max(200),
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     )))]
     const [companies, products] = await Promise.all([
       companyIds.length ? prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, companyName: true, contactEmail: true, contactPhone: true } }) : [],
-      productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, title: true, sku: true, price: true } }) : [],
+      productIds.length ? prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true, title: true, sku: true, price: true, externalId: true, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: true } }) : [],
     ])
     const companyById = new Map(companies.map((company) => [company.id, company]))
     const productById = new Map(products.map((product) => [product.id, product]))
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest): Promise<Response> {
         ...r,
         items: (Array.isArray(r.items) ? r.items as Array<Record<string, unknown>> : []).map((item) => {
           const product = productById.get(String(item.productId ?? ''))
-          return { ...item, title: item.title ?? product?.title, sku: item.sku ?? product?.sku, listPrice: item.listPrice ?? product?.price }
+          return { ...item, title: item.title ?? product?.title, sku: item.sku ?? product?.sku, listPrice: item.listPrice ?? (product && hasValidB2BPrice(product) ? product.price : undefined) }
         }),
         ...(isStaff ? {
           companyName: companyById.get(r.companyId)?.companyName,
@@ -113,12 +114,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     for (const item of items) quantities.set(item.productId, (quantities.get(item.productId) ?? 0) + item.quantity)
     const products = await prisma.product.findMany({
       where: { id: { in: [...quantities.keys()] }, isDeleted: false, isActive: true },
-      select: { id: true, title: true, sku: true, price: true },
+      select: { id: true, title: true, sku: true, price: true, externalId: true, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: true },
     })
     if (products.length !== quantities.size) return NextResponse.json({ error: 'rfq_product_not_found' }, { status: 400 })
     const persistedItems = products.map((product) => ({
       productId: product.id, quantity: quantities.get(product.id)!, title: product.title,
-      sku: product.sku ?? undefined, listPrice: product.price,
+      // A quote may be requested for a product without an ERP B2B price, but its kept
+      // local price is never stored or shown as a list price.
+      sku: product.sku ?? undefined, listPrice: hasValidB2BPrice(product) ? product.price : undefined,
     }))
 
     let rfq

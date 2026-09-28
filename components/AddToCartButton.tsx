@@ -43,7 +43,9 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
   const [added, setAdded] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  const isOutOfStock = product.stock === 0
+  // No valid B2B price (lib/product-sellability.ts): never purchasable, whatever the stock.
+  const isNotForSale = product.priceUnavailable === true
+  const isOutOfStock = product.stock === 0 || isNotForSale
   const maxQuantity = product.stock
 
   const [tierFlash, setTierFlash] = useState(false)
@@ -127,7 +129,7 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
     <div className="add-to-cart space-y-3 w-full">
       {isOutOfStock && (
         <div className="bg-red-50 border border-red-200 rounded p-2 text-center">
-          <p className="text-red-600 text-sm font-medium">{t('product.outOfStock')}</p>
+          <p className="text-red-600 text-sm font-medium">{isNotForSale ? t('product.notForSale') : t('product.outOfStock')}</p>
         </div>
       )}
 

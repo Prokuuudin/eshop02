@@ -61,6 +61,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                 oldPrice={campaignPrice.oldPrice}
                 priceLocale={priceLocale}
                 stock={product.stock}
+                notForSale={product.priceUnavailable === true}
                 productId={product.id}
                 productTitle={localizedTitle}
             />

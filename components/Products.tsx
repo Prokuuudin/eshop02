@@ -212,8 +212,8 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     if (!order || order === '') {
       return filters.brands.length > 0 ? sortBrandProductsNewestFirst(arr) : arr;
     }
-    if (order === 'price-asc') return [...arr].sort((a, b) => a.price - b.price);
-    if (order === 'price-desc') return [...arr].sort((a, b) => b.price - a.price);
+    if (order === 'price-asc') return [...arr].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
+    if (order === 'price-desc') return [...arr].sort((a, b) => (b.price ?? -Infinity) - (a.price ?? -Infinity));
     if (order === 'name-asc') {
       return [...arr].sort((a, b) => {
         const aTitle = t(a.titleKey ?? `products.${a.id}.title`, a.title)
@@ -240,7 +240,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
       // redactProductPrices) — p.price is undefined for them at runtime even
       // though the type says number. Server-side filtering already applied
       // onSale/min/max before redaction, so trust it rather than exclude.
-      const priceHidden = p.price === undefined;
+      const priceHidden = p.price === undefined && !p.priceUnavailable;
       const onSaleOk = !filters.onSale || priceHidden || isProductOnSale(p);
       const brandOk = filters.brands.length === 0 || filters.brands.includes(brandSlug(p.brand));
       const minOk = !filters.minPrice || priceHidden || p.price >= Number(filters.minPrice);

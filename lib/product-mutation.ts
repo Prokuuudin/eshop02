@@ -6,6 +6,7 @@ import type { ProductChanges } from '@/lib/product-mutation-schema'
 import type { Product as PrismaProduct } from '@/generated/prisma/client'
 import type { Product } from '@/data/products'
 import { hasSkuChanged } from '@/lib/product-sku'
+import { approvalAfterPriceChange } from '@/lib/product-sellability'
 
 export class ProductMutationError extends Error {
   constructor(message: string, readonly status: number) { super(message) }
@@ -57,7 +58,7 @@ export async function applyProductChanges(
   }
   const mapped = mapProductToDbCreate(nextProduct, current.isCustom)
   const { id: _id, isCustom: _custom, isDeleted: _deleted, ...data } = mapped
-  const result = await tx.product.updateMany({ where: { id, revision }, data: { ...data, revision: { increment: 1 } } })
+  const result = await tx.product.updateMany({ where: { id, revision }, data: { ...data, ...approvalAfterPriceChange(current, data.price), revision: { increment: 1 } } })
   if (result.count !== 1) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)
   if (overrides[id]) {
     delete overrides[id]

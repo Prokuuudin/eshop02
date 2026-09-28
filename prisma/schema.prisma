@@ -421,6 +421,14 @@ model Product {
   externalId    String?  @unique
   isActive      Boolean  @default(true)
   lastSyncRunId String?
+  // ERP-derived: the linked ERP record has no positive B2B price tier (price2).
+  // Maintained by FULL sync; Product.price is then a kept local value, not an ERP price.
+  erpPriceMissing     Boolean @default(false)
+  // Explicit admin decision to sell at the local Product.price despite erpPriceMissing.
+  // Valid only while manualApprovedPrice equals Product.price (the exact approved value).
+  // Revoked by sync when ERP supplies a price again and by any manual price change.
+  manualPriceApproved Boolean  @default(false)
+  manualApprovedPrice Decimal? @db.Decimal(12, 2)
 
   @@index([isDeleted])
   @@index([category])

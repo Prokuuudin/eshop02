@@ -2,6 +2,7 @@ import { type Product, type BadgeType, type CategoryType } from '@/data/products
 import type { Product as PrismaProduct } from '@/generated/prisma/client';
 import productSubcategories from '@/data/product-subcategories.json';
 import { toNum, toNumOrNull } from '@/lib/decimal';
+import { hasValidB2BPrice } from '@/lib/product-sellability';
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>;
 
@@ -37,6 +38,10 @@ export function mapDbToProduct(p: PrismaProduct): Product {
         updatedAt: p.updatedAt,
         revision: p.revision,
         isActive: p.isActive,
+        erpPriceMissing: p.erpPriceMissing,
+        manualPriceApproved: p.manualPriceApproved,
+        manualApprovedPrice: toNumOrNull(p.manualApprovedPrice) ?? undefined,
+        ...(hasValidB2BPrice(p) ? {} : { priceUnavailable: true }),
         barcode: p.barcode ?? undefined,
         relatedProductIds: p.relatedProductIds,
         oftenBoughtTogether: p.oftenBoughtTogether,

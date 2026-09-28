@@ -544,3 +544,95 @@ describe('getDbProductsPaginated', () => {
     expect(call.where).not.toHaveProperty('id')
   })
 })
+
+describe('ERP products without a valid B2B price', () => {
+  const dbRow = (overrides: Record<string, unknown> = {}) => ({
+    id: '20561', title: 'Sublime Mud', titleKey: null, titleEn: null, titleLv: null,
+    description: null, brand: 'ALFAPARF', price: 26, oldPrice: 30, rating: 0, ratingCount: 0, reviewCount: 0,
+    image: null, images: [], metaTitle: null, metaDescription: null, ogImage: null, ogAlt: null,
+    badges: ['sale'], category: 'hair', stock: 1, isActive: true, barcode: null,
+    relatedProductIds: [], oftenBoughtTogether: [], minOrderQuantities: null, technicalSpecs: null,
+    bulkPricingTiers: [{ quantity: 5, pricePerUnit: 20 }], demoVideo: null, distributorName: null, distributorAddress: null,
+    sku: 'APSD25', unitOfMeasure: null, certificates: [], packagingSize: null, compatibleEquipment: [],
+    manufacturerName: null, manufacturerAddress: null, manufacturerEmail: null, distributorEmail: null,
+    bonusRate: 3, feature1: null, feature1En: null, feature1Lv: null,
+    feature2: null, feature2En: null, feature2Lv: null, feature3: null, feature3En: null, feature3Lv: null,
+    feature4: null, feature4En: null, feature4Lv: null, specVolume: null, specType: null, specCountry: null,
+    isCustom: false, isDeleted: false, externalId: 'APSD25', lastSyncRunId: null,
+    erpPriceMissing: true, manualPriceApproved: false, revision: 1,
+    createdAt: new Date(), updatedAt: new Date(), ...overrides,
+  })
+
+  it('B: the storefront listing never carries the kept legacy price', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow() as never])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const { products } = await getDbProductsPaginated({ ids: ['20561'] })
+
+    expect(products[0]).toMatchObject({ id: '20561', priceUnavailable: true, stock: 0, badges: [] })
+    expect(products[0]).not.toHaveProperty('price')
+    expect(products[0]).not.toHaveProperty('oldPrice')
+    expect(products[0]).not.toHaveProperty('bulkPricingTiers')
+    expect(products[0]).not.toHaveProperty('erpPriceMissing')
+  })
+
+  it('an admin override can neither re-enable nor leak a price for it', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow() as never])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockImplementation((async ({ where }: { where: { key: string } }) =>
+      where.key === 'product-overrides'
+        ? { value: { '20561': { price: 19, priceUnavailable: false, manualPriceApproved: true } } }
+        : null) as never)
+
+    const { products } = await getDbProductsPaginated({ ids: ['20561'] })
+
+    expect(products[0].priceUnavailable).toBe(true)
+    expect(products[0]).not.toHaveProperty('price')
+  })
+
+  it('C: an approved local price stays visible', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow({ manualPriceApproved: true, manualApprovedPrice: 26 }) as never])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const { products } = await getDbProductsPaginated({ ids: ['20561'] })
+
+    expect(products[0]).toMatchObject({ price: 26, stock: 1 })
+    expect(products[0].priceUnavailable).toBeUndefined()
+  })
+
+  it('an approved product shows exactly the approved Product.price: an override price is ignored', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow({ manualPriceApproved: true, manualApprovedPrice: 26 }) as never])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockImplementation((async ({ where }: { where: { key: string } }) =>
+      where.key === 'product-overrides'
+        ? { value: { '20561': { price: 19, oldPrice: 40, bulkPricingTiers: [{ quantity: 2, pricePerUnit: 10 }], title: 'Renamed' } } }
+        : null) as never)
+
+    const { products } = await getDbProductsPaginated({ ids: ['20561'] })
+
+    expect(products[0]).toMatchObject({ price: 26, oldPrice: 30, title: 'Renamed' })
+    expect(products[0].bulkPricingTiers).toEqual([{ quantity: 5, pricePerUnit: 20 }])
+  })
+
+  it('a stale approval (price changed after approving) hides the price again', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow({ price: 28, manualPriceApproved: true, manualApprovedPrice: 26 }) as never])
+    vi.mocked(prisma.product.count).mockResolvedValue(1)
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const { products } = await getDbProductsPaginated({ ids: ['20561'] })
+
+    expect(products[0].priceUnavailable).toBe(true)
+    expect(products[0]).not.toHaveProperty('price')
+  })
+
+  it('the admin catalog keeps the stored price and exposes the ERP state', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([dbRow() as never])
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+
+    const [product] = await getAdminProducts()
+
+    expect(product).toMatchObject({ price: 26, erpPriceMissing: true, manualPriceApproved: false, priceUnavailable: true })
+  })
+})

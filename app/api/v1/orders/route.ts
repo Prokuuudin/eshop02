@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
-import { recomputeOrderPricing } from '@/lib/server-pricing'
+import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 
 export const runtime = 'nodejs'
@@ -212,6 +212,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         total: error.order.total, createdAt: error.order.createdAt,
         message: 'Order already created', idempotent: true,
       }, 200)
+    }
+    if (error instanceof ProductUnavailableError) {
+      return errorResponse(`Products not available for sale: ${error.items.join(', ')}`, 409)
     }
     if (error instanceof InsufficientStockError) {
       return errorResponse(`Insufficient stock for: ${error.items.join(', ')}`, 409)

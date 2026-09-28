@@ -33,6 +33,7 @@ import { calcOrderBonus, pointsToEuros } from '@/lib/bonus-program';
 import AnimatedPrice from '@/components/AnimatedPrice';
 import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 import { useCartCampaignOffer } from '@/hooks/useCartCampaignOffer';
+import { useRemoveUnsellableCartItems } from '@/hooks/useRemoveUnsellableCartItems';
 
 export default function CartPage(): React.ReactElement {
     const { t, language } = useTranslation();
@@ -54,6 +55,9 @@ export default function CartPage(): React.ReactElement {
     const isCheckoutAllowedForRole = canPlaceOrders(currentUser);
     const selectedItems = items.filter((item) => isLineSelected(deselectedLineKeys, item.lineKey));
     const campaignOffer = useCartCampaignOffer(selectedItems);
+    // Lines stored in the browser may belong to products that are no longer sold (no ERP
+    // B2B price, deactivated): drop them so their stale price is not shown.
+    useRemoveUnsellableCartItems(items, removeItem, () => showToast(t('cart.notForSaleRemoved'), 'info'));
 
     const handleDecrease = (lineKey: string, quantity: number, minQuantity: number): void => {
         if (quantity <= minQuantity) {

@@ -11,7 +11,7 @@ export const MONEY_FIELDS_BY_MODEL: Record<string, string[]> = {
   Order: ['subtotal', 'tax', 'delivery', 'discount', 'total'],
   Invoice: ['subtotal', 'taxAmount', 'total', 'paidAmount', 'remainingAmount'],
   Company: ['creditLimit', 'usedCredit'],
-  Product: ['price', 'oldPrice'],
+  Product: ['price', 'oldPrice', 'manualApprovedPrice'],
   ReturnRequest: ['refundAmount'],
 }
 

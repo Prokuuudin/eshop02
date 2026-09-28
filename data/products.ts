@@ -52,6 +52,13 @@ export interface Product {
   // Видимость на витрине (колонка Neon, default true). Витрина фильтрует isActive=true
   // на уровне SQL; в объекте поле нужно админке для тумблера «активен/скрыт».
   isActive?: boolean
+  // ERP-привязанный товар без действующей B2B-цены в ERP (и без ручного одобрения):
+  // цена скрыта, товар не продаётся. См. lib/product-sellability.ts.
+  priceUnavailable?: boolean
+  // Только для админки (витрина их вырезает): состояние ERP-цены и ручного одобрения.
+  erpPriceMissing?: boolean
+  manualPriceApproved?: boolean
+  manualApprovedPrice?: number
   relatedProductIds?: string[] // Similar products
   oftenBoughtTogether?: string[] // Frequently bought together
   minOrderQuantities?: Record<string, number>

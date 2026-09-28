@@ -26,7 +26,8 @@ type Props = {
 
 export default function ProductCard({ product }: Props): React.ReactElement {
     const { t, language } = useTranslation();
-    const isOutOfStock = product.stock === 0;
+    const isNotForSale = product.priceUnavailable === true;
+    const isOutOfStock = product.stock === 0 || isNotForSale;
     const localizedTitle =
         language === 'en' && product.titleEn
             ? product.titleEn
@@ -134,7 +135,11 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                     уровне у всех карточек в ряду независимо от длины тайтла/бейджей. */}
                 <div className="product-card__meta mt-auto pt-1 flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                        {!isHydrated ? (
+                        {isNotForSale ? (
+                            <div className="product-card__not-for-sale text-sm font-medium text-muted-foreground">
+                                {t('product.notForSale')}
+                            </div>
+                        ) : !isHydrated ? (
                             // Neutral placeholder until auth is known — avoids the login/price flash.
                             <div className="h-7 w-20 rounded bg-muted animate-pulse" />
                         ) : isAuthenticated && Number.isFinite(displayPrice) ? (

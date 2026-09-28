@@ -7,6 +7,7 @@ import { buildLineKey, type CartItem, type SelectedVariant } from '@/lib/cart-st
 import { sumPriceAdjustment } from '@/lib/product-variants'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { logApiError } from '@/lib/observability'
+import { PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 
 export const runtime = 'nodejs'
 
@@ -48,7 +49,9 @@ export async function POST(_request: NextRequest, context: Context): Promise<Nex
     const snapshots = Array.isArray(order.items) ? order.items as SnapshotItem[] : []
     const ids = [...new Set(snapshots.map((item) => typeof item.id === 'string' ? item.id : '').filter(Boolean))]
     const products = await prisma.product.findMany({
-      where: { id: { in: ids }, isDeleted: false, isActive: true },
+      // Same rule as checkout: inactive products and ERP products without a valid B2B
+      // price are reported as unavailable instead of being re-added at a kept local price.
+      where: { id: { in: ids }, ...PURCHASABLE_PRODUCT_WHERE },
       select: {
         id: true, title: true, titleKey: true, titleEn: true, titleLv: true,
         brand: true, image: true, images: true, price: true, stock: true,

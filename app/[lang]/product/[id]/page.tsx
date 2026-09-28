@@ -116,7 +116,9 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
             '@type': 'Brand',
             name: product.brand,
         },
-        ...(canSeePrices ? {
+        // No Offer for a product without a valid B2B price: its kept local price is not a
+        // current offer (same representation as the guest view, which has no Offer either).
+        ...(canSeePrices && !product.priceUnavailable ? {
             offers: {
                 '@type': 'Offer',
                 url: productUrl,

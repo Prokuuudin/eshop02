@@ -41,6 +41,26 @@ describe('safe linked-product update SQL', () => {
     expect(sql).toContain('CASE WHEN incoming.price > 0 THEN incoming.price ELSE product.price END')
   })
 
+  it('B: price2 <= 0 keeps the local price but marks the ERP B2B price as missing', () => {
+    const setClause = buildUpsertQuery(1).split('FROM (VALUES')[0]
+    expect(setClause).toContain('price = CASE WHEN incoming.price > 0 THEN incoming.price ELSE product.price END')
+    expect(setClause).toContain('"erpPriceMissing" = NOT (COALESCE(incoming.price, 0) > 0)')
+    expect(setClause).not.toMatch(/(^|[^.])price = 0/)
+  })
+
+  it('A/D: price2 > 0 writes price2, clears the flag and consumes any manual approval', () => {
+    const setClause = buildUpsertQuery(1).split('FROM (VALUES')[0]
+    expect(setClause).toContain('"manualPriceApproved" = CASE WHEN COALESCE(incoming.price, 0) > 0 THEN false ELSE product."manualPriceApproved" END')
+    expect(setClause).toContain('"manualApprovedPrice" = CASE WHEN COALESCE(incoming.price, 0) > 0 THEN NULL ELSE product."manualApprovedPrice" END')
+  })
+
+  it('never grants a manual approval and updates rows whose flag state is out of date', () => {
+    const sql = buildUpsertQuery(1)
+    expect(sql).not.toMatch(/"manualPriceApproved" = true/)
+    expect(sql).toContain('product."erpPriceMissing" IS DISTINCT FROM NOT (COALESCE(incoming.price, 0) > 0)')
+    expect(sql).toContain('(COALESCE(incoming.price, 0) > 0 AND product."manualPriceApproved")')
+  })
+
   it('skips empty batches and reports the exact linked rows processed', async () => {
     const mock = db(1)
     expect(await upsertProducts(mock, [], 'run')).toBe(0)

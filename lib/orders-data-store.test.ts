@@ -129,6 +129,49 @@ describe('createServerOrder — server-side id generation', () => {
     expect(transactionMock).toHaveBeenCalledTimes(1)
   })
 
+  it('reserves stock only for purchasable products (active, not deleted, valid ERP B2B price)', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await createServerOrder(ORDER)
+
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'p1',
+        isActive: true,
+        isDeleted: false,
+        OR: [{ externalId: null }, { erpPriceMissing: false }, { manualPriceApproved: true }],
+        stock: { gte: 2 },
+      },
+      data: { stock: { decrement: 2 } },
+    })
+  })
+
+  it('E/F: fails the order atomically when the product became unsellable before reservation', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    // Inactive or erpPriceMissing rows do not match the purchasable where clause.
+    tx.product.updateMany.mockResolvedValue({ count: 0 })
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
+    expect(tx.order.create).toHaveBeenCalledTimes(1) // rolled back with the transaction
+  })
+
+  it('keeps the staff manual-sale path (admin-typed prices) limited to existence and stock', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await createServerOrder(ORDER, undefined, { staffPricedSale: true })
+
+    expect(tx.product.updateMany).toHaveBeenCalledWith({
+      where: { id: 'p1', isDeleted: false, stock: { gte: 2 } },
+      data: { stock: { decrement: 2 } },
+    })
+  })
+
   it('rejects the whole order when an item has insufficient stock, instead of silently creating it', async () => {
     queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()

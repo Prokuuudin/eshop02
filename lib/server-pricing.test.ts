@@ -24,6 +24,7 @@ import {
   getServerPromoDiscountPct,
   recomputeOrderPricing,
   evaluatePromoCode,
+  ProductUnavailableError,
 } from './server-pricing'
 
 beforeEach(() => vi.clearAllMocks())
@@ -485,5 +486,85 @@ describe('recomputeOrderPricing — admin-configured bonus program (KeyValueSett
     })
 
     expect(r.bonusSpent).toBe(0)
+  })
+})
+
+describe('recomputeOrderPricing — ERP B2B price sellability', () => {
+  const erpRow = { id: 'erp1', price: 12, oldPrice: 15, brand: 'Matrix', category: 'hair', bulkPricingTiers: null, bonusRate: null, isActive: true, isDeleted: false, externalId: 'M604', erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null as number | null }
+  const activeCampaign = {
+    id: 'matrix', name: 'Matrix', description: '', type: 'discount', discountPercent: 50, active: true,
+    startDate: '2020-01-01', endDate: '2099-12-31', targetCategories: [], targetSubcategories: [], targetBrands: ['Matrix'],
+    minOrderAmount: 0, createdAt: '', updatedAt: '',
+  }
+
+  it('queries only purchasable products (active, not deleted, valid B2B price)', async () => {
+    productFindManyMock.mockResolvedValue([erpRow])
+    await resolveLineItems([{ id: 'erp1', quantity: 1 }])
+    expect(productFindManyMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        id: { in: ['erp1'] },
+        isActive: true,
+        isDeleted: false,
+        OR: [{ externalId: null }, { erpPriceMissing: false }, { manualPriceApproved: true }],
+      },
+    }))
+  })
+
+  it('A: prices an ERP product with a valid price2 normally', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, price: 7.3 }])
+    const r = await recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1 }], deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.subtotal).toBe(7.3)
+  })
+
+  it('B/F: rejects a product whose ERP price2 is missing — the kept 12.00 is never charged', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, erpPriceMissing: true }])
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1, price: 12 }], deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toMatchObject({ name: 'ProductUnavailableError', items: ['erp1'] })
+  })
+
+  it('C: sells at the local price once an admin approved exactly that price', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: 12 }])
+    const r = await recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 2 }], deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.subtotal).toBe(24)
+  })
+
+  it('rejects an approved product whose price changed after the approval (stale approval)', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, price: 35.5, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: 31.5 }])
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1 }], deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toBeInstanceOf(ProductUnavailableError)
+  })
+
+  it('E: rejects an inactive product with a normal price and stock', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, isActive: false }])
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1, price: 12 }], deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toBeInstanceOf(ProductUnavailableError)
+  })
+
+  it('F: rejects a stale-cart line even if the client resends the old price', async () => {
+    productFindManyMock.mockResolvedValue([])
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1, price: 12 }], deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toMatchObject({ items: ['erp1'] })
+  })
+
+  it('G: an active promo campaign or promo code cannot make it sellable — rejected before any discount runs', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, erpPriceMissing: true }])
+    keyValueSettingFindUniqueMock.mockResolvedValue({ value: [activeCampaign] })
+    promoCodeFindFirstMock.mockResolvedValue({ id: 'promo', code: 'SALE', active: true, discount: 50, discountType: 'percent', minOrder: 0, maxUses: null, usedCount: 0 })
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1 }], promoCode: 'SALE', deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toBeInstanceOf(ProductUnavailableError)
+    expect(promoCodeFindFirstMock).not.toHaveBeenCalled()
+    expect(keyValueSettingFindUniqueMock).not.toHaveBeenCalled()
+  })
+
+  it('H: a bulk-tier price cannot make it sellable', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, erpPriceMissing: true, bulkPricingTiers: [{ quantity: 2, pricePerUnit: 5 }] }])
+    await expect(recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 10 }], deliveryMethod: 'pickup', userBonusBalance: null }))
+      .rejects.toBeInstanceOf(ProductUnavailableError)
+  })
+
+  it('I: an unlinked product (externalId = NULL) is not blocked by the ERP rule', async () => {
+    productFindManyMock.mockResolvedValue([{ ...erpRow, externalId: null, erpPriceMissing: true, price: 9 }])
+    const r = await recomputeOrderPricing({ items: [{ id: 'erp1', quantity: 1 }], deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.subtotal).toBe(9)
   })
 })

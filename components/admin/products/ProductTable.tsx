@@ -119,6 +119,15 @@ const ProductTable: React.FC<ProductTableProps> = ({
                                             {l('Скрыт', 'Hidden', 'Paslēpts')}
                                         </span>
                                     )}
+                                    {product.erpPriceMissing && (
+                                        <span className={`product-table__erp-price-badge inline-block mt-1 ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${!product.priceUnavailable
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+                                            : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200'}`}>
+                                            {!product.priceUnavailable
+                                                ? l('Ручная цена (нет B2B в ERP)', 'Manual price (no ERP B2B)', 'Manuālā cena (nav ERP B2B)')
+                                                : l('Нет B2B-цены в ERP', 'No B2B price in ERP', 'ERP nav B2B cenas')}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="p-3 align-middle">
                                     <span className="block text-xs text-muted-foreground font-mono">{product.id}</span>

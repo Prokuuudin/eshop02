@@ -12,6 +12,7 @@ import { toNum } from '@/lib/decimal'
 import productSubcategories from '@/data/product-subcategories.json'
 import { evaluatePromoCampaigns } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
+import { isPurchasable, PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -56,7 +57,22 @@ function sanitizeBulkTiers(value: unknown): BulkTier[] | undefined {
   return tiers.length > 0 ? tiers : undefined
 }
 
-/** Fetch authoritative catalog prices for a set of product ids. */
+/**
+ * A checkout line references a product that must not be sold now: inactive, deleted,
+ * unknown, or ERP-linked without a valid B2B price. Raised before any promo code,
+ * campaign, bulk tier or oldPrice logic runs, so no discount can make it sellable.
+ */
+export class ProductUnavailableError extends Error {
+  constructor(readonly items: string[]) {
+    super(`Products unavailable for sale: ${items.join(', ')}`)
+    this.name = 'ProductUnavailableError'
+  }
+}
+
+/**
+ * Fetch authoritative catalog prices for a set of product ids. Only purchasable products
+ * (see lib/product-sellability.ts) are returned — anything else has no sale price.
+ */
 type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting' | 'order' | 'promoCodeRedemption'>
 
 export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): Promise<Map<string, CatalogPrice>> {
@@ -64,12 +80,26 @@ export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): P
   if (uniqueIds.length === 0) return new Map()
 
   const rows = await db.product.findMany({
-    where: { id: { in: uniqueIds }, isDeleted: false },
-    select: { id: true, price: true, oldPrice: true, brand: true, category: true, bulkPricingTiers: true, bonusRate: true },
+    where: { id: { in: uniqueIds }, ...PURCHASABLE_PRODUCT_WHERE },
+    select: {
+      id: true, price: true, oldPrice: true, brand: true, category: true, bulkPricingTiers: true, bonusRate: true,
+      isActive: true, isDeleted: true, externalId: true, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: true,
+    },
   })
 
   const map = new Map<string, CatalogPrice>()
   for (const row of rows) {
+    // Authoritative per-row check (the where clause cannot compare price with the
+    // approved price): a manual approval only covers the exact approved Product.price.
+    if (!isPurchasable({
+      isActive: row.isActive ?? true,
+      isDeleted: row.isDeleted ?? false,
+      externalId: row.externalId ?? null,
+      erpPriceMissing: row.erpPriceMissing ?? false,
+      manualPriceApproved: row.manualPriceApproved ?? false,
+      price: row.price,
+      manualApprovedPrice: row.manualApprovedPrice ?? null,
+    })) continue
     map.set(row.id, {
       price: toNum(row.price),
       oldPrice: row.oldPrice == null ? null : toNum(row.oldPrice),
@@ -219,6 +249,10 @@ export type RecomputedPricing = {
 /** Recompute an order's money fields authoritatively from the catalog. */
 export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb = prisma): Promise<RecomputedPricing> {
   const items = await resolveLineItems(input.items, db)
+  // An order may only contain purchasable catalog products. The client-price fallback in
+  // resolveLineItems exists for previews; it must never price a real order.
+  const unavailable = items.filter((item) => !item.fromCatalog).map((item) => item.id)
+  if (unavailable.length > 0) throw new ProductUnavailableError([...new Set(unavailable)])
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   const promo = await evaluatePromoCode(input.promoCode, items, { userId: input.userId, email: input.email }, db)

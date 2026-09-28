@@ -260,6 +260,7 @@ const ruCatalog: Record<string, string> = {
   'product.rating': 'Рейтинг',
   'product.title': 'Название',
   'product.addToCart': 'В корзину',
+  'product.notForSale': 'Нет в продаже',
   'product.loginToSeePrice': 'Войдите, чтобы увидеть цену',
   'product.selectVariant': 'Выбрать вариант',
   'product.selectVariantRequired': 'Выберите',

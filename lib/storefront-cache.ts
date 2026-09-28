@@ -82,7 +82,7 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
     return product ? [mapDbToProduct(product)] : []
   }).slice(0, 16)
   return attachCampaignOffers(mapped, await readPromoCampaigns(prisma))
-}, ['storefront-bestsellers-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
+}, ['storefront-bestsellers-v2'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
   const campaigns = await readPromoCampaigns(prisma)

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { requireAdminPermission } from '@/lib/server-auth'
@@ -13,6 +14,13 @@ import { toNum } from '@/lib/decimal'
 import { ProductMutationError, applyProductChanges, assertReferences, assertUniqueSku } from '@/lib/product-mutation'
 
 export const runtime = 'nodejs'
+
+function revalidateProductStorefront(): void {
+  revalidateTag('storefront-bestsellers', { expire: 0 })
+  revalidateTag('storefront-sale-products', { expire: 0 })
+  revalidateTag('storefront-categories', { expire: 0 })
+  revalidateTag('storefront-brands', { expire: 0 })
+}
 
 function mutationError(error: unknown): Response | null {
   if (error instanceof ProductMutationError) return errorResponse(error.message, error.status)
@@ -74,6 +82,7 @@ export async function PUT(req: NextRequest): Promise<Response> {
     if (restocked) {
       await notifyRestock(id, updated.title).catch((e) => logApiError('[admin/products PUT notifyRestock]', e))
     }
+    revalidateProductStorefront()
     return successResponse({ product: mapDbToProduct(updated) })
   } catch (error) {
     const response = mutationError(error); if (response) return response

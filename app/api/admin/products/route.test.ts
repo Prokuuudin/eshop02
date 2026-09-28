@@ -9,6 +9,9 @@ const notifyPriceChangeMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const notifyRestockMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const deleteProductAnyMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ success: true, products: [] })))
 const deleteProductsAnyMock = vi.hoisted(() => vi.fn((ids: string[]) => Promise.resolve({ success: true, deletedCount: ids.length })))
+const revalidateTagMock = vi.hoisted(() => vi.fn())
+
+vi.mock('next/cache', () => ({ revalidateTag: revalidateTagMock }))
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -89,6 +92,19 @@ it('fires neither when price and stock are unchanged', async () => {
   expect(res.status).toBe(200)
   expect(notifyPriceChangeMock).not.toHaveBeenCalled()
   expect(notifyRestockMock).not.toHaveBeenCalled()
+})
+
+it('invalidates homepage product caches after an edit', async () => {
+  txProductFindUnique.mockResolvedValue({ id: 'p1', title: 'Shampoo', price: 10, stock: 5, revision: 1, isDeleted: false, isCustom: true, externalId: null })
+  txProductFindUniqueOrThrow.mockResolvedValue({ id: 'p1', title: 'Shampoo Deluxe', price: 10, stock: 5 })
+
+  const res = await PUT(putRequest({ title: 'Shampoo Deluxe' }))
+
+  expect(res.status).toBe(200)
+  expect(revalidateTagMock).toHaveBeenCalledWith('storefront-bestsellers', { expire: 0 })
+  expect(revalidateTagMock).toHaveBeenCalledWith('storefront-sale-products', { expire: 0 })
+  expect(revalidateTagMock).toHaveBeenCalledWith('storefront-categories', { expire: 0 })
+  expect(revalidateTagMock).toHaveBeenCalledWith('storefront-brands', { expire: 0 })
 })
 
 it('bulk deletes unique selected product ids', async () => {

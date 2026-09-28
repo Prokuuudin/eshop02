@@ -25,6 +25,13 @@ describe('parseGrinsXml', () => {
     expect(glue?.title).toBe('SF0301/GL')
   })
 
+  it('keeps price2 as the Hairshop-Pro base even when the retail tier is lower (Hairshop promo)', () => {
+    const xml = '<root><item><sku>SDO3</sku><price1>5.9</price1><price2>7.3</price2><price3>2</price3><price4>0</price4><quantity>1</quantity></item></root>'
+    const [product] = parseGrinsXml(xml, { primaryPriceTier: 'price2', enabledPriceTiers: new Set(['price1', 'price2', 'price3', 'price4']) })
+    expect(product.price).toBe(7.3)
+    expect(product).not.toHaveProperty('oldPrice')
+  })
+
   it('maps Product.price from price2 (hairshoppro.lv public price), not price1', () => {
     const products = parseGrinsXml(sampleXml)
     const remover = products.find(p => p.externalId === '6580075')

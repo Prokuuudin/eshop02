@@ -55,6 +55,24 @@ describe('resolveLineItems', () => {
     expect(items[0].fromCatalog).toBe(false)
   })
 
+  it('keeps oldPrice only when it is above the base price', async () => {
+    productFindManyMock.mockResolvedValue([
+      { id: 'sale', price: 6.5, oldPrice: 10, bulkPricingTiers: null },
+      { id: 'equal', price: 7.3, oldPrice: 7.3, bulkPricingTiers: null },
+      { id: 'lower', price: 7.3, oldPrice: 6.6, bulkPricingTiers: null },
+    ])
+    const items = await resolveLineItems([{ id: 'sale', quantity: 1 }, { id: 'equal', quantity: 1 }, { id: 'lower', quantity: 1 }])
+    expect(items.map((item) => item.oldPrice)).toEqual([10, null, null])
+  })
+
+  it('judges oldPrice against the base price, not the bulk-tier price', async () => {
+    productFindManyMock.mockResolvedValue([
+      { id: 'p1', price: 10, oldPrice: 9, bulkPricingTiers: [{ quantity: 10, pricePerUnit: 8 }] },
+    ])
+    const items = await resolveLineItems([{ id: 'p1', quantity: 12 }])
+    expect(items[0]).toMatchObject({ price: 8, oldPrice: null })
+  })
+
   it('clamps negative client fallback price to 0', async () => {
     productFindManyMock.mockResolvedValue([])
     const items = await resolveLineItems([{ id: 'ghost', quantity: 1, price: -999 }])
@@ -360,6 +378,23 @@ describe('evaluatePromoCode targeting', () => {
       { id: 'regular', price: 30, oldPrice: null, quantity: 1, brand: 'A', category: 'hair', bonusRate: 0, fromCatalog: true },
     ])
     expect(result).toMatchObject({ valid: true, eligibleAmount: 30, discount: 30 })
+  })
+
+  it('does not treat an item as sale when its oldPrice is not above the base price', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-3', code: 'NOSALE10', active: true, discount: 10, discountValue: 10,
+      discountType: 'percentage', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'all', brands: [], categories: [], productIds: [],
+      excludedProductIds: [], excludeSaleItems: true,
+    })
+    productFindManyMock.mockResolvedValue([
+      { id: 'stale', price: 7.3, oldPrice: 6.6, bulkPricingTiers: null },
+      { id: 'sale', price: 6.5, oldPrice: 10, bulkPricingTiers: null },
+    ])
+    const items = await resolveLineItems([{ id: 'stale', quantity: 1 }, { id: 'sale', quantity: 1 }])
+    const result = await evaluatePromoCode('NOSALE10', items)
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 7.3 })
   })
 })
 

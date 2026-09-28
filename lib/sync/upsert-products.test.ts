@@ -25,6 +25,22 @@ describe('safe linked-product update SQL', () => {
     expect(setClause).not.toMatch(/"externalId"\s*=|\bsku\s*=|"isActive"\s*=/)
   })
 
+  it('never writes Hairshop-Pro-owned promo fields (oldPrice, badges)', () => {
+    const setClause = buildUpsertQuery(1).split('FROM (VALUES')[0]
+    expect(setClause).not.toMatch(/"oldPrice"|\bbadges\b/)
+  })
+
+  it('sends price2 as the base price and keeps the price2=0 guard', async () => {
+    const mock = db(2)
+    await upsertProducts(mock, [
+      { externalId: 'SDO3', title: 'SDO3', price: 7.5, stock: 4 },
+      { externalId: 'BLK', title: 'BLK', price: 0, stock: 0 },
+    ], 'run')
+    const [sql, ...params] = (mock.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
+    expect(params).toEqual(['SDO3', 7.5, 4, 'BLK', 0, 0])
+    expect(sql).toContain('CASE WHEN incoming.price > 0 THEN incoming.price ELSE product.price END')
+  })
+
   it('skips empty batches and reports the exact linked rows processed', async () => {
     const mock = db(1)
     expect(await upsertProducts(mock, [], 'run')).toBe(0)

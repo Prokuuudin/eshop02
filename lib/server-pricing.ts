@@ -11,6 +11,7 @@ import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { toNum } from '@/lib/decimal'
 import productSubcategories from '@/data/product-subcategories.json'
 import { evaluatePromoCampaigns } from '@/lib/promo-campaigns'
+import { getValidOldPrice } from '@/lib/product-campaign-price'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -98,7 +99,9 @@ export async function resolveLineItems(items: LineItemInput[], db: PricingDb = p
         quantity,
         price: calculatePrice(catalog, quantity),
         bonusRate: catalog.bonusRate,
-        oldPrice: catalog.oldPrice,
+        // Normalized against the base price (not the bulk-tier price) so promo
+        // `excludeSaleItems` matches what the storefront shows as a sale.
+        oldPrice: getValidOldPrice(catalog.price, catalog.oldPrice) ?? null,
         brand: catalog.brand,
         category: catalog.category,
         subcategory: SUBCATEGORY_BY_PRODUCT_ID[item.id],

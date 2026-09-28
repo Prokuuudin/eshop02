@@ -21,6 +21,7 @@ config({ path: '.env.local' })
 import { readFileSync } from 'fs'
 import { parseGrinsXml } from '@/lib/sync/grins-xml-parser'
 import { getFtpsConfigFromEnv, downloadFtpsFile } from '@/lib/sync/ftps-client'
+import { isKnownWrongExternalIdLink } from '@/lib/sync/known-wrong-external-id-links'
 // lib/prisma.ts and lib/sync/xml-snapshot-store.ts construct the Prisma client
 // eagerly at module-eval time. Static imports get hoisted above config() by the
 // bundler regardless of source order, so DATABASE_URL wouldn't be loaded yet —
@@ -117,6 +118,7 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
   const linkedSkuMismatches: Array<{ productId: string; sku: string | null; externalId: string }> = []
   const linkedExternalIdsMissingFromFeed: Array<{ productId: string; externalId: string }> = []
   let alreadyLinked = 0
+  const blockedKnownWrongLinks: Array<{ productId: string; sku: string }> = []
   let dbNoSku = 0
 
   for (const p of dbProducts) {
@@ -147,6 +149,10 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
     const owners = externalIdOwners.get(sku) ?? []
     if (owners.some(id => id !== p.id)) {
       conflictingExternalIds.push({ productId: p.id, sku, ownerIds: owners })
+      continue
+    }
+    if (isKnownWrongExternalIdLink(p.id, sku)) {
+      blockedKnownWrongLinks.push({ productId: p.id, sku })
       continue
     }
     matched.push({ productId: p.id, sku })
@@ -185,6 +191,7 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
       ambiguousDbDuplicateSku: ambiguousDbDuplicateSkus.length,
       ambiguousFeedDuplicateSku: ambiguousFeedDuplicateSkus.length,
       conflictingExternalIds: conflictingExternalIds.length,
+      blockedKnownWrongLinks: blockedKnownWrongLinks.length,
       linkedSkuMismatches: linkedSkuMismatches.length,
       linkedExternalIdsMissingFromFeed: linkedExternalIdsMissingFromFeed.length,
       newProductsFromFeed: newFromFeedSkus.length,
@@ -199,6 +206,7 @@ async function run(prisma: import('@/lib/prisma').ExtendedPrismaClient) {
       ambiguousDbDuplicateSku: [...new Set(ambiguousDbDuplicateSkus)].slice(0, SAMPLE_LIMIT),
       ambiguousFeedDuplicateSku: [...new Set(ambiguousFeedDuplicateSkus)].slice(0, SAMPLE_LIMIT),
       conflictingExternalIds: conflictingExternalIds.slice(0, SAMPLE_LIMIT),
+      blockedKnownWrongLinks,
       linkedSkuMismatches: linkedSkuMismatches.slice(0, SAMPLE_LIMIT),
       linkedExternalIdsMissingFromFeed: linkedExternalIdsMissingFromFeed.slice(0, SAMPLE_LIMIT),
       newProductsFromFeed: newFromFeedSkus.slice(0, SAMPLE_LIMIT),

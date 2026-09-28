@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
+import { getValidOldPrice } from '@/lib/product-campaign-price';
 
 interface ProductPriceProps {
     price: number;
@@ -18,6 +19,7 @@ export const ProductPrice: React.FC<ProductPriceProps> = ({
     const { t } = useTranslation();
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isHydrated = useAuthStore((s) => s.isHydrated);
+    const visibleOldPrice = getValidOldPrice(price, oldPrice);
 
     // Neutral placeholder until auth resolves — avoids the login/price flash for logged-in users.
     if (!isHydrated || (isAuthenticated && !Number.isFinite(price))) {
@@ -32,17 +34,17 @@ export const ProductPrice: React.FC<ProductPriceProps> = ({
     }
     return (
         <>
-            {oldPrice && (
+            {visibleOldPrice !== undefined && (
                 <div className="text-sm line-through text-gray-400">
-                    {formatEuro(oldPrice, priceLocale)}
+                    {formatEuro(visibleOldPrice, priceLocale)}
                 </div>
             )}
             <div className="text-4xl font-bold text-primary">
                 {formatEuro(price, priceLocale)}
             </div>
-            {oldPrice && (
+            {visibleOldPrice !== undefined && (
                 <div className="text-sm text-green-600 mt-1">
-                    {t('product.savings')}: {formatEuro(oldPrice - price, priceLocale)}
+                    {t('product.savings')}: {formatEuro(visibleOldPrice - price, priceLocale)}
                 </div>
             )}
         </>

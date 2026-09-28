@@ -4,6 +4,7 @@ import {
   applyFirstWaveAtomic, assertImmutableAllowlist, FIRST_WAVE_XML_SHA256, requireAllowlistForApply, sha256, validateFirstWave,
   type AtomicStore, type FirstWaveAllowlist, type FirstWaveEntry,
 } from '@/lib/sync/first-wave-backfill'
+import { assertNoKnownWrongExternalIdLinks } from '@/lib/sync/known-wrong-external-id-links'
 
 config({ path: '.env.local' })
 
@@ -48,6 +49,7 @@ async function main() {
         transaction: operation => prisma.$transaction(async tx => operation({
           getProducts: txIds => tx.product.findMany({ where: { id: { in: txIds } }, select: { id: true, sku: true, externalId: true, isDeleted: true } }),
           updateExternalIds: async entries => {
+            assertNoKnownWrongExternalIdLinks(entries.map(entry => ({ productId: entry.productId, externalId: entry.externalIdToSet })))
             const result = await tx.$executeRawUnsafe(
               `UPDATE "Product" AS p SET "externalId" = v.external_id
                  FROM (SELECT * FROM unnest($1::text[], $2::text[], $3::text[]) AS x(id, sku, external_id)) AS v

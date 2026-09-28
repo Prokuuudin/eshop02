@@ -2,6 +2,7 @@ import { getMergedProducts } from '@/lib/product-overrides-store'
 import { getDisplayPrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
 import { toNum, toNumOrNull } from '@/lib/decimal'
+import { getValidOldPrice } from '@/lib/product-campaign-price'
 
 export interface CatalogItem {
   id: string
@@ -48,13 +49,16 @@ export function formatCatalogForDisplay(
   items: CatalogItem[],
   locale: string
 ): Array<CatalogItem & { displayPrice: string; displayOldPrice?: string }> {
-  return items.map(item => ({
-    ...item,
-    displayPrice: formatEuro(getDisplayPrice(item.price), locale),
-    displayOldPrice: item.oldPrice
-      ? formatEuro(getDisplayPrice(item.oldPrice), locale)
-      : undefined
-  }))
+  return items.map(item => {
+    const oldPrice = getValidOldPrice(item.price, item.oldPrice)
+    return {
+      ...item,
+      displayPrice: formatEuro(getDisplayPrice(item.price), locale),
+      displayOldPrice: oldPrice !== undefined
+        ? formatEuro(getDisplayPrice(oldPrice), locale)
+        : undefined
+    }
+  })
 }
 
 export async function getCatalogCategories(): Promise<string[]> {

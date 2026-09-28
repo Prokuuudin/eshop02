@@ -17,6 +17,7 @@ import { fetchAllProducts } from '@/lib/client-products'
 import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 import { usePersistentViewMode } from '@/hooks/usePersistentViewMode'
 import { useAuthStore } from '@/lib/auth-store'
+import { getValidOldPrice } from '@/lib/product-campaign-price'
 
 const CATALOG_VIEW_MODES = ['grid', 'list'] as const
 
@@ -41,7 +42,7 @@ type ProductsProps = {
 }
 
 const isProductOnSale = (product: Product): boolean => {
-  return !!product.campaignOffers?.length || !!product.badges?.includes('sale') || (!!product.oldPrice && product.oldPrice > product.price)
+  return !!product.campaignOffers?.length || !!product.badges?.includes('sale') || getValidOldPrice(product.price, product.oldPrice) !== undefined
 }
 
 export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets }: ProductsProps): React.ReactElement {

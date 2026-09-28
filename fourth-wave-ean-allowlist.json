@@ -1,0 +1,1846 @@
+{
+  "schemaVersion": 1,
+  "wave": "fourth-wave-unique-ean-safe",
+  "generatedAt": "2026-09-27T19:54:10.069Z",
+  "sourceAudit": "fourth-wave-ean-audit/v1",
+  "matchType": "UNIQUE_EAN_SAFE",
+  "entryCount": 61,
+  "baseline": {
+    "productCount": 6378,
+    "externalIdCount": 3465,
+    "fingerprint": "8cfed3e298b5678ffe3da25c3401443a"
+  },
+  "xmlSha256": "26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad",
+  "entries": [
+    {
+      "productId": "21312",
+      "productBarcode": "8008277263779",
+      "xmlEan": "8008277263779",
+      "xmlSku": "IN79",
+      "externalIdToSet": "IN79",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM DAILY SHAMPOO 1000ML",
+      "xmlName": "INEBRYA IC Daily Shampoo 1000ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM DAILY SHAMPOO 1000ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Превосходно подходит для увлажнения и питания всех типов волос, делает их сияющими, сильными и мягкими. Благодаря физиологичному pH шампунь идеально подходит для ежедневного мытья как волос, так и тела.",
+        "technicalSpecs": {
+          "__descriptionEn": "It nourishes and moisturizes all hair types, adding shine, vitality and softness. Its physiological pH formula makes it particularly suitable for cleansing hair and body daily.",
+          "__descriptionLv": "Tas baro un mitrina visu veidu matus, piešķirot tiem spīdumu, vitalitāti un maigumu. Tā fizioloģiskā pH formula ir īpaši piemērota ikdienas matu un ķermeņa attīrīšanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027559_inebrya-icecream-daily-shampoo-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T05:52:27.757Z"
+      }
+    },
+    {
+      "productId": "21770",
+      "productBarcode": "8028483228553",
+      "xmlEan": "8028483228553",
+      "xmlSku": "19049/",
+      "externalIdToSet": "19049/",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO SPECIAL CARE KERATIN сыворотка 100мл",
+      "xmlName": "KEPRO Kay Pro SC Keratin. Serum 100 ml. / serums",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO SPECIAL CARE KERATIN сыворотка 100мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO Keratin – это интенсивно восстанавливающая сыворотка, предназначенная для поврежденных, ломких и часто подвергающихся химической обработке волос. Благодаря высокому содержанию гидролизованного кератина сыворотка эффективно восстанавливает поврежденную структуру волосяного волокна, заполняя щели и возвращая им естественную гладкость и эластичность.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO Keratin is an intensively regenerating serum designed for damaged, brittle, and frequently chemically treated hair. Thanks to its high hydrolyzed keratin content, the serum effectively rebuilds the damaged structure of the hair fiber, filling in gaps and restoring the natural smoothness and elasticity of hair strands.",
+          "__descriptionLv": "KAYPRO Keratin ir intensīvi atjaunojošs serums, kas paredzēts bojātiem, trausliem un bieži ķīmiski apstrādātiem matiem. Pateicoties augstajam hidrolizētā keratīna saturam, serums efektīvi atjauno bojāto matu šķiedras struktūru, aizpildot spraugas un atjaunojot matu šķipsnu dabisko gludumu un elastību."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028593_kaypro-special-care-keratin-serum-100ml-serums-100ml-syvorotka-100ml-seerum-100ml-serumas-100ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-12T07:32:55.553Z"
+      }
+    },
+    {
+      "productId": "21373",
+      "productBarcode": "8005610563541",
+      "xmlEan": "8005610563541",
+      "xmlSku": "563541",
+      "externalIdToSet": "563541",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL VELVET OIL маска для волос 750мл",
+      "xmlName": "LONDA VELVET Oil Mask 750 ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL VELVET OIL маска для волос 750мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Лечение Velvet Oil можно использовать на волосах любого типа и длины. Рекомендуется для регулярного, даже ежедневного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "Velvet Oil treatment can be used on any type and length of hair. Recommended for regular, even daily use.",
+          "__descriptionLv": "Samta eļļas līdzekli var lietot jebkura tipa un garuma matiem. Ieteicams regulārai, pat ikdienas lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027687_londa-professional-velvet-oil-treatment-750ml-matu-maska-750ml-maska-dl-volos-750ml-juuksemask-750ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T08:11:35.797Z"
+      }
+    },
+    {
+      "productId": "21309",
+      "productBarcode": "8008277263717",
+      "xmlEan": "8008277263717",
+      "xmlSku": "IN17",
+      "externalIdToSet": "IN17",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM CURL ONE 200ML",
+      "xmlName": "INEBRYA IC Curl One 200ml / krēms lokainiem matiem",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM CURL ONE 200ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Молочко выгодно подчеркивает и разделяет кудри, оставляя их эластичными и послушными. Дарит волосам блеск, дисцилинирует и контролирует пушение.",
+        "technicalSpecs": {
+          "__descriptionEn": "It defines and separates curls leaving hair elastic and flexible. It delivers shine, ames and controls the hair, sealing the cuticle and preventing the formation of split ends.",
+          "__descriptionLv": "Tas definē un atdala cirtas, padarot matus elastīgus un elastīgus. Tas piešķir matiem spīdumu, mīkstina un kontrolē to stāvokli, noslēdzot matu kutikulu un novēršot galu šķelšanos."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027556_inebrya-icecream-curl-one-200ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T05:19:14.003Z"
+      }
+    },
+    {
+      "productId": "21626",
+      "productBarcode": "3474637217891",
+      "xmlEan": "3474637217891",
+      "xmlSku": "ULV02493",
+      "externalIdToSet": "ULV02493",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR маска для волос 250мл",
+      "xmlName": "L&amp;quot;oreal SE Molecular Absolut Repair Mask 250ml / maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR маска для волос 250мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "SE Absolut Repair Molecular Mask – профессиональная маска для волос, разработанная для интенсивной регенерации и восстановления поврежденных волос. Формула, основанная на технологии Molecular Repair, сочетает в себе передовые ингредиенты, которые глубоко проникают в структуру волоса, восстанавливая его изнутри и улучшая его состояние.",
+        "technicalSpecs": {
+          "__descriptionEn": "SE Absolut Repair Molecular Mask is a professional hair mask designed for intensive regeneration and restoration of damaged hair. The formula, based on Molecular Repair technology, combines advanced ingredients that penetrate deep into the hair structure, rebuilding it from within and improving its condition.",
+          "__descriptionLv": "SE Absolut Repair Molecular Mask ir profesionāla matu maska, kas paredzēta intensīvai bojātu matu atjaunošanai un atjaunošanai. Formula, kuras pamatā ir Molecular Repair tehnoloģija, apvieno progresīvas sastāvdaļas, kas dziļi iesūcas matu struktūrā, atjaunojot tos no iekšpuses un uzlabojot to stāvokli."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028460_loreal-professionnel-serie-expert-absolut-repair-molecular-masque-250ml-matu-maska-250ml-maska-dl-vo_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T07:21:02.393Z"
+      }
+    },
+    {
+      "productId": "21638",
+      "productBarcode": "3474637072483",
+      "xmlEan": "3474637072483",
+      "xmlSku": "E3833701",
+      "externalIdToSet": "E3833701",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION желейный шампунь 500мл",
+      "xmlName": "L&amp;quot;oreal SE Curl Expression Jelly System Shampoo 500 ml. / šā",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION желейный шампунь 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Увлажняющий гелевый шампунь для вьющихся волос L'Oréal Professionel Curl Expression Professional идеально кондиционирует и очищает волосы, делая их более кудрявыми. Он также удаляет больше загрязнений, чем обычный шампунь.",
+        "technicalSpecs": {
+          "__descriptionEn": "L'Oréal Professionel Curl Expression Professional Moisturizing Gel Shampoo for Curly Hair perfectly conditions and cleanses hair, enhancing curls. It also removes more buildup than a traditional shampoo.",
+          "__descriptionLv": "L'Oréal Professionel Curl Expression Professional mitrinošais želejveida šampūns cirtainiem matiem lieliski kondicionē un attīra matus, izceļot lokas. Tas arī noņem vairāk uzkrājušos tauku nekā tradicionālais šampūns."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028513_loreal-professionnel-serie-expert-curl-expression-jelly-shampoo-500ml-zelejveida-sampuns-500ml-elejn_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:35:27.107Z"
+      }
+    },
+    {
+      "productId": "21654",
+      "productBarcode": "30160606",
+      "xmlEan": "30160606",
+      "xmlSku": "E3548400",
+      "externalIdToSet": "E3548400",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX маска для волос 250мл",
+      "xmlName": "L`oreal SE Metal Detox Mask 250ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX маска для волос 250мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Маска Metal Detox эффективно предотвращает накопление металла на поверхности и внутри волос. Это защищает цвет волос от выцветания и питает их, делая мягкими и менее пористыми.",
+        "technicalSpecs": {
+          "__descriptionEn": "The Metal Detox mask effectively prevents metal buildup on the surface and inside the hair. This protects the hair's color from fading and leaves it nourished, soft, and less porous.",
+          "__descriptionLv": "Metal Detox maska ​​efektīvi novērš metāla uzkrāšanos uz matu virsmas un iekšpuses. Tas pasargā matu krāsu no izbalēšanas un padara tos barotus, mīkstus un mazāk porainus."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028463_loreal-professionnel-serie-expert-metal-detox-masque-250ml-matu-maska-250ml-maska-dl-volos-250ml-juu_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:11:47.140Z"
+      }
+    },
+    {
+      "productId": "15375",
+      "productBarcode": "4015400792734",
+      "xmlEan": "4015400792734",
+      "xmlSku": "81557378",
+      "externalIdToSet": "81557378",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "WELLA PROFESSIONALS OIL REFLECTIONS кондиционер 200мл",
+      "xmlName": "WELLA OR Luminous Instant Conditioner 200 ml / balzāms",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "WELLA PROFESSIONALS OIL REFLECTIONS кондиционер 200мл",
+        "brand": "WELLA PROFESSIONALS",
+        "category": "hair",
+        "description": "Бальзам для инте­нсивного блеска волос. В основе всех сре­дств линии Oil Reflections \"Квинтэссенция бле­ска для сияния ваших волос\" - масло для волос Oil Reflections.",
+        "technicalSpecs": {
+          "__descriptionEn": "FOR ALL HAIR TYPES\n\n30-second smoothening conditioner that locks moisture in, leaving the hair luminous and smooth.",
+          "__descriptionLv": "Kondicionieris, kas padara matus gludus 30 sekundēs un piesaista tiem mitrumu, ļaujot kļūt mirdzošiem un gludiem.Ar kamēlijas eļļu un baltās tējas ekstraktu. Krēmveida konsistence."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027507_wella-professionals-oil-reflections-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2016-06-28T05:45:10.460Z"
+      }
+    },
+    {
+      "productId": "21371",
+      "productBarcode": "4064666302133",
+      "xmlEan": "4064666302133",
+      "xmlSku": "302133",
+      "externalIdToSet": "302133",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL VELVET OIL шампунь 250мл",
+      "xmlName": "LONDA VELVET Oil Shampoo 250 ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL VELVET OIL шампунь 250мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Шампунь Velvet Oil можно использовать для любого типа и длины волос. Рекомендуется для регулярного, даже ежедневного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "Velvet Oil Shampoo can be used for any type and length of hair. Recommended for regular, even daily use.",
+          "__descriptionLv": "Samta eļļas šampūnu var lietot jebkura tipa un garuma matiem. Ieteicams regulārai, pat ikdienas lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027685_londa-professional-velvet-oil-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T08:02:07.403Z"
+      }
+    },
+    {
+      "productId": "21658",
+      "productBarcode": "30163720",
+      "xmlEan": "30163720",
+      "xmlSku": "30163720",
+      "externalIdToSet": "30163720",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 500мл",
+      "xmlName": "L`oreal SE Metal Detox Shampoo 500ml / matu šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Шампунь L’oreal Professionnel Metal Detox комплексно ухаживает за окрашенными волосами, обеспечивая очищение, защиту цвета и блеск.",
+        "technicalSpecs": {
+          "__descriptionEn": "L’oreal Professionnel Metal Detox shampoo comprehensively cares for colored hair, providing cleansing, color protection, and shine.",
+          "__descriptionLv": "L’oreal Professionnel Metal Detox šampūns vispusīgi rūpējas par krāsotiem matiem, nodrošinot attīrīšanu, krāsas aizsardzību un spīdumu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028522_loreal-professionnel-serie-expert-metal-detox-shampoo-500ml-sampuns-500ml-ampun-500ml-sampoon-500ml-_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:33:27.560Z"
+      }
+    },
+    {
+      "productId": "21627",
+      "productBarcode": "3474637217907",
+      "xmlEan": "3474637217907",
+      "xmlSku": "217907",
+      "externalIdToSet": "217907",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR маска для волос 500мл",
+      "xmlName": "L&amp;quot;oreal SE Molecular Absolut Repair Mask 500ml / maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR маска для волос 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "SE Absolut Repair Molecular Mask – профессиональная маска для волос, разработанная для интенсивной регенерации и восстановления поврежденных волос. Формула, основанная на технологии Molecular Repair, сочетает в себе передовые ингредиенты, которые глубоко проникают в структуру волоса, восстанавливая его изнутри и улучшая его состояние.",
+        "technicalSpecs": {
+          "__descriptionEn": "SE Absolut Repair Molecular Mask is a professional hair mask designed for intensive regeneration and restoration of damaged hair. The formula, based on Molecular Repair technology, combines advanced ingredients that penetrate deep into the hair structure, rebuilding it from within and improving its condition.",
+          "__descriptionLv": "SE Absolut Repair Molecular Mask ir profesionāla matu maska, kas paredzēta intensīvai bojātu matu atjaunošanai un atjaunošanai. Formula, kuras pamatā ir Molecular Repair tehnoloģija, apvieno progresīvas sastāvdaļas, kas dziļi iesūcas matu struktūrā, atjaunojot tos no iekšpuses un uzlabojot to stāvokli."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028461_loreal-professionnel-serie-expert-absolut-repair-molecular-masque-500ml-matu-maska-500ml-maska-dl-vo_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T07:23:35.177Z"
+      }
+    },
+    {
+      "productId": "21742",
+      "productBarcode": "8028483228164",
+      "xmlEan": "8028483228164",
+      "xmlSku": "19010",
+      "externalIdToSet": "19010",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE VOLUME шампунь 350мл",
+      "xmlName": "KEPRO Kay Pro HC Volume Shampoo 350 ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE VOLUME шампунь 350мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Шампунь для придания объёма KAYPRO VOLUME для тонких волос KAYPRO VOLUME — это профессиональный лёгкий шампунь, разработанный для тонких, безжизненных и трудноукладываемых волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO VOLUME Volumizing Shampoo for Fine Hair KAYPRO VOLUME is a professional, lightweight shampoo designed for fine, lifeless, and difficult-to-manage hair.",
+          "__descriptionLv": "KAYPRO VOLUME Apjomu piešķirošais šampūns smalkiem matiem KAYPRO VOLUME ir profesionāls, viegls šampūns, kas paredzēts smalkiem, nedzīviem un grūti veidojamiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028561_kaypro-hair-care-volume-shampoo-350ml-sampuns-350ml-ampun-350ml-sampoon-350ml-sampunas-350ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T07:00:13.130Z"
+      }
+    },
+    {
+      "productId": "21656",
+      "productBarcode": "3474637090609",
+      "xmlEan": "3474637090609",
+      "xmlSku": "E3849100",
+      "externalIdToSet": "E3849100",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX масло для волос 50мл",
+      "xmlName": "L`oreal SE Metal Detox Oil 50ml / matu eļļa",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX масло для волос 50мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Масло L'Oréal Metal Detox Oil — это передовое средство по уходу за волосами, разработанное специально для тех, кто регулярно подвергает волосы химическим воздействиям, таким как окрашивание, обесцвечивание или химическая завивка. Содержит гликоамин, защищающий волосы от вредного воздействия тяжёлых металлов, которые могут содержаться в воде, средствах для укладки и салонной химии.",
+        "technicalSpecs": {
+          "__descriptionEn": "L'Oréal Metal Detox Oil is an advanced hair care product designed specifically for those who regularly subject their hair to chemical treatments such as dyeing, bleaching, or perming. The product contains glycoamine to protect hair from the harmful effects of heavy metals that may be found in water, styling products, and salon chemicals.",
+          "__descriptionLv": "L'Oréal Metal Detox Oil ir uzlabots matu kopšanas līdzeklis, kas īpaši izstrādāts tiem, kas regulāri pakļauj matus ķīmiskām procedūrām, piemēram, krāsošanai, balināšanai vai ķīmiskām ķīmiskām vielām. Produkts satur glikomīnu, lai aizsargātu matus no smago metālu kaitīgās ietekmes, kas var atrasties ūdenī, veidošanas līdzekļos un salonu ķimikālijās."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028407_loreal-professionnel-serie-expert-metal-detox-oil-50ml-matu-ella-50ml-maslo-dl-volos-50ml-juukseoli-_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:23:41.253Z"
+      }
+    },
+    {
+      "productId": "21662",
+      "productBarcode": "3474636975976",
+      "xmlEan": "3474636975976",
+      "xmlSku": "E3570700",
+      "externalIdToSet": "E3570700",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT VITAMINO COLOR шампунь 1500мл",
+      "xmlName": "L`oreal SE Vitamino Color Shampoo 1500ml / matu šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT VITAMINO COLOR шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Женщины знают, что быстро преобразить свой внешний вид или создать совершенно необычный образ можно при помощи краски для волос. К сожалению, процедура окрашивания локонов порой бывает чрезвычайно губительна для их здоровья и силы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Women nowadays can easily change their appearance by just dyeing their hair. Unfortunately, these kinds of pleasures often don’t go without consequences.",
+          "__descriptionLv": "Mūsdienās sievietes var viegli mainīt savu izskatu, tikai nokrāsojot matus. Diemžēl šie prieki bieži vien nepaliek bez sekām."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028524_loreal-professionnel-serie-expert-vitamino-color-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon-_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T07:22:05.830Z"
+      }
+    },
+    {
+      "productId": "21240",
+      "productBarcode": "4045787723830",
+      "xmlEan": "4045787723830",
+      "xmlSku": "NHK4243",
+      "externalIdToSet": "NHK4243",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "SCHWARZKOPF PEPTIDE REPAIR RESCUE TREATMENT 500 ML",
+      "xmlName": "Schwarzkopf BC PRR Treatment NEW 500 ml. / maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "SCHWARZKOPF PEPTIDE REPAIR RESCUE TREATMENT 500 ML",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Восстанавливающая маска для норма­льных и тонких поврежденных волос является нови­нкой в реконструкции волос, особенно сильно повре­жденных и подверженных стрессу.",
+        "technicalSpecs": {
+          "__descriptionEn": "Perfect for use on hair that's damaged, dull, porous and prone to breakage due to chemical treatments or mechanical processes, this indulgent treatment deeply reconstructs the inner and outer hair structure.",
+          "__descriptionLv": "Atjaunojoša maska smalkiem un normāliem bojātiem matiem. Dziļi atjauno mata iekšējo un ārējo struktūru."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027425_schwarzkopf-peptide-repair-rescue-treatment-500-ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-05-13T05:32:23.347Z"
+      }
+    },
+    {
+      "productId": "21331",
+      "productBarcode": "8008277263335",
+      "xmlEan": "8008277263335",
+      "xmlSku": "IN35",
+      "externalIdToSet": "IN35",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM PRO-AGE HAIR MASKS 1000ML",
+      "xmlName": "INEBRYA IC Pro Age Hair Mask 1000ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM PRO-AGE HAIR MASKS 1000ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Идеально подходит для химически обработанных, тусклых и ослабленных волос. Распутывает и смягчает волосы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Ideal for treated, opaque and dull hair, it detangles and softens with an excellent anti-frizz action, nourishes giving extraordinary softness and shine. Ice Cream Argan Age is the complete line of treatments for sun protection and maintenance of the hydration and well-being of hair based on argan oil and uv filters.",
+          "__descriptionLv": "Ideāli piemērota ķīmiski apstrādātiem, nespodriem un blāviem matiem, tā atšķetina un mīkstina, lieliski iedarbojoties pret matu pūkošanos, baro, padara matus izcili mīkstus un spīdīgus. Ice Cream Argan Age ir visaptveroša produktu sērija, kas bagātināta ar argāneļļu un UV filtriem, matu aizsargāšanai pret sauli, mitrināšanai un labsajūtai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027578_inebrya-icecream-pro-age-hair-masks-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T08:15:07.550Z"
+      }
+    },
+    {
+      "productId": "15081",
+      "productBarcode": "4045787999167",
+      "xmlEan": "4045787999167",
+      "xmlSku": "999167",
+      "externalIdToSet": "999167",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "SCHWARZKOPF PROFESSIONAL OSIS+ G.FORCE гель для волос 150мл",
+      "xmlName": "Schwarzkopf OSIS+ NEW G. Force 150ml / matu gēls",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "SCHWARZKOPF PROFESSIONAL OSIS+ G.FORCE гель для волос 150мл",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Гель для волос сильной фиксации придает им великолепный блеск. Надолго сохраняет текстуру прически. Легко смывается.",
+        "technicalSpecs": {
+          "__descriptionEn": "Extreme hold gel gives the hair a great shine. Hair retains the texture for a long time. Easily to wash out.\n\nHair type: all",
+          "__descriptionLv": "Īpaši stipras fiksācija matu želeja piešķir matiem izteiktu tekstūru. Neticami noturīga fiksācija. Lielisks spīdums un konsistence. Viegli izmazgājas no matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027427_schwarzkopf-professional-osis-gforce-gel-150ml-matu-zeleja-150ml-gel-dl-volos-150ml-juuksegeel-150ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2016-05-26T07:39:11.783Z"
+      }
+    },
+    {
+      "productId": "21316",
+      "productBarcode": "8008277263243",
+      "xmlEan": "8008277263243",
+      "xmlSku": "IN43",
+      "externalIdToSet": "IN43",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM DRY-T CONDITIONER 1000ML",
+      "xmlName": "INEBRYA IC Dry-T Conditioner 1000ml / kondicionieris",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM DRY-T CONDITIONER 1000ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Интенсивно питает и увлажняет волосы. Не содержит SLS/SLES и сульфатов.",
+        "technicalSpecs": {
+          "__descriptionEn": "Specific conditioner for dry, frizzy and treated hair. The deep hydrating and nourishing action of its Silk and Wheat Proteins leaves hair silky soft, brilliant and easy to comb.",
+          "__descriptionLv": "Barojošs kondicionieris sausiem, sprogainiem un ķīmiski apstrādātiem matiem. Pateicoties tam, ka tas satur zīda un kviešu proteīnus, barojošais kondicioniers piešķir matiem zīda mīkstumu un mirdzumu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027563_inebrya-icecream-dry-t-conditioner-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T06:12:10.683Z"
+      }
+    },
+    {
+      "productId": "21657",
+      "productBarcode": "30158078",
+      "xmlEan": "30158078",
+      "xmlSku": "E3548700",
+      "externalIdToSet": "E3548700",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 300мл",
+      "xmlName": "L`oreal SE Metal Detox Shampoo 300ml / matu šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 300мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Шампунь L’oreal Professionnel Metal Detox комплексно ухаживает за окрашенными волосами, обеспечивая очищение, защиту цвета и блеск.",
+        "technicalSpecs": {
+          "__descriptionEn": "L’oreal Professionnel Metal Detox shampoo comprehensively cares for colored hair, providing cleansing, color protection, and shine.",
+          "__descriptionLv": "L’oreal Professionnel Metal Detox šampūns vispusīgi rūpējas par krāsotiem matiem, nodrošinot attīrīšanu, krāsas aizsardzību un spīdumu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028520_loreal-professionnel-serie-expert-metal-detox-shampoo-300ml-sampuns-300ml-ampun-300ml-sampoon-300ml-_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:29:24.117Z"
+      }
+    },
+    {
+      "productId": "15448",
+      "productBarcode": "8005610486864",
+      "xmlEan": "8005610486864",
+      "xmlSku": "81533504",
+      "externalIdToSet": "81533504",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA Curl Definer Conditioning Lotion 250ml",
+      "xmlName": "KADUS Curl Definer Conditioning Lotion 250ml / balzāms",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "LONDA Curl Definer Conditioning Lotion 250ml",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Несмываемый лосьон-кондиционер для кудрявых волос. Лосьон-кондиционер для кудрявых волос придаёт вашим вьющимся волосам дополнительную энергию и объем.",
+        "technicalSpecs": {
+          "__descriptionEn": "Provides instant elasticity to curly hair. Conditions hair for noticeably more defined, bouncier curls.",
+          "__descriptionLv": "Neskalojams, kondicionējošs losjons cirtainiem matiem. Piešķir lokainiem elastību un vitalitāti."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027652_londa-curl-definer-conditioning-lotion-250ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2016-07-04T06:57:14.937Z"
+      }
+    },
+    {
+      "productId": "15442",
+      "productBarcode": "4084500778610",
+      "xmlEan": "4084500778610",
+      "xmlSku": "81524924",
+      "externalIdToSet": "81524924",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL ANTI-DANDRUFF шампунь 250мл",
+      "xmlName": "LONDA Anti - Dandruff Shampoo 250 ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL ANTI-DANDRUFF шампунь 250мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Шампунь против перхоти. Эффективно удаляет перхоть сразу после первого применения.",
+        "technicalSpecs": {
+          "__descriptionEn": "Instantly starts to remove visible flakes from the first application. For beautiful hair and scalp in good condition.",
+          "__descriptionLv": "Šampūns pret blaugznām. Pateicoties ekskluzīvai formulai, maigi atbrīvo galvas ādu un matus no blaugznām."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027648_londa-professional-anti-dandruff-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250m_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2016-07-04T06:18:42.903Z"
+      }
+    },
+    {
+      "productId": "15445",
+      "productBarcode": "4084500778757",
+      "xmlEan": "4084500778757",
+      "xmlSku": "81385175",
+      "externalIdToSet": "81385175",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL COLOR RADIANCE интенсивная маска для волос 200мл",
+      "xmlName": "KADUS Color Radiance Int Maskr 200ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL COLOR RADIANCE интенсивная маска для волос 200мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Эффективно ухаживает за окрашенными волосами, помогает предотвратить вымывание и изменение цвета, сохраняет насыщенный цвет и придает потрясающий блеск. С экстрактом маракуйи и липидами кожуры апельсина.",
+        "technicalSpecs": {
+          "__descriptionEn": "Intensive mask for colored hair. Instantly conditions colored hair. Helps prevent colored hair from fading and shifting for long-lasting brilliant results. Contains passion fruit and orange peel lipids.",
+          "__descriptionLv": "Maska intensīvai krāsotu matu kopšanai. Aizsargā matu krāsas noturību un piešķir krāsai intensitāti. Sastāvā marakujas un apelsīnu mizas lipīdu ekstrakti."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027649_londa-professional-color-radiance-intensive-mask-200ml-intensiva-matu-maska-200ml-intensivna-maska-d_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2016-07-04T06:43:10.457Z"
+      }
+    },
+    {
+      "productId": "21635",
+      "productBarcode": "3474636975662",
+      "xmlEan": "3474636975662",
+      "xmlSku": "75662",
+      "externalIdToSet": "75662",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT BLONDIFIER шампунь 1500мл",
+      "xmlName": "L&amp;quot;oreal SE Blondifier GLOSS Shampoo 1500 ml. / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT BLONDIFIER шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Шампунь L'Oreal Blondifier предназначен как для окрашенных, так и для натуральных светлых волос. Формула L'Oreal Blondifier подходит для ежедневного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "L'Oreal Blondifier Shampoo is designed for both dyed and natural blonde hair. The L'Oreal Blondifier formula is suitable for everyday use.",
+          "__descriptionLv": "L'Oreal Blondifier šampūns ir paredzēts gan krāsotiem, gan dabiski blondiem matiem. L'Oreal Blondifier formula ir piemērota ikdienas lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028511_loreal-professionnel-serie-expert-blondifier-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon-1500_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:00:38.897Z"
+      }
+    },
+    {
+      "productId": "21360",
+      "productBarcode": "8005610606842",
+      "xmlEan": "8005610606842",
+      "xmlSku": "606842",
+      "externalIdToSet": "606842",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL COLOR RADIANCE маска для волос после окрашивания 1000мл",
+      "xmlName": "LONDA Color Radiance Post Color Mask 1000 ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL COLOR RADIANCE маска для волос после окрашивания 1000мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Неправильно защищенные, окрашенные волосы, которые ежедневно подвергаются разрушительному воздействию факторов окружающей среды, могут стать пористыми. Результатом становится потеря как интенсивности цвета, так и блеска.",
+        "technicalSpecs": {
+          "__descriptionEn": "Improperly protected, dyed hair, which is exposed to the destructive effects of environmental factors every day, can become porous. The result is a loss of both color intensity and shine.",
+          "__descriptionLv": "Nepareizi aizsargāti, krāsoti mati, kas katru dienu ir pakļauti vides faktoru postošajai ietekmei, var kļūt poraini. Rezultātā zūd gan krāsas intensitāte, gan spīdums."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027674_londa-professional-color-radiance-post-color-treatment-1000ml-matu-maska-pec-krasosanas-1000ml-maska_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T06:34:59.833Z"
+      }
+    },
+    {
+      "productId": "19087",
+      "productBarcode": "4064666339221",
+      "xmlEan": "4064666339221",
+      "xmlSku": "6339221",
+      "externalIdToSet": "6339221",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "WELLA PROFESSIONALS INVIGO COLOR BRILLIANCE FINE/MEDIUM шампунь 300мл",
+      "xmlName": "WELLA INVIGO Color Brilliance Fine to Medium Shampoo 300 / š",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "WELLA PROFESSIONALS INVIGO COLOR BRILLIANCE FINE/MEDIUM шампунь 300мл",
+        "brand": "WELLA PROFESSIONALS",
+        "category": "hair",
+        "description": "Шампунь Wella Invigo Color Brilliance Fine/Normal — это великолепное средство для защиты цвета окрашенных нормальных и тонких волос. Низкий уровень рH закрывает кутикулу волоса сразу после окрашивания, за счет чего красящий пигмент дольше сохраняется внутри волоса.",
+        "technicalSpecs": {
+          "__descriptionEn": "Wella Invigo Color Brilliance Fine/Normal shampoo is a pH-optimized shampoo for long-lasting color protection in fine to normal, colored hair. With its Antioxidant Shield Technology, it provides instant shine and long-lasting color protection whilst the key ingredient, Lime Caviar, adds a potent mixture of antioxidants and vitamins.",
+          "__descriptionLv": "Wella Invigo Color Brilliance Fine/Normal šampūns ir pH optimizēts šampūns, kas nodrošinās ilgstošu krāsas aizsardzību plāniem līdz normāliem krāsotiem matiem. Pateicoties Antioksidantu Vairoga tehnoloģijai (Antioxidant Shield Technology), tiek nodrošināts tūlītējs spīdums un ilgstoša krāsas aizsardzība, savukārt galvenā sastāvdaļa – Laima kaviārs – baro matus ar spēcīgu antioksidantu un vitamīnu maisījumu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027486_wella-professionals-invigo-color-brilliance-finemedium-shampoo-300ml-sampuns-300ml-ampun-300ml-sampo_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2018-11-15T05:42:52.703Z"
+      }
+    },
+    {
+      "productId": "21661",
+      "productBarcode": "3474636975600",
+      "xmlEan": "3474636975600",
+      "xmlSku": "E3567000",
+      "externalIdToSet": "E3567000",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT PRO LONGER шампунь 1500мл",
+      "xmlName": "L`oreal SE Pro Longer Shampoo 1500ml / matu šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT PRO LONGER шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Восстановление длины - шампунь для длинных волос. ПРОФЕССИОНАЛЬНАЯ ФОРМУЛА с филлером А 100 и аминокислотами помогает мгновенно восстановить волосы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Restoring length - shampoo for long hair. PROFESSIONAL FORMULA with A 100 filler and amino acids helps restore hair instantly.",
+          "__descriptionLv": "Matu garumu atjaunojošs šampūns gariem matiem. PROFESIONĀLA FORMULA, kas bagātināta ar Filler A-100 un aminoskābēm tūlītējai matu šķiedru atjaunošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028523_loreal-professionnel-serie-expert-pro-longer-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon-1500_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T07:07:14.133Z"
+      }
+    },
+    {
+      "productId": "21370",
+      "productBarcode": "8005610562285",
+      "xmlEan": "8005610562285",
+      "xmlSku": "562285",
+      "externalIdToSet": "562285",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL VELVET OIL шампунь 1000мл",
+      "xmlName": "LONDA VELVET Oil Shampoo 1000 ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL VELVET OIL шампунь 1000мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Шампунь Velvet Oil можно использовать для любого типа и длины волос. Рекомендуется для регулярного, даже ежедневного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "Velvet Oil Shampoo can be used for any type and length of hair. Recommended for regular, even daily use.",
+          "__descriptionLv": "Samta eļļas šampūnu var lietot jebkura tipa un garuma matiem. Ieteicams regulārai, pat ikdienas lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027684_londa-professional-velvet-oil-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-100_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T08:01:38.027Z"
+      }
+    },
+    {
+      "productId": "21372",
+      "productBarcode": "8005610562193",
+      "xmlEan": "8005610562193",
+      "xmlSku": "562193",
+      "externalIdToSet": "562193",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL VELVET OIL маска для волос 200мл",
+      "xmlName": "LONDA VELVET Oil Mask 200 ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL VELVET OIL маска для волос 200мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Лечение Velvet Oil можно использовать на волосах любого типа и длины. Рекомендуется для регулярного, даже ежедневного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "Velvet Oil treatment can be used on any type and length of hair. Recommended for regular, even daily use.",
+          "__descriptionLv": "Samta eļļas līdzekli var lietot jebkura tipa un garuma matiem. Ieteicams regulārai, pat ikdienas lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027686_londa-professional-velvet-oil-treatment-200ml-matu-maska-200ml-maska-dl-volos-200ml-juuksemask-200ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T08:11:18.780Z"
+      }
+    },
+    {
+      "productId": "21731",
+      "productBarcode": "8028483228102",
+      "xmlEan": "8028483228102",
+      "xmlSku": "19004",
+      "externalIdToSet": "19004",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE FREQUENT шампунь 350мл",
+      "xmlName": "KEPRO Kay Pro HC Frequent Shampoo 350 ml. / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE FREQUENT шампунь 350мл",
+        "brand": "KEPRO",
+        "category": "hair",
+        "description": "Ежедневный шампунь KAYPRO FREQUENT для всех типов волос KAYPRO FREQUENT — универсальный шампунь, предназначенный для ежедневного использования для всех типов волос — от нормальных, тонких и чувствительных до требовательных.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO FREQUENT Daily Shampoo for All Hair Types KAYPRO FREQUENT is a universal shampoo designed for daily use on all hair types—from normal, fine and delicate, to demanding hair.",
+          "__descriptionLv": "KAYPRO FREQUENT ikdienas šampūns visiem matu tipiem KAYPRO FREQUENT ir universāls šampūns, kas paredzēts ikdienas lietošanai visiem matu tipiem — no normāliem, smalkiem un delikātiem līdz prasīgiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028551_kaypro-hair-care-frequent-shampoo-350ml-sampuns-350ml-ampun-350ml-sampoon-350ml-sampunas-350ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T05:10:16.317Z"
+      }
+    },
+    {
+      "productId": "21629",
+      "productBarcode": "3474637153533",
+      "xmlEan": "3474637153533",
+      "xmlSku": "ULV02384",
+      "externalIdToSet": "ULV02384",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 300мл",
+      "xmlName": "L&amp;quot;oreal SE Molecular Absolut Repair Shampoo 300 ml. / ša",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 300мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Роскошный шампунь для волос с поврежденной молекулярной структурой. Он бережно очищает поврежденные волосы, обеспечивая высокий уровень ухода.",
+        "technicalSpecs": {
+          "__descriptionEn": "A luxurious shampoo designed for hair with damaged molecular structure. It gently cleanses damaged hair, ensuring a high level of care.",
+          "__descriptionLv": "Grezns šampūns, kas paredzēts matiem ar bojātu molekulāro struktūru. Tas maigi attīra bojātus matus, nodrošinot augstu kopšanas līmeni."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028526_loreal-professionnel-serie-expert-absolut-repair-molecular-shampoo-300ml-sampuns-300ml-ampun-300ml-s_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T08:04:12.483Z"
+      }
+    },
+    {
+      "productId": "21637",
+      "productBarcode": "3474637069070",
+      "xmlEan": "3474637069070",
+      "xmlSku": "E3825400",
+      "externalIdToSet": "E3825400",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION желейный шампунь 300мл",
+      "xmlName": "L&amp;quot;oreal SE Curl Expression Jelly System Shampoo 300 ml. / šā",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION желейный шампунь 300мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Увлажняющий гелевый шампунь для вьющихся волос L'Oréal Professionel Curl Expression Professional идеально кондиционирует и очищает волосы, делая их более кудрявыми. Он также удаляет больше загрязнений, чем обычный шампунь.",
+        "technicalSpecs": {
+          "__descriptionEn": "L'Oréal Professionel Curl Expression Professional Moisturizing Gel Shampoo for Curly Hair perfectly conditions and cleanses hair, enhancing curls. It also removes more buildup than a traditional shampoo.",
+          "__descriptionLv": "L'Oréal Professionel Curl Expression Professional mitrinošais želejveida šampūns cirtainiem matiem lieliski kondicionē un attīra matus, izceļot lokas. Tas arī noņem vairāk uzkrājušos tauku nekā tradicionālais šampūns."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028512_loreal-professionnel-serie-expert-curl-expression-jelly-shampoo-300ml-zelejveida-sampuns-300ml-elejn_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:33:47.010Z"
+      }
+    },
+    {
+      "productId": "21631",
+      "productBarcode": "3474637188207",
+      "xmlEan": "3474637188207",
+      "xmlSku": "ULV02388",
+      "externalIdToSet": "ULV02388",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 1500мл",
+      "xmlName": "L&amp;quot;oreal SE Molecular Absolut Repair Shampoo 1500 ml. / ša",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Роскошный шампунь для волос с поврежденной молекулярной структурой. Он бережно очищает поврежденные волосы, обеспечивая высокий уровень ухода.",
+        "technicalSpecs": {
+          "__descriptionEn": "A luxurious shampoo designed for hair with damaged molecular structure. It gently cleanses damaged hair, ensuring a high level of care.",
+          "__descriptionLv": "Grezns šampūns, kas paredzēts matiem ar bojātu molekulāro struktūru. Tas maigi attīra bojātus matus, nodrošinot augstu kopšanas līmeni."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028525_loreal-professionnel-serie-expert-absolut-repair-molecular-shampoo-1500ml-sampuns-1500ml-ampun-1500m_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T08:10:29.893Z"
+      }
+    },
+    {
+      "productId": "21735",
+      "productBarcode": "8028483228256",
+      "xmlEan": "8028483228256",
+      "xmlSku": "19019",
+      "externalIdToSet": "19019",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE LISS шампунь 1000мл",
+      "xmlName": "KEPRO Kay Pro HC Liss  Shampoo 1000 ml./ šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE LISS шампунь 1000мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO LISS — профессиональный разглаживающий шампунь, разработанный для всех типов волос, особенно для вьющихся, непослушных и трудноукладываемых. Его формула на основе масла ши, оливкового масла и экстракта какао-бобов глубоко увлажняет, питает и разглаживает волосы, одновременно мягко очищая их.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO LISS is a professional smoothing shampoo designed for all hair types, especially frizzy, unruly, and difficult-to-style hair. Its formula, based on shea butter, olive oil, and cocoa bean extract, deeply moisturizes, nourishes, and smooths hair while gently cleansing.",
+          "__descriptionLv": "KAYPRO LISS ir profesionāls matu izlīdzinošs šampūns, kas paredzēts visiem matu tipiem, īpaši sprogainiem, nepaklausīgiem un grūti ieveidojamiem matiem. Tā formula, kuras pamatā ir šī sviests, olīveļļa un kakao pupiņu ekstrakts, dziļi mitrina, baro un izlīdzina matus, vienlaikus maigi attīrot."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028555_kaypro-hair-care-liss-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T06:23:04.937Z"
+      }
+    },
+    {
+      "productId": "21653",
+      "productBarcode": "30161153",
+      "xmlEan": "30161153",
+      "xmlSku": "E4033200",
+      "externalIdToSet": "E4033200",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX крем для волос 100мл",
+      "xmlName": "L`oreal SE Metal Detox Leave In 100ml / aizsargkrēms",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX крем для волос 100мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Несмываемый крем – это лёгкий крем, который удаляет металл с волос, защищает от новых отложений металлических частиц и предотвращает ломкость волос и изменение цвета после любого окрашивания, такого как обесцвечивание или балаяж. Он глубоко увлажняет и укрепляет волосы, защищая их от УФ-лучей, окисления и воздействия высоких температур до 230 °C.",
+        "technicalSpecs": {
+          "__descriptionEn": "Leave-in is a lightweight cream that removes metal from hair, protects against new metal particle deposits, and prevents hair breakage and color change after any color treatment, such as bleaching or balayage. It deeply moisturizes and strengthens hair, protecting it from UV rays, oxidation, and heat up to 230°C.",
+          "__descriptionLv": "Nenomazgājamais krēms ir viegls, kas noņem metālu no matiem, aizsargā pret jauniem metāla daļiņu nogulsnējumiem un novērš matu lūšanu un krāsas izmaiņas pēc jebkuras krāsošanas procedūras, piemēram, balināšanas vai balayage. Tas dziļi mitrina un stiprina matus, aizsargājot tos no UV stariem, oksidēšanās un karstuma līdz 230°C."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028404_loreal-professionnel-serie-expert-metal-detox-cream-100ml-matu-krems-100ml-krem-dl-volos-100ml-juuks_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T05:47:08.310Z"
+      }
+    },
+    {
+      "productId": "21659",
+      "productBarcode": "30160668",
+      "xmlEan": "30160668",
+      "xmlSku": "E3549202",
+      "externalIdToSet": "E3549202",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 1500мл",
+      "xmlName": "L`oreal SE Metal Detox Shampoo 1500ml / matu šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Шампунь L’oreal Professionnel Metal Detox комплексно ухаживает за окрашенными волосами, обеспечивая очищение, защиту цвета и блеск.",
+        "technicalSpecs": {
+          "__descriptionEn": "L’oreal Professionnel Metal Detox shampoo comprehensively cares for colored hair, providing cleansing, color protection, and shine.",
+          "__descriptionLv": "L’oreal Professionnel Metal Detox šampūns vispusīgi rūpējas par krāsotiem matiem, nodrošinot attīrīšanu, krāsas aizsardzību un spīdumu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028521_loreal-professionnel-serie-expert-metal-detox-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon-150_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:36:44.610Z"
+      }
+    },
+    {
+      "productId": "21745",
+      "productBarcode": "8028483228331",
+      "xmlEan": "8028483228331",
+      "xmlSku": "19027",
+      "externalIdToSet": "19027",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO SCALP CARE PURITY шампунь 1000мл",
+      "xmlName": "KEPRO Kay Pro Purity Scalp Care Shampoo 1000 ml./ šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO SCALP CARE PURITY шампунь 1000мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO Purity — специализированный шампунь против перхоти, разработанный для эффективного и бережного восстановления баланса кожи головы и обеспечения комфорта для всех типов волос. Его формула основана на инновационном, мощном противовоспалительном компоненте, который воздействует на причину перхоти.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO Purity is a specialized anti-dandruff shampoo designed to effectively and gently restore scalp balance and provide comfort to all hair types. Its formula is based on an innovative, powerful anti-inflammatory ingredient that targets the source of dandruff problems.",
+          "__descriptionLv": "KAYPRO Purity ir specializēts pretblaugznu šampūns, kas paredzēts, lai efektīvi un maigi atjaunotu galvas ādas līdzsvaru un nodrošinātu komfortu visiem matu tipiem. Tā formula ir balstīta uz inovatīvu, spēcīgu pretiekaisuma sastāvdaļu, kas iedarbojas uz blaugznu problēmu cēloni."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028564_kaypro-scalp-care-purity-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T07:35:33.773Z"
+      }
+    },
+    {
+      "productId": "21755",
+      "productBarcode": "8028483228775",
+      "xmlEan": "8028483228775",
+      "xmlSku": "19071",
+      "externalIdToSet": "19071",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO COLOR CARE CAVIAR SUPREME сыворотка 100мл",
+      "xmlName": "KEPRO Kay Pro CC Caviar Supreme Serum 100 ml. / matu serums",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO COLOR CARE CAVIAR SUPREME сыворотка 100мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO Caviar Supreme – это роскошный уход, разработанный для окрашенных волос, которым необходима исключительная защита цвета и интенсивное питание. Формула средства основана на экстракте икры, богатом жирными кислотами, витаминами и антиоксидантами, которые восстанавливают волосы, укрепляют их структуру и предотвращают выцветание пигмента.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO Caviar Supreme is a luxurious treatment designed for color-treated hair that requires exceptional color protection and intensive nourishment. Its formula is based on caviar extract, rich in fatty acids, vitamins, and antioxidants that regenerate hair, strengthen its structure, and protect pigment from fading.",
+          "__descriptionLv": "KAYPRO Caviar Supreme ir grezna procedūra, kas paredzēta krāsotiem matiem, kuriem nepieciešama izcila krāsas aizsardzība un intensīva barošana. Tās formula ir balstīta uz kaviāra ekstraktu, kas bagāts ar taukskābēm, vitamīniem un antioksidantiem, kas atjauno matus, stiprina to struktūru un aizsargā pigmentu no izbalēšanas."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028578_kaypro-color-care-caviar-supreme-serum-100ml-serums-100ml-syvorotka-100ml-seerum-100ml-serumas-100ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-12T03:27:28.977Z"
+      }
+    },
+    {
+      "productId": "21315",
+      "productBarcode": "8008277263205",
+      "xmlEan": "8008277263205",
+      "xmlSku": "IN05",
+      "externalIdToSet": "IN05",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM DRY-T SHAMPOO 300ML",
+      "xmlName": "INEBRYA IC DRY T Shampoo 300ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM DRY-T SHAMPOO 300ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Придает волосам мягкость и делает их легко расчесываемыми, шелковистыми и блестящими. Не содержит SLS/SLES и силиконов.",
+        "technicalSpecs": {
+          "__descriptionEn": "Nourishing shampoo for dry, frizzy and treated hair, contains Silk and Wheat Proteins. It leaves hair silky soft, full of shine and easy to comb.",
+          "__descriptionLv": "Barojošs šampūns sausiem, sprogainiem un ķīmiski apstrādātiem matiem, kas bagātināts ar zīda un kviešu proteīniem. Tas piešķir matiem zīdainu mīkstumu, mirdzumu un palīdz viegli tos ķemmēt."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027562_inebrya-icecream-dry-t-shampoo-300ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T06:00:48.487Z"
+      }
+    },
+    {
+      "productId": "21278",
+      "productBarcode": "8005610640112",
+      "xmlEan": "8005610640112",
+      "xmlSku": "640112",
+      "externalIdToSet": "640112",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "WELLA PROFESSIONALS EIMI MISTIFY ME STRONG лак для волос 300мл",
+      "xmlName": "WELLA EIMI Mistify Me Strong 300 ml / matu laka",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "WELLA PROFESSIONALS EIMI MISTIFY ME STRONG лак для волос 300мл",
+        "brand": "WELLA PROFESSIONALS",
+        "category": "hair",
+        "description": "Сухой лак для волос сильной фиксации Wella EIMI Mistify Me мгновенно зафиксирует волосы, сохранит красивую текстуру или современную прическу. Wella Mistify Me Strong не склеивает и не утяжеляет волосы, не оставляет липкого слоя и следов на волосах, поэтому никто не заметит наличие средства на волосах.",
+        "technicalSpecs": {
+          "__descriptionEn": "Wella EIMI Mistify Me dry, strong hold hairspray will instantly fix your hair, maintain a beautiful texture or fashionable hairstyle. Wella Mistify Me Strong does not stick or weigh down the hair, does not leave a sticky layer and traces on the hair, so no one will notice the product on the hair.",
+          "__descriptionLv": "Wella EIMI Mistify Me sausa, spēcīgas fiksācijas matu laka acumirklī nofiksēs Jūsu matus, saglabās skaistu tekstūru vai modernu matu sakārtojumu. Wella Mistify Me Strong nelīp un nenosver matus, neatstāj lipīgu slāni un pēdas uz matiem, tāpēc neviens nepamanīs uz matiem esošo produktu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027476_wella-professionals-eimi-mistify-me-strong-hairspray-300ml-matu-laka-300ml-lak-dl-volos-300ml-juukse_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-05-14T07:52:49.083Z"
+      }
+    },
+    {
+      "productId": "21304",
+      "productBarcode": "8008277263854",
+      "xmlEan": "8008277263854",
+      "xmlSku": "IN54",
+      "externalIdToSet": "IN54",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "INEBRYA ICECREAM BALANCE SHAMPOO 300ML",
+      "xmlName": "INEBRYA IC Balance Shampoo 300ml / šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": false,
+        "title": "INEBRYA ICECREAM BALANCE SHAMPOO 300ML",
+        "brand": "INEBRYA",
+        "category": "hair",
+        "description": "Благодаря формуле, в состав которой входят экстракты березы, оливкового масла и пенника лугового, успокаивает кожу головы и регулирует чрезмерное выделение кожного жира. Продукция линейки Inebrya Ice Cream Balance на основе экстракта березы, оливкового масла и пенника лугового контролирует работу сальных желез и успокаивает кожу головы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Formulated with Birch Extract, Olive Oil and Limnanthes Alba, it cleanses effectively, relaxing the scalp and controlling excessive sebum production. Inebrya Ice Cream Balance is the line of treatments that performs a sebum-regulating and rebalancing action on stressed scalp birth extract, olive oil and alba limnanthes.",
+          "__descriptionLv": "Sastāvs ar bērza ekstraktu, olīveļļu un Limnanthes Alba efektīvi attīra, atslābina galvas ādu un kontrolē pārmērīgu sebuma veidošanos. Inebrya Ice Cream Balance ir ārstniecisko līdzekļu līnija, kas veic sebuma regulēšanas un līdzsvarošanas darbību stresa nomāktai galvas ādai dzemdību ekstrakts, olīveļļa un alba limnanthes."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027551_inebrya-icecream-balance-shampoo-300ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-05T04:37:17.200Z"
+      }
+    },
+    {
+      "productId": "21361",
+      "productBarcode": "8005610685168",
+      "xmlEan": "8005610685168",
+      "xmlSku": "85168",
+      "externalIdToSet": "85168",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LONDA PROFESSIONAL FIBER INFUSION 5-минутный восстанавливающий спрей для волос 100мл",
+      "xmlName": "LONDA FIBER Infusion 5 Min Treatment 100 ml / atjaun līdzekl",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LONDA PROFESSIONAL FIBER INFUSION 5-минутный восстанавливающий спрей для волос 100мл",
+        "brand": "LONDA",
+        "category": "hair",
+        "description": "Кератиновое лечение Londa Fiber Infusion применяется для ухода за всеми типами волос. Кератин обеспечивает интенсивное восстановление волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "Londa Fiber Infusion keratin treatment is used for the care of all hair types. Keratin provides intensive hair reconstruction.",
+          "__descriptionLv": "Londa Fiber Infusion keratīna procedūra ir paredzēta visu matu tipu kopšanai. Keratīns nodrošina intensīvu matu rekonstrukciju."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027675_londa-professional-fiber-infusion-5-minute-treatment-spray-100ml-5-minusu-atjaunojoss-matu-sprejs-10_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-06-12T06:48:29.357Z"
+      }
+    },
+    {
+      "productId": "21630",
+      "productBarcode": "3474637153564",
+      "xmlEan": "3474637153564",
+      "xmlSku": "ULV02385",
+      "externalIdToSet": "ULV02385",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 500мл",
+      "xmlName": "L&amp;quot;oreal SE Molecular Absolut Repair Shampoo 500 ml. / ša",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUT REPAIR MOLECULAR шампунь 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Роскошный шампунь для волос с поврежденной молекулярной структурой. Он бережно очищает поврежденные волосы, обеспечивая высокий уровень ухода.",
+        "technicalSpecs": {
+          "__descriptionEn": "A luxurious shampoo designed for hair with damaged molecular structure. It gently cleanses damaged hair, ensuring a high level of care.",
+          "__descriptionLv": "Grezns šampūns, kas paredzēts matiem ar bojātu molekulāro struktūru. Tas maigi attīra bojātus matus, nodrošinot augstu kopšanas līmeni."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028527_loreal-professionnel-serie-expert-absolut-repair-molecular-shampoo-500ml-sampuns-500ml-ampun-500ml-s_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T08:07:05.033Z"
+      }
+    },
+    {
+      "productId": "21633",
+      "productBarcode": "3474636975426",
+      "xmlEan": "3474636975426",
+      "xmlSku": "ULV08146",
+      "externalIdToSet": "ULV08146",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT BLONDIFIER маска для волос 500мл",
+      "xmlName": "L&amp;quot;oreal SE Blondifier Hair Mask 500ml  / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT BLONDIFIER маска для волос 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Маска L'Oreal Blondifier предназначена как для окрашенных, так и для натуральных светлых волос. Формула L'Oreal Blondifier подходит для регулярного использования.",
+        "technicalSpecs": {
+          "__descriptionEn": "The L'Oreal Blondifier mask is designed for both dyed and natural blonde hair. The L'Oreal Blondifier formula is suitable for regular use.",
+          "__descriptionLv": "L'Oreal Blondifier maska ​​ir paredzēta gan krāsotiem, gan dabīgi blondiem matiem. L'Oreal Blondifier formula ir piemērota regulārai lietošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028452_loreal-professionnel-serie-expert-blondifier-masque-500ml-matu-maska-500ml-maska-dl-volos-500ml-juuk_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T08:47:20.680Z"
+      }
+    },
+    {
+      "productId": "21640",
+      "productBarcode": "3474637069209",
+      "xmlEan": "3474637069209",
+      "xmlSku": "E3826700",
+      "externalIdToSet": "E3826700",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 300мл",
+      "xmlName": "L&amp;quot;oreal SE Curl Expression Cream System Shampoo 300 ml. / šā",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 300мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Если ваши вьющиеся волосы нуждаются в интенсивном увлажнении, воспользуйтесь кремообразным шампунем для вьющихся волос L'Oréal Professionnel Curl Expression. Этот продукт прекрасно очищает волосы, насыщая их влагой, не утяжеляя их.",
+        "technicalSpecs": {
+          "__descriptionEn": "If your curly hair needs intense hydration, reach for L'Oréal Professionnel Curl Expression Creamy Shampoo for Curly Hair. This product perfectly cleanses hair while providing moisture without weighing it down.",
+          "__descriptionLv": "Ja jūsu cirtainajiem matiem nepieciešama intensīva mitrināšana, izvēlieties L'Oréal Professionnel Curl Expression krēmīgo šampūnu cirtainiem matiem. Šis produkts lieliski attīra matus, vienlaikus nodrošinot mitrināšanu, nepadarot tos smagus."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028516_loreal-professionnel-serie-expert-curl-expression-cream-shampoo-300ml-kremveida-sampuns-300ml-kremov_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:50:47.913Z"
+      }
+    },
+    {
+      "productId": "21641",
+      "productBarcode": "3474637076511",
+      "xmlEan": "3474637076511",
+      "xmlSku": "E3835201",
+      "externalIdToSet": "E3835201",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 500млl",
+      "xmlName": "L&amp;quot;oreal SE Curl Expression Cream System Shampoo 500 ml. / šā",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 500млl",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Если ваши вьющиеся волосы нуждаются в интенсивном увлажнении, воспользуйтесь кремообразным шампунем для вьющихся волос L'Oréal Professionnel Curl Expression. Этот продукт прекрасно очищает волосы, насыщая их влагой, не утяжеляя их.",
+        "technicalSpecs": {
+          "__descriptionEn": "If your curly hair needs intense hydration, reach for L'Oréal Professionnel Curl Expression Creamy Shampoo for Curly Hair. This product perfectly cleanses hair while providing moisture without weighing it down.",
+          "__descriptionLv": "Ja jūsu cirtainajiem matiem nepieciešama intensīva mitrināšana, izvēlieties L'Oréal Professionnel Curl Expression krēmīgo šampūnu cirtainiem matiem. Šis produkts lieliski attīra matus, vienlaikus nodrošinot mitrināšanu, nepadarot tos smagus."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028517_loreal-professionnel-serie-expert-curl-expression-cream-shampoo-500ml-kremveida-sampuns-500ml-kremov_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:52:36.870Z"
+      }
+    },
+    {
+      "productId": "21642",
+      "productBarcode": "3474637069254",
+      "xmlEan": "3474637069254",
+      "xmlSku": "E3827201",
+      "externalIdToSet": "E3827201",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 1500мл",
+      "xmlName": "L&amp;quot;oreal SE Curl Expression Cream System Shampoo 1500 ml. / š",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT CURL EXPRESSION кремовый шампунь 1500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Если ваши вьющиеся волосы нуждаются в интенсивном увлажнении, воспользуйтесь кремообразным шампунем для вьющихся волос L'Oréal Professionnel Curl Expression. Этот продукт прекрасно очищает волосы, насыщая их влагой, не утяжеляя их.",
+        "technicalSpecs": {
+          "__descriptionEn": "If your curly hair needs intense hydration, reach for L'Oréal Professionnel Curl Expression Creamy Shampoo for Curly Hair. This product perfectly cleanses hair while providing moisture without weighing it down.",
+          "__descriptionLv": "Ja jūsu cirtainajiem matiem nepieciešama intensīva mitrināšana, izvēlieties L'Oréal Professionnel Curl Expression krēmīgo šampūnu cirtainiem matiem. Šis produkts lieliski attīra matus, vienlaikus nodrošinot mitrināšanu, nepadarot tos smagus."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028515_loreal-professionnel-serie-expert-curl-expression-cream-shampoo-1500ml-kremveida-sampuns-1500ml-krem_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-02T09:56:07.433Z"
+      }
+    },
+    {
+      "productId": "21650",
+      "productBarcode": "3474636974405",
+      "xmlEan": "3474636974405",
+      "xmlSku": "E3554901",
+      "externalIdToSet": "E3554901",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT LISS UNLIMITED шампунь 300мл",
+      "xmlName": "L&amp;quot;oreal SE Liss Unlimited PROKERATIN Shampoo  300 ml. / šam",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT LISS UNLIMITED шампунь 300мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Этот шампунь рекомендуется для ежедневного использования для непослушных, выпрямленных волос, склонных к пушению. Благодаря натуральным ингредиентам он не утяжеляет волосы и обеспечивает безопасный уход.",
+        "technicalSpecs": {
+          "__descriptionEn": "This shampoo is recommended for daily use on unruly, straightened hair that tends to frizz. Thanks to its natural ingredients, it doesn't weigh hair down while providing safe care.",
+          "__descriptionLv": "Šis šampūns ir ieteicams ikdienas lietošanai nepaklausīgiem, taisnotiem matiem, kas mēdz sprogoties. Pateicoties dabīgajām sastāvdaļām, tas nepadara matus smagus, vienlaikus nodrošinot drošu kopšanu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028518_loreal-professionnel-serie-expert-liss-unlimited-shampoo-300ml-sampuns-300ml-ampun-300ml-sampoon-300_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T05:20:42.013Z"
+      }
+    },
+    {
+      "productId": "21655",
+      "productBarcode": "30163478",
+      "xmlEan": "30163478",
+      "xmlSku": "E3560000",
+      "externalIdToSet": "E3560000",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX маска для волос 500мл",
+      "xmlName": "L`oreal SE Metal Detox Mask 500ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT METAL DETOX маска для волос 500мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Маска Metal Detox эффективно предотвращает накопление металла на поверхности и внутри волос. Это защищает цвет волос от выцветания и питает их, делая мягкими и менее пористыми.",
+        "technicalSpecs": {
+          "__descriptionEn": "The Metal Detox mask effectively prevents metal buildup on the surface and inside the hair. This protects the hair's color from fading and leaves it nourished, soft, and less porous.",
+          "__descriptionLv": "Metal Detox maska ​​efektīvi novērš metāla uzkrāšanos uz matu virsmas un iekšpuses. Tas pasargā matu krāsu no izbalēšanas un padara tos barotus, mīkstus un mazāk porainus."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028464_loreal-professionnel-serie-expert-metal-detox-masque-500ml-matu-maska-500ml-maska-dl-volos-500ml-juu_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T06:13:56.547Z"
+      }
+    },
+    {
+      "productId": "21660",
+      "productBarcode": "3474636975457",
+      "xmlEan": "3474636975457",
+      "xmlSku": "E75457",
+      "externalIdToSet": "E75457",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "L'OREAL PROFESSIONNEL SERIE EXPERT PRO LONGER кондиционер 750мл",
+      "xmlName": "L`oreal SE Pro Longer Conditioner 750ml / matu balz",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT PRO LONGER кондиционер 750мл",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Восстановление длины- кондиционер для длинных волос. ПРОФЕССИОНАЛЬНАЯ ФОРМУЛА с филлером А 100 и аминокислотами помогает мгновенно восстановить волосы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Restoring length - conditioner for long hair. PROFESSIONAL FORMULA with A 100 filler and amino acids helps restore hair instantly.",
+          "__descriptionLv": "Garumu atjaunojošs kondicionieris gariem matiem. PROFESIONĀLA FORMULA, kas bagātināta ar Filler A-100 un aminoskābēm tūlītējai matu šķiedru atjaunošanai."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028539_loreal-professionnel-serie-expert-pro-longer-conditioner-750ml-kondicionieris-750ml-kondicioner-750m_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-03T07:02:43.677Z"
+      }
+    },
+    {
+      "productId": "21726",
+      "productBarcode": "8028483228232",
+      "xmlEan": "8028483228232",
+      "xmlSku": "19017",
+      "externalIdToSet": "19017",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE CURL кондиционер 350мл",
+      "xmlName": "KEPRO Kay Pro SC Curl Conditioner 350 ml. / balzāms",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE CURL кондиционер 350мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Увлажняющий кондиционер KAYPRO CURL для вьющихся волос 1000 мл Увлажняющий кондиционер KAYPRO CURL — это лёгкая профессиональная формула, разработанная специально для вьющихся и волнистых волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO CURL Moisturizing Conditioner for Curly Hair 1000 ml KAYPRO CURL Moisturizing Conditioner is a lightweight, professional formula designed specifically for curly and wavy hair.",
+          "__descriptionLv": "KAYPRO CURL mitrinošais kondicionieris cirtainiem matiem 1000 ml KAYPRO CURL mitrinošais kondicionieris ir viegla, profesionāla formula, kas īpaši izstrādāta cirtainiem un viļņainiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028546_kaypro-hair-care-curl-conditioner-350ml-kondicionieris-350ml-kondicioner-350ml-palsam-350ml-kondicio_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T04:15:21.667Z"
+      }
+    },
+    {
+      "productId": "21729",
+      "productBarcode": "8028483228249",
+      "xmlEan": "8028483228249",
+      "xmlSku": "19018",
+      "externalIdToSet": "19018",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE CURL спрей против пушистости 200мл",
+      "xmlName": "KEPRO Kay Pro HC Curl Spray 200 ml. / matu sprējs",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE CURL спрей против пушистости 200мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Спрей KAYPRO CURL Anti-Frizz для вьющихся и волнистых волос 200 мл KAYPRO CURL Anti-Frizz — это лёгкий несмываемый спрей, предназначенный для вьющихся и волнистых волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO CURL Anti-Frizz Spray for Curly and Wavy Hair 200 ml KAYPRO CURL Anti-Frizz is a lightweight, leave-in spray designed for curly and wavy hair.",
+          "__descriptionLv": "KAYPRO CURL pretspraisa sprejs cirtainiem un viļņainiem matiem 200 ml KAYPRO CURL pretspraisa sprejs ir viegls, nenoskalojams sprejs, kas paredzēts cirtainiem un viļņainiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028549_kaypro-hair-care-curl-anti-frizz-spray-200ml-pretpukosanas-sprejs-200ml-sprej-protiv-puistosti-200ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T04:58:33.340Z"
+      }
+    },
+    {
+      "productId": "21732",
+      "productBarcode": "8028483228119",
+      "xmlEan": "8028483228119",
+      "xmlSku": "19005",
+      "externalIdToSet": "19005",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE FREQUENT маска для волос 1000мл",
+      "xmlName": "KEPRO Kay Pro HC Frequent Mask 1000 ml. / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE FREQUENT маска для волос 1000мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Восстанавливающая маска KAYPRO FREQUENT для всех типов волос 1000 мл KAYPRO FREQUENT — это интенсивно восстанавливающая маска, идеально подходящая для ежедневного использования для всех типов волос — от тонких и ослабленных до нормальных.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO FREQUENT Regenerating Mask for All Hair Types 1000 ml KAYPRO FREQUENT is an intensely regenerating mask, ideal for daily use on all hair types—from fine and delicate to normal.",
+          "__descriptionLv": "KAYPRO FREQUENT atjaunojoša maska ​​visiem matu tipiem 1000 ml KAYPRO FREQUENT ir intensīvi atjaunojoša maska, kas ir ideāli piemērota ikdienas lietošanai visiem matu tipiem — no smalkiem un delikātiem līdz normāliem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028552_kaypro-hair-care-frequent-hair-mask-1000ml-matu-maska-1000ml-maska-dl-volos-1000ml-juuksemask-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T05:20:19.227Z"
+      }
+    },
+    {
+      "productId": "21736",
+      "productBarcode": "8028483228263",
+      "xmlEan": "8028483228263",
+      "xmlSku": "19020",
+      "externalIdToSet": "19020",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE LISS шампунь 350мл",
+      "xmlName": "KEPRO Kay Pro HC Liss  Shampoo 350 ml./ šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE LISS шампунь 350мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO LISS — профессиональный разглаживающий шампунь, разработанный для всех типов волос, особенно для вьющихся, непослушных и трудноукладываемых. Его формула на основе масла ши, оливкового масла и экстракта какао-бобов глубоко увлажняет, питает и разглаживает волосы, одновременно мягко очищая их.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO LISS is a professional smoothing shampoo designed for all hair types, especially frizzy, unruly, and difficult-to-style hair. Its formula, based on shea butter, olive oil, and cocoa bean extract, deeply moisturizes, nourishes, and smooths hair while gently cleansing.",
+          "__descriptionLv": "KAYPRO LISS ir profesionāls matu izlīdzinošs šampūns, kas paredzēts visiem matu tipiem, īpaši sprogainiem, nepaklausīgiem un grūti ieveidojamiem matiem. Tā formula, kuras pamatā ir šī sviests, olīveļļa un kakao pupiņu ekstrakts, dziļi mitrina, baro un izlīdzina matus, vienlaikus maigi attīrot."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028556_kaypro-hair-care-liss-shampoo-350ml-sampuns-350ml-ampun-350ml-sampoon-350ml-sampunas-350ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T06:29:35.173Z"
+      }
+    },
+    {
+      "productId": "21737",
+      "productBarcode": "8028483228294",
+      "xmlEan": "8028483228294",
+      "xmlSku": "19023",
+      "externalIdToSet": "19023",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE LISS разглаживающее молочко для волос 200мл",
+      "xmlName": "KEPRO Kay Pro HC Liss Latte 200 ml./ matu pieniņš",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE LISS разглаживающее молочко для волос 200мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Успокаивающий крем для укладки KAYPRO SOOTHING LISS для непослушных волос 200 мл KAYPRO SOOTHING LISS — это успокаивающий крем для укладки, идеально подходящий для непослушных, непослушных и вьющихся волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO SOOTHING LISS Smoothing Styling Cream for Unruly Hair 200 ml KAYPRO SOOTHING LISS is a soothing styling cream, ideal for unruly, unmanageable, and frizzy hair.",
+          "__descriptionLv": "KAYPRO SOOTHING LISS nomierinošs veidošanas krēms nepaklausīgiem matiem 200 ml KAYPRO SOOTHING LISS ir nomierinošs veidošanas krēms, kas ir ideāli piemērots nepaklausīgiem, nepaklausīgiem un sprogainiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028557_kaypro-hair-care-liss-smoothing-milk-200ml-izlidzinoss-matu-pienins-200ml-razglaivaee-moloko-dl-volo_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T06:38:13.127Z"
+      }
+    },
+    {
+      "productId": "21739",
+      "productBarcode": "8028483228188",
+      "xmlEan": "8028483228188",
+      "xmlSku": "19012",
+      "externalIdToSet": "19012",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO HAIR CARE VOLUME кондиционер 350мл",
+      "xmlName": "KEPRO Kay Pro HC Volume Conditioner 350 ml / balzāms",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO HAIR CARE VOLUME кондиционер 350мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Кондиционер для придания объёма тонким волосам KAYPRO VOLUME KAYPRO VOLUME — профессиональный кондиционер, разработанный для тонких, чувствительных и лишенных объёма волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO VOLUME Volumizing Conditioner for Fine Hair KAYPRO VOLUME is a professional conditioner designed for fine, delicate, and volume-less hair.",
+          "__descriptionLv": "KAYPRO VOLUME Apjomu piešķirošs kondicionieris smalkiem matiem KAYPRO VOLUME ir profesionāls kondicionieris, kas paredzēts smalkiem, maigiem un apjoma zaudējušiem matiem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028559_kaypro-hair-care-volume-conditioner-350ml-kondicionieris-350ml-kondicioner-350ml-palsam-350ml-kondic_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T06:48:29.150Z"
+      }
+    },
+    {
+      "productId": "21743",
+      "productBarcode": "8028483228355",
+      "xmlEan": "8028483228355",
+      "xmlSku": "19029",
+      "externalIdToSet": "19029",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO SCALP CARE BALANCE шампунь 1000мл",
+      "xmlName": "KEPRO Kay Pro SC Balance Shampoo 1000 ml./ šampūns",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO SCALP CARE BALANCE шампунь 1000мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "KAYPRO Balance — это специализированный шампунь, разработанный для жирных волос и кожи головы, нуждающихся в балансировке. Его мягкая, но эффективная формула содержит масло Limnanthes Alba (масло семян таволги), регулирующее выработку кожного сала, и экстракт берёзы, который тонизирует, успокаивает и смягчает воспалительные реакции кожи головы.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO Balance is a specialized shampoo designed for oily hair and scalps in need of balancing. Its gentle yet effective formula contains Limnanthes Alba oil (known as meadowsweet seed oil), which regulates sebum production, and birch extract, which tones, calms, and soothes inflammatory scalp reactions.",
+          "__descriptionLv": "KAYPRO Balance ir specializēts šampūns, kas paredzēts taukainiem matiem un galvas ādai, kurai nepieciešama līdzsvarošana. Tā maigā, bet efektīvā formula satur Limnanthes Alba eļļu (pazīstama kā vīgriezes sēklu eļļa), kas regulē sebuma veidošanos, un bērza ekstraktu, kas tonizē, nomierina un mazina iekaisīgas galvas ādas reakcijas."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028562_kaypro-scalp-care-balance-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-1000ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-11T07:21:09.687Z"
+      }
+    },
+    {
+      "productId": "21769",
+      "productBarcode": "8028483228522",
+      "xmlEan": "8028483228522",
+      "xmlSku": "KP522",
+      "externalIdToSet": "KP522",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "KAYPRO SPECIAL CARE KERATIN маска для волос 500мл",
+      "xmlName": "KAYPRO SC Keratin Mask 500ml / matu maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "KAYPRO SPECIAL CARE KERATIN маска для волос 500мл",
+        "brand": "KAYPRO",
+        "category": "hair",
+        "description": "Маска KAYPRO Keratin интенсивно восстанавливает волосы, поврежденные, ломкие и ослабленные химическими воздействиями или частой горячей укладкой. Её формула на основе гидролизованного кератина эффективно восстанавливает структуру волоса, заполняя пробелы и укрепляя пряди изнутри.",
+        "technicalSpecs": {
+          "__descriptionEn": "KAYPRO Keratin is an intensively regenerating mask designed for hair damaged, brittle, and weakened by chemical treatments or frequent heat styling. Its formula, based on hydrolyzed keratin, effectively rebuilds the hair fiber, filling in gaps and strengthening strands from within.",
+          "__descriptionLv": "KAYPRO Keratin ir intensīvi atjaunojoša maska, kas paredzēta matiem, kuri ir bojāti, trausli un novājināti ķīmisko procedūru vai biežas termiskās apstrādes rezultātā. Tās formula, kuras pamatā ir hidrolizēts keratīns, efektīvi atjauno matu šķiedras, aizpildot spraugas un stiprinot matu šķipsnas no iekšpuses."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028592_kaypro-special-care-keratin-hair-mask-500ml-matu-maska-500ml-maska-dl-volos-500ml-juuksemask-500ml-p_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-12T07:21:37.140Z"
+      }
+    },
+    {
+      "productId": "21602",
+      "productBarcode": "8809634610034",
+      "xmlEan": "8809634610034",
+      "xmlSku": "AXIS34",
+      "externalIdToSet": "AXIS34",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "AXIS-Y DARK SPOT CORRECTING GLOW SERUM сыворотка с ниацинамидом 50мл",
+      "xmlName": "AXIS-Y Dark Spot Serum 50ml / sērums",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "AXIS-Y DARK SPOT CORRECTING GLOW SERUM сыворотка с ниацинамидом 50мл",
+        "brand": "AXIS-Y",
+        "category": "face",
+        "description": "Сыворотка для коррекции темных пятен AXIS-Y Dark Spot Correcting Glow Serum – это легкая, быстро впитывающаяся сыворотка, разработанная для уменьшения пигментации, выравнивания тона кожи и усиления ее естественного сияния. Благодаря содержанию 5% ниацинамида и богатым антиоксидантами растительным экстрактам, таким как облепиха и рисовые отруби, сыворотка эффективно осветляет кожу, одновременно увлажняя и защищая ее от вредного воздействия внешних факторов.",
+        "technicalSpecs": {
+          "__descriptionEn": "AXIS-Y Dark Spot Correcting Glow Serum is a lightweight, fast-absorbing serum designed to reduce discoloration, even out skin tone, and enhance its natural glow. Featuring 5% niacinamide and antioxidant-rich plant extracts, such as sea buckthorn and rice bran, the serum effectively brightens the skin while moisturizing and protecting it from harmful external factors.",
+          "__descriptionLv": "AXIS-Y Dark Spot Correcting Glow Serum ir viegls, ātri iesūcas serums, kas paredzēts, lai mazinātu krāsas izmaiņas, izlīdzinātu ādas toni un uzlabotu tās dabisko mirdzumu. Satur 5% niacinamīda un antioksidantiem bagātus augu ekstraktus, piemēram, smiltsērkšķus un rīsu klijas, kas efektīvi atdzīvina ādu, vienlaikus mitrinot to un aizsargājot to no kaitīgiem ārējiem faktoriem."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028303_axis-y-dark-spot-correcting-glow-serum-serum-with-niacinamide-50ml-serums-ar-niacinamidu-50ml-syvoro_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-08-18T08:49:34.987Z"
+      }
+    },
+    {
+      "productId": "21778",
+      "productBarcode": "6290360591568",
+      "xmlEan": "6290360591568",
+      "xmlSku": "LAT1568",
+      "externalIdToSet": "LAT1568",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "LATTAFA AJAYEB DUBAI PORTRAIT парфюмерная вода 100мл",
+      "xmlName": "LATTAFA AJAYEB DUBAI PORTRAIT EDP UNISEX 100ML",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "LATTAFA AJAYEB DUBAI PORTRAIT парфюмерная вода 100мл",
+        "brand": "LATTAFA",
+        "category": "body",
+        "description": "Ajayeb Dubai Portrait, созданный Lattafa, – это роскошная восточно-древесная композиция, которая, подобно яркому шедевру, переносит вас прямо в оживленное сердце Дубая. Выпущенный в 2023 году, аромат воспевает контрасты: коммерческие традиции и футуристическое видение города, полного света и эксклюзивной роскоши.",
+        "technicalSpecs": {
+          "__descriptionEn": "Ajayeb Dubai Portrait, created by Lattafa, is a luxurious oriental-woody composition that, like an intense masterpiece, transports you directly to the vibrant heart of Dubai. Released in 2023, the fragrance celebrates contrasts: commercial tradition and a futuristic vision of a city full of light and exclusive luxury.",
+          "__descriptionLv": "Lattafa radītais Ajayeb Dubai Portrait ir grezna austrumnieciski koksnes kompozīcija, kas, gluži kā intensīvs šedevrs, aizvedīs jūs tieši uz rosīgo Dubaijas sirdi. 2023. gadā izlaistais aromāts cildina kontrastus: komerciālās tradīcijas un futūristisku vīziju par pilsētu, kas pilna gaismas un ekskluzīvas greznības."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0028604_lattafa-ajayeb-dubai-portrait-eau-de-parfum-100ml-parfimerijas-udens-100ml-parfmerna-voda-100ml-parf_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-09-15T04:21:41.617Z"
+      }
+    },
+    {
+      "productId": "21430",
+      "productBarcode": "5414343018182",
+      "xmlEan": "5414343018182",
+      "xmlSku": "OG182",
+      "externalIdToSet": "OG182",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "OLIVIA GARDEN FINGERBRUSH MINI KIDS MINT щетка для волос, mint",
+      "xmlName": "OG Finger Brush Mini Kids Mint / matu suka",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "OLIVIA GARDEN FINGERBRUSH MINI KIDS MINT щетка для волос, mint",
+        "brand": "OLIVIA GARDEN",
+        "category": "equipment",
+        "description": "Уход за волосами — это не только выбор правильных средств, но и правильное расчёсывание качественной щёткой, например, той, что предлагает Olivia Garden. Позаботьтесь о себе всего за несколько шагов, выбрав аксессуары для волос высочайшего качества от этого культового бренда.",
+        "technicalSpecs": {
+          "__descriptionEn": "Hair care isn't just about choosing the right products, but also about properly brushing your hair with a high-quality brush, like the one Olivia Garden offers. Take care of yourself in just a few steps by securing the highest quality hair accessories from this iconic brand.",
+          "__descriptionLv": "Matu kopšana nav tikai pareizo produktu izvēle, bet arī matu pareiza ķemmēšana ar augstas kvalitātes suku, piemēram, tādu, kādu piedāvā Olivia Garden. Parūpējieties par sevi tikai dažos soļos, iegādājoties augstākās kvalitātes matu aksesuārus no šī ikoniskā zīmola."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0027759_olivia-garden-fingerbrush-mini-kids-mint-hairbrush-mint-matu-suka-etka-dl-volos-juuksehari-plauku-se_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2025-07-31T06:14:23.817Z"
+      }
+    },
+    {
+      "productId": "22176",
+      "productBarcode": "4064666906935",
+      "xmlEan": "4064666906935",
+      "xmlSku": "906935",
+      "externalIdToSet": "906935",
+      "matchType": "UNIQUE_EAN_SAFE",
+      "productName": "WELLA PROFESSIONALS ULTIMATE SMOOTH маска 150мл",
+      "xmlName": "WELLA Ultimate Smooth Mask 150 / maska",
+      "identityEvidence": {
+        "productBarcodeUnique": true,
+        "xmlEanUnique": true,
+        "xmlSkuUnique": true,
+        "nameVariantConfirmed": true
+      },
+      "protectedProductBaseline": {
+        "isActive": true,
+        "title": "WELLA PROFESSIONALS ULTIMATE SMOOTH маска 150мл",
+        "brand": "WELLA PROFESSIONALS",
+        "category": "hair",
+        "description": "Маска для волос Wella Professionals Ultimate Smooth Mask разработана на основе запатентованной технологии сквалана и Омега-9 и идеально подходит для вьющихся, сухих и тусклых волос. Роскошное средство по уходу за волосами с цветочным ароматом.",
+        "technicalSpecs": {
+          "__descriptionEn": "Wella Professionals Ultimate Smooth Mask is formulated with a patented technology based on squalane and Omega-9 and is ideal for frizzy, dry and dull hair. A luxurious hair care treatment with a floral hair scent.",
+          "__descriptionLv": "Wella Professionals Ultimate Smooth maska ​​ir izstrādāta, izmantojot patentētu tehnoloģiju, kuras pamatā ir skvalāns un Omega-9, un ir ideāli piemērota pūkainiem, sausiem un blāviem matiem. Grezna matu kopšanas procedūra ar ziedu matu aromātu."
+        },
+        "image": "https://hairshop.lv/content/images/thumbs/0029468_wella-professionals-ultimate-smooth-mask-150ml-maska-150ml-maska-150ml-mask-150ml-kauke-150ml_400.jpeg",
+        "imageCount": 1,
+        "createdAt": "2026-04-14T05:49:57.817Z"
+      }
+    }
+  ]
+}

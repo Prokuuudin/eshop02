@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "wave": "final-existing-product-backfill",
+  "executable": true,
+  "entryCount": 8,
+  "baseline": {
+    "productCount": 17422,
+    "externalIdCount": 14624,
+    "unlinkedCount": 2798,
+    "active": 2229,
+    "inactive": 15193,
+    "syncRunCount": 10,
+    "duplicateExternalId": 0,
+    "fingerprint": "44a1637730da00f90ff5eb4287349739"
+  },
+  "xmlSha256": "26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad",
+  "permanentExclusion": {
+    "productId": "13324",
+    "xmlSku": "97388150",
+    "reason": "PROTECTED_AMBIGUOUS_DEFERRED_INTERSECTION"
+  },
+  "entries": [
+    {
+      "productId": "19015",
+      "currentLocalSku": null,
+      "currentBarcode": "4045787723212",
+      "localTitle": "SCHWARZKOPF PROFESSIONAL BONACURE REPAIR RESCUE SEALED ENDS+ крем-сыворотка 75мл",
+      "xmlSku": "NHK3212",
+      "xmlEan": "4045787723212",
+      "xmlTitle": "Schwarzkopf BC PRR Sealed Ends NEW 100ml. / fluids matu gali",
+      "externalIdToSet": "NHK3212",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 4045787723212",
+        "single XML SKU claimant NHK3212",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "19015",
+        "sku": null,
+        "barcode": "4045787723212",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE REPAIR RESCUE SEALED ENDS+ крем-сыворотка 75мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE REPAIR RESCUE SEALED ENDS+ cream serum 75ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE REPAIR RESCUE SEALED ENDS+ krēmserums 75ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Интенсивная сыворо­тка запечатывает волосы и предотвращает сечение. Пре­дназначена непосредственно для решения проблемы разру­шения волос и их сечения.",
+        "image": "https://hairshop.lv/content/images/thumbs/0027423_schwarzkopf-professional-bonacure-repair-rescue-sealed-ends-cream-serum-75ml-kremserums-75ml-krem-sy_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027423_schwarzkopf-professional-bonacure-repair-rescue-sealed-ends-cream-serum-75ml-kremserums-75ml-krem-sy_400.jpeg"
+        ],
+        "price": 17.05,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2018-07-25T06:43:39.870Z",
+        "updatedAt": "2026-04-04T10:03:07.360Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "19018",
+      "currentLocalSku": null,
+      "currentBarcode": "4045787723472",
+      "localTitle": "SCHWARZKOPF PROFESSIONAL BONACURE COLOR FREEZE SILVER шампунь 250мл",
+      "xmlSku": "NHK4211",
+      "xmlEan": "4045787723472",
+      "xmlTitle": "Schwarzkopf BC CP pH4.5 CF 250ml /sudraba šampūns",
+      "externalIdToSet": "NHK4211",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 4045787723472",
+        "single XML SKU claimant NHK4211",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "19018",
+        "sku": null,
+        "barcode": "4045787723472",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE COLOR FREEZE SILVER шампунь 250мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE COLOR FREEZE SILVER shampoo 250ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE COLOR FREEZE SILVER šampūns 250ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Шампу­нь очищает и эффективно нейтра­лизует желтый пигмент на бло­ндированных и светлых волосах. При­дает серебристый оттенок седым и обе­сцвеченным волосам.",
+        "image": "https://hairshop.lv/content/images/thumbs/0026114_schwarzkopf-professional-bonacure-color-freeze-silver-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoo_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0026114_schwarzkopf-professional-bonacure-color-freeze-silver-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoo_400.jpeg"
+        ],
+        "price": 8.85,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2018-07-26T09:56:45.633Z",
+        "updatedAt": "2026-04-04T06:32:20.173Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "21283",
+      "currentLocalSku": null,
+      "currentBarcode": "8005610265544",
+      "localTitle": "WELLA PROFESSIONALS EIMI SHAPE ME стайлинг-гель 150мл",
+      "xmlSku": "81580138",
+      "xmlEan": "8005610265544",
+      "xmlTitle": "WELLA EIMI Shape Me 48H 150ml / veidošanas līdz",
+      "externalIdToSet": "81580138",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 8005610265544",
+        "single XML SKU claimant 81580138",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "21283",
+        "sku": null,
+        "barcode": "8005610265544",
+        "title": "WELLA PROFESSIONALS EIMI SHAPE ME стайлинг-гель 150мл",
+        "titleEn": "WELLA PROFESSIONALS EIMI SHAPE ME hair gel 150ml",
+        "titleLv": "WELLA PROFESSIONALS EIMI SHAPE ME veidošanas želeja 150ml",
+        "brand": "WELLA PROFESSIONALS",
+        "category": "hair",
+        "description": "Прическа, которая продержится 48 часов? Невозможный!!!",
+        "image": "https://hairshop.lv/content/images/thumbs/0027481_wella-professionals-eimi-shape-me-hair-gel-150ml-veidosanas-zeleja-150ml-stajling-gel-150ml-viimistl_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027481_wella-professionals-eimi-shape-me-hair-gel-150ml-veidosanas-zeleja-150ml-stajling-gel-150ml-viimistl_400.jpeg"
+        ],
+        "price": 17,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2025-05-14T08:33:28.293Z",
+        "updatedAt": "2026-04-06T10:59:41.803Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "21352",
+      "currentLocalSku": null,
+      "currentBarcode": "7501015946879",
+      "localTitle": "AMERICAN CREW BOOST POWDER пудра для придания объема 20г",
+      "xmlSku": "AC-879",
+      "xmlEan": "7501015946879",
+      "xmlTitle": "AC CLASSIC Boost Powder 20g. / viriešū matu pūderis",
+      "externalIdToSet": "AC-879",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 7501015946879",
+        "single XML SKU claimant AC-879",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "21352",
+        "sku": null,
+        "barcode": "7501015946879",
+        "title": "AMERICAN CREW BOOST POWDER пудра для придания объема 20г",
+        "titleEn": "AMERICAN CREW BOOST POWDER volumizing powder 20g",
+        "titleLv": "AMERICAN CREW BOOST POWDER apjoma pūderis 20g",
+        "brand": "AMERICAN CREW",
+        "category": "hair",
+        "description": "American Crew Boost Powder Пудра для объёма волос прекрасно подходит для тонких, вьющихся и непослушных волос. Данный продукт компании Американ Крю поможет не только придать впечатляющий объём волосам, но и наделить их особым и красивым матовым блеском. Пудра для объёма волос Boost Powder обеспечивает хорошую фиксацию волос, при этом не осушая их и защищая от агрессивного воздействия внешних факторов, приподнимает волосы, благодаря чему ваша причёска остаётся именно такой, как вы задумали. Пудра American Crew для объёма волос может послужить отличной основой для других средств для укладки волос от компании Американ Крю.\n\nПодходит для типов волос: непослушные, вьющиеся.",
+        "image": "https://hairshop.lv/content/images/thumbs/0027610_american-crew-boost-powder-apjoma-puderis-20g-volumizing-powder-pudra-dl-pridani-obema-voluumi-andev_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027610_american-crew-boost-powder-apjoma-puderis-20g-volumizing-powder-pudra-dl-pridani-obema-voluumi-andev_400.jpeg"
+        ],
+        "price": 14.5,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2025-06-10T08:12:18.693Z",
+        "updatedAt": "2025-11-24T12:54:15.643Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "21420",
+      "currentLocalSku": null,
+      "currentBarcode": "5414343006523",
+      "localTitle": "OLIVIA GARDEN FINGERBRUSH COMBO щетка для волос, black",
+      "xmlSku": "7637BR",
+      "xmlEan": "5414343006523",
+      "xmlTitle": "BRATT Olivia G. Finger Brush Combo Medium / matu suka",
+      "externalIdToSet": "7637BR",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 5414343006523",
+        "single XML SKU claimant 7637BR",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "21420",
+        "sku": null,
+        "barcode": "5414343006523",
+        "title": "OLIVIA GARDEN FINGERBRUSH COMBO щетка для волос, black",
+        "titleEn": "OLIVIA GARDEN FINGERBRUSH COMBO hairbrush, black",
+        "titleLv": "OLIVIA GARDEN FINGERBRUSH COMBO matu suka, black",
+        "brand": "OLIVIA GARDEN",
+        "category": "equipment",
+        "description": "Уход за волосами — это не только выбор правильных средств, но и правильное расчёсывание качественной щёткой, например, той, что предлагает Olivia Garden. Позаботьтесь о себе всего за несколько шагов, выбрав аксессуары для волос высочайшего качества от этого культового бренда.",
+        "image": "https://hairshop.lv/content/images/thumbs/0027748_olivia-garden-fingerbrush-combo-hairbrush-black-matu-suka-etka-dl-volos-juuksehari-plauku-sepetys_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027748_olivia-garden-fingerbrush-combo-hairbrush-black-matu-suka-etka-dl-volos-juuksehari-plauku-sepetys_400.jpeg"
+        ],
+        "price": 21,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2025-07-31T05:39:56.740Z",
+        "updatedAt": "2026-03-29T13:28:30.797Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "21623",
+      "currentLocalSku": null,
+      "currentBarcode": "3474636975938",
+      "localTitle": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR шампунь 1500мл",
+      "xmlSku": "E3570301",
+      "xmlEan": "3474636975938",
+      "xmlTitle": "L&amp;quot;oreal SE Absolut Repair PROTEIN GOLD Shampoo 1500 ml. / ša",
+      "externalIdToSet": "E3570301",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 3474636975938",
+        "single XML SKU claimant E3570301",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "21623",
+        "sku": null,
+        "barcode": "3474636975938",
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR шампунь 1500мл",
+        "titleEn": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR shampoo 1500ml",
+        "titleLv": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR šampūns 1500ml",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "Профессиональная формула мгновенно очищает и реструктурирует поврежденные волосы, делая их легкими на ощупь.\n\nВ сочетании с Absolut Repair Conditioner, Masque или Golden Masque волосы становятся более блестящими и гладкими",
+        "image": "https://hairshop.lv/content/images/thumbs/0028509_loreal-professionnel-serie-expert-absolute-repair-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0028509_loreal-professionnel-serie-expert-absolute-repair-shampoo-1500ml-sampuns-1500ml-ampun-1500ml-sampoon_400.jpeg"
+        ],
+        "price": 53,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2025-09-02T06:30:38.487Z",
+        "updatedAt": "2026-03-22T17:30:30.593Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "21624",
+      "currentLocalSku": null,
+      "currentBarcode": "3474636975471",
+      "localTitle": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR кондиционер 750мл",
+      "xmlSku": "E3565700",
+      "xmlEan": "3474636975471",
+      "xmlTitle": "L&amp;quot;oreal SE Absolut Repair PROTEIN GOLD Conditioner 750 ml. /",
+      "externalIdToSet": "E3565700",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 3474636975471",
+        "single XML SKU claimant E3565700",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "21624",
+        "sku": null,
+        "barcode": "3474636975471",
+        "title": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR кондиционер 750мл",
+        "titleEn": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR conditioner 750ml",
+        "titleLv": "L'OREAL PROFESSIONNEL SERIE EXPERT ABSOLUTE REPAIR kondicionieris 750ml",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "hair",
+        "description": "L’Oreal Absolut Repair кондиционер для восстановления очень поврежденных волос. Мгновенное преображение без утяжеления.",
+        "image": "https://hairshop.lv/content/images/thumbs/0028537_loreal-professionnel-serie-expert-absolute-repair-conditioner-750ml-kondicionieris-750ml-kondicioner_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0028537_loreal-professionnel-serie-expert-absolute-repair-conditioner-750ml-kondicionieris-750ml-kondicioner_400.jpeg"
+        ],
+        "price": 52,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2025-09-02T06:34:28.283Z",
+        "updatedAt": "2026-03-22T17:24:35.417Z",
+        "lastSyncRunId": null
+      }
+    },
+    {
+      "productId": "22129",
+      "currentLocalSku": null,
+      "currentBarcode": "5711914194932",
+      "localTitle": "GOSH Primer + Против вялости 30ml",
+      "xmlSku": "1010250041",
+      "xmlEan": "5711914194932",
+      "xmlTitle": "GOSH Primer + 009 Anti Dullnes 30ml / sejas praimeris",
+      "externalIdToSet": "1010250041",
+      "matchType": "UNIQUE_EXACT_EAN",
+      "identityEvidence": [
+        "exact EAN 5711914194932",
+        "single XML SKU claimant 1010250041",
+        "single Product EAN claimant",
+        "titles agree on product family/variant/size"
+      ],
+      "expectedActive": true,
+      "baselineProtected": {
+        "id": "22129",
+        "sku": null,
+        "barcode": "5711914194932",
+        "title": "GOSH Primer + Против вялости 30ml",
+        "titleEn": "GOSH Primer + Anti-Dullness 30ml",
+        "titleLv": "GOSH Primer + Pret blāvumu 30ml",
+        "brand": "GOSH",
+        "category": "face",
+        "description": "«Все преимущества праймера в сочетании с уходом за кожей! Позаботьтесь о своей коже и одновременно улучшите макияж с помощью праймера PRIMER+ Anti-Dullness, который подарит вам лучшее из обоих миров.",
+        "image": "https://hairshop.lv/content/images/thumbs/0029214_gosh-primer-anti-dullness-30ml-anti-nuobodulys-pret-blavumu-protiv-vlosti-tuhmusevastane_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029214_gosh-primer-anti-dullness-30ml-anti-nuobodulys-pret-blavumu-protiv-vlosti-tuhmusevastane_400.jpeg"
+        ],
+        "price": 19.9,
+        "stock": 10000,
+        "isActive": true,
+        "isDeleted": false,
+        "createdAt": "2026-03-27T07:18:43.827Z",
+        "updatedAt": "2026-03-27T07:20:05.687Z",
+        "lastSyncRunId": null
+      }
+    }
+  ]
+}

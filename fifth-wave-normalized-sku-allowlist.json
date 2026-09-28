@@ -1,0 +1,1149 @@
+{
+  "schemaVersion": 1,
+  "wave": "fifth-wave-normalized-sku-safe",
+  "executable": true,
+  "generatedAt": "2026-09-27T20:51:05.270Z",
+  "sourceAudit": "fifth-wave-normalized-sku-audit/v1",
+  "entryCount": 24,
+  "baseline": {
+    "productCount": 6378,
+    "externalIdCount": 3526,
+    "active": 2229,
+    "inactive": 4149,
+    "syncRunCount": 6,
+    "fingerprint": "5cce6d1caafdaf2721c9632a441445e2"
+  },
+  "xmlSha256": "26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad",
+  "entries": [
+    {
+      "productId": "18688",
+      "productSku": "0000051526",
+      "xmlSku": "51526",
+      "externalIdToSet": "51526",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "51526",
+      "productName": "KERASTASE HOMME CAPITAL FORCE DAILY TREATMENT SHAMPOO 250ML",
+      "xmlName": "KERASTASE HOMME CAPITAL SHAMPOO 250ML / šampūns",
+      "productBarcode": null,
+      "xmlEan": null,
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [
+          "250ml"
+        ],
+        "nameSimilarity": 0.714,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "KERASTASE",
+        "category": "hair",
+        "title": "KERASTASE HOMME CAPITAL FORCE DAILY TREATMENT SHAMPOO 250ML",
+        "titleEn": "KERASTASE HOMME CAPITAL FORCE DAILY TREATMENT SHAMPOO 250ML",
+        "titleLv": "KERASTASE HOMME CAPITAL FORCE DAILY TREATMENT SHAMPOO 250ML",
+        "description": "Энергетический шампунь Уже после одного применения вы ощутите непередаваемое чувство свежести и чистоты, волосы наполнятся энергией и силой, станут крепче у корней, а также более плотнее и объемнее.",
+        "technicalSpecs": {
+          "__descriptionEn": "Kérastase Homme Capital Force is a daily shampoo recommended for care of normal men’s hair. Refreshes and revitalizes hair condition",
+          "__descriptionLv": "Šampūns ikdienas lietošanai. Piešķir enerģiju un atsvaidzina galvas ādu."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0022166_kerastase-homme-capital-force-daily-treatment-shampoo-250ml-kerastaz_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0022166_kerastase-homme-capital-force-daily-treatment-shampoo-250ml-kerastaz_400.jpeg"
+        ],
+        "createdAt": "2018-01-05T07:28:13.937Z",
+        "price": 19.1,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19286",
+      "productSku": "016107",
+      "xmlSku": "16107",
+      "externalIdToSet": "16107",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16107",
+      "productName": "ORIBE MOISTURE & CONTROL шампунь 250мл",
+      "xmlName": "ORIBE Shampoo for Moisture and Control 250ml / šampūns",
+      "productBarcode": null,
+      "xmlEan": "811913017760",
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [
+          "250ml"
+        ],
+        "nameSimilarity": 0.75,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE MOISTURE & CONTROL шампунь 250мл",
+        "titleEn": "ORIBE MOISTURE & CONTROL shampoo 250ml",
+        "titleLv": "ORIBE MOISTURE & CONTROL šampūns 250ml",
+        "description": "Интенсивно восстанавливающий шампунь Кудрявые, очень толстые или пушащиеся волосы моментально получают увлажнение.",
+        "technicalSpecs": {
+          "__descriptionEn": "INGRDIENTS:AQUA/WATER/EAU, SODIUM COCOYL ISETHIONATE, LAURETH-5 CARBOXYLIC ACID, SILICONE QUATERNIUM-3, AMODIMETHICONE, GLYCERETH-26, COCONUT ACID, COCAMIDE MIPA, PARFUM/FRAGRANCE, GLYCOL DISTEARATE, SODIUM ISETHIONATE, POLYQUATERNIUM-10, SODIUM HYDROXIDE, TRIDECETH-12, TETRASODIUM EDTA, POLYQUATERNIUM-59, GLYCERIN, MAGNESIUM NITRATE, BUTYLENE GLYCOL, PANTHENOL, SODIUM PCA, PCA, SODIUM LACTATE, ASPARTIC ACID, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LEONTOPODIUM ALPINUM (EDELWEISS) FLOWER/LEAF EXTRACT, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, STYRAX BENZOIN (AMBER) RESIN EXTRACT, MAGNESIUM CHLORIDE, ARGININE, GLYCINE, ALANINE, SERINE, VALINE, ISOLEUCINE, PROLINE, THREONINE, HISTIDINE, PHENYLALANINE, CITRIC ACID, METHYLCHLOROISOTHIAZOLINONE, METHYLISOTHIAZOLINONE, PHENOXYETHANOL, SODIUM BENZOATE, POTASSIUM SORBATE, HEXYL CINNAMAL, LIMONENE",
+          "__descriptionLv": "Intensīvi mitrinošs šampūns Nekavējoties mitrina lokainus, izteikti biezus vai spurainus matus."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023581_oribe-moisture-control-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023581_oribe-moisture-control-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png"
+        ],
+        "createdAt": "2019-04-12T03:57:50.557Z",
+        "price": 61,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "18563",
+      "productSku": "0262",
+      "xmlSku": "262",
+      "externalIdToSet": "262",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "262",
+      "productName": "SNAILS NAIL POLISH SET FOR KIDS",
+      "xmlName": "SNAILS NAIL POLISH SET FOR KIDS (3 gb) / bērnu nagu laka",
+      "productBarcode": null,
+      "xmlEan": "5200384516455",
+      "identityEvidence": {
+        "productMeasures": [],
+        "xmlMeasures": [],
+        "nameSimilarity": 0.75,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "SNAILS",
+        "category": "nails",
+        "title": "SNAILS NAIL POLISH SET FOR KIDS",
+        "titleEn": "SNAILS NAIL POLISH SET FOR KIDS",
+        "titleLv": "SNAILS NAIL POLISH SET FOR KIDS",
+        "description": "\"Snail\" экологичный лак для ногтей на водной основе, который смывается водой с мылом!",
+        "technicalSpecs": {
+          "__descriptionEn": "The world’s first 100% European made water soluble nail polish that is easily washable and made especially for little glamour girls — with no harmful chemicals or toxic substances. Now families can rest easy that dress-up and imaginative play stay safe, simple and sustainable.",
+          "__descriptionLv": "\"Snail\" ir videi draudzīgas nagu lakas uz ūdens bāzes, kuras nomazgājas ar ūdeni un ziepēm!"
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021831_snails-nail-polish-set-for-kids_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021831_snails-nail-polish-set-for-kids_400.png",
+          "https://hairshop.lv/content/images/thumbs/0021832_snails-nail-polish-set-for-kids.png"
+        ],
+        "createdAt": "2017-11-15T07:21:21.547Z",
+        "price": 16.99,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19287",
+      "productSku": "016109",
+      "xmlSku": "16109",
+      "externalIdToSet": "16109",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16109",
+      "productName": "ORIBE SIGANTURE кондиционер 200мл",
+      "xmlName": "ORIBE Signature Conditioner 200ml / matu balzāms",
+      "productBarcode": null,
+      "xmlEan": "811913018668",
+      "identityEvidence": {
+        "productMeasures": [
+          "200ml"
+        ],
+        "xmlMeasures": [
+          "200ml"
+        ],
+        "nameSimilarity": 0.462,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE SIGANTURE кондиционер 200мл",
+        "titleEn": "ORIBE SIGANTURE conditioner 200ml",
+        "titleLv": "ORIBE SIGANTURE kondicionieris 200ml",
+        "description": "Кондиционер для ежедневного использования Содержащиеся в этом Oribe кондиционере увлажняющие полимеры придают волосам здоровый вид, шикарный блеск и непушащийся результат.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER/AQUA/EAU, CYCLOPENTASILOXANE, CETEARYL ALCOHOL, CETYL ALCOHOL, STEARYL ALCOHOL, STEARAMIDOPROPYL DIMETHYLAMINE, ISODODECANE, PARFUM/FRAGRANCE, MACADAMIA TERNIFOLIA SEED OIL, DIMETHICONOL, CETYL ESTERS, GLYCERIN, BEHENTRIMONIUM METHOSULFATE, BUTYLENE GLYCOL, PANTHENOL, CINNAMIDOPROPYLTRIMONIUM CHLORIDE, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, PHOSPHOLIPIDS, KERATIN, HYDROLYZED KERATIN, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, AMBER EXTRACT, KAEMPFERIA GALANGA ROOT EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, HYDROLYZED RICE PROTEIN, HYDROLYZED JOJOBA PROTEIN, PRUNUS AMYGDALUS DULCIS (SWEET ALMOND) PROTEIN, CETRIMONIUM CHLORIDE, HYDROXYETHYLCELLULOSE, TOCOPHERYL ACETATE, RETINYL PALMITATE, ASCORBYL PALMITATE, BENZOPHENONE-4, CITRIC ACID, CHLORPHENESIN, CAPRYLYL GLYCOL, DISODIUM EDTA, SORBIC ACID, PHENOXYETHANOL, IODOPROPYNYL BUTYLCARBAMATE, BENZYL BENZOATE, HEXYL CINNAMAL, LIMONENE, LINALOOL",
+          "__descriptionEn": "SIGANTURE CONDITIONER",
+          "__descriptionLv": "Kondicionieris ikdienas lietošanai Šajā Oribe zīmīgajā kondicionierī esošie mitrinošie polimēri nodrošina matiem veselīgu izskatu, izsmalcinātu spīdumu un atšķetinātu gala rezultātu."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023582_oribe-siganture-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondicionieriu_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023582_oribe-siganture-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondicionieriu_400.png"
+        ],
+        "createdAt": "2019-04-12T04:13:50.150Z",
+        "price": 64,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "14999",
+      "productSku": "TIME114O",
+      "xmlSku": "TIME.114O",
+      "externalIdToSet": "TIME.114O",
+      "normalizationType": "DOT_NORMALIZATION",
+      "normalizedKey": "TIME114O",
+      "productName": "K Time Secret Sun Protecting oil for body&hair SPF15 – 100ml",
+      "xmlName": "K Time Secret Sun Protecting Oil 100 ml. / matu un ķerm. eļļ",
+      "productBarcode": null,
+      "xmlEan": "8057018931002",
+      "identityEvidence": {
+        "productMeasures": [
+          "100ml"
+        ],
+        "xmlMeasures": [
+          "100ml"
+        ],
+        "nameSimilarity": 0.476,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "K-TIME",
+        "category": "hair",
+        "title": "K Time Secret Sun Protecting oil for body&hair SPF15 – 100ml",
+        "titleEn": "K Time Secret Sun Protecting oil for body&hair SPF15 – 100ml",
+        "titleLv": "K Time Secret Sun Protecting oil for body&hair SPF15 – 100ml",
+        "description": "Защитное масло для волос и тела с УФ-фильтром защищает от вредного воздействия солнца. Питает волосы, делая их блестящими и шелковистыми.",
+        "technicalSpecs": {
+          "__descriptionEn": "Protecting oil for body and hair exposed to the sun. Medium Protection.",
+          "__descriptionLv": "Aizsargājoša eļļa matiem un ķermenim ar UV filtru pasargā no saules kaitīgas ietekmes. Baro matus, padarot tos vieglus, spīdīgus un zīdainus."
+        },
+        "specVolume": "100 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0017268_k-time-secret-sun-protecting-oil-for-bodyhair-spf15-100ml_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0017268_k-time-secret-sun-protecting-oil-for-bodyhair-spf15-100ml_400.png"
+        ],
+        "createdAt": "2016-05-18T08:06:08.953Z",
+        "price": 15.95,
+        "stock": 5
+      }
+    },
+    {
+      "productId": "20516",
+      "productSku": "067267",
+      "xmlSku": "67267",
+      "externalIdToSet": "67267",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "67267",
+      "productName": "JOICO HYDRA SPLASH несмываемый крем 100мл",
+      "xmlName": "JOICO Hydra Splash Leave In Condicioner 100ml / kondicionier",
+      "productBarcode": null,
+      "xmlEan": "74469513463",
+      "identityEvidence": {
+        "productMeasures": [
+          "100ml"
+        ],
+        "xmlMeasures": [
+          "100ml"
+        ],
+        "nameSimilarity": 0.6,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO HYDRA SPLASH несмываемый крем 100мл",
+        "titleEn": "JOICO HYDRA SPLASH leave-in cream 100ml",
+        "titleLv": "JOICO HYDRA SPLASH nenoskalojams krēms 100ml",
+        "description": "Joico Hydra Splash несмываемый кондиционер для тонких, сухих и путающихся волос, облегчает укладку: делает ее невероятно комфортной и быстрой Этот несмываемый кондиционер был разработан для обладательниц тонких, сухих и постоянно путающихся волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "Joico Hydra Splash leave-in conditioner for fine, dry and frizzy hair will make hair styling easier, it works even long after you’ve finished putting on the conditioner. This leave-in conditioner was designed for those with fine, dry, and permanently tangled hair.",
+          "__descriptionLv": "Joico Hydra Splash nenoskalojams kondicionieris smalkiem, sausiem un nepaklausīgiem matiem, kas padarīs matu veidošanu par patīkamu pastaigu. Šis nenoskalojamais kondicionieris ir veidots smalkiem, sausiem un patstāvīgi sapiņķerējušies matiem."
+        },
+        "specVolume": "100 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025630_joico-hydra-splash-leave-in-cream-100ml-nenoskalojams-krems-100ml-nesmyvaemyj-krem-100ml-sissejaetav_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025630_joico-hydra-splash-leave-in-cream-100ml-nenoskalojams-krems-100ml-nesmyvaemyj-krem-100ml-sissejaetav_400.jpeg"
+        ],
+        "createdAt": "2021-11-01T10:17:17.990Z",
+        "price": 30.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "18524",
+      "productSku": "PAR 250011",
+      "xmlSku": "PAR250011",
+      "externalIdToSet": "PAR250011",
+      "normalizationType": "INTERNAL_SPACE_NORMALIZATION",
+      "normalizedKey": "PAR250011",
+      "productName": "HAIR EXPERT NOURISHING NEUTRAL SHAMPOO 5000 ML",
+      "xmlName": "BLACK Neutro Nutriente Shampoo 5000 ml. / matu šampūns",
+      "productBarcode": null,
+      "xmlEan": "8008423850150",
+      "identityEvidence": {
+        "productMeasures": [
+          "5000ml"
+        ],
+        "xmlMeasures": [
+          "5000ml"
+        ],
+        "nameSimilarity": 0.4,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "BLACK PROFESSIONAL",
+        "category": "hair",
+        "title": "HAIR EXPERT NOURISHING NEUTRAL SHAMPOO 5000 ML",
+        "titleEn": "HAIR EXPERT NOURISHING NEUTRAL SHAMPOO 5000 ML",
+        "titleLv": "HAIR EXPERT NOURISHING NEUTRAL SHAMPOO 5000 ML",
+        "description": "Шампунь для всех типов волос. Деликатно очищает волосы, одновременно питая и защищая их. Делает волосы мягкими, сильными и блестящими, не утяжеляя.",
+        "technicalSpecs": {
+          "__descriptionEn": "Shampoo designed for gentle cleansing for all hair types, to nourish and repair the hair. It makes hair soft and glossy without weighing down the hair fibre.",
+          "__descriptionLv": "Šampūns visiem matu tipiem. Maigi attīra matus, nodrošina matu barošanu un aizsardzību. Padara matus mīkstākus, stiprākus un spīdīgākus, nenoslogojot tos."
+        },
+        "specVolume": "5000 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021670_hair-expert-nourishing-neutral-shampoo-5000-ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021670_hair-expert-nourishing-neutral-shampoo-5000-ml_400.jpeg"
+        ],
+        "createdAt": "2017-11-08T07:30:48.877Z",
+        "price": 18,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19295",
+      "productSku": "016119",
+      "xmlSku": "16119",
+      "externalIdToSet": "16119",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16119",
+      "productName": "ORIBE SIGNATURE увлажняющая маска для волос 175мл",
+      "xmlName": "ORIBE Signature Moisture Masque 175 ml / matu maska",
+      "productBarcode": null,
+      "xmlEan": "811913018712",
+      "identityEvidence": {
+        "productMeasures": [
+          "175ml"
+        ],
+        "xmlMeasures": [
+          "175ml"
+        ],
+        "nameSimilarity": 0.571,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE SIGNATURE увлажняющая маска для волос 175мл",
+        "titleEn": "ORIBE SIGNATURE moisture masque 175ml",
+        "titleLv": "ORIBE SIGNATURE mitrinoša matu maska 175ml",
+        "description": "Глубоко увлажняющая маска Глубоко увлажняющая маска с обогащённым составом придаст новую жизненную силу даже самым сухим и замученным волосам, превращая их в прекрасно увлажнённые и устойчивые.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER/AQUA/EAU, CYCLOPENTASILOXANE, CETEARYL ALCOHOL, CETYL ALCOHOL, STEARYL ALCOHOL, PPG-3 BENZYL ETHER MYRISTATE, HYDROGENATED COCO-GLYCERIDES, ISODODECANE, CETYLESTERS, ISOHEXADECANE, PARFUM/FRAGANCE, GLYCERIN, BEHENTRIMONIUM METHOSULFATE, STEARALKONIUM CHLORIDE, GLYCERYL STEARATE, HELIANTHUS ANNUUS (SUNFLOWER) SEED OIL, AMODIMETHICONE, MACADAMIA TERNIFOLIA SEED OIL, QUATERNIUM-91, DIMETHICONOL, CETRIMONIUM METHOSULFATE, BUTYLENE GLYCOL, IRVINGIA GABONENSIS KERNEL BUTTER, CINNAMIDOPROPYLTRIMONIUM CHLORIDE, PANTHENOL, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, CYSTINE BIS-PG PROPYL SILANETRIOL, KERATIN, HYDROLYZED KERATIN, BIOTINOYL TRIPEPTIDE-1, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, AMBER EXTRACT, KAEMPFERIA GALANGA ROOT EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, OLEANOLIC ACID, HYDROLYZED RICE PROTEIN, HYDROLYZED JOJOBA PROTEIN, WHEAT AMINO ACIDS, HYDROLYZED WHEAT PROTEIN/PVP CROSSPOLYMER, OCTYLDODECANOL, APIGENIN, CETRIMONIUM CHLORIDE, TOCOPHERYL ACETATE, RETINYL PALMITATE, ETHYL LINOLEATE, ETHYL LINOLENATE, ETHYL OLEATE, LECITHIN, HYDROXYETHYLCELLULOSE, PPG-26-BUTETH-26, ARACHIDYL PROPIONATE, PROPYLENE GLYCOL, PEG-40 HYDROGENATED CASTOR OIL, CITRIC ACID, CHLORPHENESIS, CAPRYLYL GLYCOL, TRISODIUM EDTA, SORBIC ACID, PHENOXYETHANOL, IODOPROPYNYL BUTYLCARBAMATE, BENZYL BENZOATE, HEXYL CINNAMAL, LIMONENE, LINALOOL",
+          "__descriptionEn": "MOISTURE HAIR MASK",
+          "__descriptionLv": "Dziļi mitrinoša maska Bagātīga satura, dziļi mitrinoša maska sniedz jaunu dzīvessparu pat vissausākajiem un bojātākajiem matiem, lieliski tos mitrinot un padarot neatvairāmus."
+        },
+        "specVolume": "175 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023589_oribe-signature-moisture-masque-175ml-mitrinosa-matu-maska-175ml-uvlana-maska-dl-volos-175ml-niisuta_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023589_oribe-signature-moisture-masque-175ml-mitrinosa-matu-maska-175ml-uvlana-maska-dl-volos-175ml-niisuta_400.png"
+        ],
+        "createdAt": "2019-04-12T05:54:02.963Z",
+        "price": 80,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "20496",
+      "productSku": "066609",
+      "xmlSku": "66609",
+      "externalIdToSet": "66609",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "66609",
+      "productName": "JOICO K-PAK RECONSTRUCTOR глубоко проникающая маска для волос 1000мл",
+      "xmlName": "JOICO K-PAK RECONSTRUCTOR 1000 ML / matu maska",
+      "productBarcode": null,
+      "xmlEan": "74469517256",
+      "identityEvidence": {
+        "productMeasures": [
+          "1000ml"
+        ],
+        "xmlMeasures": [
+          "1000ml"
+        ],
+        "nameSimilarity": 0.417,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO K-PAK RECONSTRUCTOR глубоко проникающая маска для волос 1000мл",
+        "titleEn": "JOICO K-PAK RECONSTRUCTOR deep penetrating treatment 1000ml",
+        "titleLv": "JOICO K-PAK RECONSTRUCTOR dziļas iedabības matu maska 1000ml",
+        "description": "Думаете, вашим волосам уже ничего не поможет? Встречайте нашего супергероя – систему K-PAK.",
+        "technicalSpecs": {
+          "__descriptionEn": "Do you think that nothing will help your hair anymore? Meet our superhero - the K-PAK system.",
+          "__descriptionLv": "Domājat, ka Jūsu matiem vairs nekas nepalīdzēs? Iepazīstieties ar mūsu supervaroni - K-PAK sistēmu."
+        },
+        "specVolume": "1000 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025609_joico-k-pak-reconstructor-deep-penetrating-treatment-1000ml-dzilas-iedabibas-matu-maska-1000ml-glubo_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025609_joico-k-pak-reconstructor-deep-penetrating-treatment-1000ml-dzilas-iedabibas-matu-maska-1000ml-glubo_400.jpeg"
+        ],
+        "createdAt": "2021-11-01T07:36:19.133Z",
+        "price": 114.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19750",
+      "productSku": "011607",
+      "xmlSku": "11607",
+      "externalIdToSet": "11607",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "11607",
+      "productName": "REUZEL PINK HEAVY HOLD GREASE 113G",
+      "xmlName": "REUZEL PINK HEAVY HOLD GREASE 113G",
+      "productBarcode": null,
+      "xmlEan": "869519000020",
+      "identityEvidence": {
+        "productMeasures": [
+          "113g"
+        ],
+        "xmlMeasures": [
+          "113g"
+        ],
+        "nameSimilarity": 1,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "REUZEL",
+        "category": "hair",
+        "title": "REUZEL PINK HEAVY HOLD GREASE 113G",
+        "titleEn": "REUZEL PINK HEAVY HOLD GREASE 113G",
+        "titleLv": "REUZEL PINK HEAVY HOLD GREASE 113G",
+        "description": "Воск для волос сильной фиксации Воск для волос сильной фиксации, изготовленный на основе масла и воска.",
+        "technicalSpecs": {
+          "INGREDIENTS": "PETROLATUM, CERA ALBA (BEESWAX), CERA MICROCRISTALLINA (MICROCRYSTALLINE WAX), HYDROGENATED ROSIN, BIS-DIGLYCERYL POLYACYLADIPATE-2, FRAGRANCE (PARFUM), SILICA, BHT, BENZYL BENZOATE, LILIAL, HEXYL CINNAMAL, LINALOOL, CITRONELLOL, AMYL CINNAMAL, EUGENOL",
+          "__descriptionEn": "Reuzel Grease Pomade in the pink can is perfect for the man who carries a comb and knows how to use it. Heavy/Strong Hold and as strong as a gel",
+          "__descriptionLv": "Stipras fiksācijas matu vasks Stipras fiksācijas matu vasks uz eļļas un vaska bāzes."
+        },
+        "specVolume": "113 g",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0024389_reuzel-pink-heavy-hold-grease-113g_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0024389_reuzel-pink-heavy-hold-grease-113g_400.png"
+        ],
+        "createdAt": "2020-01-15T06:12:50.337Z",
+        "price": 19,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19292",
+      "productSku": "016115",
+      "xmlSku": "16115",
+      "externalIdToSet": "16115",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16115",
+      "productName": "ORIBE BRILIANCE & SHINE кондиционер 200мл",
+      "xmlName": "ORIBE Briliance and Shine Conditioner 200ml / matu balzāms",
+      "productBarcode": null,
+      "xmlEan": "811913018323",
+      "identityEvidence": {
+        "productMeasures": [
+          "200ml"
+        ],
+        "xmlMeasures": [
+          "200ml"
+        ],
+        "nameSimilarity": 0.625,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE BRILIANCE & SHINE кондиционер 200мл",
+        "titleEn": "ORIBE BRILIANCE & SHINE conditioner 200ml",
+        "titleLv": "ORIBE BRILIANCE & SHINE kondicionieris 200ml",
+        "description": "Придающий блеск и сияние кондиционер Роскошный и продолжительный блеск.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER/AQUA/EAU, CETEARYL ALCOHOL, STEARYL ALCOHOL, PPG-3 BENZYL ETHER MYRISTATE, CETYL ALCOHOL, STEARAMIDOPROPYL DIMETHYLAMINE, CYCLOPENTASILOXANE, PARFUM/FRAGRANCE, DIMETHICONOL, BEHENTRIMONIUM METHOSULFATE, QUATERNIUM-91, CETRIMONIUM METHOSULFATE, HYDROXYCETYL HYDROXYETHYL DIMONIUM CHLORIDE, OLIVE GLYCERIDES, GLYCERIN, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, PANTHENOL, VITIS VINIFERA (GRAPE) SEED OIL, CINNAMIDOPROPYLTRIMONIUM CHLORIDE, PHOSPHOLIPIDS, SILK AMINO ACIDS, KERATIN, HYDROLYZED KERATIN, PHYTANTRIOL, PANTHENYL ETHYL ETHER, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, AMBER EXTRACT, KAEMPFERIA GALANGA ROOT EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, BUTYLENE GLYCOL, HYDROLYZED RICE PROTEIN, HYDROLYZED JOJOBA PROTEIN, PRUNUS AMYGDALUS DULCIS (SWEET ALMOND) PROTEIN, PEARL POWDER, HYDROXYETHYLCELLULOSE, TOCOPHERYL ACETATE, RETINYL PALMITATE, ASCORBYL PALMITATE, BENZOPHENONE-4, CITRIC ACID, CHLORPHENESIN, CAPRYLYL GLYCOL, DISODIUM EDTA, SORBIC ACID, PHENOXYETHANOL, IODOPROPYNYL BUTYLCARBAMATE, BENZYL BENZOATE, HEXYLCINNAMAL, LIMONENE, LINALOOL",
+          "__descriptionEn": "CONDITIONER FOR BRILIANCE & SHINE",
+          "__descriptionLv": "Kondicionieris mirdzumam un spīdumam Noturīgs mirdzums un izsmalcināts, ilglaicīgs spīdums."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023586_oribe-briliance-shine-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondicio_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023586_oribe-briliance-shine-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondicio_400.png"
+        ],
+        "createdAt": "2019-04-12T04:58:51.743Z",
+        "price": 67,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19761",
+      "productSku": "011711",
+      "xmlSku": "11711",
+      "externalIdToSet": "11711",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "11711",
+      "productName": "REUZEL EXTREME HOLD MATTE POMADE 35G",
+      "xmlName": "REUZEL EXTREME HOLD MATTE POMADE 35G",
+      "productBarcode": null,
+      "xmlEan": "852968008303",
+      "identityEvidence": {
+        "productMeasures": [
+          "35g"
+        ],
+        "xmlMeasures": [
+          "35g"
+        ],
+        "nameSimilarity": 1,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "REUZEL",
+        "category": "hair",
+        "title": "REUZEL EXTREME HOLD MATTE POMADE 35G",
+        "titleEn": "REUZEL EXTREME HOLD MATTE POMADE 35G",
+        "titleLv": "REUZEL EXTREME HOLD MATTE POMADE 35G",
+        "description": "Матовая паста для волос особо сильной фиксации REUZEL™ Extreme Hold Matte Pomade паста для волос особо сильной фиксции, изготовленная на основе воды и поэтому её легко смыть с волос.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER (AQUA), CERA ALBA (BEESWAX), PVP, LANOLIN WAX, BIS-DIGLYCERYL POLYACYLADIPATE-2, PETROLATUM, PROPYLENE GLYCOL, CETYL ALCOHOL, STEARYL ALCOHOL, CETEARETH-25, PEG-40 HYDROGENATED CASTOR OIL, PPG-20 METHYL GLUCOSE ETHER, TRIBEHENIN, VP/METHACRYLAMIDE/VINYL IMIDAZOLE COPOLYMER, COPERNICIA CERIFERA (CARNAUBA) WAX, FRAGRANCE (PARFUM), PEG-8 BEESWAX, EQUISETUM ARVENSE EXTRACT, GLYCERIN, HAMAMELIS VIRGINIANA (WITCH HAZEL) LEAF EXTRACT, ROSMARINUS O¬CINALIS LEAF EXTRACT, URTICA DIOICA (NETTLE) EXTRACT, COUMARIN, LIMONENE, LINALOOL, CAPRYLYL GLYCOL, PHENOXYETHANOL, SORBIC ACID",
+          "__descriptionEn": "REUZEL EXTREME HOLD MATTE POMADE",
+          "__descriptionLv": "Izteikti stipras fiksācijas, matēta matu pomāde REUZEL™ Extreme Hold Matte Pomade izteikti stipras fiksācijas, matēta matu pomāde ir izgatavota uz ūdens bāzes un to ir viegli izmazgāt."
+        },
+        "specVolume": "35 g",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0024401_reuzel-extreme-hold-matte-pomade-35g_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0024401_reuzel-extreme-hold-matte-pomade-35g_400.png"
+        ],
+        "createdAt": "2020-01-15T08:25:26.187Z",
+        "price": 12.5,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19284",
+      "productSku": "016103",
+      "xmlSku": "16103",
+      "externalIdToSet": "16103",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16103",
+      "productName": "ORIBE GOLD LUST REPAIR & RESTORE шампунь 250мл",
+      "xmlName": "ORIBE Gold Lust Repar Shampoo 250ml / matu šampūns",
+      "productBarcode": null,
+      "xmlEan": "811913018446",
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [
+          "250ml"
+        ],
+        "nameSimilarity": 0.667,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE GOLD LUST REPAIR & RESTORE шампунь 250мл",
+        "titleEn": "ORIBE GOLD LUST REPAIR & RESTORE shampoo 250ml",
+        "titleLv": "ORIBE GOLD LUST REPAIR & RESTORE šampūns 250ml",
+        "description": "Восстанавливающий шампунь Верни своим волосам блеск и здоровье.",
+        "technicalSpecs": {
+          "INGREDIENTS": "AQUA/WATER/EAU, DISODIUM LAURETH SULFOSUCCINATE, SODIUM LAUROYL SARCOSINATE, COCAMIDOPROPYL HYDROXYSULTAINE, COCAMIDE MEA, SODIUM LAURYL SULFOACETATE, DIMETHICONE, AMODIMETHICONE, DECYL GLUCOSIDE, SODIUM LAUROYL LACTYLATE, CYCLOPENTASILOXANE, CAFFEINE, NIACINAMIDE, BROMELAIN, BIOTIN, PEG-150 DISTEARATE, RICE OIL GLYCERETH-8 ESTERS, SHEA BUTTER GLYCERETH-8 ESTERS, ADANSONIA DIGITATA SEED OIL, LITCHI CHINENSIS PERICARP EXTRACT, ARGANIA SPINOSA (ARGAN) KERNEL OIL, BUTYROSPERMUM PARKII (SHEA) BUTTER, CAMELLIA SINENSIS (GREEN TEA) LEAF EXTRACT, CHONDRUS CRISPUS (CARRAGEENAN) EXTRACT, CITRUS AURANTIUM BERGAMIA (BERGAMOT) LEAF EXTRACT, CITRUS LIMON (LEMON) FRUIT EXTRACT, GLYCERIN, ACRYLATES COPOLYMER, PANTHENOL, SYNTHETIC FLUORPHLOGOPITE, VEGETABLE COLLAGEN, HYDROLYZED KERATIN, KERATIN, POLYQUATERNIUM-10, CYSTINE BIS-PG-PROPYL SILANETRIOL, ARGININE, PHYTIC ACID, ALANINE, GLYCINE, SERINE, VALINE, ISOLEUCINE, PROLINE, THREONINE, HISTIDINE, PHENYLALANINE, LAURETH-23, LAURETH-4, DIMETHICONOL, POTASSIUM HYDROXIDE, DISODIUM EDTA, LEONTOPODIUM ALPINUM (EDELWEISS) EXTRACT, LEUCONOSTOC/RADISH ROOT FERMENT FILTRATE, ORYZA SATIVA (RICE) SEED PROTEIN, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, CUPRESSUS SEMPERVIRENS BARK EXTRACT, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, JASMINUM OFFICINALE (JASMINE) FLOWER EXTRACT, PASSIFLORA INCARNATA (PASSION FLOWER) EXTRACT, RIBES NIGRUM (BLACK CURRANT) FRUIT EXTRACT, SANTALUM ALBUM (SANDALWOOD) WOOD EXTRACT, POLYQUATERNIUM-7, SILICONE QUATERNIUM-22, CETRIMONIUM CHLORIDE, TRIDECETH-15, TRIDECETH-3, ACRYLATES/STEARYL ACRYLATE/DIMETHICONE METHACRYLATE COPOLYMER, QUATERNIUM-95, BHT, BUTYLENE GLYCOL, DIPROPYLENE GLYCOL, POLYGLYCERYL-3 CAPRATE, PROPANEDIOL, SODIUM PCA, SODIUM LACTATE, COCAMIDOPROPYL BETAINE, ASPARTIC ACID, PCA, ORYZA SATIVA (RICE) EXTRACT, STYRAX BENZOIN (AMBER) RESIN EXTRACT, CITRIC ACID, ALCOHOL, PHENOXYETHANOL, POTASSIUM SORBATE, CHLORPHENESIN, SODIUM BENZOATE, BENZYL ALCOHOL, PARFUM/FRAGRANCE, HEXYL CINNAMAL, LIMONENE,",
+          "__descriptionEn": "RESTORE SHAMPOO",
+          "__descriptionLv": "Atjaunojošs šampūns Atjauno matu mirdzumu un veselīgumu."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023579_oribe-gold-lust-repair-restore-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023579_oribe-gold-lust-repair-restore-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png"
+        ],
+        "createdAt": "2019-04-12T03:28:25.993Z",
+        "price": 61,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19283",
+      "productSku": "016102",
+      "xmlSku": "16102",
+      "externalIdToSet": "16102",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16102",
+      "productName": "ORIBE BEAUTIFUL COLOR шампунь 250мл",
+      "xmlName": "ORIBE Shampoo for Beautiful color 250ml / šampūns",
+      "productBarcode": null,
+      "xmlEan": "8119130018613",
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [
+          "250ml"
+        ],
+        "nameSimilarity": 0.8,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE BEAUTIFUL COLOR шампунь 250мл",
+        "titleEn": "ORIBE BEAUTIFUL COLOR shampoo 250ml",
+        "titleLv": "ORIBE BEAUTIFUL COLOR šampūns 250ml",
+        "description": "Шампунь для крашеных волос Нежный шампунь для крашеных волос, который позволяет волосам быть дольше блестящими, интенсивно увлажняет и защищает цвет от потускнения.",
+        "technicalSpecs": {
+          "INGREDIENTS": "CINNAMIDOPROPYLTRIMONIUM CHLORIDE, PANTHENOL, POLYQUATERNIUM-7, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, PEG-150 DISTEARATE, KERATIN, HYDROLYZED KERATIN, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, KAEMPFERIA GALANGA ROOT EXTRACT, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, AMBER EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, HYDROLYZED ADANSONIA DIGITATA EXTRACT, BUTYLENE GLYCOL, HYDROLYZED RICE PROTEIN, HYDROLYZED JOJOBA PROTEIN, PRUNUS AMYGDALUS DULCIS (SWEET ALMOND) PROTEIN, BIOFLAVONOIDS, DEXTRIN, HEXYLENE GLYCOL, PROPYLENE GLYCOL, BEHENYL ALCOHOL, BENZOPHENONE-4, CITRIC ACID, TRISODIUM EDTA, PHENOXYETHANOL, IODOPROPYNYL BUTYLCARBAMATE, METHYLISOTHIAZOLINONE, POTASSIUM SORBATE, SODIUM BENZOATE, HEXYL CINNAMAL, LIMONENE, LINALOOL",
+          "__descriptionEn": "SHAMPOO FOR BEAUTIFUL COLOR",
+          "__descriptionLv": "Šampūns krāsotiem matiem Maigs šampūns krāsotiem matiem, kas paildzina matu mirdzumu, intensīvi mitrina un aizsargā matu krāsu no izbalēšanas."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023578_oribe-beautiful-color-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023578_oribe-beautiful-color-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png"
+        ],
+        "createdAt": "2019-04-12T03:12:46.633Z",
+        "price": 61,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19296",
+      "productSku": "016122",
+      "xmlSku": "16122",
+      "externalIdToSet": "16122",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16122",
+      "productName": "ORIBE GOLD LUST питательное масло для волос 100мл",
+      "xmlName": "ORIBE Gold Lust Nurishing Oil 100ml / matu eļļa",
+      "productBarcode": null,
+      "xmlEan": "811913011157",
+      "identityEvidence": {
+        "productMeasures": [
+          "100ml"
+        ],
+        "xmlMeasures": [
+          "100ml"
+        ],
+        "nameSimilarity": 0.609,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE GOLD LUST питательное масло для волос 100мл",
+        "titleEn": "ORIBE GOLD LUST nourishing hair oil 100ml",
+        "titleLv": "ORIBE GOLD LUST barojoša matu eļļa 100ml",
+        "description": "Питательное масло для волос Шикарное масло мгновенно обогащает волосы питательными веществами и оставляет прекрасный результат.",
+        "technicalSpecs": {
+          "INGREDIENTS": "CYCLOPENTASILOXANE, COCONUT ALKANES, DIMETHICONOL, CAPRYLIC/CAPRIC TRIGLYCERIDE, CRAMBE ABYSSINICA SEED OIL, COCO-CAPRYLATE/CAPRATE, LIMNANTHES ALBA (MEADOWFOAM) SEED OIL, BUTYROSPERMUM PARKII (SHEA) BUTTER, ARGANIA SPINOSA KERNEL OIL, TOCOPHEROL, PARFUM/FRAGRANCE, HORDEUM DISTICHON (BARLEY) EXTRACT, ORBIGNYA SPECIOSA KERNEL OIL, SANTALUM ALBUM (SANDALWOOD) EXTRACT, PHELLODENDRON AMURENSE BARK EXTRACT, ASTROCARYUM MURUMURU SEED BUTTER, OLEA EUROPAEA (OLIVE) FRUIT OIL, CITRUS LIMON (LEMON) PEEL OIL, CITRUS AURANTIUM BERGAMIA (BERGAMOT) FRUIT OIL, RIBES NIGRUM (BLACK CURRANT) SEED OIL, JASMINUM OFFICINALE (JASMINE) OIL, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LITCHI CHINENSIS FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, TBHQ, LIMONENE, HEXYL CINNAMAL, LINALOOL, CITRAL",
+          "__descriptionLv": "Barojoša matu eļļa Izsmalcināta eļļa nekavējoši baro matus un nodrošina glītu rezultātu."
+        },
+        "specVolume": "100 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023590_oribe-gold-lust-nourishing-hair-oil-100ml-barojosa-matu-ella-100ml-pitatelnoe-maslo-dl-volos-100ml-t_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023590_oribe-gold-lust-nourishing-hair-oil-100ml-barojosa-matu-ella-100ml-pitatelnoe-maslo-dl-volos-100ml-t_400.jpeg"
+        ],
+        "createdAt": "2019-04-12T06:07:01.993Z",
+        "price": 72,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19290",
+      "productSku": "016114",
+      "xmlSku": "16114",
+      "externalIdToSet": "16114",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16114",
+      "productName": "ORIBE MAGNIFICENT VOLUME кондиционер 200мл",
+      "xmlName": "ORIBE Magnificent Volume Conditioner 200ml / matu balzāms",
+      "productBarcode": null,
+      "xmlEan": "811913018361",
+      "identityEvidence": {
+        "productMeasures": [
+          "200ml"
+        ],
+        "xmlMeasures": [
+          "200ml"
+        ],
+        "nameSimilarity": 0.667,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE MAGNIFICENT VOLUME кондиционер 200мл",
+        "titleEn": "ORIBE MAGNIFICENT VOLUME conditioner 200ml",
+        "titleLv": "ORIBE MAGNIFICENT VOLUME kondicionieris 200ml",
+        "description": "Придающий объём кондиционер Придающий объём гелевый крем увлажняет волосы, делая их послушными.",
+        "technicalSpecs": {
+          "INGREDIENTS": "AQUA/WATER/EAU, CETEARYL ALCOHOL, CETYL ALCOHOL, STEARYL ALCOHOL, BEHENTRIMONIUM CHLORIDE, ISODODECANE, CYCLOPENTASILOXANE, HYDROGENATED ETHYLHEXYL OLIVATE, AMODIMETHICONE, GLYCERIN, CAPRYLYL GLYCOL, CYPERUS ESCULENTUS ROOT OIL, METHOXY PEG/PPG-7/3 AMINOPROPYL DIMETHICONE, MORINGA OLEIFERA SEED OIL, DIMETHICONOL, PANTHENOL, HYDROGENATED OLIVE OIL UNSAPONIFIABLES, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, LITCHI CHINENSIS PERICARP EXTRACT, SERENOA SERRULATA FRUIT EXTRACT, HYDROLYZED LUPINE PROTEIN, LEONTOPODIUM ALPINUM (EDELWEISS) EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, STYRAX BENZOIN (AMBER) RESIN EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, STEARAMINE OXIDE, GUAR HYDROXYPROPYLTRIMONIUM CHLORIDE, QUATERNIUM-80, CYSTINE BIS-PG-PROPYL SILANETRIOL, POLYSILICONE-15, HYDROLYZED KERATIN, KERATIN, BUTYLENE GLYCOL, CETRIMONIUM CHLORIDE, PROPYLENE GLYCOL, HYDROXYETHYLCELLULOSE, CITRIC ACID, TETRASODIUM EDTA, BHT, PENTAERYTHRITYL TETRA-DI-T-BUTYL HYDROXYHYDROCINNAMATE, PHENOXYETHANOL, BENZYL ALCOHOL, CHLORPHENESIN, SORBIC ACID, METHYLISOTHIAZOLINONE, PARFUM/FRAGRANCE, HEXYL CINNAMAL, LIMONENE",
+          "__descriptionEn": "CONDICIONER FOR MAGNIFICENT VOLUME\n\nAQUA/WATER/EAU, CETEARYL ALCOHOL, CETYL ALCOHOL, STEARYL ALCOHOL, BEHENTRIMONIUM CHLORIDE, ISODODECANE, CYCLOPENTASILOXANE, HYDROGENATED ETHYLHEXYL OLIVATE, AMODIMETHICONE, GLYCERIN, CAPRYLYL GLYCOL, CYPERUS ESCULENTUS ROOT OIL, METHOXY PEG/PPG-7/3 AMINOPROPYL DIMETHICONE, MORINGA OLEIFERA SEED OIL, DIMETHICONOL, PANTHENOL, HYDROGENATED OLIVE OIL UNSAPONIFIABLES, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, LITCHI CHINENSIS PERICARP EXTRACT, SERENOA SERRULATA FRUIT EXTRACT, HYDROLYZED LUPINE PROTEIN, LEONTOPODIUM ALPINUM (EDELWEISS) EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, STYRAX BENZOIN (AMBER) RESIN EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, STEARAMINE OXIDE, GUAR HYDROXYPROPYLTRIMONIUM CHLORIDE, QUATERNIUM-80, CYSTINE BIS-PG-PROPYL SILANETRIOL, POLYSILICONE-15, HYDROLYZED KERATIN, KERATIN, BUTYLENE GLYCOL, CETRIMONIUM CHLORIDE, PROPYLENE GLYCOL, HYDROXYETHYLCELLULOSE, CITRIC ACID, TETRASODIUM EDTA, BHT, PENTAERYTHRITYL TETRA-DI-T-BUTYL HYDROXYHYDROCINNAMATE, PHENOXYETHANOL, BENZYL ALCOHOL, CHLORPHENESIN, SORBIC ACID, METHYLISOTHIAZOLINONE, PARFUM/FRAGRANCE, HEXYL CINNAMAL, LIMONENE",
+          "__descriptionLv": "Kondicionieris matu kuplumam Želejveida krēms matu kuplumam mitrina matus, atvieglojot matu savaldīšanu."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023585_oribe-magnificent-volume-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondi_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023585_oribe-magnificent-volume-conditioner-200ml-kondicionieris-200ml-kondicioner-200ml-palsam-200ml-kondi_400.png"
+        ],
+        "createdAt": "2019-04-12T04:47:36.150Z",
+        "price": 64,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19285",
+      "productSku": "016106",
+      "xmlSku": "16106",
+      "externalIdToSet": "16106",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16106",
+      "productName": "ORIBE BRILIANCE & SHINE шампунь 250мл",
+      "xmlName": "ORIBE Briliance and Shine Shampoo 250ml / matu šampūns",
+      "productBarcode": null,
+      "xmlEan": "811913018941",
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [
+          "250ml"
+        ],
+        "nameSimilarity": 0.75,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE BRILIANCE & SHINE шампунь 250мл",
+        "titleEn": "ORIBE BRILIANCE & SHINE shampoo 250ml",
+        "titleLv": "ORIBE BRILIANCE & SHINE šampūns 250ml",
+        "description": "Шампунь придающий сияние и блеск Роскошный и продолжительный блеск.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER/AQUA/EAU, SODIUM LAURETH SULFATE, DISODIUM LAURETH SULFOSUCCINATE, LAURAMIDOPROPYL BETAINE, COCAMIDE MEA, PEG-7 GLYCERYL COCOATE, GLYCOL DISTEARATE, PARFUM/FRAGRANCE, SODIUM LAUROYL SARCOSINATE, COCAMIDOPROPYL HYDROXYSULTAINE, DECYL GLUCOSIDE, QUATERNIUM-91, SODIUM LAUROYL OAT AMINO ACIDS, PPG-3 BENZYL ETHER MYRISTATE, POLYGLYCERYL-3 LAURATE, OLIVE OIL PEG-7 ESTERS, GUAR HYDROXYPROPYLTRIMONIUM CHLORIDE, METHOXY PEG/PPG-7/3 AMINOPROPYL DIMETHICONE, GLYCERIN, PANTHENOL, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, CINNAMIDOPROPYLTRIMONIUM CHLORIDE, PEG-150 DISTEARATE, SILK AMINO ACIDS, KERATIN, HYDROLYZED KERATIN, HELIANTHUS ANNUUS (SUNFLOWER) SEED EXTRACT, LITCHI CHINENSIS (LYCHEE) FRUIT EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LEONTOPODIUM ALPINUM FLOWER/LEAF EXTRACT, AMBER EXTRACT, KAEMPFERIA GALANGA ROOT EXTRACT, MORINGA PTERYGOSPERMA SEED EXTRACT, BUTYLENE GLYCOL, HYDROLYZED RICE PROTEIN, HYDROLYZED JOJOBA PROTEIN, PRUNUS AMYGDALUS DULCIS (SWEET ALMOND) PROTEIN, HYDROLYZED CONCHIOLIN PROTEIN, BEHENYL ALCOHOL, BENZOPHENONE-4, CITRIC ACID, DISODIUM EDTA, PHENOXYETHANOL, IODOPROPYNYL BUTYLCARBAMATE, METHYLISOTHIAZOLINONE, METHYLCHLOROISOTHIAZOLINONE, POTASSIUM SORBATE, SODIUM BENZOATE, HEXYL CINNAMAL, LIMONENE, LINALOO",
+          "__descriptionEn": "SHAMPOO FOR BRILIANCE & SHINE",
+          "__descriptionLv": "Šampūns matu mirdzumam un spīdumam Noturīgs mirdzums un izsmalcināts, ilglaicīgs spīdums."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023580_oribe-briliance-shine-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023580_oribe-briliance-shine-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-sampunas-250ml_400.png"
+        ],
+        "createdAt": "2019-04-12T03:42:23.823Z",
+        "price": 64,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19294",
+      "productSku": "016118",
+      "xmlSku": "16118",
+      "externalIdToSet": "16118",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "16118",
+      "productName": "ORIBE GOLD LUST TRANSFORMATIVE маска для волос 150мл",
+      "xmlName": "ORIBE Gold Lust Masque 150 ml / matu maska",
+      "productBarcode": null,
+      "xmlEan": "811913014240",
+      "identityEvidence": {
+        "productMeasures": [
+          "150ml"
+        ],
+        "xmlMeasures": [
+          "150ml"
+        ],
+        "nameSimilarity": 0.6,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "ORIBE",
+        "category": "hair",
+        "title": "ORIBE GOLD LUST TRANSFORMATIVE маска для волос 150мл",
+        "titleEn": "ORIBE GOLD LUST TRANSFORMATIVE masque 150ml",
+        "titleLv": "ORIBE GOLD LUST TRANSFORMATIVE matu maska 150ml",
+        "description": "Восстанавливающая маска для волос Эта ультрасовременная маска для волос проникает внутрь каждого волоска, где экстракты белого чая, баобаба и жасмина, а также Bio-Restorative Complex улучшают этастичность волос и укрепляют их изнутри.",
+        "technicalSpecs": {
+          "INGREDIENTS": "AQUA/WATER/EAU, CETEARYL ALCOHOL, BEHENTRIMONIUM CHLORIDE, CETYL ALCOHOL, DIMETHICONE, STEARAMIDOPROPYL DIMETHYLAMINE, AMODIMETHICONE, CETYLESTERS, GLYCERIN, HYDROGENATED ETHYLHEXYL OLIVATE, PROPANEDIOL, BUTYROSPERMUM PARKII (SHEA) BUTTER, CAPRYLYL GLYCOL, JOJOBA ESTERS, ETHYLHEXYLGLYCERIN, PANTHENOL, STEARYL ALCOHOL, HYDROXYCETYL HYDROXYETHYL DIMONIUM CHLORIDE, CITRIC ACID, POLYSORBATE 60, GUAR HYDROXYPROPYLTRIMONIUM CHLORIDE, ARGANIA SPINOSA (ARGAN) KERNEL OIL, LEONTOPODIUM ALPINUM (EDELWEISS) EXTRACT, CITRUS AURANTIUM BERGAMIA (BERGAMOT) LEAF EXTRACT, CITRULLUS LANATUS (WATERMELON) FRUIT EXTRACT, LITCHI CHINENSIS PERICARP EXTRACT, BENZYL ALCOHOL, CAFFEINE, NIACINAMIDE, TRIDECETH-12, BROMELAIN, HYDROGENATED OLIVE OIL UNSAPONIFIABLES, JASMINUM OFFICINALE (JASMINE) FLOWER EXTRACT, PASSIFLORA INCARNATA (PASSION FLOWER) EXTRACT, RIBES NIGRUM (BLACK CURRANT) FRUIT EXTRACT, SANTALUM ALBUM (SANDALWOOD) WOOD EXTRACT, ORYZA SATIVA (RICE) SEED PROTEIN, VEGETABLE COLLAGEN, ORYZA SATIVA (RICE) EXTRACT, LEUCONOSTOC/RADISH ROOT FERMENT FILTRATE, MORINGA PTERYGOSPERMA SEED EXTRACT, STYRAX BENZOIN (AMBER) RESIN EXTRACT, HYDROLYZED KERATIN, KERATIN, BIOTIN, CYSTINE BIS-PG-PROPYL SILANETRIOL, POLYSILICONE-15, C11-15 PARETH-7, QUATERNIUM-95, CETRIMONIUM CHLORIDE, ADANSONIA DIGITATA SEED OIL, DISODIUM EDTA, CAMELLIA SINENSIS (GREEN TEA) LEAF EXTRACT, CHONDRUS CRISPUS (CARRAGEENAN) EXTRACT, CITRUS LIMON (LEMON) FRUIT EXTRACT, CUPRESSUS SEMPERVIRENS BARK EXTRACT, HYDROLYZED VEGETABLE PROTEIN PG-PROPYL SILANETRIOL, MORINGA OLEIFERA SEED OIL, PENTAERYTHRITYL TETRA-DI-T-BUTYL HYDROXYHYDROCINNAMATE, BHT, LAURETH-9, BUTYLENE GLYCOL, PHYTIC ACID, PHENOXYETHANOL, CHLORPHENESIN, POTASSIUM SORBATE, SODIUM BENZOATE, METHYLISOTHIAZOLINONE, PARFUM/FRAGRANCE, HEXYL CINNAMAL, LIMONENE",
+          "__descriptionEn": "HAIR MASK",
+          "__descriptionLv": "Atjaunojoša matu maska Šī izteikti modernā matu maska ietiecas ikvienā matu šķiedrā, kur baltās tējas, baobabu un jasmīna ekstrakti, kā arī Bio-Restorative Complex uzlabo matu elastību un stiprina tos no iekšienes."
+        },
+        "specVolume": "150 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023588_oribe-gold-lust-transformative-masque-150ml-matu-maska-150ml-maska-dl-volos-150ml-juuksemask-150ml-p_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023588_oribe-gold-lust-transformative-masque-150ml-matu-maska-150ml-maska-dl-volos-150ml-juuksemask-150ml-p_400.png"
+        ],
+        "createdAt": "2019-04-12T05:35:02.213Z",
+        "price": 70,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "19752",
+      "productSku": "011609",
+      "xmlSku": "11609",
+      "externalIdToSet": "11609",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "11609",
+      "productName": "REUZEL BLUE STRONG HOLD HIGH SHEEN POMADE 35G",
+      "xmlName": "REUZEL BLUE STRONG HOLD HIGH SHEEN POMADE 35G",
+      "productBarcode": null,
+      "xmlEan": "869519000099",
+      "identityEvidence": {
+        "productMeasures": [
+          "35g"
+        ],
+        "xmlMeasures": [
+          "35g"
+        ],
+        "nameSimilarity": 1,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "REUZEL",
+        "category": "hair",
+        "title": "REUZEL BLUE STRONG HOLD HIGH SHEEN POMADE 35G",
+        "titleEn": "REUZEL BLUE STRONG HOLD HIGH SHEEN POMADE 35G",
+        "titleLv": "REUZEL BLUE STRONG HOLD HIGH SHEEN POMADE 35G",
+        "description": "Помада, придающая крепкую фиксацию и сильный блеск Помада, придающая крепкую фиксацию и сильный блеск, изготовленная на основе воды и легко вымываемая с волос.",
+        "technicalSpecs": {
+          "INGREDIENTS": "WATER (AQUA, EAU), CETEARETH-25, CETEARETH-20, PEG-7 GLYCERYL COCOATE, PEG-25 HYDROGATED CASTOR OIL, POLYSORBATE-20, FRAGRANCE (PARFUM), PHENOXYETHANOL, CAPRYLYL GLYCOL, AMP-ACRYLATES/ALLYL METHACRYLATE COPOLYMER, HEXYL CINNAMAL, SORBIC ACID, LILIAL, LYRAL, LINALOOL, ORANGE 4 (CI 15510)",
+          "__descriptionEn": "Reuzel Pomade in the blue can is packed with high shine and strong hold, is water soluble, holds like a heavy wax yet rinses out as easily as a gel. This super concentrated pomade works on any hair thickness or texture and creates a polished look for any hair style.",
+          "__descriptionLv": "Pomāde stiprai fiksācijai un izteiktam spīdumam Pomāde stiprai fiksācijai un izteiktam spīdumam, izgatavota uz ūdens bāzes, ir viegli izmazgājama no matiem."
+        },
+        "specVolume": "35 g",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0024391_reuzel-blue-strong-hold-high-sheen-pomade-35g_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0024391_reuzel-blue-strong-hold-high-sheen-pomade-35g_400.png"
+        ],
+        "createdAt": "2020-01-15T06:27:25.533Z",
+        "price": 11.5,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "20512",
+      "productSku": "067262",
+      "xmlSku": "67262",
+      "externalIdToSet": "67262",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "67262",
+      "productName": "JOICO HYDRA SPLASH шампунь 1000мл",
+      "xmlName": "JOICO Hydra Splash Shampoo 1000ml / šampūns",
+      "productBarcode": null,
+      "xmlEan": "74469513425",
+      "identityEvidence": {
+        "productMeasures": [
+          "1000ml"
+        ],
+        "xmlMeasures": [
+          "1000ml"
+        ],
+        "nameSimilarity": 0.857,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO HYDRA SPLASH шампунь 1000мл",
+        "titleEn": "JOICO HYDRA SPLASH shampoo 1000ml",
+        "titleLv": "JOICO HYDRA SPLASH šampūns 1000ml",
+        "description": "Joico Hydra Splash шампунь хорошо очищает волосы от загрязнений, интенсивно увлажняет, придает им блеск и мягкость. Кокосовая вода, морская соль, а также особая технология SmartRelease дарят тонким и средним волосам невесомое увлажнение и деликатно питают пряди, помогают приручить сухие волосы, оставляя их легкими, сияющими и здоровыми, укрепляют, восстанавливают и защищают волосы от негативного воздействия внешних факторов.",
+        "technicalSpecs": {
+          "__descriptionEn": "Joico Hydra Splash shampoo perfectly cleanses the hair from impurities, intensely moisturizes it, makes it shiny and really soft. Formula contains coconut water, sea salt and a special Smart Release Complex, which helps with keeping the optimal moisture level and gently nourishing the hair.",
+          "__descriptionLv": "Joico Hydra Splash šampūns izcili attīra matus no netīrumiem, intensīvi mitrina tos, piešķir matiem patīkamu spīdumu un maigumu. Formulas sastāvā ir kokosriekstu ūdens, ūdens sāls un īpašais Smart Release Komplekss, kas plāniem un normāliem matiem palīdzēs uzturēt optimālo matu mitruma līmenī tai pat laikā maigi barojot matus."
+        },
+        "specVolume": "1000 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025625_joico-hydra-splash-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-1000ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025625_joico-hydra-splash-shampoo-1000ml-sampuns-1000ml-ampun-1000ml-sampoon-1000ml-sampunas-1000ml_400.jpeg"
+        ],
+        "createdAt": "2021-11-01T09:52:32.330Z",
+        "price": 63.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "20475",
+      "productSku": "067202",
+      "xmlSku": "67202",
+      "externalIdToSet": "67202",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "67202",
+      "productName": "JOICO BLONDE LIFE VIOLET шампунь 300мл",
+      "xmlName": "JOICO Blonde Life Violet Shampoo / šampūns",
+      "productBarcode": null,
+      "xmlEan": "74469513340",
+      "identityEvidence": {
+        "productMeasures": [
+          "300ml"
+        ],
+        "xmlMeasures": [],
+        "nameSimilarity": 0.8,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO BLONDE LIFE VIOLET шампунь 300мл",
+        "titleEn": "JOICO BLONDE LIFE VIOLET shampoo 300ml",
+        "titleLv": "JOICO BLONDE LIFE VIOLET šampūns 300ml",
+        "description": "Joico Blonde Life Violet шампунь создан для сохранения яркости, чистоты и красоты блонда. Он содержит фиолетовый пигмент, чтобы обеспечить максимальную нейтрализацию желтого оттенка и поддержание яркого холодного блонда.",
+        "technicalSpecs": {
+          "__descriptionEn": "Joico Blonde Life Violet shampoo is designed to preserve the brightness, purity and beauty of blonde hair. It contains purple pigments to provide maximum neutralization of yellow tones and maintain a bright, cool blonde tone.",
+          "__descriptionLv": "Joico Blonde Life Violet šampūns ir paredzēts, lai saglabātu blondu matu spilgtumu, tīrību un skaistumu. Tas satur violetos pigmentus, kas nodrošina maksimālu dzelteno toņu neitralizāciju un palīdz saglabāt spilgtu, vēsu blondo matu toni."
+        },
+        "specVolume": "300 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025588_joico-blonde-life-violet-shampoo-300ml-sampuns-300ml-ampun-300ml-sampoon-300ml-sampunas-300ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025588_joico-blonde-life-violet-shampoo-300ml-sampuns-300ml-ampun-300ml-sampoon-300ml-sampunas-300ml_400.jpeg"
+        ],
+        "createdAt": "2021-10-29T05:49:18.347Z",
+        "price": 27.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "20477",
+      "productSku": "067205",
+      "xmlSku": "67205",
+      "externalIdToSet": "67205",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "67205",
+      "productName": "JOICO BLONDE LIFE VIOLET кондиционер 250мл",
+      "xmlName": "JOICO Blonde Life Violet Conditioner 250 / šampūns",
+      "productBarcode": null,
+      "xmlEan": "74469513357",
+      "identityEvidence": {
+        "productMeasures": [
+          "250ml"
+        ],
+        "xmlMeasures": [],
+        "nameSimilarity": 0.625,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO BLONDE LIFE VIOLET кондиционер 250мл",
+        "titleEn": "JOICO BLONDE LIFE VIOLET conditioner 250ml",
+        "titleLv": "JOICO BLONDE LIFE VIOLET kondicionieris 250ml",
+        "description": "Joico Blonde Life Violet кондиционер создан для сохранения яркости, чистоты и красоты блонда. Он содержит фиолетовый пигмент, чтобы обеспечить максимальную нейтрализацию желтого оттенка и поддержание яркого холодного блонда.",
+        "technicalSpecs": {
+          "__descriptionEn": "Joico Blonde Life Violet conditioner is designed to preserve the brightness, purity and beauty of blonde. It contains purple pigment to provide maximum neutralization of yellow tones and maintain a bright, cool blonde tone.",
+          "__descriptionLv": "Joico Blonde Life Violet kondicionieris ir paredzēts, lai saglabātu blondu matu spilgtumu, tīrību un skaistumu. Tas satur violetos pigmentus, kas nodrošina maksimālu dzelteno toņu neitralizāciju un palīdz saglabāt spilgtu, vēsu blondo matu toni."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025590_joico-blonde-life-violet-conditioner-250ml-kondicionieris-250ml-kondicioner-250ml-palsam-250ml-kondi_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025590_joico-blonde-life-violet-conditioner-250ml-kondicionieris-250ml-kondicioner-250ml-palsam-250ml-kondi_400.jpeg"
+        ],
+        "createdAt": "2021-10-29T05:59:17.877Z",
+        "price": 29.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "20514",
+      "productSku": "067265",
+      "xmlSku": "67265",
+      "externalIdToSet": "67265",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "67265",
+      "productName": "JOICO HYDRA SPLASH кондиционер 1000мл",
+      "xmlName": "JOICO Hydra Splash Conditioner 1000ml / kondicionieris",
+      "productBarcode": null,
+      "xmlEan": "74469513401",
+      "identityEvidence": {
+        "productMeasures": [
+          "1000ml"
+        ],
+        "xmlMeasures": [
+          "1000ml"
+        ],
+        "nameSimilarity": 0.857,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": true,
+        "isDeleted": false,
+        "brand": "JOICO",
+        "category": "hair",
+        "title": "JOICO HYDRA SPLASH кондиционер 1000мл",
+        "titleEn": "JOICO HYDRA SPLASH conditioner 1000ml",
+        "titleLv": "JOICO HYDRA SPLASH kondicionieris 1000ml",
+        "description": "Joico Hydra Splash увлажняющий кондиционер великолепно распутывает и восстанавливает эластичность благодаря легкой формуле, которая не утяжеляет волосы. Кокосовая вода, морская соль, а также особая технология SmartRelease дарят тонким и средним волосам невесомое увлажнение и деликатно питают пряди, помогают приручить сухие волосы, оставляя их легкими, сияющими и здоровыми, укрепляют, восстанавливают и защищают волосы от негативного воздействия внешних факторов.",
+        "technicalSpecs": {
+          "__descriptionEn": "Joico Hydra Splash hydrating conditioner has a light formula, which is great for detangling the hair and restoring its elasticity without weighing it down. Formula contains coconut water, sea salt and a special Smart Release Complex, which helps with keeping the optimal moisture level and gently nourishing the hair.",
+          "__descriptionLv": "Joico Hydra Splash mitrinošajam kondicionierim ir viegla formula, kas lieliski palīdzēs atšķetināt matus un atjaunot to dabīgo elastību bez papildus matu noslogošanas. Formulas sastāvā ir kokosriekstu ūdens, ūdens sāls un īpašais Smart Release Komplekss, kas plāniem un normāliem matiem palīdzēs uzturēt optimālo matu mitruma līmenī tai pat laikā maigi barojot matus."
+        },
+        "specVolume": "1000 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025628_joico-hydra-splash-conditioner-1000ml-kondicionieris-1000ml-kondicioner-1000ml-palsam-1000ml-kondici_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025628_joico-hydra-splash-conditioner-1000ml-kondicionieris-1000ml-kondicioner-1000ml-palsam-1000ml-kondici_400.jpeg"
+        ],
+        "createdAt": "2021-11-01T10:02:14.823Z",
+        "price": 67.9,
+        "stock": 10000
+      }
+    },
+    {
+      "productId": "18565",
+      "productSku": "0248",
+      "xmlSku": "248",
+      "externalIdToSet": "248",
+      "normalizationType": "LEADING_ZERO_NORMALIZATION",
+      "normalizedKey": "248",
+      "productName": "SNAILS NAIL POLISH SET FOR KIDS",
+      "xmlName": "SNAILS NAIL POLISH SET FOR KIDS (3 gb) / bērnu nagu laka",
+      "productBarcode": null,
+      "xmlEan": "5200384516448",
+      "identityEvidence": {
+        "productMeasures": [],
+        "xmlMeasures": [],
+        "nameSimilarity": 0.75,
+        "brandCompatible": true,
+        "structuralIdentityConfirmed": true
+      },
+      "baseline": {
+        "externalId": null,
+        "isActive": false,
+        "isDeleted": false,
+        "brand": "SNAILS",
+        "category": "nails",
+        "title": "SNAILS NAIL POLISH SET FOR KIDS",
+        "titleEn": "SNAILS NAIL POLISH SET FOR KIDS",
+        "titleLv": "SNAILS NAIL POLISH SET FOR KIDS",
+        "description": "\"Snail\" экологичный лак для ногтей на водной основе, который смывается водой с мылом!",
+        "technicalSpecs": {
+          "__descriptionEn": "The world’s first 100% European made water soluble nail polish that is easily washable and made especially for little glamour girls — with no harmful chemicals or toxic substances. Now families can rest easy that dress-up and imaginative play stay safe, simple and sustainable.",
+          "__descriptionLv": "\"Snail\" ir videi draudzīgas nagu lakas uz ūdens bāzes, kuras nomazgājas ar ūdeni un ziepēm!"
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021835_snails-nail-polish-set-for-kids_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021835_snails-nail-polish-set-for-kids_400.png",
+          "https://hairshop.lv/content/images/thumbs/0021836_snails-nail-polish-set-for-kids.png",
+          "https://hairshop.lv/content/images/thumbs/0021837_snails-nail-polish-set-for-kids.jpeg"
+        ],
+        "createdAt": "2017-11-15T08:40:32.187Z",
+        "price": 16.99,
+        "stock": 10000
+      }
+    }
+  ]
+}

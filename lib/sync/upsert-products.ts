@@ -1,79 +1,40 @@
-import { randomUUID } from 'crypto'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpProduct } from './erp-adapter'
 
-// Columns per product row in the INSERT statement.
-// Order must match buildParams exactly.
-export const COLS_PER_ROW = 14
+// FULL_PRODUCT_SYNC is deliberately update-only. Identity discovery and product
+// creation belong to separately reviewed, allowlisted import workflows.
+export const COLS_PER_ROW = 3
 
 export function buildUpsertQuery(rowCount: number): string {
-  const values = Array.from({ length: rowCount }, (_, i) => {
-    const base = i * COLS_PER_ROW
-    const params = Array.from({ length: COLS_PER_ROW }, (_, j) => `$${base + j + 1}`)
-    return `(${params.join(',')})`
+  const values = Array.from({ length: rowCount }, (_, index) => {
+    const base = index * COLS_PER_ROW
+    return `($${base + 1}::text,$${base + 2}::numeric,$${base + 3}::integer)`
   }).join(',')
 
   return `
-    INSERT INTO "Product" (
-      id, "externalId", title, brand, category,
-      price, "oldPrice", stock, sku, images,
-      description, "isActive", "lastSyncRunId", "updatedAt"
-    ) VALUES ${values}
-    ON CONFLICT ("externalId") DO UPDATE SET
-      -- title/brand/category/description/images/oldPrice are admin-owned forever for
-      -- synced products: the feed doesn't send brand/category/image/description/oldPrice
-      -- at all, and title is deliberately seeded from SKU only (see grins-xml-parser.ts),
-      -- so overwriting them here on every run would blank out real admin-entered data.
-      --
-      -- "isActive" is also intentionally absent here. The feed is a full dump sent every
-      -- run, so unconditionally forcing isActive back to true on conflict would silently
-      -- self-publish brand-new pending rows (inserted this run as isActive=false, awaiting
-      -- admin review) on the very next run, before any admin ever looked at them. Accepted
-      -- tradeoff: products deactivated by deactivateMissing (gone from the feed) no longer
-      -- auto-reactivate if they reappear later — an admin must manually re-enable them too.
-      -- A zero selected-tier price means that this product is not sold through
-      -- that channel. Preserve the existing business price; never fall back to
-      -- another ERP tier and never alter isActive because of price availability.
-      price           = CASE WHEN EXCLUDED.price > 0 THEN EXCLUDED.price ELSE "Product".price END,
-      stock           = EXCLUDED.stock,
-      sku             = EXCLUDED.sku,
-      "lastSyncRunId" = EXCLUDED."lastSyncRunId",
-      "updatedAt"     = now()
+    UPDATE "Product" AS product
+       SET price = CASE WHEN incoming.price > 0 THEN incoming.price ELSE product.price END,
+           stock = incoming.stock,
+           "updatedAt" = now()
+      FROM (VALUES ${values}) AS incoming("externalId", price, stock)
+     WHERE product."externalId" = incoming."externalId"
+       AND product."isDeleted" = false
+       AND ((incoming.price > 0 AND product.price IS DISTINCT FROM incoming.price)
+         OR product.stock IS DISTINCT FROM incoming.stock)
   `
 }
 
-function buildParams(products: ErpProduct[], runId: string): unknown[] {
-  return products.flatMap(p => [
-    randomUUID(),           // id (new UUID for new rows; ignored on conflict)
-    p.externalId,           // externalId
-    p.title,                // title
-    p.brand ?? '',          // brand
-    p.category ?? 'uncategorized', // category
-    p.price,                // price
-    p.oldPrice ?? null,     // oldPrice
-    p.stock,                // stock
-    p.sku ?? null,          // sku
-    p.images ?? null,       // images (TEXT[], nullable)
-    p.description ?? null,  // description
-    // Brand-new rows start hidden (pending review, spec section 10 — the feed has no
-    // machine-readable flag for non-product junk rows). Already-known rows are also
-    // unaffected on conflict: isActive is intentionally excluded from DO UPDATE SET
-    // (see buildUpsertQuery), so admin-driven activation/deactivation decisions persist
-    // across sync runs instead of being clobbered back to true every hour.
-    false,                  // isActive
-    runId,                  // lastSyncRunId
-    new Date(),             // updatedAt (createdAt uses DB DEFAULT for new rows)
-  ])
+function buildParams(products: ErpProduct[]): unknown[] {
+  return products.flatMap(product => [product.externalId, product.price, product.stock])
 }
 
+/** Updates exact, already-linked, non-deleted Products. It can never insert or link. */
 export async function upsertProducts(
   db: ExtendedPrismaClient,
   products: ErpProduct[],
-  runId: string,
+  _runId: string,
 ): Promise<number> {
   if (products.length === 0) return 0
-  const sql = buildUpsertQuery(products.length)
-  const params = buildParams(products, runId)
-  await db.$executeRawUnsafe(sql, ...params)
+  await db.$executeRawUnsafe(buildUpsertQuery(products.length), ...buildParams(products))
   return products.length
 }

@@ -1,0 +1,684 @@
+{
+  "schemaVersion": 1,
+  "wave": "third-wave-duplicate-safe",
+  "xmlSha256": "26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad",
+  "baselineFingerprint": "863e02ba2ee90649cec5413fec7c3094",
+  "generatedAt": "2026-09-27T19:07:44.481Z",
+  "entryCount": 42,
+  "entries": [
+    {
+      "productId": "22098",
+      "productSku": "100311",
+      "xmlSku": "100311",
+      "externalIdToSet": "100311",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "22098",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.8,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "22104"
+      ]
+    },
+    {
+      "productId": "21125",
+      "productSku": "17330",
+      "xmlSku": "17330",
+      "externalIdToSet": "17330",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "21125",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.5,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "22067"
+      ]
+    },
+    {
+      "productId": "13650",
+      "productSku": "19035",
+      "xmlSku": "19035",
+      "externalIdToSet": "19035",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13650",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.783,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18265"
+      ]
+    },
+    {
+      "productId": "12976",
+      "productSku": "2362BR",
+      "xmlSku": "2362BR",
+      "externalIdToSet": "2362BR",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "12976",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.5,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "20685"
+      ]
+    },
+    {
+      "productId": "20706",
+      "productSku": "33010",
+      "xmlSku": "33010",
+      "externalIdToSet": "33010",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "20706",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.615,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "20707"
+      ]
+    },
+    {
+      "productId": "18800",
+      "productSku": "330618",
+      "xmlSku": "330618",
+      "externalIdToSet": "330618",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18800",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.632,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19029"
+      ]
+    },
+    {
+      "productId": "14749",
+      "productSku": "5545",
+      "xmlSku": "5545",
+      "externalIdToSet": "5545",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "14749",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "14905"
+      ]
+    },
+    {
+      "productId": "16132",
+      "productSku": "679",
+      "xmlSku": "679",
+      "externalIdToSet": "679",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "16132",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18483"
+      ]
+    },
+    {
+      "productId": "18368",
+      "productSku": "709520",
+      "xmlSku": "709520",
+      "externalIdToSet": "709520",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18368",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.625,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18369"
+      ]
+    },
+    {
+      "productId": "13373",
+      "productSku": "96258726",
+      "xmlSku": "96258726",
+      "externalIdToSet": "96258726",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13373",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.75,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "15761"
+      ]
+    },
+    {
+      "productId": "18995",
+      "productSku": "BLK201013",
+      "xmlSku": "BLK201013",
+      "externalIdToSet": "BLK201013",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18995",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.533,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "20265"
+      ]
+    },
+    {
+      "productId": "13421",
+      "productSku": "CHI5403",
+      "xmlSku": "CHI5403",
+      "externalIdToSet": "CHI5403",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13421",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.462,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "15136"
+      ]
+    },
+    {
+      "productId": "13397",
+      "productSku": "CHI5600",
+      "xmlSku": "CHI5600",
+      "externalIdToSet": "CHI5600",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13397",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.615,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "13408"
+      ]
+    },
+    {
+      "productId": "13412",
+      "productSku": "CHI6210",
+      "xmlSku": "CHI6210",
+      "externalIdToSet": "CHI6210",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13412",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.526,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "15141"
+      ]
+    },
+    {
+      "productId": "12718",
+      "productSku": "CHI6410",
+      "xmlSku": "CHI6410",
+      "externalIdToSet": "CHI6410",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "12718",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.421,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "15118"
+      ]
+    },
+    {
+      "productId": "12843",
+      "productSku": "CHI7112",
+      "xmlSku": "CHI7112",
+      "externalIdToSet": "CHI7112",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "12843",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.471,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "13431"
+      ]
+    },
+    {
+      "productId": "13420",
+      "productSku": "CHID040",
+      "xmlSku": "CHID040",
+      "externalIdToSet": "CHID040",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13420",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.571,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "15131"
+      ]
+    },
+    {
+      "productId": "17275",
+      "productSku": "CHIRHC12",
+      "xmlSku": "CHIRHC12",
+      "externalIdToSet": "CHIRHC12",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17275",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.933,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18057"
+      ]
+    },
+    {
+      "productId": "17273",
+      "productSku": "CHIRHS12",
+      "xmlSku": "CHIRHS12",
+      "externalIdToSet": "CHIRHS12",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17273",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.933,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18055"
+      ]
+    },
+    {
+      "productId": "21465",
+      "productSku": "DSD1.4",
+      "xmlSku": "DSD1.4",
+      "externalIdToSet": "DSD1.4",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "21465",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.625,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "21466"
+      ]
+    },
+    {
+      "productId": "12844",
+      "productSku": "FLB",
+      "xmlSku": "FLB",
+      "externalIdToSet": "FLB",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "12844",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "13003"
+      ]
+    },
+    {
+      "productId": "13127",
+      "productSku": "K6880",
+      "xmlSku": "K6880",
+      "externalIdToSet": "K6880",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13127",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.571,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "17347"
+      ]
+    },
+    {
+      "productId": "13314",
+      "productSku": "K7779",
+      "xmlSku": "K7779",
+      "externalIdToSet": "K7779",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13314",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.353,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19220"
+      ]
+    },
+    {
+      "productId": "18049",
+      "productSku": "K7782",
+      "xmlSku": "K7782",
+      "externalIdToSet": "K7782",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18049",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.533,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18915",
+        "20390"
+      ]
+    },
+    {
+      "productId": "14875",
+      "productSku": "KBRC12",
+      "xmlSku": "KBRC12",
+      "externalIdToSet": "KBRC12",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "14875",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.706,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "17417",
+        "19000"
+      ]
+    },
+    {
+      "productId": "17395",
+      "productSku": "KBSDO05",
+      "xmlSku": "KBSDO05",
+      "externalIdToSet": "KBSDO05",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17395",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.778,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18999"
+      ]
+    },
+    {
+      "productId": "17443",
+      "productSku": "KBSDO3",
+      "xmlSku": "KBSDO3",
+      "externalIdToSet": "KBSDO3",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17443",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19001"
+      ]
+    },
+    {
+      "productId": "12705",
+      "productSku": "KEM0234500",
+      "xmlSku": "KEM0234500",
+      "externalIdToSet": "KEM0234500",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "12705",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.375,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "15907"
+      ]
+    },
+    {
+      "productId": "18044",
+      "productSku": "KJMN1168",
+      "xmlSku": "KJMN1168",
+      "externalIdToSet": "KJMN1168",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18044",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.364,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18913"
+      ]
+    },
+    {
+      "productId": "17234",
+      "productSku": "KJMN1189",
+      "xmlSku": "KJMN1189",
+      "externalIdToSet": "KJMN1189",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17234",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.333,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18042"
+      ]
+    },
+    {
+      "productId": "17239",
+      "productSku": "KJMN1232",
+      "xmlSku": "KJMN1232",
+      "externalIdToSet": "KJMN1232",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "17239",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.571,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "18047"
+      ]
+    },
+    {
+      "productId": "18310",
+      "productSku": "KL005",
+      "xmlSku": "KL005",
+      "externalIdToSet": "KL005",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18310",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.4,
+        "price2Match": true
+      },
+      "rejectedDuplicateProductIds": [
+        "18311"
+      ]
+    },
+    {
+      "productId": "16086",
+      "productSku": "KRST17",
+      "xmlSku": "KRST17",
+      "externalIdToSet": "KRST17",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "16086",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.933,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18682"
+      ]
+    },
+    {
+      "productId": "20326",
+      "productSku": "KRST975",
+      "xmlSku": "KRST975",
+      "externalIdToSet": "KRST975",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "20326",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.533,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "21997"
+      ]
+    },
+    {
+      "productId": "19462",
+      "productSku": "L4L14",
+      "xmlSku": "L4L14",
+      "externalIdToSet": "L4L14",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "19462",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.588,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19463"
+      ]
+    },
+    {
+      "productId": "13073",
+      "productSku": "L88",
+      "xmlSku": "L88",
+      "externalIdToSet": "L88",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "13073",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.632,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "15061"
+      ]
+    },
+    {
+      "productId": "19049",
+      "productSku": "LK525",
+      "xmlSku": "LK525",
+      "externalIdToSet": "LK525",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "19049",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.737,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19472"
+      ]
+    },
+    {
+      "productId": "18609",
+      "productSku": "M619982",
+      "xmlSku": "M619982",
+      "externalIdToSet": "M619982",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18609",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.769,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18611"
+      ]
+    },
+    {
+      "productId": "18895",
+      "productSku": "NIA100005",
+      "xmlSku": "NIA100005",
+      "externalIdToSet": "NIA100005",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "18895",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.533,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "18896"
+      ]
+    },
+    {
+      "productId": "14759",
+      "productSku": "PM0010",
+      "xmlSku": "PM0010",
+      "externalIdToSet": "PM0010",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "14759",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "14808"
+      ]
+    },
+    {
+      "productId": "14760",
+      "productSku": "PM0011",
+      "xmlSku": "PM0011",
+      "externalIdToSet": "PM0011",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "14760",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.667,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "14809"
+      ]
+    },
+    {
+      "productId": "19218",
+      "productSku": "SPA1551",
+      "xmlSku": "SPA1551",
+      "externalIdToSet": "SPA1551",
+      "matchType": "DUPLICATE_SAFE",
+      "selectedEvidence": {
+        "productId": "19218",
+        "exactBarcodeMatch": true,
+        "titleSimilarity": 0.706,
+        "price2Match": false
+      },
+      "rejectedDuplicateProductIds": [
+        "19219"
+      ]
+    }
+  ]
+}

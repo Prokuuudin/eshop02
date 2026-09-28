@@ -1,0 +1,1506 @@
+{
+  "schemaVersion": 1,
+  "wave": "sixth-wave-strict-identity",
+  "executable": true,
+  "entryCount": 30,
+  "baseline": {
+    "productCount": 6378,
+    "externalIdCount": 3550,
+    "unlinkedCount": 2828,
+    "active": 2229,
+    "inactive": 4149,
+    "syncRunCount": 7,
+    "fingerprint": "f1890a064654d64b6fb295cbeaa01bae"
+  },
+  "xmlSha256": "26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad",
+  "entries": [
+    {
+      "productId": "20318",
+      "productSku": "KRS814",
+      "productBarcode": "3474636857814",
+      "xmlSku": "KER814",
+      "xmlEan": "3474636857814",
+      "externalIdToSet": "KER814",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE GENESIS BAIN HYDRA FORTIFIANT шампунь 250ML",
+        "xmlName": "Kerastase Genesis Bain Hydra Fortfiant 250ml / šampūns",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase genesis bain hydra fortifiant шампунь 250ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS814",
+        "barcode": "3474636857814",
+        "title": "KERASTASE GENESIS BAIN HYDRA FORTIFIANT шампунь 250ML",
+        "titleEn": "KERASTASE GENESIS BAIN HYDRA FORTIFIANT SHAMPOO 250ML",
+        "titleLv": "KERASTASE GENESIS BAIN HYDRA FORTIFIANT šampūns 250ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "УКРЕПЛЯЮЩИЙ ШАМПУНЬ ДЛЯ ОСЛАБЛЕННЫХ ВОЛОС СКЛОННЫХ К ВЫПАДЕНИЮ ИЗ-ЗА ЛОМКОСТИ",
+        "technicalSpecs": {
+          "__descriptionEn": "Anti hair-fall* fortifying shampoo for weakened hair, prone to falling due to breakage. Gently clarifies and reinforces fiber to reduce the risk of hair fall due to breakage. *due to breakage.",
+          "__descriptionLv": "SPĒCINOŠS ŠAMPŪNS PRET MATU IZKRIŠANU – NOVĀJINĀTIEM MATIEM AR TENDENCI IZKRIST LŪŠANAS DĒĻ Īpaši maiga formula plāniem vai taukainiem matiem, kas attīra galvas ādu:"
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025317_kerastase-genesis-bain-hydra-fortifiant-250ml-sampuns-sampunas-sampoon-ampun-shampoo_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025317_kerastase-genesis-bain-hydra-fortifiant-250ml-sampuns-sampunas-sampoon-ampun-shampoo_400.png"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 31.5,
+        "stock": 10000,
+        "createdAt": "2021-05-21T02:38:16.940Z"
+      }
+    },
+    {
+      "productId": "13501",
+      "productSku": null,
+      "productBarcode": null,
+      "xmlSku": "227857",
+      "xmlEan": "4021609278573",
+      "externalIdToSet": "227857",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "Goldwell Stylesign Sprayer 300 ml.",
+        "xmlName": "Goldwell Stylesign Sprayer 300 ml.",
+        "brand": "GOLDWELL",
+        "nameNormalization": "goldwell stylesign sprayer 300 ml",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": null,
+        "barcode": null,
+        "title": "Goldwell Stylesign Sprayer 300 ml.",
+        "titleEn": "Goldwell Stylesign Sprayer 300 ml.",
+        "titleLv": "Goldwell Stylesign Sprayer 300 ml.",
+        "brand": "GOLDWELL",
+        "category": "hair",
+        "description": "Описание : Goldwell Стиль распылитель лак для волос , который дает сильную фиксацию и блеск . Прическа становится сильнее , гибкой и остается в течение всего дня , даже в дождливую погоду .",
+        "technicalSpecs": {
+          "__descriptionEn": "Description: Goldwell Style Sign Sprayer hairspray which gives strong hold and shine . Hairstyle becomes strong , flexible and stays all day long , even in wet weather .",
+          "__descriptionLv": "Goldwell Style Sign Sprayer matu laka, kas piešķir stipru fiksāciju un mirdzumu. Frizūra kļūst stingra, elastīga un turas visas dienas garumā pat slapjā laikā. Neatstāj paliekas, ar neitrālu smaržu."
+        },
+        "specVolume": "300 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0022261_goldwell-stylesign-sprayer-300-ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0022261_goldwell-stylesign-sprayer-300-ml_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 17.5,
+        "stock": 5,
+        "createdAt": "2016-01-18T16:29:58.160Z"
+      }
+    },
+    {
+      "productId": "21994",
+      "productSku": "KRS943",
+      "productBarcode": "3474637154943",
+      "xmlSku": "KER943",
+      "xmlEan": "3474637154943",
+      "externalIdToSet": "KER943",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Kerastase  Nutritive Bain Satin RICHE шампунь 250ml ",
+        "xmlName": "Kerastase Bain Satin Riche Shampoo 250ml / šampūns",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase nutritive bain satin riche шампунь 250ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS943",
+        "barcode": "3474637154943",
+        "title": "Kerastase  Nutritive Bain Satin RICHE шампунь 250ml ",
+        "titleEn": "Kerastase  Nutritive Bain Satin RICHE Shampoo 250ml ",
+        "titleLv": "Kerastase  Nutritive Bain Satin RICHE šampūns 250ml ",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Мягкие ингредиенты, интенсивно очищающие сухие волосы, восстанавливают их и создают ощущение комфортной легкости. Оживляет и укрепляет волосы, борясь с обезвоживанием.",
+        "technicalSpecs": {
+          "__descriptionEn": "Gentle ingredients that intensively cleanse dry hair, restoring and creating a comfortable feeling of lightness. Revitalizes and strengthens hair to combat dehydration",
+          "__descriptionLv": "Maigas iedarbības sastāvdaļas, kas intensīvi tīra sausos matus, atjaunojot un radot komfortablu viegluma sajutu. Atdzīvina un nostiprina matus, lai cīnītos ar dehidratāciju"
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029008_kerastase-nutritive-bain-satin-riche-shampoo-250ml-sampuns-sampunas-sampoon-ampun_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029008_kerastase-nutritive-bain-satin-riche-shampoo-250ml-sampuns-sampunas-sampoon-ampun_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 28.6,
+        "stock": 5,
+        "createdAt": "2026-02-13T09:54:21.177Z"
+      }
+    },
+    {
+      "productId": "21257",
+      "productSku": "HP25391",
+      "productBarcode": "4045787725391",
+      "xmlSku": "NHK4020",
+      "xmlEan": "4045787725391",
+      "externalIdToSet": "NHK4020",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY шампунь 250мл",
+        "xmlName": "Schwarzkopf BC FA Babassu Oil NEW Shampoo 250 ml / šampūns",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "nameNormalization": "schwarzkopf professional bonacure frizz away шампунь 250мл",
+        "nameSimilarity": null,
+        "brandEvidence": false,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "HP25391",
+        "barcode": "4045787725391",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY шампунь 250мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY shampoo 250ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY šampūns 250ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Шампунь Schwarzkopf Professional Bonacure Frizz Away для тех, у кого жесткие, непослушные волосы, склонные к шелушению. Благодаря технологии без сульфатов шампунь бережно очищает волосы, делая их мягкими, гладкими и более послушными, даже без пенообразования, которое свойственно многим другим шампуням.",
+        "technicalSpecs": {
+          "__descriptionEn": "Schwarzkopf Professional Bonacure Frizz Away shampoo for those who have coarse, unruly hair that is prone to flaking. Thanks to its sulfate-free technology, shampoo gently cleanses hair, leaving it soft, smooth, and more manageable, even without the foaming that is common with many other shampoos.",
+          "__descriptionLv": "Schwarzkopf Professional Bonacure Frizz Away šampūns tiem, kam ir raupji, nepaklausīgi mati, kuriem ir nosliece uz lobīšanos. Pateicoties tā tehnoloģijai, kas nesatur sulfātus, šampūns maigi attīra matus, padarot tos mīkstus, gludus un vieglāk vadāmus, pat bez putošanas, kas raksturīga daudziem citiem šampūniem."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0027448_schwarzkopf-professional-bonacure-frizz-away-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-s_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027448_schwarzkopf-professional-bonacure-frizz-away-shampoo-250ml-sampuns-250ml-ampun-250ml-sampoon-250ml-s_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 8.85,
+        "stock": 10000,
+        "createdAt": "2025-05-14T03:21:13.653Z"
+      }
+    },
+    {
+      "productId": "19202",
+      "productSku": "KRS408",
+      "productBarcode": "3474636692408",
+      "xmlSku": "KR2408",
+      "xmlEan": "3474636692408",
+      "externalIdToSet": "KR2408",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE BLOND ABSOLU MASQUE ULTA-VIOLET МАСКА ДЛЯ ВОЛОС 200ML ",
+        "xmlName": "Kerastase Blond Absolu Masque Ultra-Violet 200ml / matu mask",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase blond absolu masque ulta violet маска для волос 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS408",
+        "barcode": "3474636692408",
+        "title": "KERASTASE BLOND ABSOLU MASQUE ULTA-VIOLET МАСКА ДЛЯ ВОЛОС 200ML ",
+        "titleEn": "KERASTASE BLOND ABSOLU MASQUE ULTA-VIOLET HAIR MASK 200ML ",
+        "titleLv": "KERASTASE BLOND ABSOLU MASQUE ULTA-VIOLET MATU MASKA 200ML ",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "МАСКА УЛЬТРА-ВИОЛЕТ. Густая питательная фиолетовая маска, при регулярном использовании нейтрализующая нежелательные желтые полутона, интенсивно питающая ослабленные осветленные волосы.",
+        "technicalSpecs": {
+          "__descriptionEn": "Refresh and restore blonde hair with the Kérastase Blond Absolu Masque Ultra Violet Treatment, a weekly hair mask for lightened and highlighted locks. The purple formula helps to banish brassy and yellow tones while protecting against dullness caused by pollution and other environmental aggressors.",
+          "__descriptionLv": "STRUKTŪRU UZLABOJOŠA MASKA .DZELTENĪGO TOŅU NEITRALIZĒŠANAI. Intensīvs apakštoņu neitralizējošs efekts vispusīgas iedarbības matu maskā."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029002_kerastase-blond-absolu-masque-ulta-violet-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juu_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029002_kerastase-blond-absolu-masque-ulta-violet-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juu_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 54.9,
+        "stock": 10000,
+        "createdAt": "2019-03-27T03:58:43.903Z"
+      }
+    },
+    {
+      "productId": "18687",
+      "productSku": null,
+      "productBarcode": null,
+      "xmlSku": "57846",
+      "xmlEan": "3474636157846",
+      "externalIdToSet": "57846",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "KERASTASE FUSIO DOSE CONCENTRE VITA CIMENT 10X12ML ",
+        "xmlName": "KERASTASE FUSIO DOSE CONCENTRE VITA CIMENT 10X12ML",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase fusio dose concentre vita ciment 10x12ml",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": null,
+        "barcode": null,
+        "title": "KERASTASE FUSIO DOSE CONCENTRE VITA CIMENT 10X12ML ",
+        "titleEn": "KERASTASE FUSIO DOSE CONCENTRE VITA CIMENT 10X12ML ",
+        "titleLv": "KERASTASE FUSIO DOSE CONCENTRE VITA CIMENT 10X12ML ",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Концентрат Вита-Цемент – воссоздает внутреннею структуру поврежденных волос. Уже после первого применения на 56% восстанавливается сопротивляемость воздействию внешних агрессивных факторов, придает волосам прочность и жизненную силу.",
+        "technicalSpecs": {
+          "__descriptionEn": "Fusio Dose Vita-Ciment is a repairing ampoule therapy which contains natural cement. It is perfect for weak, damaged, splitting and colour-treated hair. Thanks to application of the unique technology of combining nutrients, it brilliantly strengthens and nourishes hair.",
+          "__descriptionLv": "Jaunas paaudzes koncentrētas aktīvās sastāvdaļas, ko mirkli pirms lietošanas, jums redzot, sajauc jūsu friziermeistars. Individualizēts un tieši jums radīts kopšanas līdzeklis."
+        },
+        "specVolume": "10x12 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0022164_kerastase-fusio-dose-concentre-vita-ciment-10x12ml-kerastaz_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0022164_kerastase-fusio-dose-concentre-vita-ciment-10x12ml-kerastaz_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 56.4,
+        "stock": 10000,
+        "createdAt": "2018-01-05T05:47:25.373Z"
+      }
+    },
+    {
+      "productId": "18746",
+      "productSku": null,
+      "productBarcode": null,
+      "xmlSku": "227862",
+      "xmlEan": "",
+      "externalIdToSet": "227862",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "GOLDWELL STYLESIGN ROUGHMAN 100 ML",
+        "xmlName": "Goldwell Stylesign Roughman 100 ml.",
+        "brand": "GOLDWELL",
+        "nameNormalization": "goldwell stylesign roughman 100 ml",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": null,
+        "barcode": null,
+        "title": "GOLDWELL STYLESIGN ROUGHMAN 100 ML",
+        "titleEn": "GOLDWELL STYLESIGN ROUGHMAN 100 ML",
+        "titleLv": "GOLDWELL STYLESIGN ROUGHMAN 100 ML",
+        "brand": "GOLDWELL",
+        "category": "hair",
+        "description": "Goldwell Roughman матовая крем-паста, для создания стойкой укладки с матовым эффектом и мгновенной фиксацией.",
+        "technicalSpecs": {
+          "__descriptionEn": "It ain’t easy to look beautiful fast, but we offer a simple solution with our Goldwell Roughman matte cream paste. With its instant hold, your hairstyle will look fabulous in just a few minutes.",
+          "__descriptionLv": "Nav viegli iegūt skaistu matu sakārtojumu ātri, taču mēs piedāvājam vienkāršu risinājumu – Goldwell Roughman matētu, krēmveida pastu. Jūsu mati iegūs tūlītēju fiksāciju un vieglu, matētu efektu visas dienas garumā."
+        },
+        "specVolume": "100 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0022257_goldwell-stylesign-roughman-100-ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0022257_goldwell-stylesign-roughman-100-ml_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 17,
+        "stock": 10000,
+        "createdAt": "2018-01-30T08:55:39.817Z"
+      }
+    },
+    {
+      "productId": "19200",
+      "productSku": "KRS231",
+      "productBarcode": "3474636692231",
+      "xmlSku": "KR2231",
+      "xmlEan": "3474636692231",
+      "externalIdToSet": "KR2231",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE BLOND ABSOLU BAIN UTRA-VIOLET шампунь 250ML",
+        "xmlName": "Kerastase Blond Absolu Bain Ulta-Violet 250 ml / šampūns",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase blond absolu bain utra violet шампунь 250ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS231",
+        "barcode": "3474636692231",
+        "title": "KERASTASE BLOND ABSOLU BAIN UTRA-VIOLET шампунь 250ML",
+        "titleEn": "KERASTASE BLOND ABSOLU BAIN UTRA-VIOLET SHAMPOO 250ML",
+        "titleLv": "KERASTASE BLOND ABSOLU BAIN UTRA-VIOLET šampūns 250ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "ШАМПУНЬ-ВАННА УЛЬТРА-ВИОЛЕТ . Фиолетовый шампунь-ванна, нейтрализующий желтые полутона очень светлых или седых волос, для придания блонду холодных оттенков.",
+        "technicalSpecs": {
+          "__descriptionEn": "Restore gloss and shine to blonde hair with Kérastase Blond Absolu Bain Ultra Violet Shampoo, a deeply nourishing treatment that boosts luminosity.",
+          "__descriptionLv": "ŠAMPŪNS PRET MATU DZELTĒŠANU Formula, kas satur zilo un violeto pigmentu un novērš dzelteno apakštoņu veidošanos."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023397_kerastase-blond-absolu-bain-utra-violet-shampoo-250ml-sampuns-sampunas-sampoon-ampun_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023397_kerastase-blond-absolu-bain-utra-violet-shampoo-250ml-sampuns-sampunas-sampoon-ampun_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 31.5,
+        "stock": 10000,
+        "createdAt": "2019-03-27T03:25:37.327Z"
+      }
+    },
+    {
+      "productId": "21259",
+      "productSku": "HP25537",
+      "productBarcode": "4045787725537",
+      "xmlSku": "NHK4019",
+      "xmlEan": "4045787725537",
+      "externalIdToSet": "NHK4019",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY кондиционер 200мл",
+        "xmlName": "Schwarzkopf BC FA Babassu Oil NEW Conditioner 200 ml / kondi",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "nameNormalization": "schwarzkopf professional bonacure frizz away кондиционер 200мл",
+        "nameSimilarity": null,
+        "brandEvidence": false,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "HP25537",
+        "barcode": "4045787725537",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY кондиционер 200мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY conditioner 200ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY kondicionieris 200ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Приглашаем вас открыть секрет идеально гладких и послушных волос с кондиционером Schwarzkopf Professional Bonacure Frizz Away. Это средство поможет укротить непослушные волосы, склонные к завиванию, и сделает их невероятно мягкими.",
+        "technicalSpecs": {
+          "__descriptionEn": "We invite you to discover the secret of perfectly smooth and manageable hair with Schwarzkopf Professional Bonacure Frizz Away conditioner. This product will help tame unruly hair that is prone to frizz and leaves it incredibly soft.",
+          "__descriptionLv": "Aicinām atklāt ideāli gludu un vadāmu matu noslēpumu ar Schwarzkopf Professional Bonacure Frizz Away kondicionieri. Šis produkts palīdzēs pieradināt nepaklausīgus matus, kas ir pakļauti čokošanai, un padarīs tos neticami mīkstus."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0027450_schwarzkopf-professional-bonacure-frizz-away-conditioner-200ml-kondicionieris-200ml-kondicioner-200m_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027450_schwarzkopf-professional-bonacure-frizz-away-conditioner-200ml-kondicionieris-200ml-kondicioner-200m_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 10.65,
+        "stock": 10000,
+        "createdAt": "2025-05-14T03:34:16.080Z"
+      }
+    },
+    {
+      "productId": "19749",
+      "productSku": "011606",
+      "productBarcode": null,
+      "xmlSku": "86951",
+      "xmlEan": "869519000013",
+      "externalIdToSet": "86951",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "REUZEL PINK HEAVY HOLD GREASE 35G",
+        "xmlName": "REUZEL PINK HEAVY HOLD GREASE 35G",
+        "brand": "REUZEL",
+        "nameNormalization": "reuzel pink heavy hold grease 35g",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "011606",
+        "barcode": null,
+        "title": "REUZEL PINK HEAVY HOLD GREASE 35G",
+        "titleEn": "REUZEL PINK HEAVY HOLD GREASE 35G",
+        "titleLv": "REUZEL PINK HEAVY HOLD GREASE 35G",
+        "brand": "REUZEL",
+        "category": "hair",
+        "description": "Воск для волос сильной фиксации Воск для волос сильной фиксации, изготовленный на основе масла и воска.",
+        "technicalSpecs": {
+          "INGREDIENTS": "PETROLATUM, CERA ALBA (BEESWAX), CERA MICROCRISTALLINA (MICROCRYSTALLINE WAX), HYDROGENATED ROSIN, BIS-DIGLYCERYL POLYACYLADIPATE-2, FRAGRANCE (PARFUM), SILICA, BHT, BENZYL BENZOATE, LILIAL, HEXYL CINNAMAL, LINALOOL, CITRONELLOL, AMYL CINNAMAL, EUGENOL",
+          "__descriptionEn": "Reuzel Grease Pomade in the pink can is perfect for the man who carries a comb and knows how to use it. Heavy/Strong Hold and as strong as a gel",
+          "__descriptionLv": "Stipras fiksācijas matu vasks Stipras fiksācijas matu vasks uz eļļas un vaska bāzes."
+        },
+        "specVolume": "35 g",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0024388_reuzel-pink-heavy-hold-grease-35g_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0024388_reuzel-pink-heavy-hold-grease-35g_400.png"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 12.5,
+        "stock": 10000,
+        "createdAt": "2020-01-15T06:11:45.543Z"
+      }
+    },
+    {
+      "productId": "19201",
+      "productSku": "KRST361",
+      "productBarcode": "3474636692361",
+      "xmlSku": "KR2361",
+      "xmlEan": "3474636692361",
+      "externalIdToSet": "KR2361",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE BLOND ABSOLU CICAFLASH кондиционер 250ML",
+        "xmlName": "Kerastase Blond Absolu Cicaflash 250ml / matu balzāms",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase blond absolu cicaflash кондиционер 250ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRST361",
+        "barcode": "3474636692361",
+        "title": "KERASTASE BLOND ABSOLU CICAFLASH кондиционер 250ML",
+        "titleEn": "KERASTASE BLOND ABSOLU CICAFLASH conditioner 250ML",
+        "titleLv": "KERASTASE BLOND ABSOLU CICAFLASH kondicionieris 250ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "ПИТАНИЕ. УХОД ЦИКАФЛАШ.",
+        "technicalSpecs": {
+          "__descriptionEn": "Care for lightened and highlighted hair with Kérastase Blond Absolu Cicaflash Treatment, a weightless and luxurious formula that delivers the deep nourishment of a hair mask with the lightweight finish of a conditioner.",
+          "__descriptionLv": "Intensīvam un stiprinošam efektam. Vispusīgs matu kopšanas līdzeklis."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023398_kerastase-blond-absolu-cicaflash-250ml-kondicioner-conditioner-kondicionieris-kondicionierius-juukse_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023398_kerastase-blond-absolu-cicaflash-250ml-kondicioner-conditioner-kondicionieris-kondicionierius-juukse_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 43.6,
+        "stock": 10000,
+        "createdAt": "2019-03-27T03:46:01.403Z"
+      }
+    },
+    {
+      "productId": "21266",
+      "productSku": "HP24912",
+      "productBarcode": "4045787724912",
+      "xmlSku": "NHK4251",
+      "xmlEan": "4045787724912",
+      "externalIdToSet": "NHK4251",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "SCHWARZKOPF PROFESSIONAL BONACURE VOLUME BOOST желейный кондиционер 200мл",
+        "xmlName": "Schwarzkopf BC CVB Jelly Conditione NEW 200 ml. / kondicioni",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "nameNormalization": "schwarzkopf professional bonacure volume boost желейный кондиционер 200мл",
+        "nameSimilarity": null,
+        "brandEvidence": false,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "HP24912",
+        "barcode": "4045787724912",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE VOLUME BOOST желейный кондиционер 200мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE VOLUME BOOST jelly conditioner 200ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE VOLUME BOOST želejveida kondicionieris 200ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Кондиционер Schwarzkopf Professional Volume Boost Jelly — это легкий кондиционер с текстурой желе, специально разработанный для тонких волос, способствующий улучшению объема и упругости. Эта невесомая формула проникает в стержень волоса, улучшая внутреннюю прочность волоса для более густых, пышных на вид волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "Schwarzkopf Professional Volume Boost jelly conditioner is a lightweight, jelly-texture conditioner, specially formulated for use on fine hair, promoting improved volume and bounce. This weightless formula penetrates the hair shaft, improving the inner hair strength for thicker, fuller-looking hair.",
+          "__descriptionLv": "Schwarzkopf Professional Volume Boost želejveida kondicionieris ir viegls, želejveida tekstūras kondicionieris, kas īpaši izstrādāts lietošanai smalkos matos, uzlabojot apjomu un atlēcienus. Šī bezsvara formula iekļūst matu stieņos, uzlabojot matu iekšējo spēku, nodrošinot biezākus, pilnīgākus matus."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0027457_schwarzkopf-professional-bonacure-volume-boost-jelly-conditioner-200ml-zelejveida-kondicionieris-200_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027457_schwarzkopf-professional-bonacure-volume-boost-jelly-conditioner-200ml-zelejveida-kondicionieris-200_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 10.65,
+        "stock": 10000,
+        "createdAt": "2025-05-14T04:28:11.563Z"
+      }
+    },
+    {
+      "productId": "20319",
+      "productSku": "KRS033",
+      "productBarcode": "3474636858033",
+      "xmlSku": "KRST33",
+      "xmlEan": "3474636858033",
+      "externalIdToSet": "KRST33",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE GENESIS BAIN NUTRI FORTIFIANT шампунь 250ML",
+        "xmlName": "Kerastase Genesis Bain Nutri Fortfiant 250ml / šampūns",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase genesis bain nutri fortifiant шампунь 250ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS033",
+        "barcode": "3474636858033",
+        "title": "KERASTASE GENESIS BAIN NUTRI FORTIFIANT шампунь 250ML",
+        "titleEn": "KERASTASE GENESIS BAIN NUTRI FORTIFIANT shampoo 250ML",
+        "titleLv": "KERASTASE GENESIS BAIN NUTRI FORTIFIANT šampūns 250ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "УКРЕПЛЯЮЩИЙ ШАМПУНЬ ДЛЯ СУХИХ, ОСЛАБЛЕННЫХ ВОЛОС СКЛОННЫХ К ВЫПАДЕНИЮ ИЗ-ЗА ЛОМКОСТИ",
+        "technicalSpecs": {
+          "INGREDIENTS": "AQUA / WATER / EAU SODIUM LAURETH SULFATE SODIUM CHLORIDE COCAMIDOPROPYL BETAINE DIMETHICONE CITRIC ACID HEXYLENE GLYCOL SODIUM BENZOATE SODIUM HYDROXIDE AMODIMETHICONE CARBOMER GUAR HYDROXYPROPYLTRIMONIUM CHLORIDE TRIDECETH-10 GLYCERIN SALICYLIC ACID LIMONENE GLYCOL DISTEARATE MIA PEG-100 STEARATE LINALOOL STEARETH-6 PHENOXYETHANOL COCO-BETAINE TRIDECETH-3 CI 77891 / TITANIUM DIOXIDE BENZYL SALICYLATE COUMARIN ZINGIBER OFFICINALE ROOT EXTRACT / GINGER ROOT EXTRACT CITRAL BENZYL ALCOHOL CITRONELLOL ACETIC ACID FUMARIC ACID XYLITYLGLUCOSIDE ANHYDROXYLITOL LEONTOPODIUM ALPINUM CALLUS CULTURE EXTRACT XYLITOL XANTHAN GUM DIPEPTIDE DIAMINOBUTYROYL BENZYLAMIDE DIACETATE PARFUM / FRAGRANCE",
+          "__descriptionEn": "Fortifying anti hair-fall* shampoo for dry weakened hair, prone to falling due to breakage. Gently clarifies and reinforces fiber to reduce the risk of hair fall due to breakage. *due to breakage.",
+          "__descriptionLv": "SPĒCINOŠS ŠAMPŪNS PRET MATU IZKRIŠANU SAUSIEM, NOVĀJINĀTIEM MATIEM AR TENDENCI IZKRIST LŪŠANAS DĒĻ"
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025318_kerastase-genesis-bain-nutri-fortifiant-250ml-sampuns-sampunas-sampoon-ampun-shampoo_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025318_kerastase-genesis-bain-nutri-fortifiant-250ml-sampuns-sampunas-sampoon-ampun-shampoo_400.png"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 31.5,
+        "stock": 10000,
+        "createdAt": "2021-05-21T02:50:55.787Z"
+      }
+    },
+    {
+      "productId": "20320",
+      "productSku": "KRST883",
+      "productBarcode": "3474636857883",
+      "xmlSku": "KER883",
+      "xmlEan": "3474636857883",
+      "externalIdToSet": "KER883",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE GENESIS FONDANT RENFORCATEUR кондиционер 200ML",
+        "xmlName": "Kerastase Genesis Fondant Renforcateur 200ml / balzāms",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase genesis fondant renforcateur кондиционер 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRST883",
+        "barcode": "3474636857883",
+        "title": "KERASTASE GENESIS FONDANT RENFORCATEUR кондиционер 200ML",
+        "titleEn": "KERASTASE GENESIS FONDANT RENFORCATEUR conditioner 200ML",
+        "titleLv": "KERASTASE GENESIS FONDANT RENFORCATEUR  kondicionieris 200ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "КРЕПЛЯЮЩЕЕ МОЛОЧКО ДЛЯ ОСЛАБЛЕННЫХ ВОЛОС СКЛОННЫХ К ВЫПАДЕНИЮ ИЗ-ЗА ЛОМКОСТИ",
+        "technicalSpecs": {
+          "__descriptionEn": "STRENGTHENING CONDITIONER AGAINST HAIR LOSS -\n\nWEAKNESS HAIR TAKES TO TAKE DUE TO BREAKING",
+          "__descriptionLv": "SPĒCINOŠS KONDICIONIERIS PRET MATU IZKRIŠANU – NOVĀJINĀTIEM MATIEM AR TENDENCI IZKRIST LŪŠANAS DĒĻ"
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025319_kerastase-genesis-fondant-renforcateur-200ml-kondicioner-conditioner-kondicionieris-kondicionierius-_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025319_kerastase-genesis-fondant-renforcateur-200ml-kondicioner-conditioner-kondicionieris-kondicionierius-_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 42.1,
+        "stock": 10000,
+        "createdAt": "2021-05-21T03:00:55.550Z"
+      }
+    },
+    {
+      "productId": "20321",
+      "productSku": "KRS937",
+      "productBarcode": "3474636857937",
+      "xmlSku": "KER937",
+      "xmlEan": "3474636857937",
+      "externalIdToSet": "KER937",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE GENESIS MASQUE RECONSTITUANT МАСКА ДЛЯ ВОЛОС 200ML",
+        "xmlName": "Kerastase Genesis Masque Reconstituant 200ml / maska",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase genesis masque reconstituant маска для волос 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS937",
+        "barcode": "3474636857937",
+        "title": "KERASTASE GENESIS MASQUE RECONSTITUANT МАСКА ДЛЯ ВОЛОС 200ML",
+        "titleEn": "KERASTASE GENESIS MASQUE RECONSTITUANT HAIR MASK 200ML",
+        "titleLv": "KERASTASE GENESIS MASQUE RECONSTITUANT MATU MASKA 200ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "ИНТЕНСИВНО УКРЕПЛЯЮЩАЯ МАСКА ДЛЯ ОСЛАБЛЕННЫХ ВОЛОС СКЛОННЫХ К ВЫПАДЕНИЮ ИЗ- ЗА ЛОМКОСТИ",
+        "technicalSpecs": {
+          "__descriptionEn": "INTENSIVE STRENGTHENING MASK AGAINST HAIR LOSS -\n\nWEAKNESS HAIR TAKES TO TAKE DUE TO BREAKING",
+          "__descriptionLv": "INTENSĪVI SPĒCINOŠA MASKA PRET MATU IZKRIŠANU –\n\nNOVĀJINĀTIEM MATIEM AR TENDENCI IZKRIST LŪŠANAS DĒĻ"
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025320_kerastase-genesis-masque-reconstituant-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juukse_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025320_kerastase-genesis-masque-reconstituant-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juukse_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 54.9,
+        "stock": 10000,
+        "createdAt": "2021-05-21T03:13:05.347Z"
+      }
+    },
+    {
+      "productId": "20322",
+      "productSku": "KRS967",
+      "productBarcode": "3474637154967",
+      "xmlSku": "KER967",
+      "xmlEan": "3474637154967",
+      "externalIdToSet": "KER967",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE NUTRITIVE MASQUINTENSE МАСКА ДЛЯ ВОЛОС 200ML",
+        "xmlName": "Kerastase Nutritive Masquintense 200ml /  maska",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase nutritive masquintense маска для волос 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS967",
+        "barcode": "3474637154967",
+        "title": "KERASTASE NUTRITIVE MASQUINTENSE МАСКА ДЛЯ ВОЛОС 200ML",
+        "titleEn": "KERASTASE NUTRITIVE MASQUINTENSE HAIR MASK 200ML",
+        "titleLv": "KERASTASE NUTRITIVE MASQUINTENSE MATU MASKA 200ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Концентрированная питательная маска Для сухих и чувствительных волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "Highly Concentrated Nourishing Treatment. Dry and sensitized fine hair.",
+          "__descriptionLv": "Koncentrēta, barojoša maska. Sausiem un jutīgiem matiem."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029000_kerastase-nutritive-masquintense-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juuksemask_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029000_kerastase-nutritive-masquintense-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juuksemask_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 54.9,
+        "stock": 10000,
+        "createdAt": "2021-05-21T03:35:05.707Z"
+      }
+    },
+    {
+      "productId": "20325",
+      "productSku": "KRS529",
+      "productBarcode": "3474636948529",
+      "xmlSku": "KER529",
+      "xmlEan": "3474636948529",
+      "externalIdToSet": "KER529",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "KERASTASE BLOND ABSOLU MASQUE CICAEXTRIME МАСКА ДЛЯ ВОЛОС 200ML",
+        "xmlName": "Kerastase BA Cicaextreme Masque 200 ml / matu maska",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase blond absolu masque cicaextrime маска для волос 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRS529",
+        "barcode": "3474636948529",
+        "title": "KERASTASE BLOND ABSOLU MASQUE CICAEXTRIME МАСКА ДЛЯ ВОЛОС 200ML",
+        "titleEn": "KERASTASE BLOND ABSOLU MASQUE CICAEXTRIME HAIR MASK 200ML",
+        "titleLv": "KERASTASE BLOND ABSOLU MASQUE CICAEXTRIME MATU MASKA 200ML",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Интенсивная кондиционирующая маска для волос после процедуры обесцвечивания для чувствительных осветленных или мелированных волос.",
+        "technicalSpecs": {
+          "__descriptionEn": "Intense conditioning post-bleaching procedure hair mask for sensitized lightened or highlighted hair.",
+          "__descriptionLv": "Intensīvas kondicionējošas matu maska ​​pēc balināšanas procedūras sensibilizētiem, izgaismotiem vai izgaismotiem matiem."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0025324_kerastase-blond-absolu-masque-cicaextrime-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juu_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0025324_kerastase-blond-absolu-masque-cicaextrime-200ml-maska-dl-volos-matu-maska-hair-mask-plauku-kauke-juu_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 54.9,
+        "stock": 10000,
+        "createdAt": "2021-06-03T05:17:46.210Z"
+      }
+    },
+    {
+      "productId": "21997",
+      "productSku": "KRST975",
+      "productBarcode": "3474637058975",
+      "xmlSku": "KER8975",
+      "xmlEan": "3474637058975",
+      "externalIdToSet": "KER8975",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Kerastase Chroma Absolu Bain Chroma Riche Respect шампунь 250 ml",
+        "xmlName": "Kerastase Bain Riche Chroma Respect shampoo / šampūns",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase chroma absolu bain chroma riche respect шампунь 250 ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRST975",
+        "barcode": "3474637058975",
+        "title": "Kerastase Chroma Absolu Bain Chroma Riche Respect шампунь 250 ml",
+        "titleEn": "Kerastase Chroma Absolu Bain Chroma Riche Respect shampoo 250 ml",
+        "titleLv": "Kerastase Chroma Absolu Bain Chroma Riche Respect šampūns 250 ml",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Питательный защитный шампунь с молочной кислотой и азиатской центеллой. Без сульфатов.",
+        "technicalSpecs": {
+          "__descriptionEn": "Nourishing protective shampoo with lactic acid + Asian centella. Sulfate-free.",
+          "__descriptionLv": "Barojošs aizsargājošs šampūns ar pienskābi + Āzijas centīliju. Bez sulfātiem.Bagātīga formula, kas attīra un baro matus, vienlaikus dziļi atjaunojot šķiedru, lai aizsargātu krāsu no izmazgāšanās vai izbalēšanas."
+        },
+        "specVolume": "250 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029011_kerastase-chroma-absolu-bain-chroma-riche-respect-sampuns-250-ml-sampunas-ampun-shampoo-sampoon_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029011_kerastase-chroma-absolu-bain-chroma-riche-respect-sampuns-250-ml-sampunas-ampun-shampoo-sampoon_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 31.5,
+        "stock": 10000,
+        "createdAt": "2026-02-16T07:04:18.590Z"
+      }
+    },
+    {
+      "productId": "21261",
+      "productSku": "HP26794",
+      "productBarcode": "4045787726794",
+      "xmlSku": "NHK4018",
+      "xmlEan": "4045787726794",
+      "externalIdToSet": "NHK4018",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY маска для волос 200мл",
+        "xmlName": "Schwarzkopf BC FA Babassu Oil NEW Treatment 200 ml / maska",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "nameNormalization": "schwarzkopf professional bonacure frizz away маска для волос 200мл",
+        "nameSimilarity": null,
+        "brandEvidence": false,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "HP26794",
+        "barcode": "4045787726794",
+        "title": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY маска для волос 200мл",
+        "titleEn": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY treatment 200ml",
+        "titleLv": "SCHWARZKOPF PROFESSIONAL BONACURE FRIZZ AWAY matu maska 200ml",
+        "brand": "SCHWARZKOPF PROFESSIONAL",
+        "category": "hair",
+        "description": "Маска Schwarzkopf Professional Bonacure Frizz Away для гладкости жестких, непослушных и склонных к пушению волос станет идеальным помощником в уходе за волосами. Эта маска поможет вам забыть о непослушных волосах и придаст им невероятную гладкость.",
+        "technicalSpecs": {
+          "__descriptionEn": "Schwarzkopf Professional Bonacure Frizz Away mask for smoothness of coarse, unruly and frizz-prone hair will be the perfect hair care assistant. This mask will help you forget about unruly hair and provide it with incredible smoothness.",
+          "__descriptionLv": "Schwarzkopf Professional Bonacure Frizz Away maska ​​rupju, nepaklausīgu un čokurošanās matu gludumam būs ideāls matu kopšanas palīgs. Šī maska ​​palīdzēs aizmirst par nepaklausīgiem matiem un sniegs tiem neticamu gludumu."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0027452_schwarzkopf-professional-bonacure-frizz-away-treatment-200ml-matu-maska-200ml-maska-dl-volos-200ml-j_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0027452_schwarzkopf-professional-bonacure-frizz-away-treatment-200ml-matu-maska-200ml-maska-dl-volos-200ml-j_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 15,
+        "stock": 10000,
+        "createdAt": "2025-05-14T03:46:09.710Z"
+      }
+    },
+    {
+      "productId": "22001",
+      "productSku": "KRST201",
+      "productBarcode": "3474636400201",
+      "xmlSku": "KER0201",
+      "xmlEan": "3474636400201",
+      "externalIdToSet": "KER0201",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Kerastase Discipline Fondant Fluidealiste Кондиционер 200ml",
+        "xmlName": "Kerastase Discipline Fluidealiste Smooth-in-motion 200 ml /",
+        "brand": "KERASTASE",
+        "nameNormalization": "kerastase discipline fondant fluidealiste кондиционер 200ml",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "KRST201",
+        "barcode": "3474636400201",
+        "title": "Kerastase Discipline Fondant Fluidealiste Кондиционер 200ml",
+        "titleEn": "Kerastase Discipline Fondant Fluidealiste Conditioner 200ml",
+        "titleLv": "Kerastase Discipline Fondant Fluidealiste Kondicionieris 200ml",
+        "brand": "KERASTASE",
+        "category": "hair",
+        "description": "Fondant Fluidéaliste — это кондиционер для тонких и нормальных непослушных волос. Его легкая кремовая текстура мягко обволакивает волосяное волокно, укрощая, разглаживая и контролируя их.",
+        "technicalSpecs": {
+          "__descriptionEn": "Fondant Fluidéaliste is a conditioner for fine to normal unruly hair. Its light, creamy texture gently coats the hair fiber to tame, smooth and control it.",
+          "__descriptionLv": "Fondant Fluidéaliste ir balzams smalkiem vai normāliem nepaklausīgiem matiem. Tā vieglā, krēmīgā tekstūra maigi pārklāj matu šķiedru, lai to sakļautu, izlīdzinātu un savaldītu."
+        },
+        "specVolume": "200 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029016_kerastase-discipline-fondant-fluidealiste-kondicionieris-200ml-conditioner-kondicionierius-palsam-ko_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029016_kerastase-discipline-fondant-fluidealiste-kondicionieris-200ml-conditioner-kondicionierius-palsam-ko_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 42.1,
+        "stock": 10000,
+        "createdAt": "2026-02-16T08:12:28.820Z"
+      }
+    },
+    {
+      "productId": "19340",
+      "productSku": null,
+      "productBarcode": null,
+      "xmlSku": "BIO421",
+      "xmlEan": "3401348840421",
+      "externalIdToSet": "BIO421",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "BIODERMA SEBIUM HYDRA MOISTURISING CREAM 40ML",
+        "xmlName": "BIODERMA SEBIUM HYDRA MOISTURISING CREAM 40ML",
+        "brand": "BIODERMA",
+        "nameNormalization": "bioderma sebium hydra moisturising cream 40ml",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": null,
+        "barcode": null,
+        "title": "BIODERMA SEBIUM HYDRA MOISTURISING CREAM 40ML",
+        "titleEn": "BIODERMA SEBIUM HYDRA MOISTURISING CREAM 40ML",
+        "titleLv": "BIODERMA SEBIUM HYDRA MOISTURISING CREAM 40ML",
+        "brand": "BIODERMA",
+        "category": "face",
+        "description": "Увлажняющий и успокаивающий крем для жирной кожи с тенденцией к акне, обезвоженной и/или раздраженной",
+        "technicalSpecs": {
+          "__descriptionEn": "Powerful soothing agents (enoxolone, allantoin) reduce redness and soothe the skin. The D.A.F. (Dermatological Advanced Formulation) patented natural complex increases the skin's tolerance threshold.",
+          "__descriptionLv": "Jebkura āda, arī taukaina āda, ir jāmitrina, jo tā var īslaicīgi kļūt atūdeņota un/vai kairināta (pēc īpašas terapijas, ārēju agresīvu faktoru iedarbībā u.c.). Sébium Hydra ir īpaši izstrādāts ar mērķi bioloģiski novērst šo īslaicīgo līdzsvara zudumu. Sébium Hydra sastāvā esošās mitrinošās (glicerīns) un struktūru atjaunojošās (keramīdi) vielas novērš zvīņošanos un savilkuma sajūtu."
+        },
+        "specVolume": "40 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023655_bioderma-sebium-hydra-moisturising-cream-40ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023655_bioderma-sebium-hydra-moisturising-cream-40ml_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 13.81,
+        "stock": 10000,
+        "createdAt": "2019-04-26T03:03:11.457Z"
+      }
+    },
+    {
+      "productId": "19342",
+      "productSku": null,
+      "productBarcode": null,
+      "xmlSku": "BIO607",
+      "xmlEan": "3401396605607",
+      "externalIdToSet": "BIO607",
+      "matchType": "COMPOUND_STRONG",
+      "identityEvidence": {
+        "primary": "exact normalized multilingual name + brand",
+        "productName": "BIODERMA SEBIUM SERUM 40ML",
+        "xmlName": "BIODERMA SEBIUM SERUM 40ML",
+        "brand": "BIODERMA",
+        "nameNormalization": "bioderma sebium serum 40ml",
+        "nameSimilarity": 1,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "Exact normalized name, brand, size/count and variant uniquely identify the pair"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": null,
+        "barcode": null,
+        "title": "BIODERMA SEBIUM SERUM 40ML",
+        "titleEn": "BIODERMA SEBIUM SERUM 40ML",
+        "titleLv": "BIODERMA SEBIUM SERUM 40ML",
+        "brand": "BIODERMA",
+        "category": "face",
+        "description": "Bioderma Sebium сыворотка - сыворотка мгновенного воздействия, нормализует секрецию себума.",
+        "technicalSpecs": {
+          "__descriptionEn": "Sébium Sérum is the only keratolytic treatment that corrects established blemishes, smoothes and refines the skin texture through a gentle peeling effect and, thanks to the Fluidactiv™ exclusive patented complex, biologically regulates sebum quality, which keeps pores from becoming clogged and limits the formation of new blemishes. Through its smoothing action, glycolic acid evens out irregular skin and restores its natural radiance.",
+          "__descriptionLv": "Sébium Sérum ir vienīgais keratolītiskais kopšanas līdzeklis, kas novērš nostiprinājušos bojājumus, izlīdzina un nogludina ādas tekstūru ar maigi lobošu efektu un, pateicoties ekskluzīvajam patentētajam kompleksam Fluidactiv®, bioloģiski regulē sebuma kvalitāti, kas neļauj aizsērēt porām un ierobežo jaunu bojājumu veidošanos. Pateicoties izlīdzinošajai iedarbībai, glikolskābe izlīdzina nelīdzenu ādu un atjauno tās dabisko mirdzumu."
+        },
+        "specVolume": "40 ml",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0023657_bioderma-sebium-serum-40ml_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0023657_bioderma-sebium-serum-40ml_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 15.19,
+        "stock": 10000,
+        "createdAt": "2019-04-26T03:29:14.880Z"
+      }
+    },
+    {
+      "productId": "12770",
+      "productSku": "1400",
+      "productBarcode": "4015110001270",
+      "xmlSku": "1400-0457",
+      "xmlEan": "4015110001270",
+      "externalIdToSet": "1400-0457",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Moser – Classic hair clipper",
+        "xmlName": "MOSER 1400 Classic Edition Black Hair Clip. / griež. mašīna",
+        "brand": "MOSER",
+        "nameNormalization": "moser classic hair clipper",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "1400",
+        "barcode": "4015110001270",
+        "title": "Moser – Classic hair clipper",
+        "titleEn": "Moser – Classic hair clipper",
+        "titleLv": "Moser – Classic hair clipper",
+        "brand": "MOSER",
+        "category": "equipment",
+        "description": "Профессиональная сетевая машинка для стрижки волос. Регулятор длины стрижки с 5 положениями фиксации от 0,7 до 3мм.",
+        "technicalSpecs": {
+          "__descriptionEn": "Ellectric hair clippers. Ultra-strong performance: powerful and robust oscillating armature drive.",
+          "__descriptionLv": "Profesionālā matu griešanas mašīnīte. Regulēt griezuma augstumu ar 5 bloķēšanas pozīcijām no 0,7 līdz 3 mm."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0014374_moser-classic-hair-clipper_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0014374_moser-classic-hair-clipper_400.jpeg"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 55,
+        "stock": 0,
+        "createdAt": "2015-02-02T03:35:27.897Z"
+      }
+    },
+    {
+      "productId": "18349",
+      "productSku": "08841-1516H",
+      "productBarcode": "5996415032864",
+      "xmlSku": "08841-1516",
+      "xmlEan": "5996415032864",
+      "externalIdToSet": "08841-1516",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "WAHL PROLITHIUM BERET BLACK триммер для волос",
+        "xmlName": "WAHL PROLITHIUM BERET CORD/CORDLESS TRIMMER (BLACK)",
+        "brand": "WAHL",
+        "nameNormalization": "wahl prolithium beret black триммер для волос",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "08841-1516H",
+        "barcode": "5996415032864",
+        "title": "WAHL PROLITHIUM BERET BLACK триммер для волос",
+        "titleEn": "WAHL PROLITHIUM BERET BLACK hair trimmer",
+        "titleLv": "WAHL PROLITHIUM BERET BLACK matu trimmeris",
+        "brand": "WAHL",
+        "category": "equipment",
+        "description": "Профессиональный триммер для точных работ, работает как от сети, так и от аккумулятора. Ножевой блок из легированной стали идеален для особо точных работ максимально близко к коже.",
+        "technicalSpecs": {
+          "__descriptionEn": "Professional hair trimmer featuring highly efficient and durable Lithium-Ion battery without memory effect. 75 minutes run time and 60 minutes charging time.",
+          "__descriptionLv": "Profesionāls trimmeris precīziem darbiem, darbojas kā no tīkla, tā arī no akumulatora. Nazis no nerūsējošā tērauda, ir ideāli piemērots augstas precizitātes darbiem maksimāli tuvu ādai."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021185_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021185_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer_400.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021186_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021187_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021188_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021189_wahl-prolithium-beret-black-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trimer.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 135,
+        "stock": 10000,
+        "createdAt": "2017-06-12T03:40:41.730Z"
+      }
+    },
+    {
+      "productId": "18353",
+      "productSku": "4314-0475",
+      "productBarcode": "4015110014447",
+      "xmlSku": "4314-0470",
+      "xmlEan": "4015110014447",
+      "externalIdToSet": "4314-0470",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "WAHL TURBO BOOSTER фен",
+        "xmlName": "WAHL TURBO BOOSTER HAIR DRYER / matu fēns",
+        "brand": "WAHL",
+        "nameNormalization": "wahl turbo booster фен",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "4314-0475",
+        "barcode": "4015110014447",
+        "title": "WAHL TURBO BOOSTER фен",
+        "titleEn": "WAHL TURBO BOOSTER hairdryer",
+        "titleLv": "WAHL TURBO BOOSTER fēns",
+        "brand": "WAHL",
+        "category": "equipment",
+        "description": "Очень мощный фен для максимального воздушного потока с ионизацией и инфракрасными лучами. Керамическое покрытие и турмалин на внутренних элементах сокращают продолжительность сушки, снижают статику и обеспечивает волосам здоровый вид.",
+        "technicalSpecs": {
+          "__descriptionEn": "Extremely powerful hair dryer with long-life AC motor. Extra compact, lightweight and quiet, despite great performance.",
+          "__descriptionLv": "Ļoti jaudīgs matu fēns maksimālai gaisa plūsmai ar jonu. Keramikas pārklājums un turmalīns uz iekšējiem elementiem samazina žāvēšanas laiku, sniedz anti-statisko efektu, nodrošina matiem veselīgu izskatu un spīdumu."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021208_wahl-turbo-booster-hairdryer-fens-fen-foon-plauku-dziovintuvas_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021208_wahl-turbo-booster-hairdryer-fens-fen-foon-plauku-dziovintuvas_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 95,
+        "stock": 10000,
+        "createdAt": "2017-06-12T04:48:42.170Z"
+      }
+    },
+    {
+      "productId": "19576",
+      "productSku": "08504-2316H",
+      "productBarcode": "43917005355",
+      "xmlSku": "08504-016",
+      "xmlEan": "43917005355",
+      "externalIdToSet": "08504-016",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "WAHL 5 STAR SENIOR машинка для стрижки волос",
+        "xmlName": "WAHL 5 STAR SENIOR HAIR CLIPPER / Matu griežama mašin",
+        "brand": "WAHL",
+        "nameNormalization": "wahl 5 star senior машинка для стрижки волос",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "08504-2316H",
+        "barcode": "43917005355",
+        "title": "WAHL 5 STAR SENIOR машинка для стрижки волос",
+        "titleEn": "WAHL 5 STAR SENIOR hair clipper",
+        "titleLv": "WAHL 5 STAR SENIOR matu griešanas mašīnīte ",
+        "brand": "WAHL",
+        "category": "equipment",
+        "description": "Wahl Senior Cordless — профессиональная беспроводная машинка для стрижки волос. Профессиональная машинка для стрижки волос WAHL Senior Cordless оснащена обновленным мощным роторным мотором.",
+        "technicalSpecs": {
+          "__descriptionEn": "Wahl Senior Cordless – professional cordless hair clipper. This professional clipper is equipped with an updated powerful rotary motor.",
+          "__descriptionLv": "Wahl Senior Cordless – profesionāla bezvadu matu griešanas mašīnīte. Profesionālā matu griešanas mašīnītes ir aprīkota ar atjauninātu jaudīgu rotācijas motoru."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0024120_wahl-5-star-senior-hair-clipper-matu-griesanas-masinite-mainka-dl-striki-volos-juukseloikusmasin-pla_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0024120_wahl-5-star-senior-hair-clipper-matu-griesanas-masinite-mainka-dl-striki-volos-juukseloikusmasin-pla_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 220,
+        "stock": 10000,
+        "createdAt": "2019-11-25T07:46:42.290Z"
+      }
+    },
+    {
+      "productId": "18350",
+      "productSku": "08841-616H",
+      "productBarcode": "4015110010074",
+      "xmlSku": "08841-616",
+      "xmlEan": "4015110010074",
+      "externalIdToSet": "08841-616",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "WAHL PROLITHIUM BERET SILVER триммер для волос",
+        "xmlName": "WAHL PROLITHIUM BERET CORD/CORDLESS TRIMMER (SILVER)",
+        "brand": "WAHL",
+        "nameNormalization": "wahl prolithium beret silver триммер для волос",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "08841-616H",
+        "barcode": "4015110010074",
+        "title": "WAHL PROLITHIUM BERET SILVER триммер для волос",
+        "titleEn": "WAHL PROLITHIUM BERET SILVER hair trimmer",
+        "titleLv": "WAHL PROLITHIUM BERET SILVER matu trimmeris",
+        "brand": "WAHL",
+        "category": "equipment",
+        "description": "Профессиональный триммер для точных работ, работает как от сети, так и от аккумулятора. Ножевой блок из легированной стали идеален для особо точных работ максимально близко к коже.",
+        "technicalSpecs": {
+          "__descriptionEn": "Professional hair trimmer featuring highly efficient and durable Lithium-Ion battery without memory effect. 75 minutes run time and 60 minutes charging time.",
+          "__descriptionLv": "Profesionāls trimmeris precīziem darbiem, darbojas kā no tīkla, tā arī no akumulatora. Nazis no nerūsējošā tērauda, ir ideāli piemērots augstas precizitātes darbiem maksimāli tuvu ādai."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0021190_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0021190_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime_400.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021191_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021192_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021193_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021194_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0021195_wahl-prolithium-beret-silver-hair-trimmer-matu-trimmeris-trimmer-dl-volos-juuksetrimmer-plauku-trime.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 135,
+        "stock": 10000,
+        "createdAt": "2017-06-12T03:49:26.670Z"
+      }
+    },
+    {
+      "productId": "20862",
+      "productSku": "L6415",
+      "productBarcode": "3474637116415",
+      "xmlSku": "E3902400",
+      "xmlEan": "3474637116415",
+      "externalIdToSet": "E3902400",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "L'OREAL PROFESSIONNEL STEAMPOD 4.0 выпрямитель для волос",
+        "xmlName": "L`oreal Steampod 4.0 WHITE / matu taisntais",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "nameNormalization": "l oreal professionnel steampod 4 0 выпрямитель для волос",
+        "nameSimilarity": null,
+        "brandEvidence": false,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "L6415",
+        "barcode": "3474637116415",
+        "title": "L'OREAL PROFESSIONNEL STEAMPOD 4.0 выпрямитель для волос",
+        "titleEn": "L'OREAL PROFESSIONNEL STEAMPOD 4.0 hair straightener",
+        "titleLv": "L'OREAL PROFESSIONNEL STEAMPOD 4.0 matu taisnotājs",
+        "brand": "L`OREAL PROFESSIONNEL",
+        "category": "equipment",
+        "description": "Steampod — это инновационный «утюжок», который выпрямляет волосы под действием горячего пара, а не за счет нагревания металлических пластин. Позволяет восстановить волосы и одновременно создать эксклюзивный современный модный образ.",
+        "technicalSpecs": {
+          "__descriptionEn": "Achieve super-sleek, glossy locks with the L'Oréal Professionnel New Generation Steampod 2.0, a more compact and versatile update of the original hair straightener. Using a continuous flow of high pressure steam to hydrate each strand from the inside out without causing heat damage, the hair styling tool features anodized ceramic plates to create an ultra-smooth finish with mirror-like shine.",
+          "__descriptionLv": "Steampod ir novatorisks „taisnotājs”, kas izlīdzina matus karsta tvaika iedarbībā, nevis karsējot metāla plāksnes. Ļauj atjaunot matus un vienlaicīgi izveidot ekskluzīvu modernu attēlu."
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0026328_loreal-professionnel-steampod-40-hair-straightener-matu-taisnotajs-vyprmitel-dl-volos-juuksesirgenda_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0026328_loreal-professionnel-steampod-40-hair-straightener-matu-taisnotajs-vyprmitel-dl-volos-juuksesirgenda_400.jpeg",
+          "https://hairshop.lv/content/images/thumbs/0026329_loreal-professionnel-steampod-40-hair-straightener-matu-taisnotajs-vyprmitel-dl-volos-juuksesirgenda.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 420,
+        "stock": 10000,
+        "createdAt": "2022-11-14T05:08:43.853Z"
+      }
+    },
+    {
+      "productId": "22272",
+      "productSku": "7024604",
+      "productBarcode": "3474637024604",
+      "xmlSku": "M604",
+      "xmlEan": "3474637024604",
+      "externalIdToSet": "M604",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Matrix Light Pre-Bonded Master отбеливающий порошок 500 г",
+        "xmlName": "MATRIX Light Mater Pre-Bonded 500g / matu supra",
+        "brand": "MATRIX",
+        "nameNormalization": "matrix light pre bonded master отбеливающий порошок 500 г",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "7024604",
+        "barcode": "3474637024604",
+        "title": "Matrix Light Pre-Bonded Master отбеливающий порошок 500 г",
+        "titleEn": "Matrix Light Pre-Bonded Master bleaching powder 500gr",
+        "titleLv": "Matrix Light Pre-Bonded Master balinošais pulveris 500gr",
+        "brand": "MATRIX",
+        "category": "hair",
+        "description": "Осветляющая пудра Matrix Light Master Pre-Bonded теперь содержит бондер для защиты волос. Дополнительные средства для защиты волос не требуются: лимонная кислота защищает волосы во время процесса осветления.",
+        "technicalSpecs": {
+          "__descriptionEn": "Matrix Light Master Pre-Bonded Bleaching Powder now includes a bonder to protect the hair. No additional hair protection products are required: citric acid protects the hair during the bleaching process.",
+          "__descriptionLv": "Matrix Light Master Pre-Bonded balinošais pulveris tagad ietver bonderi matu aizsardzībai. Nav nepieciešami papildus matu aizsardzības līdzekļi: citronskābe aizsargā matus balināšanas procedūras laikā."
+        },
+        "specVolume": "500 g",
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0029632_matrix-light-pre-bonded-master-balinosais-pulveris-500gr-otbelivaij-porook-500-g-valgendav-pulber-50_400.jpeg",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0029632_matrix-light-pre-bonded-master-balinosais-pulveris-500gr-otbelivaij-porook-500-g-valgendav-pulber-50_400.jpeg"
+        ],
+        "isActive": true,
+        "isDeleted": false,
+        "price": 31.5,
+        "stock": 9995,
+        "createdAt": "2026-06-11T04:09:02.447Z"
+      }
+    },
+    {
+      "productId": "21896",
+      "productSku": "AHD0003",
+      "productBarcode": "5291485013370",
+      "xmlSku": "GS4AHD0003",
+      "xmlEan": "5291485013370",
+      "externalIdToSet": "GS4AHD0003",
+      "matchType": "UNIQUE_EAN",
+      "identityEvidence": {
+        "primary": "globally unique exact-string EAN",
+        "productName": "Фен AENO HD3",
+        "xmlName": "AENO Hair Dryer HD3 / matu fēns",
+        "brand": "AENO",
+        "nameNormalization": "фен aeno hd3",
+        "nameSimilarity": null,
+        "brandEvidence": true,
+        "sizeEvidence": "captured in exact normalized name or reviewed EAN evidence",
+        "variantEvidence": "no blocking contradiction after previous-scope exclusions",
+        "competingProducts": 0,
+        "competingXml": 0,
+        "reason": "EAN unique across Product and XML; source/target names non-contradictory"
+      },
+      "baseline": {
+        "externalId": null,
+        "sku": "AHD0003",
+        "barcode": "5291485013370",
+        "title": "Фен AENO HD3",
+        "titleEn": "AENO HD3 ",
+        "titleLv": "AENO HD3 fēns",
+        "brand": "AENO",
+        "category": "equipment",
+        "description": "Фен AENO HD3 поставляется со всем необходимым для профессиональной укладки волос: насадкой с эффектом Коанда (устраняет пушение волос и обеспечивает гладкость), концентратором (идеально подходит для точной сушки и финишной обработки), насадкой для укладки (гладкость и блеск для профессионального вида), насадкой-гребнем (расчесывает и выпрямляет волосы во время сушки), диффузором (усиливает локоны и волны, придавая объем), дорожной сумкой (для хранения фена и аксессуаров в порядке и готовности к использованию).",
+        "technicalSpecs": {
+          "__descriptionEn": "The AENO HD3 hair dryer comes with everything you need for a professional styling experience: coanda effect nozzle (tame flyaways and achieve sleek results), concentrator (perfect for precise drying and finishing touches), styling nozzle (smooth and polish for a professional look), comb attachment (detangle and straighten while drying), diffuser (enhance curls and waves with added volume), travel bag (keep your hair dryer and accessories organized and ready to go)",
+          "__descriptionLv": "AENO HD3 fēns ir aprīkots ar visu nepieciešamo profesionālai matu veidošanai: Coanda efekta uzgalis (savaldīgs matu izkliedēšanu un nodrošina gludu rezultātu), koncentrators (ideāls precīzai žāvēšanai un pēdējiem pieskārieniem), veidošanas uzgalis (gluda un spīdīga profesionāla izskata nodrošināšanai), ķemme (matu izķemmēšana un iztaisnošana žāvēšanas laikā), difuzors (uzlabo cirtas un viļņus, piešķirot papildu apjomu), ceļojuma soma (lai fēns un piederumi būtu sakārtoti un gatavi lietošanai)"
+        },
+        "specVolume": null,
+        "specType": null,
+        "image": "https://hairshop.lv/content/images/thumbs/0028814_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas_400.png",
+        "images": [
+          "https://hairshop.lv/content/images/thumbs/0028814_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas_400.png",
+          "https://hairshop.lv/content/images/thumbs/0028815_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png",
+          "https://hairshop.lv/content/images/thumbs/0028816_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png",
+          "https://hairshop.lv/content/images/thumbs/0028817_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png",
+          "https://hairshop.lv/content/images/thumbs/0028818_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png",
+          "https://hairshop.lv/content/images/thumbs/0028819_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png",
+          "https://hairshop.lv/content/images/thumbs/0028820_aeno-hd3-fens-fen-hair-dryer-foon-plauku-dziovintuvas.png"
+        ],
+        "isActive": false,
+        "isDeleted": false,
+        "price": 85,
+        "stock": 10000,
+        "createdAt": "2026-01-16T06:00:54.250Z"
+      }
+    }
+  ]
+}

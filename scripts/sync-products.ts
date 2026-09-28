@@ -39,10 +39,13 @@ function argValue(name: string): string | undefined {
 }
 
 async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): Promise<number> {
-  const fingerprint = async () => (await prisma.$queryRawUnsafe<Array<{ count: number; externalIdCount: number; syncRunCount: number; fingerprint: string }>>(
+  const fingerprint = async () => (await prisma.$queryRawUnsafe<Array<{ count: number; externalIdCount: number; active: number; inactive: number; syncRunCount: number; duplicateExternalIds: number; fingerprint: string }>>(
     `SELECT COUNT(*)::int AS count,
             COUNT(p."externalId")::int AS "externalIdCount",
+            COUNT(*) FILTER (WHERE p."isActive")::int AS active,
+            COUNT(*) FILTER (WHERE NOT p."isActive")::int AS inactive,
             (SELECT COUNT(*)::int FROM "SyncRun") AS "syncRunCount",
+            (SELECT COUNT(*)::int FROM (SELECT "externalId" FROM "Product" WHERE "externalId" IS NOT NULL GROUP BY "externalId" HAVING COUNT(*) > 1) duplicates) AS "duplicateExternalIds",
             md5(COALESCE(string_agg(row_to_json(p)::text, '' ORDER BY p.id), '')) AS fingerprint
        FROM "Product" p`,
   ))[0]
@@ -72,8 +75,7 @@ async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): P
   const products = parseGrinsXml(source.content)
   const [dbProducts, extraData] = await Promise.all([
     prisma.product.findMany({
-      where: { isDeleted: false },
-      select: { id: true, externalId: true, sku: true, price: true, stock: true, isActive: true },
+      select: { id: true, externalId: true, sku: true, price: true, stock: true, isActive: true, isDeleted: true },
     }),
     getErpExtraData(prisma),
   ])
@@ -99,17 +101,15 @@ async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): P
 }
 
 async function assertBackfillDone(prisma: import('@/lib/prisma').ExtendedPrismaClient): Promise<void> {
-  if (process.argv.includes('--allow-first-run')) return
-
-  const backfilledCount = await prisma.product.count({ where: { externalId: { not: null } } })
-  if (backfilledCount === 0) {
+  const [productCount, linkedCount] = await Promise.all([
+    prisma.product.count(),
+    prisma.product.count({ where: { externalId: { not: null } } }),
+  ])
+  if (productCount !== 18544 || linkedCount !== 15754) {
     throw new Error(
-      'Refusing to run: no Product rows have externalId set yet. This looks like the ' +
-        'one-time externalId backfill (Product.sku -> GrinS feed sku) has not been run. ' +
-        'Running this sync now would duplicate ~2,231 already-curated products as new ' +
-        'pending rows instead of matching them. See the warning block at the top of this ' +
-        'file. If you have already completed the backfill and this is a fresh/empty ' +
-        'database, pass --allow-first-run to proceed anyway.',
+      `Refusing FULL_PRODUCT_SYNC: reconciliation baseline drifted ` +
+        `(Product=${productCount}, linked=${linkedCount}; expected 18544/15754). ` +
+        'Reconcile explicitly; generic sync cannot import or assign externalId.',
     )
   }
 }
@@ -121,11 +121,17 @@ async function main() {
       process.exitCode = await runDryRun(prisma)
       return
     }
-    const [{ GrinsXmlAdapter }, { runSync }] = await Promise.all([
-      import('@/lib/sync/adapters/grins-xml'),
-      import('@/lib/sync/sync-runner'),
-    ])
-    const adapter = new GrinsXmlAdapter()
+    if (!process.argv.includes('--execute')) throw new Error('Refusing write mode without explicit --execute')
+    const file = argValue('--file')
+    if (!file) throw new Error('Controlled execute requires --file with the preflighted XML snapshot')
+    const xml = readFileSync(file, 'utf8')
+    const checksum = createHash('sha256').update(xml, 'utf8').digest('hex')
+    if (checksum !== '26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad') {
+      throw new Error(`Refusing execute: XML SHA-256 drifted (${checksum})`)
+    }
+    const products = parseGrinsXml(xml)
+    const adapter = { name: 'grins-xml-controlled-file', fetchPage: async () => ({ products, hasMore: false }) }
+    const { runSync } = await import('@/lib/sync/sync-runner')
     await assertBackfillDone(prisma)
     const result = await runSync(adapter, prisma, 'manual')
     console.log(JSON.stringify({ event: 'sync_complete', ...result }))

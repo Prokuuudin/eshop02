@@ -1,89 +1,34 @@
 import { upsertProducts, buildUpsertQuery, COLS_PER_ROW } from './upsert-products'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 
-function makeMockDb(): ExtendedPrismaClient {
-  return {
-    $executeRawUnsafe: vi.fn().mockResolvedValue(2),
-  } as unknown as ExtendedPrismaClient
-}
+const db = (affected = 1) => ({ $executeRawUnsafe: vi.fn().mockResolvedValue(affected) }) as unknown as ExtendedPrismaClient
 
-describe('buildUpsertQuery', () => {
-  it('generates the correct last positional param for N rows', () => {
+describe('safe linked-product update SQL', () => {
+  it('uses a parameterized UPDATE and has no INSERT/conflict path', () => {
     const sql = buildUpsertQuery(3)
     expect(sql).toContain(`$${3 * COLS_PER_ROW}`)
+    expect(sql).toMatch(/UPDATE "Product"/)
+    expect(sql).not.toMatch(/\bINSERT\b|ON CONFLICT/i)
   })
 
-  it('contains ON CONFLICT on externalId', () => {
-    expect(buildUpsertQuery(1)).toContain('ON CONFLICT ("externalId")')
+  it('matches only exact externalId and excludes soft-deleted Products', () => {
+    const sql = buildUpsertQuery(1)
+    expect(sql).toContain('product."externalId" = incoming."externalId"')
+    expect(sql).toContain('product."isDeleted" = false')
   })
 
-  it('DO UPDATE SET includes ERP-owned fields', () => {
-    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
-    expect(updatePart).toContain('"lastSyncRunId"')
-    expect(updatePart).toContain('price')
-    expect(updatePart).toContain('stock')
+  it('updates only ERP-owned price, stock and bookkeeping', () => {
+    const sql = buildUpsertQuery(1)
+    expect(sql).toContain('CASE WHEN incoming.price > 0')
+    expect(sql).toContain('stock = incoming.stock')
+    const setClause = sql.split('FROM (VALUES')[0]
+    expect(setClause).not.toMatch(/"externalId"\s*=|\bsku\s*=|"isActive"\s*=/)
   })
 
-  it('DO UPDATE SET does not include id or createdAt', () => {
-    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
-    expect(updatePart).not.toMatch(/\bid\b\s*=/)
-    expect(updatePart).not.toContain('"createdAt"')
-  })
-
-  it('DO UPDATE SET does not overwrite admin-owned fields (title/brand/category/description/images/oldPrice)', () => {
-    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
-    expect(updatePart).not.toMatch(/\btitle\b\s*=/)
-    expect(updatePart).not.toMatch(/\bbrand\b\s*=/)
-    expect(updatePart).not.toMatch(/\bcategory\b\s*=/)
-    expect(updatePart).not.toMatch(/\bdescription\b\s*=/)
-    expect(updatePart).not.toMatch(/\bimages\b\s*=/)
-    expect(updatePart).not.toMatch(/"oldPrice"\s*=/)
-  })
-
-  it('DO UPDATE SET does not force-reactivate isActive (new products stay pending until an admin approves them)', () => {
-    const updatePart = buildUpsertQuery(1).split('DO UPDATE SET')[1]
-    expect(updatePart).not.toMatch(/"isActive"\s*=/)
-  })
-
-  it('preserves the current price when the selected ERP tier is zero', () => {
-    expect(buildUpsertQuery(1)).toContain('CASE WHEN EXCLUDED.price > 0 THEN EXCLUDED.price ELSE "Product".price END')
-  })
-})
-
-describe('upsertProducts', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('returns 0 and skips the query for empty input', async () => {
-    const db = makeMockDb()
-    const count = await upsertProducts(db, [], 'run-1')
-    expect(count).toBe(0)
-    expect(db.$executeRawUnsafe).not.toHaveBeenCalled()
-  })
-
-  it('returns count of products and calls $executeRawUnsafe once', async () => {
-    const db = makeMockDb()
-    const products = [
-      { externalId: 'ext-1', title: 'Prod A', price: 100, stock: 10 },
-      { externalId: 'ext-2', title: 'Prod B', price: 200, stock: 5 },
-    ]
-    const count = await upsertProducts(db, products, 'run-1')
-    expect(count).toBe(2)
-    expect(db.$executeRawUnsafe).toHaveBeenCalledTimes(1)
-  })
-
-  it('includes the runId in query params', async () => {
-    const db = makeMockDb()
-    await upsertProducts(db, [{ externalId: 'e1', title: 'P', price: 10, stock: 1 }], 'my-run-id')
-    const args = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
-    expect(args).toContain('my-run-id')
-  })
-
-  it('inserts new rows as isActive=false (pending review), regardless of feed value', async () => {
-    const db = makeMockDb()
-    await upsertProducts(db, [{ externalId: 'e1', title: 'placeholder', price: 10, stock: 1 }], 'run-1')
-    const args = (db.$executeRawUnsafe as ReturnType<typeof vi.fn>).mock.calls[0]
-    // args[0] is the SQL string; params start at args[1]. isActive is column
-    // index 11 (0-based) of the 14 COLS_PER_ROW, so its param is args[1 + 11].
-    expect(args[1 + 11]).toBe(false)
+  it('skips empty batches and reports the exact linked rows processed', async () => {
+    const mock = db(1)
+    expect(await upsertProducts(mock, [], 'run')).toBe(0)
+    expect(await upsertProducts(mock, [{ externalId: 'known', title: 'x', price: 0, stock: 0 }], 'run')).toBe(1)
+    expect(mock.$executeRawUnsafe).toHaveBeenCalledTimes(1)
   })
 })

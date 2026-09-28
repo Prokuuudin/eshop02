@@ -1,0 +1,77 @@
+import { createHash } from 'crypto'
+import { readFile, writeFile } from 'fs/promises'
+import { config } from 'dotenv'
+import { XMLParser } from 'fast-xml-parser'
+import { GRINS_WAREHOUSE_INDEX_TO_ID } from '../lib/sync/grins-warehouse-map'
+config({ path: '.env.local' })
+
+type Warehouse = { '@_id': string; '#text'?: string }
+type XmlItem = { sku?: string; code?: string; title?: string; price1?: string; price2?: string; price3?: string; price4?: string; warehouses?: { warehouse?: Warehouse[] } }
+type LocalClass = 'EXACT_UNIQUE_CANDIDATE'|'CASE_CANDIDATE'|'NORMALIZED_SKU_CANDIDATE'|'UNIQUE_EAN_CANDIDATE'|'MULTIPLE_POSSIBLE_MATCHES'|'NAME_ONLY_POSSIBLE_MATCH'|'KNOWN_DEFERRED'|'LOCAL_ONLY'
+type XmlClass = 'LIKELY_EXISTING_PRODUCT'|'POSSIBLE_EXISTING_PRODUCT'|'KNOWN_DEFERRED'|'NO_LOCAL_MATCH_FOUND'
+const EXPECTED_XML_SHA='26c001368c79f9cfb9100d1cf67c0a0c479fe181f11e0b15c5944888f6517cad'
+const DEFERRED=new Set(['24006256','97388150','BA02','DKIRI','KJMN0352','NIA308001','NIA407001','SS-40/3','K18','K86'])
+const text=(v:unknown)=>String(v??'')
+const trimmed=(v:unknown)=>text(v).trim()
+const fold=(v:unknown)=>trimmed(v).normalize('NFKC').toLocaleLowerCase('en-US')
+const number=(v:unknown)=>Number(v??0)||0
+const sha256=(v:string|Buffer)=>createHash('sha256').update(v).digest('hex')
+const tokens=(v:unknown)=>[...new Set(fold(v).replace(/[^\p{L}\p{N}]+/gu,' ').split(/\s+/u).filter(x=>x.length>1))]
+const similarity=(a:unknown,b:unknown)=>{const aa=new Set(tokens(a)),bb=new Set(tokens(b));if(!aa.size||!bb.size)return 0;let common=0;for(const x of aa)if(bb.has(x))common++;return 2*common/(aa.size+bb.size)}
+const csv=(rows:Record<string,unknown>[])=>{if(!rows.length)return '\ufeff';const cols=[...new Set(rows.flatMap(Object.keys))],esc=(v:unknown)=>`"${text(v).replace(/"/g,'""')}"`;return '\ufeff'+[cols.map(esc).join(','),...rows.map(r=>cols.map(c=>esc(r[c])).join(','))].join('\n')+'\n'}
+const countBy=<T extends string>(values:T[])=>Object.fromEntries([...new Set(values)].sort().map(k=>[k,values.filter(x=>x===k).length]))
+const NORMALIZERS:[string,(x:string)=>string][]=[['trim',x=>x.trim()],['Unicode NFKC/whitespace',x=>x.normalize('NFKC').replace(/[\s\u00a0]+/gu,' ')],['Unicode dash',x=>x.replace(/[‐‑‒–—―−]/gu,'-')],['internal spaces',x=>x.replace(/[\s\u00a0]+/gu,'')],['slash vs dash',x=>x.replace(/\//gu,'-')],['dots',x=>x.replace(/\./gu,'')],['leading zero',x=>x.replace(/^0+(?=\d)/u,'')]]
+function skuRelation(a:string,b:string):string|null {
+  if(a===b)return'exact';if(a.toLocaleLowerCase('en-US')===b.toLocaleLowerCase('en-US'))return'case-only'
+  for(const [name,fn]of NORMALIZERS)if(fn(a)===fn(b))return name
+  return null
+}
+
+async function main(){const {prisma}=await import('../lib/prisma')
+  const state=async()=>(await prisma.$queryRawUnsafe<Array<Record<string,number|string>>>(`SELECT COUNT(*)::int "productCount",COUNT("externalId")::int "externalIdCount",COUNT(*) FILTER(WHERE "externalId" IS NULL)::int "unlinkedCount",COUNT(*) FILTER(WHERE "isActive")::int active,COUNT(*) FILTER(WHERE NOT "isActive")::int inactive,COUNT(*) FILTER(WHERE "isDeleted")::int "softDeleted",COUNT(*) FILTER(WHERE NULLIF(BTRIM(COALESCE(sku,'')),'') IS NOT NULL)::int "withSku",COUNT(*) FILTER(WHERE NULLIF(BTRIM(COALESCE(sku,'')),'') IS NULL)::int "withoutSku",COUNT(*) FILTER(WHERE NULLIF(BTRIM(COALESCE(barcode,'')),'') IS NOT NULL)::int "withBarcode",COUNT(*) FILTER(WHERE NULLIF(BTRIM(COALESCE(barcode,'')),'') IS NULL)::int "withoutBarcode",(SELECT COUNT(*)::int FROM "SyncRun") "syncRunCount",md5(COALESCE(string_agg(row_to_json(p)::text,'' ORDER BY p.id),'')) fingerprint FROM "Product" p`))[0]
+  try{
+    const before=await state(),xmlText=await readFile('export.xml','utf8'),xmlSha=sha256(xmlText)
+    if(before.productCount!==6378||before.externalIdCount!==3465||before.active!==2229||before.inactive!==4149||before.syncRunCount!==5||xmlSha!==EXPECTED_XML_SHA)throw new Error(`BASELINE_DRIFT:${JSON.stringify({before,xmlSha})}`)
+    const parsed=new XMLParser({ignoreAttributes:false,attributeNamePrefix:'@_',parseTagValue:false,processEntities:false,isArray:n=>n==='item'||n==='warehouse'}).parse(xmlText) as {root?:{item?:XmlItem[]}},xmlItems=parsed.root?.item??[]
+    const products=await prisma.product.findMany({select:{id:true,sku:true,externalId:true,title:true,titleEn:true,titleLv:true,barcode:true,price:true,stock:true,isActive:true,isDeleted:true,category:true,brand:true}})
+    const linked=new Set(products.flatMap(p=>p.externalId?[p.externalId]:[])),unlinked=products.filter(p=>!p.externalId),xmlRemaining=xmlItems.filter(x=>!linked.has(trimmed(x.sku)))
+    const xmlBySku=new Map<string,XmlItem[]>(),xmlByFold=new Map<string,XmlItem[]>(),xmlByEan=new Map<string,XmlItem[]>(),localBySku=new Map<string,typeof unlinked>(),localByFold=new Map<string,typeof unlinked>(),localByEan=new Map<string,typeof unlinked>()
+    for(const x of xmlItems){const s=trimmed(x.sku),e=trimmed(x.code);if(s){xmlBySku.set(s,[...(xmlBySku.get(s)??[]),x]);xmlByFold.set(fold(s),[...(xmlByFold.get(fold(s))??[]),x])}if(e)xmlByEan.set(e,[...(xmlByEan.get(e)??[]),x])}
+    for(const p of unlinked){const s=trimmed(p.sku),e=trimmed(p.barcode);if(s){localBySku.set(s,[...(localBySku.get(s)??[]),p]);localByFold.set(fold(s),[...(localByFold.get(fold(s))??[]),p])}if(e)localByEan.set(e,[...(localByEan.get(e)??[]),p])}
+    const remainingSet=new Set(xmlRemaining.map(x=>trimmed(x.sku))),tokenIndex=new Map<string,XmlItem[]>(),normalizedIndexes=new Map<string,Map<string,XmlItem[]>>()
+    for(const [name,fn]of NORMALIZERS){const index=new Map<string,XmlItem[]>();for(const x of xmlRemaining){const key=fn(trimmed(x.sku));index.set(key,[...(index.get(key)??[]),x])}normalizedIndexes.set(name,index)}
+    for(const x of xmlRemaining)for(const t of tokens(x.title))tokenIndex.set(t,[...(tokenIndex.get(t)??[]),x])
+    const localRows=unlinked.map(p=>{
+      const sku=text(p.sku),s=trimmed(sku),ean=trimmed(p.barcode),isDeferred=DEFERRED.has(s.toLocaleUpperCase('en-US'))
+      const exact=s?(xmlBySku.get(s)??[]).filter(x=>remainingSet.has(trimmed(x.sku))):[],cases=s?(xmlByFold.get(fold(s))??[]).filter(x=>trimmed(x.sku)!==s&&remainingSet.has(trimmed(x.sku))):[]
+      const normalized=s?[...new Map(NORMALIZERS.flatMap(([rule,fn])=>(normalizedIndexes.get(rule)?.get(fn(s))??[]).map(x=>({x,rule}))).filter(y=>!['exact','case-only'].includes(skuRelation(s,trimmed(y.x.sku))??'')).map(y=>[trimmed(y.x.sku),y])).values()]:[]
+      const eans=ean?(xmlByEan.get(ean)??[]).filter(x=>remainingSet.has(trimmed(x.sku))):[]
+      const exactSafe=exact.length===1&&(xmlBySku.get(s)?.length===1)&&(localBySku.get(s)?.length===1)&&!linked.has(s)
+      const caseCandidate=cases.length===1&&(xmlByFold.get(fold(s))?.length===1)&&(localByFold.get(fold(s))?.length===1)
+      const eanTitleScore=eans.length?Math.max(similarity(p.title,eans[0].title),similarity(p.titleEn,eans[0].title),similarity(p.titleLv,eans[0].title)):0
+      const eanSafe=eans.length===1&&(xmlByEan.get(ean)?.length===1)&&(localByEan.get(ean)?.length===1)&&(!s||Boolean(skuRelation(s,trimmed(eans[0].sku))))&&eanTitleScore>=0.2
+      const candidateSkus=new Set([...exact,...cases,...normalized.map(x=>x.x),...eans].map(x=>trimmed(x.sku)))
+      const names=[p.title,p.titleEn,p.titleLv],nameCandidates=new Set<XmlItem>();for(const n of names)for(const t of tokens(n)){const hits=tokenIndex.get(t)??[];if(hits.length<=500)for(const x of hits)nameCandidates.add(x)}
+      const scored=[...nameCandidates].map(x=>({x,score:Math.max(...names.map(n=>similarity(n,x.title)))})).sort((a,b)=>b.score-a.score),best=scored[0],second=scored[1],nameOnly=best&&best.score>=0.55&&best.score-(second?.score??0)>=0.1?best:null
+      let classification:LocalClass='LOCAL_ONLY',matchType='none',bestXml:XmlItem|undefined,evidence='No reasonable XML candidate found'
+      if(isDeferred){classification='KNOWN_DEFERRED';matchType='known-deferred';bestXml=exact[0]??cases[0];evidence='Explicitly deferred from prior waves'}
+      else if(exactSafe){classification='EXACT_UNIQUE_CANDIDATE';matchType='exact SKU';bestXml=exact[0];evidence='Unique exact string SKU on both sides'}
+      else if(caseCandidate){classification='CASE_CANDIDATE';matchType='case-only SKU';bestXml=cases[0];evidence='Unique case-fold match; not automatically safe'}
+      else if(normalized.length===1){classification='NORMALIZED_SKU_CANDIDATE';matchType=normalized[0].rule!;bestXml=normalized[0].x;evidence=`SKU match after ${matchType}`}
+      else if(eanSafe){classification='UNIQUE_EAN_CANDIDATE';matchType='unique exact EAN';bestXml=eans[0];evidence=`Unique EAN; title similarity=${eanTitleScore.toFixed(3)}; ${s?'SKU evidence is compatible':'Product has no SKU; title review still required'}`}
+      else if(candidateSkus.size>1||exact.length>1||cases.length>1||normalized.length>1||eans.length>0){classification='MULTIPLE_POSSIBLE_MATCHES';matchType='conflict';bestXml=exact[0]??cases[0]??eans[0]??normalized[0]?.x;evidence=`candidate SKUs=${[...candidateSkus].join('|')||'EAN conflict'}; exact=${exact.length}; case=${cases.length}; normalized=${normalized.length}; EAN=${eans.length}`}
+      else if(nameOnly){classification='NAME_ONLY_POSSIBLE_MATCH';matchType='name-only';bestXml=nameOnly.x;evidence=`Token Dice similarity=${nameOnly.score.toFixed(3)}; review only`}
+      return {productId:p.id,sku:p.sku??'',barcode:p.barcode??'',name:p.title,price:Number(p.price),stock:p.stock,isActive:p.isActive,isDeleted:p.isDeleted,brand:p.brand,category:p.category,classification,matchType,evidence,bestXmlSku:bestXml?trimmed(bestXml.sku):'',bestXmlName:bestXml?trimmed(bestXml.title):''}
+    })
+    const relations=new Map<string,typeof localRows>();for(const r of localRows)if(r.bestXmlSku)relations.set(r.bestXmlSku,[...(relations.get(r.bestXmlSku)??[]),r])
+    const xmlRows=xmlRemaining.map(x=>{const sku=trimmed(x.sku),related=relations.get(sku)??[],known=DEFERRED.has(sku.toLocaleUpperCase('en-US'));let classification:XmlClass='NO_LOCAL_MATCH_FOUND';if(known)classification='KNOWN_DEFERRED';else if(related.some(r=>['EXACT_UNIQUE_CANDIDATE','CASE_CANDIDATE','UNIQUE_EAN_CANDIDATE'].includes(r.classification)))classification='LIKELY_EXISTING_PRODUCT';else if(related.length)classification='POSSIBLE_EXISTING_PRODUCT';const wh:Record<string,number>={};for(const w of x.warehouses?.warehouse??[]){const id=GRINS_WAREHOUSE_INDEX_TO_ID[Number(w['@_id'])-1];if(id)wh[id]=number(w['#text'])}const allowedStock=['10000','10001','10002','10005'].reduce((n,id)=>n+Math.max(0,wh[id]??0),0);return{sku,title:trimmed(x.title),ean:trimmed(x.code),price1:number(x.price1),price2:number(x.price2),price3:number(x.price3),price4:number(x.price4),allowedStock,warehouse10000:wh['10000']??0,warehouse10001:wh['10001']??0,warehouse10002:wh['10002']??0,warehouse10005:wh['10005']??0,classification,candidateProductIds:related.map(r=>r.productId).join('|'),candidateEvidence:related.map(r=>`${r.productId}:${r.matchType}`).join('|')}})
+    const newRows=xmlRows.filter(x=>x.classification==='NO_LOCAL_MATCH_FOUND'),activeRows=localRows.filter(x=>x.isActive),localCounts=countBy(localRows.map(x=>x.classification)),xmlCounts=countBy(xmlRows.map(x=>x.classification))
+    const summary={baseline:before,xml:{records:xmlItems.length,uniqueSku:new Set(xmlItems.map(x=>trimmed(x.sku)).filter(Boolean)).size,duplicateSku:[...xmlBySku.values()].filter(x=>x.length>1).length,emptySku:xmlItems.filter(x=>!trimmed(x.sku)).length,sha256:xmlSha},remaining:{xmlAlreadyLinked:xmlItems.filter(x=>linked.has(trimmed(x.sku))).length,xmlUnlinked:xmlRows.length,productUnlinked:unlinked.length,productWithSku:unlinked.filter(p=>trimmed(p.sku)).length,productWithoutSku:unlinked.filter(p=>!trimmed(p.sku)).length,active:unlinked.filter(p=>p.isActive).length,inactive:unlinked.filter(p=>!p.isActive).length,withBarcode:unlinked.filter(p=>trimmed(p.barcode)).length,withoutBarcode:unlinked.filter(p=>!trimmed(p.barcode)).length},barcode:{localPresent:products.filter(p=>trimmed(p.barcode)).length,xmlPresent:xmlItems.filter(x=>trimmed(x.code)).length,localDuplicateValues:[...new Map(products.filter(p=>trimmed(p.barcode)).map(p=>[trimmed(p.barcode),products.filter(q=>trimmed(q.barcode)===trimmed(p.barcode)).length])).values()].filter(n=>n>1).length,xmlDuplicateValues:[...xmlByEan.values()].filter(x=>x.length>1).length},localClassification:localCounts,xmlClassification:xmlCounts,activeUnlinked:activeRows.length,potentiallyNew:{total:newRows.length,price2Positive:newRows.filter(x=>x.price2>0).length,price2Zero:newRows.filter(x=>x.price2===0).length,stockPositive:newRows.filter(x=>x.allowedStock>0).length,stockZero:newRows.filter(x=>x.allowedStock===0).length,price2PositiveAndStockPositive:newRows.filter(x=>x.price2>0&&x.allowedStock>0).length,price2ZeroAndStockZero:newRows.filter(x=>x.price2===0&&x.allowedStock===0).length,withEan:newRows.filter(x=>x.ean).length,withoutEan:newRows.filter(x=>!x.ean).length,priceTierPositive:{price1:newRows.filter(x=>x.price1>0).length,price2:newRows.filter(x=>x.price2>0).length,price3:newRows.filter(x=>x.price3>0).length,price4:newRows.filter(x=>x.price4>0).length},warehousePositive:{'10000':newRows.filter(x=>x.warehouse10000>0).length,'10001':newRows.filter(x=>x.warehouse10001>0).length,'10002':newRows.filter(x=>x.warehouse10002>0).length,'10005':newRows.filter(x=>x.warehouse10005>0).length}}}
+    if(Object.values(localCounts).reduce((a,b)=>a+b,0)!==unlinked.length||Object.values(xmlCounts).reduce((a,b)=>a+b,0)!==xmlRows.length)throw new Error('CLASSIFICATION_TOTAL_MISMATCH')
+    const after=await state(),unchanged=JSON.stringify(before)===JSON.stringify(after);if(!unchanged)throw new Error(`DATABASE_FINGERPRINT_CHANGED:${JSON.stringify({before,after})}`)
+    const report={generatedAt:new Date().toISOString(),readOnly:true,databaseWrites:0,before,after,unchanged,summary,localProducts:localRows,xmlProducts:xmlRows}
+    const md=['# Remaining products audit','',`Generated: ${report.generatedAt}`,'',`Read-only: **yes**; database writes: **0**; fingerprint unchanged: **${unchanged}**`,'','## Summary','','```json',JSON.stringify(summary,null,2),'```','','## Active unlinked','','See `active-unlinked-products.csv` for all rows.','',`Count: ${activeRows.length}`,'','## Candidate next wave','',`Strong analytical candidates (exact unique + unique EAN): ${(localCounts.EXACT_UNIQUE_CANDIDATE??0)+(localCounts.UNIQUE_EAN_CANDIDATE??0)}.`,'','No apply-ready allowlist was created.'].join('\n')+'\n'
+    await Promise.all([writeFile('remaining-products-audit.json',JSON.stringify(report,null,2)+'\n'),writeFile('remaining-products-audit.md',md),writeFile('remaining-local-products.csv',csv(localRows)),writeFile('remaining-xml-products.csv',csv(xmlRows)),writeFile('active-unlinked-products.csv',csv(activeRows)),writeFile('unique-ean-candidates.csv',csv(localRows.filter(x=>x.classification==='UNIQUE_EAN_CANDIDATE'))),writeFile('likely-new-grins-products.csv',csv(newRows)),writeFile('normalized-sku-candidates.csv',csv(localRows.filter(x=>x.classification==='NORMALIZED_SKU_CANDIDATE')))])
+    console.log(JSON.stringify({before,after,unchanged,databaseWrites:0,summary,outputs:['remaining-products-audit.json','remaining-products-audit.md','remaining-local-products.csv','remaining-xml-products.csv','active-unlinked-products.csv','unique-ean-candidates.csv','likely-new-grins-products.csv','normalized-sku-candidates.csv']},null,2))
+  }finally{await prisma.$disconnect()}}
+main().catch(e=>{console.error(e);process.exitCode=1})

@@ -23,17 +23,17 @@ describe('buildSyncDryRunReport', () => {
     expect(JSON.stringify(db)).toBe(before)
   })
 
-  it('reports a missing active product as wouldDeactivate without changing isActive', () => {
+  it('keeps a missing active product outside scope without changing isActive', () => {
     const db = [dbProduct()]
     const report = buildSyncDryRunReport([], db, {})
-    expect(report).toMatchObject({ missing: 1, wouldDeactivate: 1 })
+    expect(report).toMatchObject({ missing: 1, wouldDeactivate: 0, deactivations: 0 })
     expect(db[0].isActive).toBe(true)
   })
 
-  it('reports a new product as pending with isActive=false', () => {
+  it('reports an unknown XML product as skipped and never as an insert', () => {
     const report = buildSyncDryRunReport([feedProduct()], [], {})
-    expect(report).toMatchObject({ new: 1, matched: 0 })
-    expect(report.newProducts[0]).toMatchObject({ externalId: 'SKU-1', isActive: false })
+    expect(report).toMatchObject({ new: 0, matched: 0, unlinkedXml: 1, productInserts: 0 })
+    expect(report.newProducts).toEqual([])
   })
 
   it('detects duplicate externalId and excludes it from creates', () => {
@@ -52,10 +52,24 @@ describe('buildSyncDryRunReport', () => {
     expect(db).toEqual([dbProduct()])
   })
 
+  it('is semantically idempotent after applying the predicted state', () => {
+    const feed = [feedProduct({ prices: { price1: 15, price2: 12, price3: 8, price4: 6 } })]
+    const predictedDb = [dbProduct({ price: 12, stock: 7 })]
+    const predictedExtra = { 'SKU-1': { prices: feed[0].prices!, warehouseQuantities: feed[0].warehouseQuantities! } }
+    const retry = buildSyncDryRunReport(feed, predictedDb, predictedExtra)
+    expect(retry).toMatchObject({ updates: 0, productInserts: 0, externalIdAssignments: 0, erpSemanticUpdates: 0 })
+    expect(retry.changes).toMatchObject({ price: { count: 0 }, stock: { count: 0 }, warehouseStock: { count: 0 } })
+  })
+
   it('preserves an existing price and reports PRICE_TIER_ZERO_SKIPPED without fallback', () => {
     const report = buildSyncDryRunReport([feedProduct({ price: 0, prices: { price1: 99, price2: 0, price3: 88, price4: 77 } })], [dbProduct({ price: 10 })], {})
     expect(report.priceAnalysis).toMatchObject({ priceWouldChange: 0, PRICE_TIER_ZERO_SKIPPED: 1, priceWouldBecomeZero: 0 })
     expect(report.priceAnalysis.examples[0]).toMatchObject({ resultingProductPrice: 10, decision: 'PRICE_TIER_ZERO_SKIPPED' })
+  })
+
+  it('excludes a soft-deleted exact externalId claimant from all updates', () => {
+    const report = buildSyncDryRunReport([feedProduct()], [dbProduct({ isDeleted: true })], {})
+    expect(report).toMatchObject({ matched: 0, updates: 0, softDeletedSkipped: 1 })
   })
 
   it('verifies the selected stock formula independently', () => {

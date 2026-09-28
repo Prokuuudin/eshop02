@@ -26,16 +26,23 @@ import type { ErpAdapter } from './erp-adapter'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 
 function makeMockDb(): ExtendedPrismaClient {
-  return {
+  const db = {
     syncRun: {
       create: vi.fn().mockResolvedValue({ id: 'run-1' }),
       update: vi.fn().mockResolvedValue({}),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn().mockResolvedValue(null),
     },
+    product: {
+      findMany: vi.fn().mockImplementation(({ where }) => Promise.resolve(
+        (where.externalId.in as string[]).map(externalId => ({ externalId, isDeleted: false })),
+      )),
+    },
     $queryRawUnsafe: vi.fn().mockResolvedValue([{ key: 'sync-run-lock' }]),
     $executeRawUnsafe: vi.fn().mockResolvedValue(1),
-  } as unknown as ExtendedPrismaClient
+  }
+  ;(db as typeof db & { $transaction: ReturnType<typeof vi.fn> }).$transaction = vi.fn(async operation => operation(db))
+  return db as unknown as ExtendedPrismaClient
 }
 
 function makeAdapter(products: object[] = [], hasMore = false): ErpAdapter {
@@ -98,9 +105,9 @@ describe('runSync', () => {
     expect(upsertProducts).toHaveBeenCalledWith(expect.anything(), products, 'run-1')
   })
 
-  it('calls deactivateMissing after all pages are fetched', async () => {
+  it('never deactivates products missing from XML', async () => {
     await runSync(makeAdapter(), makeMockDb())
-    expect(deactivateMissing).toHaveBeenCalledWith(expect.anything(), 'run-1')
+    expect(deactivateMissing).not.toHaveBeenCalled()
   })
 
   it('skips products with empty externalId before upserting', async () => {
@@ -112,6 +119,92 @@ describe('runSync', () => {
     const calledWith = (upsertProducts as ReturnType<typeof vi.fn>).mock.calls[0][1]
     expect(calledWith).toHaveLength(1)
     expect(calledWith[0].externalId).toBe('good')
+  })
+
+  it('skips an unknown XML SKU without inserting or failing the run', async () => {
+    const db = makeMockDb()
+    ;(db.product.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([])
+    const result = await runSync(makeAdapter([{ externalId: 'unknown', title: 'x', price: 1, stock: 1 }]), db)
+    expect(result).toMatchObject({ status: 'completed', unlinkedXml: 1, productsSynced: 0 })
+    expect(upsertProducts).not.toHaveBeenCalled()
+  })
+
+  it('excludes an exact externalId claimant when it is soft-deleted', async () => {
+    const db = makeMockDb()
+    ;(db.product.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([{ externalId: 'deleted', isDeleted: true }])
+    const result = await runSync(makeAdapter([{ externalId: 'deleted', title: 'x', price: 1, stock: 1 }]), db)
+    expect(result).toMatchObject({ status: 'completed', softDeletedSkipped: 1, productsSynced: 0 })
+    expect(upsertProducts).not.toHaveBeenCalled()
+  })
+
+  it('fails closed if externalId unexpectedly has multiple claimants', async () => {
+    const db = makeMockDb()
+    ;(db.product.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { externalId: 'dup-db', isDeleted: false }, { externalId: 'dup-db', isDeleted: true },
+    ])
+    const result = await runSync(makeAdapter([{ externalId: 'dup-db', title: 'x', price: 1, stock: 1 }]), db)
+    expect(result.status).toBe('failed')
+    expect(upsertProducts).not.toHaveBeenCalled()
+  })
+
+  it('cannot mark completed when the final metadata transaction fails', async () => {
+    const db = makeMockDb()
+    ;(db.$transaction as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('commit failed'))
+    const result = await runSync(makeAdapter(), db)
+    expect(result.status).toBe('failed')
+    expect(db.syncRun.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+  })
+
+  it('keeps metadata and completed in one specialized 60-second atomic boundary', async () => {
+    const db = makeMockDb()
+    await runSync(makeAdapter(), db)
+    expect(db.$transaction).toHaveBeenLastCalledWith(expect.any(Function), { timeout: 60_000 })
+    const finalOperation = (db.$transaction as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
+    const tx = { syncRun: { update: vi.fn().mockRejectedValue(new Error('before completed')) } }
+    await expect(finalOperation(tx)).rejects.toThrow('before completed')
+    expect(tx.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+  })
+
+  it('records no committed work when the first Product batch transaction fails', async () => {
+    const db = makeMockDb()
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    ;(db.$transaction as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('before first commit'))
+    const result = await runSync(makeAdapter([{ externalId: 'e1', title: 'x', price: 1, stock: 1 }]), db)
+    expect(result).toMatchObject({ status: 'failed', productsSynced: 0 })
+    expect(db.syncRun.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+  })
+
+  it('keeps an exact committed counter when failure occurs between deterministic batches', async () => {
+    const db = makeMockDb(); let transaction = 0
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    ;(db.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async operation => {
+      transaction++
+      if (transaction === 2) throw new Error('between batches')
+      return operation(db)
+    })
+    const products = Array.from({ length: 201 }, (_, index) => ({ externalId: `e${index}`, title: 'x', price: 1, stock: 1 }))
+    const result = await runSync(makeAdapter(products), db)
+    expect(result).toMatchObject({ status: 'failed', productsSynced: 200 })
+    expect(db.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ productsSynced: 200, productsTotal: 201 }) }))
+  })
+
+  it('fails after committed Product batches when the final metadata/completion transaction cannot commit', async () => {
+    const db = makeMockDb(); let transaction = 0
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    ;(db.$transaction as ReturnType<typeof vi.fn>).mockImplementation(async operation => {
+      transaction++
+      if (transaction === 2) throw new Error('before metadata commit')
+      return operation(db)
+    })
+    const result = await runSync(makeAdapter([{ externalId: 'e1', title: 'x', price: 1, stock: 1 }]), db)
+    expect(result).toMatchObject({ status: 'failed', productsSynced: 1 })
+    expect(db.syncRun.update).not.toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+
+    vi.clearAllMocks()
+    const retryDb = makeMockDb()
+    ;(upsertProducts as ReturnType<typeof vi.fn>).mockImplementation(async (_db, rows) => rows.length)
+    const retry = await runSync(makeAdapter([{ externalId: 'e1', title: 'x', price: 1, stock: 1 }]), retryDb)
+    expect(retry).toMatchObject({ status: 'completed', productsSynced: 1 })
   })
 
   it('returns failed status and finalizes SyncRun after 5 consecutive fetch errors', async () => {

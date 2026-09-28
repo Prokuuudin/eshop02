@@ -1,7 +1,6 @@
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
-import { deactivateMissing } from './deactivate-missing'
 import { getErpExtraData, mergeEnabledPriceTiers, replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { getSyncRules } from './sync-rules'
 import { withRetry } from './retry'
@@ -18,6 +17,8 @@ export interface SyncRunResult {
   productsSynced: number
   deactivated: number
   errorCount: number
+  unlinkedXml?: number
+  softDeletedSkipped?: number
 }
 
 export async function runSync(
@@ -49,8 +50,11 @@ export async function runSync(
   })
 
   let productsSynced = 0
-  let deactivated = 0
+  let productsTotal = 0
+  const deactivated = 0
   let consecutiveFetchErrors = 0
+  let unlinkedXml = 0
+  let softDeletedSkipped = 0
   const seenExternalIds = new Set<string>()
   const extraDataByExternalId: Record<string, ErpExtraData> = {}
   const rules = getSyncRules()
@@ -87,6 +91,7 @@ export async function runSync(
       }
 
       const { products, hasMore: more, nextCursor } = fetchResult
+      productsTotal += products.length
       hasMore = more
       cursor = nextCursor
 
@@ -102,7 +107,7 @@ export async function runSync(
           })
         }
 
-        const valid: ErpProduct[] = []
+        const feedUnique: ErpProduct[] = []
         const duplicateIds: string[] = []
         for (const p of withId) {
           if (seenExternalIds.has(p.externalId)) {
@@ -110,41 +115,66 @@ export async function runSync(
             continue
           }
           seenExternalIds.add(p.externalId)
-          valid.push(p)
-          if (p.prices || p.warehouseQuantities) {
-            const incoming = {
-              prices: {
-                price1: p.prices?.price1 ?? 0,
-                price2: p.prices?.price2 ?? 0,
-                price3: p.prices?.price3 ?? 0,
-                price4: p.prices?.price4 ?? 0,
-              },
-              warehouseQuantities: p.warehouseQuantities ?? {},
-            }
-            extraDataByExternalId[p.externalId] = mergeEnabledPriceTiers(
-              currentExtraData[p.externalId], incoming, rules.enabledPriceTiers,
-            )
-          }
+          feedUnique.push(p)
         }
         if (duplicateIds.length > 0) {
           logger.recordBatchError(batchIndex, new Error('Duplicate externalId in feed'), duplicateIds)
         }
 
+        if (feedUnique.length === 0) continue
+
+        // Exact externalId is the only permitted identity relation. Unknown XML
+        // records and soft-deleted claimants are diagnostics, never inserts.
+        const claimants = await db.product.findMany({
+          where: { externalId: { in: feedUnique.map(product => product.externalId) } },
+          select: { externalId: true, isDeleted: true },
+        })
+        const claimsById = new Map<string, Array<{ isDeleted: boolean }>>()
+        for (const claimant of claimants) {
+          if (!claimant.externalId) continue
+          const claims = claimsById.get(claimant.externalId) ?? []
+          claims.push(claimant)
+          claimsById.set(claimant.externalId, claims)
+        }
+        const conflicting = [...claimsById].filter(([, claims]) => claims.length !== 1).map(([id]) => id)
+        if (conflicting.length) throw new Error(`Duplicate externalId claimants: ${conflicting.join(', ')}`)
+        const valid = feedUnique.filter(product => {
+          const claim = claimsById.get(product.externalId)?.[0]
+          if (!claim) { unlinkedXml++; return false }
+          if (claim.isDeleted) { softDeletedSkipped++; return false }
+          return true
+        })
+        for (const product of valid) if (product.prices || product.warehouseQuantities) {
+          const incoming = {
+            prices: {
+              price1: product.prices?.price1 ?? 0,
+              price2: product.prices?.price2 ?? 0,
+              price3: product.prices?.price3 ?? 0,
+              price4: product.prices?.price4 ?? 0,
+            },
+            warehouseQuantities: product.warehouseQuantities ?? {},
+          }
+          extraDataByExternalId[product.externalId] = mergeEnabledPriceTiers(currentExtraData[product.externalId], incoming, rules.enabledPriceTiers)
+        }
         if (valid.length === 0) continue
 
         try {
-          await withRetry(() => upsertProducts(db, valid, runId), {
+          const committed = await withRetry(() => db.$transaction(async tx => {
+            const affected = await upsertProducts(tx as ExtendedPrismaClient, valid, runId)
+            await tx.syncRun.update({ where: { id: runId }, data: { productsTotal, productsSynced: productsSynced + affected } })
+            return affected
+          }), {
             maxAttempts: 3,
             baseDelayMs: 1000,
           })
-          productsSynced += valid.length
+          productsSynced += committed
           logger.info('Batch upserted', { batchIndex, count: valid.length, total: productsSynced })
         } catch (err) {
           logger.recordBatchError(batchIndex, err, valid.map(p => p.externalId))
         }
       }
 
-      await db.syncRun.update({ where: { id: runId }, data: { productsSynced } })
+      // Progress is committed in the same transaction as each deterministic batch.
     }
 
     const errorCount = logger.getErrorCount()
@@ -158,6 +188,7 @@ export async function runSync(
           status: 'failed',
           finishedAt: new Date(),
           productsSynced,
+          productsTotal,
           deactivated: 0,
           errorCount,
           // cast required: Prisma Json field does not accept typed arrays directly
@@ -168,20 +199,20 @@ export async function runSync(
       return { runId, status: 'failed', productsSynced, deactivated: 0, errorCount }
     }
 
-    deactivated = await deactivateMissing(db, runId)
-    logger.info('Deactivation complete', { deactivated })
-
-    if (Object.keys(extraDataByExternalId).length > 0) {
-      await replaceErpExtraData(db, extraDataByExternalId)
-    }
-
-    await db.syncRun.update({
-      where: { id: runId },
-      data: { status: 'completed', finishedAt: new Date(), productsSynced, deactivated, errorCount: 0 },
-    })
+    // Missing/local-only Products retain their publication state. Metadata and
+    // the completed marker commit together, so a partial run cannot look done.
+    await db.$transaction(async tx => {
+      if (Object.keys(extraDataByExternalId).length > 0) {
+        await replaceErpExtraData(tx as ExtendedPrismaClient, { ...currentExtraData, ...extraDataByExternalId })
+      }
+      await tx.syncRun.update({
+        where: { id: runId },
+        data: { status: 'completed', finishedAt: new Date(), productsTotal, productsSynced, deactivated: 0, errorCount: 0 },
+      })
+    }, { timeout: 60_000 })
 
     await releaseSyncLock(db, runId).catch(() => {})
-    return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0 }
+    return { runId, status: 'completed', productsSynced, deactivated, errorCount: 0, unlinkedXml, softDeletedSkipped }
   } catch (err) {
     logger.error('Sync failed', { error: String(err) })
 
@@ -193,6 +224,7 @@ export async function runSync(
           status: 'failed',
           finishedAt: new Date(),
           productsSynced,
+          productsTotal,
           errorCount: logger.getErrorCount() + 1,
           ...(errorSample.length > 0 && { errorSample: errorSample as unknown as never }),
         },

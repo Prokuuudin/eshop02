@@ -32,3 +32,27 @@ data/*.json
 
 # Превью dry-run кропа фото товаров (scripts/crop-product-image.ts)
 /scratch-crop-preview/
+
+# Local ERP source snapshot and generated synchronization diagnostics.
+/export.xml
+/*-audit.json
+/*-audit.md
+/*-result.json
+/*-reconciliation.json
+/*-reconciliation.md
+/active-unlinked-*.csv
+/*-all.csv
+/*-candidates.csv
+/*-conflicts.csv
+/*-images.csv
+/*-preview.csv
+/*-review.csv
+/*-unresolved-brand-category.csv
+/likely-new-*.csv
+/manual-review-*.csv
+/new-product-high-confidence.csv
+/possible-*.csv
+/remaining-*.csv
+/second-reconciliation-*.csv
+/sync-preflight-*.csv
+/unique-ean-candidates.csv

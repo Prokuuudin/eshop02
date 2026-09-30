@@ -34,7 +34,8 @@ function makeRequest(email = ' Buyer@Example.com ') {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  process.env.CONTACT_TO = 'admin@example.com'
+  vi.stubEnv('NODE_ENV', 'test')
+  vi.stubEnv('CONTACT_TO', 'contact-recipient@example.test')
   vi.mocked(isTurnstileRequired).mockReturnValue(false)
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 4, resetAt: Date.now() + 60_000 })
   vi.mocked(sendEmail).mockResolvedValue(undefined)
@@ -49,6 +50,25 @@ describe('POST /api/contact', () => {
     expect(checkRateLimit).toHaveBeenNthCalledWith(1, 'contact:ip:203.0.113.8', expect.any(Object))
     expect(checkRateLimit).toHaveBeenNthCalledWith(2, 'contact:email:buyer@example.com', expect.any(Object))
     expect(sendEmail).toHaveBeenCalledOnce()
+  })
+
+  it('sends the notification to CONTACT_TO', async () => {
+    vi.stubEnv('CONTACT_TO', 'sales@miksplus.eu')
+    await POST(makeRequest())
+    expect(sendEmail).toHaveBeenCalledWith(
+      'sales@miksplus.eu',
+      '[Контакт] Question',
+      expect.any(String),
+    )
+  })
+
+  it('does not use SMTP_USER as a recipient fallback', async () => {
+    delete process.env.CONTACT_TO
+    vi.stubEnv('SMTP_USER', 'smtp-sender@example.test')
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+    expect(sendEmail).not.toHaveBeenCalled()
+    expect(prisma.contactMessage.update).toHaveBeenCalledWith({ where: { id: 'msg-1' }, data: { emailStatus: 'not_configured' } })
   })
 
   it('stops an email-limited request before SMTP', async () => {
@@ -96,5 +116,15 @@ describe('POST /api/contact', () => {
     expect(res.status).toBe(200)
     expect(sendEmail).not.toHaveBeenCalled()
     expect(prisma.contactMessage.update).toHaveBeenCalledWith({ where: { id: 'msg-1' }, data: { emailStatus: 'not_configured' } })
+  })
+
+  it('returns 503 in production when CONTACT_TO is missing', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    delete process.env.CONTACT_TO
+    vi.stubEnv('SMTP_USER', 'smtp-sender@example.test')
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(503)
+    await expect(res.json()).resolves.toEqual({ ok: false, code: 'email_not_configured' })
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 })

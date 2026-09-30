@@ -54,7 +54,7 @@ npm run dev
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | optional | Cloudflare Turnstile public site key (contact form) |
 | `TURNSTILE_SECRET_KEY` | optional | Cloudflare Turnstile secret key — server-side verification |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | yes for email | Outgoing mail (registration confirmation, notifications) |
-| `CONTACT_TO` | optional | Recipient for the contact form (defaults to `SMTP_USER`) |
+| `CONTACT_TO` | required in production | Recipient for the contact form; no SMTP/user fallback |
 
 See `.env.example` for the full template (values left blank/placeholder).
 

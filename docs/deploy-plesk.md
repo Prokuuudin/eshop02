@@ -51,7 +51,7 @@ Vercel-конфигурация в репозитории пока не удал
 |---|---|
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | письма (регистрация, инвойсы, уведомления, контактная форма) |
 | `SMTP_SECURE`, `SMTP_IGNORE_TLS` | опциональные модификаторы транспорта SMTP |
-| `CONTACT_TO` | куда падают заявки с контактной формы (по умолчанию = `SMTP_USER`) |
+| `CONTACT_TO` | обязательный production-адрес для заявок с контактной формы; fallback на `SMTP_USER` отсутствует |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | anti-spam на чекауте/контакте/заявках. **Оба или ни одного** — частичная настройка бросает ошибку (`lib/turnstile-server.ts`). Сейчас в проде это fail-open стопгэп (см. память `project_turnstile_checkout_outage`) |
 | `MFA_ENCRYPTION_KEY` | шифрование TOTP-секретов (AES-256-GCM); без него включение MFA сломано |
 | `PAYSERA_PROJECT_ID`, `PAYSERA_CLIENT_ID`, `PAYSERA_CLIENT_SECRET` | Paysera Checkout Modern |

@@ -140,11 +140,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     },
   })
 
-  const adminEmail = (process.env.CONTACT_TO ?? process.env.SMTP_USER ?? '').trim()
-  if (adminEmail) {
+  const contactRecipient = process.env.CONTACT_TO?.trim() ?? ''
+  if (contactRecipient) {
     try {
       await sendEmail(
-        adminEmail,
+        contactRecipient,
         `[Контакт] ${payload.subject.trim()}`,
         `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
           <h2 style="color:#4f46e5;margin-bottom:16px">Новое сообщение с сайта</h2>
@@ -167,10 +167,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } else {
     await prisma.contactMessage.update({ where: { id: record.id }, data: { emailStatus: 'not_configured' } })
       .catch((err) => logApiError('[contact] failed to record not_configured status', err))
+
+    if (process.env.NODE_ENV === 'production') {
+      logApiError('[contact] CONTACT_TO is required in production')
+      return NextResponse.json({ ok: false, code: 'email_not_configured' }, { status: 503 })
+    }
   }
 
   return NextResponse.json({ ok: true })
 }
-
 
 

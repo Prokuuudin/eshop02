@@ -46,7 +46,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       }),
     ])
 
-    const notificationConfigured = Boolean((process.env.CONTACT_TO ?? process.env.SMTP_USER ?? '').trim())
+    const notificationConfigured = Boolean(process.env.CONTACT_TO?.trim())
       && Boolean(process.env.SMTP_HOST?.trim())
 
     return NextResponse.json({

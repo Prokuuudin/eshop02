@@ -10,24 +10,22 @@ describe('interleavePromoTiles', () => {
     expect(shape(interleavePromoTiles(products(5), []))).toEqual(['p0', 'p1', 'p2', 'p3', 'p4'])
   })
 
-  it('puts a promo in every third slot, cycling through the promos', () => {
-    expect(shape(interleavePromoTiles(products(8), ['a', 'b']))).toEqual([
-      'p0', 'p1', '[a]', 'p2', 'p3', '[b]', 'p4', 'p5', '[a]', 'p6', 'p7',
+  it('shows a single promo once, in slot 3', () => {
+    expect(shape(interleavePromoTiles(products(6), ['a']))).toEqual(['p0', 'p1', '[a]', 'p2', 'p3', 'p4', 'p5'])
+  })
+
+  it('shows two promos once each, in slots 3 and 5', () => {
+    expect(shape(interleavePromoTiles(products(6), ['a', 'b']))).toEqual(['p0', 'p1', '[a]', 'p2', '[b]', 'p3', 'p4', 'p5'])
+  })
+
+  it('shows three promos once each, in slots 3, 5 and 7', () => {
+    expect(shape(interleavePromoTiles(products(6), ['a', 'b', 'c']))).toEqual([
+      'p0', 'p1', '[a]', 'p2', '[b]', 'p3', '[c]', 'p4', 'p5',
     ])
   })
 
-  it('keeps every product in its original order', () => {
-    const result = shape(interleavePromoTiles(products(20), ['a']))
-    expect(result.filter((value) => value.startsWith('p'))).toEqual(products(20))
-    result.forEach((value, index) => expect(value === '[a]').toBe(index % 3 === 2))
-  })
-
-  it('never ends the grid on a promo', () => {
-    expect(shape(interleavePromoTiles(products(4), ['a']))).toEqual(['p0', 'p1', '[a]', 'p2', 'p3'])
-  })
-
-  it('shows no promo when the filter leaves fewer than three products', () => {
-    expect(shape(interleavePromoTiles(products(2), ['a']))).toEqual(['p0', 'p1'])
-    expect(interleavePromoTiles([], ['a'])).toEqual([])
+  it('puts the leftover promos after the products when the filter leaves few products', () => {
+    expect(shape(interleavePromoTiles(products(1), ['a', 'b']))).toEqual(['p0', '[a]', '[b]'])
+    expect(shape(interleavePromoTiles(products(3), ['a', 'b', 'c']))).toEqual(['p0', 'p1', '[a]', 'p2', '[b]', '[c]'])
   })
 })

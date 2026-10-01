@@ -2,22 +2,24 @@ export type CatalogGridEntry<T, P> =
   | { kind: 'product'; item: T }
   | { kind: 'promo'; promo: P }
 
-const PROMO_EVERY_NTH_SLOT = 3
+const FIRST_PROMO_SLOT = 3
+const PROMO_SLOT_STEP = 2
 
 /**
- * Puts a promo tile in every third grid slot (product, product, promo, …),
- * cycling through the promos. A promo only takes a slot that a product
- * follows, so the grid never ends on a promo and short results get none.
+ * Shows each promo exactly once, in grid slots 3, 5, 7, … (1-based) until the
+ * promos run out; every other slot holds a product. When the filter leaves too
+ * few products to reach a promo's slot, the leftover promos follow the products.
  */
 export function interleavePromoTiles<T, P>(items: T[], promos: P[]): CatalogGridEntry<T, P>[] {
   const entries: CatalogGridEntry<T, P>[] = []
-  const productsPerPromo = PROMO_EVERY_NTH_SLOT - 1
+  let productIndex = 0
   let promoIndex = 0
-  items.forEach((item, index) => {
-    if (promos.length > 0 && index > 0 && index % productsPerPromo === 0) {
-      entries.push({ kind: 'promo', promo: promos[promoIndex++ % promos.length] })
-    }
-    entries.push({ kind: 'product', item })
-  })
+  while (productIndex < items.length) {
+    const slot = entries.length + 1
+    const isPromoSlot = slot >= FIRST_PROMO_SLOT && (slot - FIRST_PROMO_SLOT) % PROMO_SLOT_STEP === 0
+    if (isPromoSlot && promoIndex < promos.length) entries.push({ kind: 'promo', promo: promos[promoIndex++] })
+    else entries.push({ kind: 'product', item: items[productIndex++] })
+  }
+  while (promoIndex < promos.length) entries.push({ kind: 'promo', promo: promos[promoIndex++] })
   return entries
 }

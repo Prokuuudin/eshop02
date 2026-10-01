@@ -364,7 +364,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
                     <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       {interleavePromoTiles(filtered.slice(0, visibleCount), promoBanners).map((entry, i) => (
                         entry.kind === 'promo' ? (
-                          <Reveal key={`promo-${entry.promo.id}`} index={i}>
+                          <Reveal key={`promo-${i}-${entry.promo.id}`} index={i}>
                             <CatalogPromoTile banner={entry.promo} />
                           </Reveal>
                         ) : (

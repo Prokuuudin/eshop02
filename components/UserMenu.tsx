@@ -14,7 +14,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { Button } from './ui/button';
 import { useTranslation } from '@/lib/use-translation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { X } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, X } from 'lucide-react';
 
 import Image from 'next/image';
 import RegisterSwitcher from './auth/RegisterSwitcher';
@@ -156,9 +156,27 @@ export default function UserMenu(): React.ReactElement {
         );
     }
 
+    const isAdmin = canAccessAdminPanel(user);
+
     return (
-        <div className="user-menu relative" ref={menuRef}>
+        <div className="user-menu relative flex items-center gap-1" ref={menuRef}>
             {dialogs}
+            {isAdmin && (
+                <div className="user-menu__admin-links flex items-center gap-1">
+                    <Button asChild variant="outline" size="sm" className="px-2">
+                        <Link href="/admin" aria-label={t('nav.admin')}>
+                            <ShieldCheck aria-hidden="true" />
+                            <span className="hidden sm:inline">{t('nav.admin')}</span>
+                        </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="px-2">
+                        <Link href="/account" aria-label={t('nav.dashboard', 'Дашборд')}>
+                            <LayoutDashboard aria-hidden="true" />
+                            <span className="hidden sm:inline">{t('nav.dashboard', 'Дашборд')}</span>
+                        </Link>
+                    </Button>
+                </div>
+            )}
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -231,16 +249,16 @@ export default function UserMenu(): React.ReactElement {
                             onClick={() => setIsOpen(false)}
                             className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-foreground"
                         >
-                            {canAccessAdminPanel(user) ? t('nav.dashboard', 'Дашборд') : t('account.title')}
+                            {isAdmin ? t('nav.dashboard', 'Дашборд') : t('account.title')}
                         </Link>
                         <Link
                             href="/account/profile"
                             onClick={() => setIsOpen(false)}
                             className="block px-4 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm text-foreground"
                         >
-                            {canAccessAdminPanel(user) ? t('account.profile', 'Профиль') : t('account.myProfile', 'Мой профиль')}
+                            {isAdmin ? t('account.profile', 'Профиль') : t('account.myProfile', 'Мой профиль')}
                         </Link>
-                        {canAccessAdminPanel(user) && (
+                        {isAdmin && (
                             <Link
                                 href="/admin"
                                 onClick={() => setIsOpen(false)}

@@ -2,12 +2,13 @@ export type CatalogGridEntry<T, P> =
   | { kind: 'product'; item: T }
   | { kind: 'promo'; promo: P }
 
-const FIRST_PROMO_SLOT = 3
-const PROMO_SLOT_STEP = 2
+const FIRST_PROMO_SLOT = 7
+// Five products between consecutive promos.
+const PROMO_SLOT_STEP = 6
 
 /**
- * Shows each promo exactly once, in grid slots 3, 5, 7, … (1-based) until the
- * promos run out; every other slot holds a product. When the filter leaves too
+ * Shows each promo exactly once, in grid slots 7, 13, 19, … (1-based) until
+ * the promos run out; all other slots hold products. When the filter leaves too
  * few products to reach a promo's slot, the leftover promos follow the products.
  */
 export function interleavePromoTiles<T, P>(items: T[], promos: P[]): CatalogGridEntry<T, P>[] {

@@ -7,6 +7,7 @@ import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
 import { buildPublicPageMetadata } from '@/lib/page-metadata'
 import { getInitialCatalogProducts } from '@/lib/initial-catalog-products'
 import { serializeJsonLd } from '@/lib/json-ld'
+import { getCachedSaleBanners } from '@/lib/storefront-cache'
 
 type PageProps = {
   params: Promise<{ lang: string; slug: string }>
@@ -63,11 +64,15 @@ export default async function CategoryPage({ params, searchParams }: PageProps):
   if (!isCategory(slug)) notFound()
   const { subcat } = await searchParams
   const validSubcategory = SUBCATEGORIES_BY_ID[slug]?.some((item) => item.slug === subcat) ? subcat : ''
-  const initialCatalog = await getInitialCatalogProducts({
-    language,
-    category: slug,
-    subcategories: validSubcategory ? [validSubcategory] : [],
-  })
+  const [initialCatalog, banners] = await Promise.all([
+    getInitialCatalogProducts({
+      language,
+      category: slug,
+      subcategories: validSubcategory ? [validSubcategory] : [],
+    }),
+    getCachedSaleBanners(),
+  ])
+  const promoBanners = banners.filter((banner) => banner.zone === 'catalog')
   const [title, description] = copy[language][slug]
   const siteUrl = getSiteUrl()
   const url = `${siteUrl}${localizePath(`/category/${slug}`, language)}`
@@ -93,6 +98,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps):
         baseCategory={slug}
         initialSubcat={validSubcategory}
         initialFilters={{ group: slug }}
+        promoBanners={promoBanners}
       />
     </>
   )

@@ -2,10 +2,11 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
-// Named after the homepage section each zone's block renders next to.
+// Named after the homepage section each zone's block renders next to;
+// 'catalog' banners render as product-sized tiles inside the catalog grid.
 export const BANNER_ZONES = [
   'top', 'hero', 'benefits', 'sale', 'bestsellers', 'categories', 'brands',
-  'productRequest', 'retail', 'bonus', 'faq',
+  'productRequest', 'retail', 'bonus', 'faq', 'catalog',
 ] as const
 
 export type BannerZone = typeof BANNER_ZONES[number]

@@ -3,6 +3,9 @@ import React from 'react'
 import { type Product } from '../data/products'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import ProductCard from './ProductCard'
+import CatalogPromoTile from './CatalogPromoTile'
+import type { PromoBanner } from './SaleBanner'
+import { interleavePromoTiles } from '@/lib/catalog-promo-slots'
 import ProductCardSkeleton from './ProductCardSkeleton'
 import Reveal from '@/components/ui/Reveal'
 import { useTranslation } from '@/lib/use-translation'
@@ -39,13 +42,15 @@ type ProductsProps = {
   baseCategory?: string
   serverPagination?: boolean
   facets?: CatalogFacets
+  /** CMS banners from the 'catalog' zone, shown as product-sized tiles in grid view. */
+  promoBanners?: PromoBanner[]
 }
 
 const isProductOnSale = (product: Product): boolean => {
   return !!product.campaignOffers?.length || !!product.badges?.includes('sale') || getValidOldPrice(product.price, product.oldPrice) !== undefined
 }
 
-export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets }: ProductsProps): React.ReactElement {
+export default function Products({ initialProducts, initialFilters, initialSearch = '', initialSubcat = '', baseCategory = '', serverPagination = false, facets, promoBanners = [] }: ProductsProps): React.ReactElement {
   const { t, language } = useTranslation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const [products, setProducts] = React.useState<Product[]>(initialProducts ?? [])
@@ -357,10 +362,16 @@ export default function Products({ initialProducts, initialFilters, initialSearc
                     </div>
                   ) : (
                     <div className="products__grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {filtered.slice(0, visibleCount).map((p, i) => (
-                        <Reveal key={p.id} index={i}>
-                          <ProductCard product={p} />
-                        </Reveal>
+                      {interleavePromoTiles(filtered.slice(0, visibleCount), promoBanners).map((entry, i) => (
+                        entry.kind === 'promo' ? (
+                          <Reveal key={`promo-${entry.promo.id}`} index={i}>
+                            <CatalogPromoTile banner={entry.promo} />
+                          </Reveal>
+                        ) : (
+                          <Reveal key={entry.item.id} index={i}>
+                            <ProductCard product={entry.item} />
+                          </Reveal>
+                        )
                       ))}
                     </div>
                   )}

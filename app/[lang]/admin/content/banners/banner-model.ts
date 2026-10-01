@@ -6,10 +6,11 @@ export type CtaStyle = 'primary' | 'secondary' | 'outline'
 export type BannerPlacement = 'list' | 'carousel'
 export type BannerScrollMode = 'manual' | 'auto'
 
-// Named after the homepage section each zone's block renders next to.
+// Named after the homepage section each zone's block renders next to;
+// 'catalog' banners render as product-sized tiles inside the catalog grid.
 export const BANNER_ZONES = [
   'top', 'hero', 'benefits', 'sale', 'bestsellers', 'categories', 'brands',
-  'productRequest', 'retail', 'bonus', 'faq',
+  'productRequest', 'retail', 'bonus', 'faq', 'catalog',
 ] as const
 export type BannerZone = typeof BANNER_ZONES[number]
 
@@ -25,6 +26,7 @@ export const BANNER_ZONE_LABELS: Record<BannerZone, [string, string, string]> = 
   retail: ['После розничного блока', 'After the retail block', 'Aiz mazumtirdzniecības bloka'],
   bonus: ['После бонусной программы', 'After the bonus program', 'Aiz bonusu programmas'],
   faq: ['В конце страницы (после FAQ)', 'At the bottom of the page (after FAQ)', 'Lapas beigās (aiz BUJ)'],
+  catalog: ['Каталог: плитки между товарами', 'Catalog: tiles between products', 'Katalogs: flīzes starp precēm'],
 }
 
 export const DEFAULT_GROUP_ID = 'default'

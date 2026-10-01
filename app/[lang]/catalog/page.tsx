@@ -9,6 +9,7 @@ import { localizePath, resolveLanguage } from '@/lib/i18n-routing'
 import { buildPublicPageMetadata } from '@/lib/page-metadata'
 import { getCatalogFacets, getInitialCatalogProducts } from '@/lib/initial-catalog-products'
 import { serializeJsonLd } from '@/lib/json-ld'
+import { getCachedSaleBanners } from '@/lib/storefront-cache'
 
 export const revalidate = 3600
 
@@ -91,10 +92,12 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
     onSale,
   };
 
-  const [initialCatalog, facets] = await Promise.all([
+  const [initialCatalog, facets, banners] = await Promise.all([
     getInitialCatalogProducts({ ...catalogQuery, order: order || undefined, page: pageNumber }),
     getCatalogFacets(catalogQuery),
+    getCachedSaleBanners(),
   ]);
+  const promoBanners = banners.filter((banner) => banner.zone === 'catalog');
 
   if (pageNumber > initialCatalog.totalPages) notFound();
 
@@ -138,6 +141,7 @@ export default async function CatalogPage({ params: routeParams, searchParams }:
           key={catalogPath}
           initialProducts={initialCatalog.products}
           facets={facets}
+          promoBanners={promoBanners}
           initialSearch={rawSearch}
           initialSubcat={params.subcat?.trim() || ''}
           initialFilters={{

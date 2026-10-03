@@ -4,7 +4,7 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 5 (deterministic product matching). Persistence/services/UI/scheduler не начаты.
+Последнее обновление: 2026-10-03, конец ЭТАПА 6 (pure observation ingestion + persistence contract). Prisma runtime/UI/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -188,10 +188,11 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ## Current state
 
-ЭТАПЫ 1–5 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–6 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
-`robots.ts`, JSON-LD Product adapter, synthetic fixtures и deterministic matcher (ничто из этого ещё не
-вызывается из runtime-кода). Нет: persistence/services с Prisma-запросами, API, UI, scheduler.
+`robots.ts`, JSON-LD Product adapter, synthetic fixtures, deterministic matcher и pure ingestion service с
+repository port/fake tests (ничто из этого ещё не вызывается из runtime-кода). Нет: Prisma repository,
+DB-backed services, API, UI, scheduler.
 
 ## Completed
 
@@ -203,10 +204,12 @@ confidence mapping, conflicts и ограничения подробно опи�
       domain-валидация конкурента ужесточена до https-only; 212 новых тестов.
 - [x] ЭТАП 4: `CompetitorAdapter` types + `jsonld-product`, только синтетические fixtures; 43 новых unit-теста.
 - [x] ЭТАП 5: pure deterministic matching + conservative normalization + Stage 4 price audit; 64 новых теста.
+- [x] ЭТАП 6: pure observation ingestion + узкий atomic repository contract + test-only transactional fake;
+      append/touch/failure/idempotency/concurrency semantics; 35 новых тестов.
 
 ## Remaining
 
-- [ ] ЭТАП 6 observations/persistence. ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
+- [ ] ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
 - [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
 ## Important decisions
@@ -265,6 +268,18 @@ confidence mapping, conflicts и ограничения подробно опи�
 28. (ЭТАП 5) Existing confirmed/manual всегда protected. Rejected candidate исключён при том же pair evidenceKey;
     legacy rejection без fingerprint исключён до ручной очистки; повторная оценка допустима только при новом
     нормализованном evidence.
+29. (ЭТАП 6) Observation ingestion не зависит от match: история принадлежит `CompetitorProduct` и может
+    собираться до подтверждения связи с Hairshop `Product`. Matcher/recommendation не вызываются автоматически.
+30. (ЭТАП 6) `checkedAt` — server-controlled время фактической попытки и монотонный event key для одного
+    `CompetitorProduct`: равное значение = replay/no-op, меньшее = stale/no-op, новая retry-попытка получает новое
+    время. `observedAt` = первое появление последовательного состояния; `lastSeenAt` = последнее успешное
+    подтверждение; `lastCheckAt` обновляется и при ошибке; `lastObservedAt` — только при успехе.
+31. (ЭТАП 6) Read latest → append/touch → update operational state обязаны быть одной атомарной транзакцией,
+    сериализованной на `CompetitorProduct` (или с эквивалентным row-lock/serializable retry). Touch условный по
+    latest row id + stateHash; конфликт не превращается в append.
+32. (ЭТАП 6) Цена не дублируется в `CompetitorProduct`: источник истины — последняя observation. Там остаются
+    только `lastAvailability`, last check/success timestamps, status/error и `consecutiveFailures`. Существующая
+    schema уже имеет first/last seen и `seenCount`, поэтому schema/pending migration не менялись.
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -536,6 +551,68 @@ Known limitations: нет brand alias table; multilingual title aliases огра
 используются; alternate Product titles не объединяются; matcher не выполняет DB candidate lookup и не знает
 фактическое распределение дублей. Это сознательные fail-closed границы до persistence/UI и проверки бизнеса.
 
+## Stage 6 — Observation ingestion
+
+### Boundary
+
+- Pure/domain остаётся в `observation.ts`: `normalizeObservation` превращает однозначные decimal strings в
+  integer cents либо типизированный failure; `observationStateHash` канонизирует regular/sale/currency/
+  availability; `observationWriteAction` сравнивает только с ПОСЛЕДНИМ state hash.
+- `observation-ingestion.ts` — pure orchestration без Prisma/DB/env/network. Получает identity `Competitor` +
+  `CompetitorProduct`, server-controlled event context, adapter/fetch outcome и repository port. Возвращает
+  `success append|touch`, `parse_failure`, `fetch_failure`, `blocked`, `rate_limited` либо idempotent `no_op` с
+  delta будущих run counters (`productsChecked`, observations created/unchanged, parse/fetch failures).
+- `observation-repository.ts` — узкий use-case contract. Money пересекает boundary только как integer cents;
+  будущий Prisma adapter сам конвертирует cents ↔ Decimal. Production implementation на ЭТАПЕ 6 отсутствует.
+- Test-only fake находится внутри `observation-ingestion.test.ts`: отдельные истории, transactional copy/commit,
+  rollback при throw и очередь, сериализующая concurrent calls одного competitor product.
+
+### Append/touch, timestamps и identity
+
+State hash включает canonical regular cents, sale cents, EUR и availability. Effective price отдельно не
+хранится: это будущая проекция правил из regular/sale. Изменение любого поля hash создаёт APPEND; равенство
+последней строки создаёт TOUCH. Поиск старой строки с тем же hash запрещён, поэтому €10→€12→€10 = три строки.
+InStock→OutOfStock→InStock при неизменной цене также = три строки.
+
+- APPEND: `observedAt = lastSeenAt = checkedAt`, `seenCount=1`, `firstRunId=lastRunId=runId`.
+- TOUCH: `observedAt`/`firstRunId` неизменны; `lastSeenAt=checkedAt`, `seenCount += 1`, обновляется `lastRunId`.
+- `CompetitorProduct.lastCheckAt` = последняя обработанная попытка (успех или failure).
+- `CompetitorProduct.lastObservedAt` и `lastAvailability` меняются только после валидного observation;
+  failure сохраняет последнюю известную цену/availability и не двигает observation.lastSeenAt.
+- Деньги не копируются в `CompetitorProduct`: current price однозначно читается из latest observation.
+- Observation всегда содержит оба ключа: `competitorProductId` и его `competitorId`; Hairshop `Product`/match
+  не входят в ingestion identity.
+
+### Idempotency, failures и transaction requirement
+
+Для одного `CompetitorProduct` `checkedAt` должен строго расти между реальными polling attempts. Повтор с тем
+же временем считается replay и не пишет ничего/не увеличивает counters; событие старше `lastCheckAt` считается
+stale. Две конкурентные обработки одного event сериализуются: одна коммитит, вторая видит replay. Два отдельных
+последовательных tick с тем же состоянием имеют разные `checkedAt`, поэтому второй корректно TOUCH-ит строку.
+Retry после transient failure — новая фактическая попытка с новым server time; успех создаёт/touch-ит observation,
+сбрасывает error и `consecutiveFailures`.
+
+Adapter failures (включая invalid/zero/non-EUR price, missing currency, no/ambiguous Product/Offers и JSON-LD
+limits), transient fetch, BLOCKED и 429 не создают и не touch-ят observation. Они возвращаются структурированно,
+обновляют только operational status/error/`consecutiveFailures`; raw HTML/error text не сохраняются. Для
+future adapters в `ParseFailureCode` добавлены fail-closed коды `ambiguous_product`/`ambiguous_offers`.
+
+Будущий PostgreSQL adapter обязан выполнить snapshot/latest read, решение и conditional append/touch вместе с
+operational update в одной транзакции для product row. `touchLatestObservation` обязан проверить latest id +
+stateHash; race/conflict должен привести к transaction retry/error, а не к дублирующему append. Distributed lock
+здесь не моделируется; scheduler lease остаётся ЭТАПОМ 9.
+
+### Schema audit и known limitations
+
+`CompetitorPriceObservation.observedAt/lastSeenAt/seenCount/firstRunId/lastRunId`, index
+`(competitorProductId, observedAt)` и operational поля `CompetitorProduct` полностью покрывают контракт.
+Schema и pending migration НЕ менялись. `updatedAt` для исторической семантики не используется.
+
+Ограничение: monotonic event identity основана на millisecond `checkedAt`; будущий caller обязан выдавать
+уникальное строго возрастающее время отдельным attempts одного product. Prisma adapter и DB race tests намеренно
+отложены до явного разрешения non-production DB и применения pending migration; текущий fake доказывает service
+semantics, но не PostgreSQL isolation/locking.
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -597,6 +674,13 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
   duplicate/rejected/existing-match policies, 31 tests.
 - `lib/competitor-pricing/adapters/jsonld-product.ts` + `.test.ts` — ambiguous single-separator prices теперь
   fail closed; 9 дополнительных price-format regressions (adapter suite теперь 52).
+ЭТАП 6:
+- `lib/competitor-pricing/observation-repository.ts` — persistence shapes в integer cents, atomic transaction port,
+  append/conditional-touch/operational-state commands; без Prisma implementation.
+- `lib/competitor-pricing/observation-ingestion.ts` — orchestration, typed outcomes/counter deltas,
+  monotonic-event idempotency, append/touch и failure state transitions.
+- `lib/competitor-pricing/observation-ingestion.test.ts` — test-only transactional in-memory fake и 35 тестов.
+- `lib/competitor-pricing/adapters/types.ts` — parse failure codes `ambiguous_product`/`ambiguous_offers`.
 
 ## Tests
 
@@ -640,6 +724,18 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `npm run audit:security` → passed, 1768 files; `npm run check:encoding` → passed, 1201 source files.
 - Prisma schema/migration не менялись; production DB, integration/e2e/build и внешняя сеть не использовались.
 
+ЭТАП 6 (2026-10-03):
+- Ingestion + observation domain targeted → 2 файла, 51 passed (35 ingestion + 16 observation).
+- Matching + adapter regressions → 3 файла, 107 passed.
+- `lib/competitor-pricing` → 12 файлов, 363 passed, 4 skipped (те же openssl-dependent TLS tests;
+  ingestion/matching/adapter tests без skip).
+- `npm run test:unit` → 294 файла, 2370 passed, 4 skipped. Прогон включал существующие чужие изменения
+  `lib/product-form-mapping*` и другие текущие unit-файлы репозитория.
+- `npx tsc --noEmit` → 0; ESLint изменённых TS-файлов → 0; `git diff --check` → чисто.
+- `npm run audit:security` → passed, 1771 project files; `npm run check:encoding` → passed, 1204 source files.
+- Prisma schema/pending migration не менялись; production DB, integration/e2e/build, scheduler и внешняя сеть
+  не использовались. `prisma validate/generate` не требовались и не запускались.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -670,6 +766,11 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 hard conflicts не скрываются сильным identifier; rejected/trusted decisions защищены. Matcher pure, не импортирует
 Prisma, не читает env/DB/сеть и не пишет цены. Ambiguous JSON-LD price separators теперь fail closed.
 
+ЭТАП 6 (persistence-boundary, протестировано): typed failures не создают и не подтверждают price rows; replay и
+stale events fail closed без counters; competitor ownership проверяется; histories изолированы; money остаётся
+integer cents; atomic contract требует conditional latest touch и сериализацию per product. Service/fake не
+импортируют Prisma Client, не читают env/DB/сеть, не меняют Product.price/matches/recommendations.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
@@ -680,21 +781,21 @@ Prisma, не читает env/DB/сеть и не пишет цены. Ambiguous
 - Branch: `main`. HEAD на старте задачи: `67589105`.
 - Коммиты задачи: `627c0b5d` (ЭТАП 1, docs), `fec60300` (ЭТАП 2), коммит ЭТАПА 3
   `b7afb2eb` (`feat(pricing): safe competitor fetch infrastructure`), коммит ЭТАПА 4
-  `2b181078` (`feat(pricing): parse JSON-LD competitor products`), коммит ЭТАПА 5
-  `feat(pricing): add deterministic competitor matching` (хэш — `git log --oneline -6`).
+  `2b181078` (`feat(pricing): parse JSON-LD competitor products`), коммит ЭТАПА 5 `8f3f01a1`
+  (`feat(pricing): add deterministic competitor matching`), коммит ЭТАПА 6
+  `feat(pricing): add observation ingestion service` (хэш — `git log --oneline -7`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 6: observation ingestion/persistence boundary. Сначала спроектировать pure orchestration + repository port
-для `ParsedListing` → normalized observation → stateHash → append/touch, timestamps, `seenCount`, run counters и
-typed parse/fetch failures; fake repository tests должны доказать A→B→A, concurrency/idempotency и отсутствие
-строки на parse failure. Затем отдельно определить Prisma transaction implementation для
-`CompetitorProduct`/`CompetitorPriceObservation`/`CompetitorMonitorRun` и race-safe conditional touch/append.
+ЭТАП 7: pure analysis/recommendation engine без Prisma/runtime wiring. На integer cents отбирать только trusted
+(`confirmed`/`manual`) matches с EUR observations не старше `maxObservationAgeHours`; отдельно учитывать
+availability, sale-price rule, minimumCompetitors, IQR outliers, median, minimum difference и max increase/decrease;
+строить детерминированный immutable input snapshot/hash/reason/confidence и тестировать stale/edge cases. Не писать
+`Product.price`, не создавать Prisma repository/API/UI и не запускать DB/integration/build.
 
-**Стоп перед любым runtime Prisma path/DB test:** pending migration всё ещё не применена, `.env.local` указывает
-на production. Не подключаться к БД, не применять migration и не запускать integration/build. Если для проверки
-persistence нужна non-production DB/Neon branch — сначала получить отдельное решение пользователя. До этого
-допустимы только pure/fake-repository unit tests и не подключённый к runtime Prisma code.
+**Стоп перед любым runtime Prisma path/DB test остаётся:** pending migration не применена, `.env.local` указывает
+на production. Prisma observation repository — отдельная будущая работа только после явного решения по
+non-production DB/application of migration; ЭТАП 7 должен оставаться pure.

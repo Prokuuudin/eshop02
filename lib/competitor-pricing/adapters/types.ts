@@ -22,7 +22,9 @@ export type ParseFailureCode =
   | 'invalid_jsonld'
   | 'jsonld_too_complex'
   | 'no_product'
+  | 'ambiguous_product'
   | 'no_offer'
+  | 'ambiguous_offers'
 
 export type ParseFailure = {
   ok: false

@@ -430,6 +430,10 @@ model Product {
   manualPriceApproved Boolean  @default(false)
   manualApprovedPrice Decimal? @db.Decimal(12, 2)
 
+  // Competitor pricing (read-only consumers of Product.price; never written by sync).
+  competitorMatches      CompetitorProductMatch[]
+  pricingRecommendations PricingRecommendation[]
+
   @@index([isDeleted])
   @@index([category])
   @@index([isDeleted, category])
@@ -795,4 +799,201 @@ model WebhookDeliveryLog {
 
   @@index([companyId])
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Competitor pricing monitor (docs/COMPETITOR-PRICING-CONTINUATION.md).
+// Status-like columns are plain strings (project convention: no Prisma enums);
+// allowed values and transitions live in lib/competitor-pricing/*.
+// The module only reads Product.price; it never writes ERP-owned data.
+// ---------------------------------------------------------------------------
+
+model Competitor {
+  id                  String    @id
+  name                String
+  baseUrl             String
+  // Canonical lowercase hostname of baseUrl; one Competitor per host.
+  hostname            String    @unique
+  // Exact hostnames product URLs may use (always includes hostname).
+  allowedHosts        String[]
+  adapterKey          String
+  enabled             Boolean   @default(false)
+  // active | paused | blocked (blocked = source refused automated access; manual resume only)
+  status              String    @default("active")
+  statusReason        String?
+  // Why monitoring this source is permitted (agreement, public pricing, etc.). Required.
+  accessBasisNote     String
+  pollIntervalMinutes Int       @default(1440)
+  requestDelayMs      Int       @default(5000)
+  maxConcurrency      Int       @default(1)
+  timeoutMs           Int       @default(15000)
+  maxResponseBytes    Int       @default(2000000)
+  maxProductsPerRun   Int       @default(200)
+  lastCheckedAt       DateTime?
+  lastSuccessAt       DateTime?
+  lastErrorAt         DateTime?
+  lastError           String?
+  consecutiveFailures Int       @default(0)
+  createdById         String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  products     CompetitorProduct[]
+  observations CompetitorPriceObservation[]
+
+  @@index([enabled, status])
+}
+
+model CompetitorProduct {
+  id                  String     @id
+  competitorId        String
+  competitor          Competitor @relation(fields: [competitorId], references: [id], onDelete: Restrict)
+  // Canonical URL; its host must be one of competitor.allowedHosts (enforced in the domain layer).
+  url                 String
+  sourceProductId     String?
+  title               String?
+  brand               String?
+  ean                 String?
+  manufacturerSku     String?
+  sizeText            String?
+  // in_stock | out_of_stock | preorder | unknown
+  lastAvailability    String?
+  lastObservedAt      DateTime?
+  // active | paused | gone
+  monitoringState     String     @default("active")
+  lastCheckAt         DateTime?
+  // ok | parse_error | fetch_error | blocked | not_found
+  lastCheckStatus     String?
+  lastError           String?
+  consecutiveFailures Int        @default(0)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  matches      CompetitorProductMatch[]
+  observations CompetitorPriceObservation[]
+
+  @@unique([competitorId, url])
+  @@index([competitorId, monitoringState])
+  @@index([ean])
+  @@index([manufacturerSku])
+}
+
+model CompetitorProductMatch {
+  id                  String            @id
+  productId           String
+  product             Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  competitorProductId String
+  competitorProduct   CompetitorProduct @relation(fields: [competitorProductId], references: [id], onDelete: Cascade)
+  // confirmed | manual | likely | ambiguous | rejected
+  status              String
+  // ean | sku | title | manual
+  method              String
+  // 0..1 score for automatic methods; null for manual decisions.
+  confidence          Decimal?          @db.Decimal(4, 3)
+  // = competitorProductId while status is confirmed/manual, otherwise null. The unique
+  // index makes "one competitor product -> one trusted Product" a database guarantee.
+  exclusiveKey        String?           @unique
+  decidedById         String?
+  decidedAt           DateTime?
+  note                String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([productId, competitorProductId])
+  @@index([competitorProductId])
+  @@index([productId, status])
+}
+
+// Change-only history: a row is appended only when the normalized state
+// (regular, sale, currency, availability) differs from the latest row;
+// otherwise lastSeenAt/seenCount are refreshed. Parse failures never create rows.
+model CompetitorPriceObservation {
+  id                  String            @id
+  competitorProductId String
+  competitorProduct   CompetitorProduct @relation(fields: [competitorProductId], references: [id], onDelete: Cascade)
+  competitorId        String
+  competitor          Competitor        @relation(fields: [competitorId], references: [id], onDelete: Restrict)
+  regularPrice        Decimal?          @db.Decimal(12, 2)
+  salePrice           Decimal?          @db.Decimal(12, 2)
+  currency            String            @db.VarChar(3)
+  availability        String
+  stateHash           String
+  observedAt          DateTime
+  lastSeenAt          DateTime
+  seenCount           Int               @default(1)
+  firstRunId          String?
+  lastRunId           String?
+
+  @@index([competitorProductId, observedAt])
+  @@index([competitorId, observedAt])
+  @@index([observedAt])
+}
+
+model PricingRecommendation {
+  id                String    @id
+  productId         String
+  product           Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  // pending | ignored | erp_pending | applied | erp_applied | stale
+  status            String    @default("pending")
+  // local (externalId null at calculation: in-app Apply allowed) | erp (ERP-owned price: ERP workflow only)
+  priceAuthority    String
+  currency          String    @default("EUR") @db.VarChar(3)
+  currentPrice      Decimal   @db.Decimal(12, 2)
+  recommendedPrice  Decimal   @db.Decimal(12, 2)
+  difference        Decimal   @db.Decimal(12, 2)
+  differencePercent Decimal   @db.Decimal(7, 2)
+  marketMin         Decimal   @db.Decimal(12, 2)
+  marketMedian      Decimal   @db.Decimal(12, 2)
+  marketMax         Decimal   @db.Decimal(12, 2)
+  competitorCount   Int
+  // high | medium
+  confidence        String
+  reasonCode        String
+  reasonParams      Json?
+  // Immutable inputs (product price/revision, used observations, rules) and their sha256.
+  inputSnapshot     Json
+  inputHash         String
+  algorithmVersion  String
+  productRevision   Int
+  calculatedAt      DateTime  @default(now())
+  expiresAt         DateTime
+  // = productId while status is pending/erp_pending: at most one open recommendation per product.
+  openKey           String?   @unique
+  closedReason      String?
+  decidedById       String?
+  decidedAt         DateTime?
+  decisionNote      String?
+  appliedPrice      Decimal?  @db.Decimal(12, 2)
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([productId, calculatedAt])
+  @@index([status, calculatedAt])
+}
+
+model CompetitorMonitorRun {
+  id                    String    @id
+  // running | completed | partial | failed | skipped
+  status                String    @default("running")
+  // scheduled | manual
+  triggeredBy           String
+  triggeredById         String?
+  startedAt             DateTime  @default(now())
+  finishedAt            DateTime?
+  competitorsAttempted  Int       @default(0)
+  competitorsSucceeded  Int       @default(0)
+  competitorsFailed     Int       @default(0)
+  competitorsBlocked    Int       @default(0)
+  productsChecked       Int       @default(0)
+  observationsCreated   Int       @default(0)
+  observationsUnchanged Int       @default(0)
+  parseFailures         Int       @default(0)
+  fetchFailures         Int       @default(0)
+  // Bounded sample of { competitorId, url, code, message }; never raw HTML.
+  errorSample           Json?
+  summary               Json?
+
+  @@index([startedAt])
+  @@index([status])
 }

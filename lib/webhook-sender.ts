@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import dns from 'node:dns/promises'
-import net from 'node:net'
+import { isBlockedIp } from '@/lib/net-ip-guard'
 import {
   getActiveEndpointsForEvent,
   saveWebhookDeliveryLog,
@@ -16,56 +16,6 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 const signPayload = (secret: string, payload: string): string => {
   return crypto.createHmac('sha256', secret).update(payload).digest('hex')
-}
-
-const ipv4ToLong = (ip: string): number =>
-  ip.split('.').reduce((acc, octet) => (acc << 8) + Number(octet), 0) >>> 0
-
-// Loopback / private / link-local / multicast / reserved ranges — includes 169.254.169.254 (cloud metadata).
-const isPrivateIPv4 = (ip: string): boolean => {
-  const long = ipv4ToLong(ip)
-  const ranges: Array<[string, number]> = [
-    ['0.0.0.0', 8],
-    ['10.0.0.0', 8],
-    ['100.64.0.0', 10],
-    ['127.0.0.0', 8],
-    ['169.254.0.0', 16],
-    ['172.16.0.0', 12],
-    ['192.0.0.0', 24],
-    ['192.0.2.0', 24],
-    ['192.88.99.0', 24],
-    ['192.168.0.0', 16],
-    ['198.18.0.0', 15],
-    ['198.51.100.0', 24],
-    ['203.0.113.0', 24],
-    ['224.0.0.0', 4],
-    ['240.0.0.0', 4]
-  ]
-  return ranges.some(([base, bits]) => {
-    const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0
-    return (long & mask) === (ipv4ToLong(base) & mask)
-  })
-}
-
-// DNS-resolved IPv6 addresses come back canonicalized, so leading-hextet prefix checks are reliable
-// (fe80::/10, fc00::/7, ff00::/8 all have a non-zero first hextet and are never compressed away).
-const isPrivateIPv6 = (ipRaw: string): boolean => {
-  const ip = ipRaw.toLowerCase().split('%')[0]
-  if (ip === '::1' || ip === '::') return true
-  if (ip.startsWith('fe8') || ip.startsWith('fe9') || ip.startsWith('fea') || ip.startsWith('feb')) return true // fe80::/10
-  if (ip.startsWith('fc') || ip.startsWith('fd')) return true // fc00::/7 (ULA)
-  if (ip.startsWith('ff')) return true // ff00::/8 (multicast)
-
-  const mapped = ip.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/)
-  if (mapped) return isPrivateIPv4(mapped[1])
-
-  return false
-}
-
-const isBlockedIp = (ip: string): boolean => {
-  if (net.isIPv4(ip)) return isPrivateIPv4(ip)
-  if (net.isIPv6(ip)) return isPrivateIPv6(ip)
-  return true // unrecognized address format — fail closed
 }
 
 /**

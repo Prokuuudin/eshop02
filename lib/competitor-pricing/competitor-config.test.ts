@@ -40,10 +40,11 @@ describe('normalizeCompetitorSource', () => {
     ['javascript scheme', 'javascript:alert(1)'],
     ['credentials', 'https://user:pass@shop.lv'],
     ['non-standard port', 'https://shop.lv:8443'],
-    ['ip literal', 'http://127.0.0.1'],
-    ['metadata ip', 'http://169.254.169.254/latest/meta-data'],
-    ['hex ip', 'http://0x7f.1/'],
-    ['localhost', 'http://localhost:3000'],
+    ['plain http', 'http://shop.lv'],
+    ['ip literal', 'https://127.0.0.1'],
+    ['metadata ip', 'https://169.254.169.254/latest/meta-data'],
+    ['hex ip', 'https://0x7f.1/'],
+    ['localhost', 'https://localhost'],
   ])('rejects %s', (_label, url) => {
     expect(() => normalizeCompetitorSource(url)).toThrow(CompetitorConfigError)
   })
@@ -69,6 +70,7 @@ describe('canonicalizeCompetitorProductUrl', () => {
     ['subdomain not in allowlist', 'https://cdn.shop.lv/p/1'],
     ['credentials', 'https://a:b@shop.lv/p/1'],
     ['port', 'https://shop.lv:444/p/1'],
+    ['plain http', 'http://shop.lv/p/1'],
     ['scheme', 'file:///etc/passwd'],
   ])('rejects %s', (_label, url) => {
     expect(() => canonicalizeCompetitorProductUrl(url, hosts)).toThrow(CompetitorConfigError)
@@ -92,7 +94,8 @@ describe('validateCompetitorInput', () => {
     ['too frequent polling', { pollIntervalMinutes: 5 }],
     ['huge response limit', { maxResponseBytes: 50_000_000 }],
     ['credentials field', { password: 'secret' }],
-    ['private base url', { baseUrl: 'http://192.168.1.10' }],
+    ['private base url', { baseUrl: 'https://192.168.1.10' }],
+    ['http base url', { baseUrl: 'http://example-beauty.lv' }],
   ])('rejects %s', (_label, patch) => {
     expect(validateCompetitorInput({ ...validInput, ...patch }).ok).toBe(false)
   })

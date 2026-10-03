@@ -35,7 +35,7 @@ export function normalizePublicHostname(raw: string): string | null {
   return host
 }
 
-function parseHttpUrl(raw: string, code: string): URL {
+function parseHttpsUrl(raw: string, code: string): URL {
   if (typeof raw !== 'string' || raw.length === 0 || raw.length > MAX_URL_LENGTH) {
     throw new CompetitorConfigError(code, 'URL is empty or too long')
   }
@@ -45,7 +45,8 @@ function parseHttpUrl(raw: string, code: string): URL {
   } catch {
     throw new CompetitorConfigError(code, 'URL is not valid')
   }
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new CompetitorConfigError(code, 'Only http/https URLs are allowed')
+  // https only: the network layer (safe-fetch) never fetches plain http in production.
+  if (url.protocol !== 'https:') throw new CompetitorConfigError(code, 'Only https URLs are allowed')
   if (url.username || url.password) throw new CompetitorConfigError(code, 'URLs with credentials are not allowed')
   // URL() already drops default ports, so any remaining port is non-standard.
   if (url.port) throw new CompetitorConfigError(code, 'Non-standard ports are not allowed')
@@ -60,7 +61,7 @@ function relatedHosts(a: string, b: string): boolean {
 export type NormalizedCompetitorSource = { baseUrl: string; hostname: string; allowedHosts: string[] }
 
 export function normalizeCompetitorSource(baseUrlRaw: string, extraHosts: readonly string[] = []): NormalizedCompetitorSource {
-  const url = parseHttpUrl(baseUrlRaw, 'invalid_base_url')
+  const url = parseHttpsUrl(baseUrlRaw, 'invalid_base_url')
   const hostname = normalizePublicHostname(url.hostname)
   if (!hostname) throw new CompetitorConfigError('invalid_base_url', 'Base URL must use a public DNS hostname')
   const allowedHosts = [hostname]
@@ -79,7 +80,7 @@ export function normalizeCompetitorSource(baseUrlRaw: string, extraHosts: readon
  * (exact match), fragment and known tracking parameters are removed.
  */
 export function canonicalizeCompetitorProductUrl(raw: string, allowedHosts: readonly string[]): string {
-  const url = parseHttpUrl(raw, 'invalid_product_url')
+  const url = parseHttpsUrl(raw, 'invalid_product_url')
   const host = normalizePublicHostname(url.hostname)
   if (!host || !allowedHosts.includes(host)) {
     throw new CompetitorConfigError('foreign_host', 'URL host does not belong to this competitor')

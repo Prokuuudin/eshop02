@@ -4,8 +4,8 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 2 (schema + domain model). Scraping/fetch/UI не начаты.
-Миграция НЕ применена ни к одной БД.
+Последнее обновление: 2026-10-03, конец ЭТАПА 3 (безопасный сетевой слой). Adapters/scraping/UI/scheduler не начаты.
+Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
 
@@ -118,13 +118,7 @@ Pricing rules — KV `competitor-pricing-rules` + zod (`lib/competitor-pricing/s
 
 ### Fetch / security
 
-- `lib/competitor-pricing/safe-fetch.ts`: node:https с кастомным `lookup`, валидирующим КАЖДЫЙ resolved IP
-  (закрывает DNS rebinding — соединение идёт на проверенный адрес); только http/https, порт 80/443;
-  host ∈ competitor.allowedHosts; запрет IP-литералов/localhost/private/link-local/metadata; ручные
-  redirect ≤ 3 с повторной проверкой host+IP; timeout; потоковый лимит байт; gzip/br распаковка с лимитом
-  на выходе (decompression bomb); content-type только text/html / application/(ld+)json; честный UA
-  `HairshopProPriceMonitor/1.0 (+https://hairshoppro.lv)`; без прокси/ротации.
-- IP-блок-лист извлечь из `lib/webhook-sender.ts` в общий `lib/net-ip-guard.ts` (webhook-тесты должны пройти).
+РЕАЛИЗОВАНО в ЭТАПЕ 3 — подробности в разделе «Stage 3 — Safe networking».
 - robots.txt соблюдается всегда (не настраивается админом; кэш на прогон); Disallow → BLOCKED.
 - 401/403/CAPTCHA/challenge (cf-mitigated, известные маркеры) → BLOCKED, сбор с источника остановлен до
   ручного возобновления, без retry. 429 → стоп источника на этот прогон. Retry (≤2, exp backoff) только
@@ -187,9 +181,10 @@ LIKELY/AMBIGUOUS. В рекомендациях по умолчанию толь
 
 ## Current state
 
-ЭТАП 1 и ЭТАП 2 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), чистый
-domain-слой `lib/competitor-pricing/*` (без БД/сети) с unit-тестами. Нет: fetch, adapters, сервисов с
-Prisma-запросами, API, UI, scheduler.
+ЭТАПЫ 1–3 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+`lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
+`robots.ts` (ни один ещё не вызывается из runtime-кода). Нет: adapters, сервисов с Prisma-запросами, API,
+UI, scheduler.
 
 ## Completed
 
@@ -197,10 +192,11 @@ Prisma-запросами, API, UI, scheduler.
       SSRF utils, тестов, миграций, графиков, i18n; архитектура.
 - [x] ProductOverride pricing audit (read-only, см. отдельный раздел).
 - [x] ЭТАП 2: schema + pending migration + rollback.sql + domain helpers + 107 unit-тестов.
+- [x] ЭТАП 3: `lib/net-ip-guard.ts` (webhook-sender переведён на него), `safe-fetch.ts`, `robots.ts`,
+      domain-валидация конкурента ужесточена до https-only; 212 новых тестов.
 
 ## Remaining
 
-- [ ] ЭТАП 3 safe-fetch + ip-guard + robots (тесты на локальном HTTP-сервере/моках, без внешней сети).
 - [ ] ЭТАП 4 adapter jsonld-product + локальные HTML fixtures.
 - [ ] ЭТАП 5 matching. ЭТАП 6 observations. ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
 - [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
@@ -229,6 +225,15 @@ Prisma-запросами, API, UI, scheduler.
     создаётся; плюс CHECK-constraints в БД (цены > 0, хотя бы одна цена, currency `^[A-Z]{3}$`).
 13. (ЭТАП 2) Валюта: v1 только EUR, без FX.
 14. (ЭТАП 2) `respectRobotsTxt` убран из модели: соблюдение robots.txt не отключаемо.
+15. (ЭТАП 3) ProductOverride money path — признан technical debt, отдельная будущая задача; в рамках
+    competitor-pricing НЕ исправлять. **Стоп-условие:** если новый код начинает создавать или читать денежные
+    поля ProductOverride — остановиться. Модуль использует только `Product.price` и `applyProductChanges`.
+16. (ЭТАП 3) Production fetch — только https; http возможен лишь через test-only транспорт
+    (`createTestSafeFetch`, бросает вне Vitest). В Competitor нет и не будет опций allowHttp / TLS-off / proxy.
+    Domain-валидация (baseUrl, URL товара) тоже https-only.
+17. (ЭТАП 3) DNS: все ответы должны быть публичными, иначе хост отклоняется целиком (mixed public/private →
+    `unsafe_address`); соединение — на IP-литерал из того же ответа, повторного lookup нет.
+18. (ЭТАП 3) robots.txt fail-safe: недоступен/ошибка → запрет (кроме 404/410 → разрешено).
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -285,6 +290,131 @@ Apply на ЭТАПЕ 8 дополнительно перепроверяет ex
   витрина могла бы показывать иное — сейчас таких 0. Можно в ЭТАПЕ 8 показывать предупреждение, если у
   товара есть price-override.
 
+## Stage 3 — Safe networking
+
+### Architecture
+
+```
+safeFetch({url, allowedHosts, contentPolicy:'html'|'robots', limits})
+  └─ checkTargetUrl: https only · no credentials · no explicit port · public DNS hostname · exact ∈ allowedHosts
+  └─ per hop (initial + each redirect, ≤ 3):
+       resolve(hostname) ONCE → every answer must pass isBlockedIp → else unsafe_address
+       net.connect({host: <validated IP literal>, lookup: refuseLookup})      ← нет второго DNS-запроса
+       peer = socket.remoteAddress → must equal chosen IP and pass isBlockedIp ← до отправки первого байта
+       https: tls.connect({socket, servername: hostname}) — проверка цепочки и имени, системные CA
+       http.request({createConnection: () => socket, Host, honest UA, Accept, Accept-Encoding: gzip, br})
+       3xx → resolveRedirectTarget (relative OK, no downgrade, same URL policy) · loop/too-many detection
+       non-2xx / cf-mitigated → errorForStatus (challenge detection only on 403/429/503 sample ≤ 32 КБ)
+       2xx → Content-Type allowlist → Content-Encoding allowlist → Content-Length precheck → streaming read
+```
+
+Production транспорт заморожен (`PRODUCTION_TRANSPORT`): `dns.lookup({all:true, verbatim:true})`, `isBlockedIp`,
+https only, системные CA, без прокси/cookies. `createTestSafeFetch` (test-only, бросает вне `VITEST=true`)
+позволяет подменить DNS/адресную политику (в тестах «публичен» только 127.0.0.1 тест-сервера), порт, http и
+доп. CA для тестов.
+
+### IP guard (`lib/net-ip-guard.ts`)
+
+Числовой разбор (IPv6 полностью раскрывается: зоны, встроенный IPv4, некомпрессированные формы), не строковые
+префиксы. Заблокировано: IPv4 0/8, 10/8, 100.64/10, 127/8, 169.254/16, 172.16/12, 192.0.0/24, 192.0.2/24,
+192.88.99/24, 192.168/16, 198.18/15, 198.51.100/24, 203.0.113/24, 224/4, 240/4, 168.63.129.16 (Azure).
+IPv6: всё вне 2000::/3 (::, ::1, ULA fc00::/7, link-local fe80::/10, site-local fec0::/10, multicast, 100::/64),
+2001::/23 (Teredo…), 2001:db8::/32, 3fff::/20, 64:ff9b:1::/48; IPv4-mapped ::ffff:x, NAT64 64:ff9b::/96 и 6to4
+2002::/16 — по встроенному IPv4. Неразборчивое → блок.
+
+Совместимость с webhook-sender: всё, что старая реализация блокировала, блокируется (отдельный тест-список);
+**усиления** (доказаны тестами): site-local fec0::/10, всё вне 2000::/3, Teredo/doc/NAT64-local, 6to4/NAT64 с
+приватным IPv4, IPv4-compatible ::a.b.c.d, hex-форма mapped (::ffff:7f00:1), некомпрессированные формы,
+168.63.129.16. Webhook-sender по-прежнему делает pre-flight DNS + fetch (без IP-pinning) — поведение не
+менялось, известное ограничение (см. Known issues).
+
+### DNS strategy
+
+A и AAAA через `dns.lookup(all, verbatim)`; пусто → `dns_error`; любой заблокированный ответ → весь хост
+`unsafe_address` (blocking); подключение к первому ответу как IP-литералу; поздний ответ DNS после
+connect-timeout не открывает сокет (`hop.aborted`). ENOTFOUND → `dns_error` (не retry), EAI_AGAIN → retryable.
+
+### Limits (жёсткие границы; конкурент может только ужесточить)
+
+| limit | min | max | default |
+|---|---|---|---|
+| connectTimeoutMs (DNS+TCP+TLS, на hop) | 200 | 10 000 | 5 000 |
+| headersTimeoutMs (на hop) | 200 | 20 000 | 10 000 |
+| totalTimeoutMs (всё, вкл. редиректы и тело) | 500 | 30 000 | 20 000 |
+| maxBodyBytes (на проводе) | 1 024 | 5 000 000 | 2 000 000 |
+| maxDecodedBytes (после распаковки) | 1 024 | 5 000 000 | 5 000 000 |
+| redirects | — | 3 | 3 |
+
+Тело читается потоком; при превышении любого лимита поток уничтожается, накопленное отбрасывается.
+Content-Length больше лимита → отказ до чтения.
+
+### Decompression
+
+identity, gzip/x-gzip, br. deflate НЕ поддерживается (неоднозначный zlib/raw framing, нет необходимости);
+любое другое/цепочки (`gzip, br`) → `unsupported_content_encoding`. Лимит считается по распакованным байтам
+(gzip/br bomb 5 МБ нулей → `decompressed_too_large`); битый/обрезанный поток → `decode_error`.
+Charset из Content-Type (`TextDecoder`, напр. windows-1257); неизвестная метка → UTF-8.
+
+### Content-Type
+
+html: `text/html`, `application/xhtml+xml`; robots: `text/plain`. Параметры (`; charset=…`) учитываются,
+регистр не важен; отсутствие/иное → `unsupported_content_type`.
+
+### robots policy (`lib/competitor-pricing/robots.ts`)
+
+RFC 9309-минимум: группы User-agent (последовательные строки — одна группа), Allow/Disallow, `*`, `$`,
+самое длинное правило побеждает, при равенстве Allow; группа нашего токена `HairshopProPriceMonitor`
+(без учёта регистра/версии) перекрывает `*`; пустой Disallow ничего не запрещает; /robots.txt всегда разрешён;
+glob-сопоставление O(n·m) без regex. Кэш — `RobotsCache` на прогон (один fetch на origin).
+
+| ответ robots.txt | решение |
+|---|---|
+| 200 text/plain | парсить и соблюдать (нераспознанные строки игнорируются → мусор = нет правил) |
+| 404 / 410 | allow (файла нет) |
+| 401 / 403 / challenge | deny всё, blocking (код http_401/http_403/challenge) |
+| 429 | deny на этот прогон (robots_unavailable, retryable) |
+| 5xx, timeout, network, TLS, редирект вне allowlist, не text/plain, > 512 КБ, unsafe_address | deny на этот прогон (robots_unavailable) |
+
+Сбой robots.txt никогда не означает «разрешено».
+
+### Error taxonomy (`SafeFetchErrorCode`)
+
+blocking (монитор переводит конкурента в blocked, без retry): `robots_disallowed`, `unsafe_address`,
+`http_401`, `http_403`, `challenge`.
+retryable (ограниченно, с backoff — реализует монитор): `timeout`, `network_error` (известные transient коды),
+`http_server_error` (только 502/503/504), `dns_error` (только EAI_AGAIN), `robots_unavailable` (только из
+transient причин).
+Остальные (не retry, не blocking): `invalid_url`, `unsupported_scheme`, `credentials_in_url`,
+`port_not_allowed`, `host_not_allowed`, `redirect_rejected`, `too_many_redirects`, `redirect_loop`,
+`tls_error`, `rate_limited` (стоп источника на прогон, `retryAfterSeconds`), `not_found`, `http_error`,
+`response_too_large`, `decompressed_too_large`, `unsupported_content_type`, `unsupported_content_encoding`,
+`decode_error`. Parse-ошибки HTML — отдельный тип адаптера (ЭТАП 4).
+
+Challenge-детект консервативный: заголовок `cf-mitigated: challenge` (любой статус) или маркеры
+(cf-chl-, /cdn-cgi/challenge-platform, g-recaptcha, h-captcha, captcha-delivery.com, _incapsula_resource,
+px-captcha) только в теле 403/429/503. 2xx-страницы на маркеры не проверяются (ложные срабатывания).
+
+Логи: `SafeFetchError.message/toLogContext()` содержат только code/status/detail/URL без query
+(`?[redacted]`) и без credentials; тела, заголовки, cookies не попадают никогда.
+
+### Tests (ЭТАП 3)
+
+`net-ip-guard.test.ts` 94 · `safe-fetch.test.ts` 86 (вкл. 4 реальных TLS-теста с self-signed сертификатом,
+генерируемым openssl во временной папке и удаляемым; если openssl нет — эти 4 пропускаются) ·
+`robots.test.ts` 29 · `competitor-config.test.ts` +3. Всего +212. Сети нет: production-транспорт в тестах с
+замоканным DNS падает до подключения; остальное — loopback-серверы через test-транспорт.
+
+### Known limitations
+
+- Подключение к первому DNS-ответу; без Happy Eyeballs/перебора адресов (ошибка → retry монитором).
+- Нет HTTP/2, keep-alive, conditional requests (ETag) — каждый hop новое соединение.
+- Неизвестная charset-метка → UTF-8.
+- Challenge-детект эвристический и консервативный: CAPTCHA, отданная с 200, не распознаётся (адаптер получит
+  страницу без цены → parse-ошибка, не 0).
+- robots: нет percent-decoding нормализации путей (RFC 9309 §2.2.2), Crawl-delay не читается (вежливость
+  задаётся requestDelayMs конкурента).
+- Webhook-sender не получил IP-pinning (вне scope).
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -327,6 +457,12 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `lib/competitor-pricing/recommendation-state.ts` — state machine, openKey, priceAuthorityFor, actions
 - `lib/competitor-pricing/recommendation-snapshot.ts` — snapshot type, canonical inputHash, ERP-fulfilment check
 - `*.test.ts` рядом для каждого модуля (6 файлов)
+ЭТАП 3:
+- `lib/net-ip-guard.ts` + `.test.ts` — общий IP guard (новый)
+- `lib/webhook-sender.ts` — инлайн-guard удалён, импорт `isBlockedIp` из `lib/net-ip-guard` (логика отправки не менялась)
+- `lib/competitor-pricing/safe-fetch.ts` + `.test.ts` — безопасный fetch, лимиты, классификация ошибок
+- `lib/competitor-pricing/robots.ts` + `.test.ts` — robots.txt парсер/политика/кэш
+- `lib/competitor-pricing/competitor-config.ts` + `.test.ts` — baseUrl и URL товара только https
 
 ## Tests
 
@@ -340,14 +476,31 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
   `npm run build` (= `prisma migrate deploy` на прод), e2e. Для integration-тестов модуля понадобится
   отдельная не-прод БД/Neon-ветка — решение пользователя (на ЭТАП 2 не требовалось).
 
+ЭТАП 3 (2026-10-03):
+- `npx vitest run --config vitest.config.ts lib/net-ip-guard.test.ts lib/webhook-sender.test.ts` → 97 passed
+  (существующие 3 webhook-теста без изменений).
+- `lib/competitor-pricing/*` → safe-fetch 86, robots 29, competitor-config 46 — все passed; TLS-тесты выполнены
+  (не skipped).
+- Весь unit → 290 files, 2232 passed (было 2020).
+- `npx tsc --noEmit` → 0. `npx eslint` изменённых файлов → 0. `git diff --check` → чисто.
+- prisma schema в ЭТАПЕ 3 не менялась (validate не требовался). Миграция всё ещё только в
+  `prisma/pending-migrations/`, в `prisma/migrations/` её нет. Команд, подключающихся к БД, в ЭТАПЕ 3 не было.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
+  Решение пользователя 10-03: technical debt, отдельная будущая задача; см. Important decisions №15 (стоп-условие).
 - `lib/webhook-sender.ts`: SSRF pre-flight без IP-pinning (DNS rebinding) — признано в комментарии.
 
 ## Security
 
-ЭТАП 2 (domain-level, протестировано): только http/https; запрет credentials в URL, нестандартных портов,
+ЭТАП 3 (network-level, протестировано): SSRF (схемы, credentials, порты, IP-литералы, allowlist по точному
+hostname, все DNS-ответы публичны), DNS rebinding (один resolve на hop → connect на IP-литерал → проверка
+peer до отправки запроса), redirect SSRF (каждый hop заново, без downgrade, loop/limit), oversized/
+decompression bomb, неизвестные encoding/content-type, TLS без отключения проверки, robots fail-safe,
+log-safety (без тел/cookies/query). Детали — раздел «Stage 3 — Safe networking».
+
+ЭТАП 2 (domain-level, протестировано; в ЭТАПЕ 3 ужесточено до https-only): запрет credentials в URL, нестандартных портов,
 IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allowedHosts только родственные hostname
 (нет смешивания источников, lookalike `shop.lv.evil.com` отклонён); жёсткие пределы politeness-настроек
 (delay ≥ 1 c, concurrency ≤ 2, poll ≥ 60 мин, ответ ≤ 5 МБ); поля credentials отклоняются strict-схемой.
@@ -361,16 +514,17 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 ## Git
 
 - Branch: `main`. HEAD на старте задачи: `67589105`.
-- Коммиты задачи: `627c0b5d` (ЭТАП 1, docs), коммит ЭТАПА 2 `feat(pricing): competitor pricing schema and domain model`
-  (хэш — `git log --oneline -3`).
+- Коммиты задачи: `627c0b5d` (ЭТАП 1, docs), `fec60300` (ЭТАП 2), коммит ЭТАПА 3
+  `feat(pricing): safe competitor fetch infrastructure` (хэш — `git log --oneline -4`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 3: создать `lib/net-ip-guard.ts`, вынеся `isBlockedIp` (+IPv4/IPv6 диапазоны) из `lib/webhook-sender.ts`
-без изменения поведения (прогнать `lib/webhook-sender.test.ts`), затем `lib/competitor-pricing/safe-fetch.ts`
-(node:https + кастомный `lookup` с проверкой каждого IP, ручные redirect ≤3 с перепроверкой host∈allowedHosts,
-timeout, лимит байт до и после gzip/br, allowlist content-type, честный UA) и `robots.ts`; тесты — только на
-локальном `http.createServer`/моках `dns.lookup`, без внешней сети и без реальных конкурентов.
+ЭТАП 4: создать `lib/competitor-pricing/adapters/types.ts` (`CompetitorAdapter { key; parse(html, url) }` →
+`ParsedListing | ParseFailure`) и `adapters/jsonld-product.ts`: извлечение `<script type="application/ld+json">`
+без DOM/JS, `@graph`/массивы, schema.org Product/Offer/AggregateOffer, price/priceCurrency/availability/gtin*/sku;
+локаль-нормализация цены в строку "12.34" и передача в `normalizeObservation` (никогда 0); лимиты на
+количество/размер JSON-блоков; fixtures — только синтетические HTML-файлы в `lib/competitor-pricing/adapters/__fixtures__/`
+(без HTML реальных конкурентов, без сети).

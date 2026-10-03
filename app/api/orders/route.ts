@@ -1,5 +1,5 @@
 import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
-import { checkoutDeliveryMethodIds } from '@/lib/delivery'
+import { checkoutDeliveryMethodIds, type DeliveryCountry } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { isDeliveryAvailable } from '@/lib/delivery'
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,9 +18,49 @@ import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
-import { ExistingCheckoutOrderError } from '@/lib/orders-data-store'
+import { ExistingCheckoutOrderError, type ServerOrderLegalDetails } from '@/lib/orders-data-store'
+import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT } from '@/lib/orders-data-mapping'
+import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-variants'
+import { buildLineKey } from '@/lib/cart-store'
+import type { SelectedVariant } from '@/data/products'
 
 export const runtime = 'nodejs'
+
+/**
+ * The only checkout fields read from the request body. Everything else on the persisted
+ * order (payment state, prices, totals, item snapshots, ownership) is decided server-side.
+ */
+type CheckoutOrderInput = {
+  firstName?: unknown
+  lastName?: unknown
+  email?: unknown
+  phone?: unknown
+  address?: unknown
+  city?: unknown
+  postalCode?: unknown
+  country?: unknown
+  deliveryMethod?: unknown
+  deliveryLocationId?: unknown
+  pickupStoreId?: unknown
+  paymentMethod?: unknown
+  promoCode?: unknown
+  bonusSpent?: unknown
+  language?: unknown
+  legalDetails?: unknown
+  items?: unknown
+}
+
+type CheckoutLineInput = { id: string; quantity: number; selectedVariants?: SelectedVariant[] }
+
+/** A requested variant does not exist on the product (forged or stale cart). */
+class InvalidVariantSelectionError extends Error {
+  constructor(readonly items: string[]) {
+    super(`Invalid variant selection: ${items.join(', ')}`)
+    this.name = 'InvalidVariantSelectionError'
+  }
+}
+
+const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 
 function interpolate(template: string, vars: Record<string, string>): string {
   return Object.entries(vars).reduce(
@@ -172,36 +212,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
     }
 
-    const { order, turnstileToken } = (await req.json()) as { order?: ServerOrder; turnstileToken?: string }
+    const { order, turnstileToken } = (await req.json()) as { order?: CheckoutOrderInput; turnstileToken?: string }
 
-    if (!order) {
+    if (!order || typeof order !== 'object') {
       return NextResponse.json({ error: 'order payload is required' }, { status: 400 })
     }
 
-    const items = Array.isArray(order.items) ? order.items : []
+    const rawItems: unknown[] = Array.isArray(order.items) ? order.items : []
     const email = typeof order.email === 'string' ? order.email.trim().toLowerCase() : ''
+    const deliveryMethod = text(order.deliveryMethod)
+    const paymentMethod = text(order.paymentMethod)
+    const promoCode = text(order.promoCode).trim() || undefined
     const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
     if (idempotencyKey && (idempotencyKey.length < 8 || idempotencyKey.length > 200)) {
       return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
     }
 
-    // Untrusted client JSON — validate as a loose bag of strings rather than the
-    // discriminated ServerOrderLegalDetails shape the rest of the codebase trusts.
-    const rawLegalDetails = order.legalDetails as Partial<{
-      customerType: string
-      invoicePersonalCode: string
-      companyName: string
-      regNumber: string
-      vatNumber: string
-      legalAddress: string
-      bankName: string
-      iban: string
-    }> | undefined
+    // Untrusted client JSON — validate as a loose bag of values and rebuild the
+    // discriminated ServerOrderLegalDetails shape explicitly (never persisted as sent).
+    const rawLegalDetails = order.legalDetails as Partial<Record<
+      'customerType' | 'invoicePersonalCode' | 'companyName' | 'regNumber' | 'vatNumber' | 'legalAddress' | 'bankName' | 'iban',
+      unknown
+    >> | undefined
     const isCompanyOrder = rawLegalDetails?.customerType === 'company'
 
     // Phone is only required for private customers — the real Hairshop.lv company
     // form doesn't mark it mandatory (companies are reached via the contact email).
-    const requiresHomeAddress = order.deliveryMethod === 'courier'
+    const requiresHomeAddress = deliveryMethod === 'courier'
     const requiredContactFields = isCompanyOrder
       ? [order.firstName, order.lastName, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
       : [order.firstName, order.lastName, order.phone, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
@@ -209,13 +246,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'missing_contact_fields' }, { status: 400 })
     }
 
+    let legalDetails: ServerOrderLegalDetails
     if (isCompanyOrder) {
-      const companyName = rawLegalDetails?.companyName?.trim() ?? ''
-      const regNumber = rawLegalDetails?.regNumber?.trim() ?? ''
-      const vatNumber = rawLegalDetails?.vatNumber ?? ''
-      const legalAddress = rawLegalDetails?.legalAddress?.trim() ?? ''
-      const bankName = rawLegalDetails?.bankName?.trim() ?? ''
-      const iban = rawLegalDetails?.iban?.trim() ?? ''
+      const companyName = text(rawLegalDetails?.companyName).trim()
+      const regNumber = text(rawLegalDetails?.regNumber).trim()
+      const vatNumber = text(rawLegalDetails?.vatNumber).trim()
+      const legalAddress = text(rawLegalDetails?.legalAddress).trim()
+      const bankName = text(rawLegalDetails?.bankName).trim()
+      const iban = text(rawLegalDetails?.iban).trim()
       if (!companyName || !regNumber || !legalAddress) {
         return NextResponse.json({ error: 'missing_legal_details' }, { status: 400 })
       }
@@ -225,69 +263,91 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ) {
         return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
       }
+      legalDetails = {
+        customerType: 'company',
+        companyName,
+        regNumber,
+        ...(vatNumber ? { vatNumber } : {}),
+        legalAddress,
+        bankName,
+        iban,
+      }
     } else if (!rawLegalDetails || rawLegalDetails.customerType === 'individual') {
       const invoicePersonalCode = rawLegalDetails?.invoicePersonalCode
       if (invoicePersonalCode !== undefined && (typeof invoicePersonalCode !== 'string' || invoicePersonalCode.trim().length > 64)) {
         return NextResponse.json({ error: 'invalid_invoice_personal_code' }, { status: 400 })
       }
-      order.legalDetails = {
+      legalDetails = {
         customerType: 'individual',
-        ...(invoicePersonalCode?.trim() ? { invoicePersonalCode: invoicePersonalCode.trim() } : {}),
+        ...(typeof invoicePersonalCode === 'string' && invoicePersonalCode.trim() ? { invoicePersonalCode: invoicePersonalCode.trim() } : {}),
       }
     } else {
       return NextResponse.json({ error: 'invalid_legal_details' }, { status: 400 })
     }
 
     const fieldTooLong =
-      (order.firstName?.length ?? 0) > 100
-      || (order.lastName?.length ?? 0) > 100
+      text(order.firstName).length > 100
+      || text(order.lastName).length > 100
       || email.length > 254
-      || (order.phone?.length ?? 0) > 32
-      || (order.address?.length ?? 0) > 300
-      || (order.city?.length ?? 0) > 100
-      || (order.postalCode?.length ?? 0) > 20
-      || (order.promoCode?.length ?? 0) > 64
+      || text(order.phone).length > 32
+      || text(order.address).length > 300
+      || text(order.city).length > 100
+      || text(order.postalCode).length > 20
+      || (promoCode?.length ?? 0) > 64
     if (fieldTooLong) return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
-    if (items.length < 1 || items.length > 50 || items.some((item) =>
-      typeof item.id !== 'string' || !item.id || item.id.length > 128
-      || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000)) {
+    if (rawItems.length < 1 || rawItems.length > 50 || rawItems.some((raw) => {
+      const item = raw as Record<string, unknown> | null
+      return !item || typeof item !== 'object'
+        || typeof item.id !== 'string' || !item.id || item.id.length > 128
+        || typeof item.quantity !== 'number' || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000
+        || !isSelectedVariantsInput(item.selectedVariants)
+    })) {
       return NextResponse.json({ error: 'invalid_items' }, { status: 400 })
     }
-    if (!(checkoutDeliveryMethodIds as readonly string[]).includes(order.deliveryMethod)) {
+    // Only the product id, quantity and variant choice are read from a line. Title, SKU,
+    // brand, image, price and variant price adjustments come from the DB inside the transaction.
+    const lines: CheckoutLineInput[] = rawItems.map((raw) => {
+      const item = raw as { id: string; quantity: number; selectedVariants?: SelectedVariant[] | null }
+      return {
+        id: item.id,
+        quantity: item.quantity,
+        ...(item.selectedVariants?.length ? { selectedVariants: item.selectedVariants } : {}),
+      }
+    })
+    if (!(checkoutDeliveryMethodIds as readonly string[]).includes(deliveryMethod)) {
       return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
     }
-    if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country)) {
+    if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country as string)) {
       return NextResponse.json({ error: 'invalid_delivery_country' }, { status: 400 })
     }
-    order.country = order.country ?? 'LV'
-    if (!isDeliveryAvailable(order.deliveryMethod, order.country, await getShippingSettings())) {
+    const country = (order.country ?? 'LV') as DeliveryCountry
+    if (!isDeliveryAvailable(deliveryMethod, country, await getShippingSettings())) {
       return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
     }
-    const deliveryLocation = resolveDeliveryLocation(order.deliveryMethod, order.country, order.deliveryLocationId)
-    if (requiresDeliveryLocation(order.deliveryMethod) && !deliveryLocation) {
+    const deliveryLocation = resolveDeliveryLocation(deliveryMethod, country, text(order.deliveryLocationId))
+    if (requiresDeliveryLocation(deliveryMethod) && !deliveryLocation) {
       return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
     }
-    order.deliveryLocation = deliveryLocation ?? undefined
-    const pickupStore = order.deliveryMethod === 'pickup'
+    const pickupStore = deliveryMethod === 'pickup'
       ? stores.find((store) => store.id === order.pickupStoreId)
       : undefined
-    if (order.deliveryMethod === 'pickup' && !pickupStore) {
+    if (deliveryMethod === 'pickup' && !pickupStore) {
       return NextResponse.json({ error: 'invalid_pickup_store' }, { status: 400 })
     }
     // PayPal remains integrated for possible future re-enablement, but customer-initiated
     // payments are temporarily disabled at the public API boundary as well as in the UI.
-    if (order.paymentMethod === 'paypal') {
+    if (paymentMethod === 'paypal') {
       return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
     }
     // Card-at-terminal is office-only (in-person) — never offered as an online checkout method.
     // Paysera (Checkout Modern, sandbox as of 2026-09-07) is the active online gateway.
-    if (!['bank', 'cash', 'paysera'].includes(order.paymentMethod)) {
+    if (!['bank', 'cash', 'paysera'].includes(paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
-    if (order.paymentMethod === 'cash' && (order.deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
+    if (paymentMethod === 'cash' && (deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
       return NextResponse.json({ error: 'cash_payment_unavailable' }, { status: 400 })
     }
 
@@ -324,10 +384,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     await releaseExpiredStockReservations()
-    // The id is server-generated: per-browser client counters collide across customers,
-    // and accepting a client id would let anyone overwrite a foreign order.
-    const { id: ignoredClientId, ...orderFields } = order
-    void ignoredClientId
 
     // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
     // становится адрес выбранного магазина (клиентский адрес для pickup не нужен).
@@ -335,46 +391,96 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ? { address: `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
       : {}
 
+    // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
+    // holds stock for 35 min instead of committing it immediately, same as a guest.
+    const reserveStock = !caller || ['card', 'paysera'].includes(paymentMethod)
+
+    // Explicit whitelist. The order id (server-generated: client counters collide and would
+    // overwrite foreign orders), payment state, ownership, timestamps and all money fields
+    // are never read from the request body.
     const orderBase: Omit<ServerOrder, 'id'> = {
-      ...orderFields,
+      createdAt: new Date().toISOString(),
+      // Line snapshots and totals are filled in by the transactional prepare step below.
+      items: [],
+      subtotal: 0,
+      tax: 0,
+      delivery: 0,
+      discount: 0,
+      total: 0,
+      legalDetails,
+      firstName: text(order.firstName),
+      lastName: text(order.lastName),
+      email,
+      phone: text(order.phone),
+      address: text(order.address),
+      city: text(order.city),
+      postalCode: text(order.postalCode),
       ...pickupAddressPatch,
-      pickupStoreId: pickupStore?.id,
+      country,
+      deliveryMethod,
       deliveryLocation: deliveryLocation ?? undefined,
+      pickupStoreId: pickupStore?.id,
+      paymentMethod,
+      // A new order is unpaid until staff or a verified gateway callback confirms payment;
+      // the provider follows from the validated payment method, never from the client.
+      paymentStatus: 'unpaid',
+      paymentProvider: paymentMethod === 'paysera' ? 'paysera' : 'manual',
+      language: ['ru', 'en', 'lv'].includes(order.language as string) ? order.language as string : 'ru',
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.
       userId: caller?.id,
       companyId: caller?.companyId,
       checkoutKey: idempotencyKey
         ? createHash('sha256').update(`${caller?.id ?? email}:${idempotencyKey}`).digest('hex')
         : undefined,
-      email,
-      createdAt: new Date().toISOString(),
-      // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
-      // holds stock for 35 min instead of committing it immediately, same as a guest.
-      stockReservationStatus: (!caller || ['card', 'paysera'].includes(order.paymentMethod)) ? 'reserved' : 'committed',
-      stockReservedUntil: (!caller || ['card', 'paysera'].includes(order.paymentMethod))
-        ? new Date(Date.now() + 35 * 60 * 1000).toISOString()
-        : undefined,
-      paymentProvider: order.paymentMethod === 'paysera' ? order.paymentMethod : orderFields.paymentProvider,
+      stockReservationStatus: reserveStock ? 'reserved' : 'committed',
+      stockReservedUntil: reserveStock ? new Date(Date.now() + 35 * 60 * 1000).toISOString() : undefined,
     }
 
     const created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
       const pricing = await recomputeOrderPricing({
-        items: items.map((item) => ({ id: item.id, quantity: item.quantity, price: item.price })),
-        promoCode: order.promoCode,
-        country: order.country,
-        deliveryMethod: order.deliveryMethod,
-        bonusSpent: order.bonusSpent,
+        items: lines.map(({ id, quantity }) => ({ id, quantity })),
+        promoCode,
+        country,
+        deliveryMethod,
+        bonusSpent: typeof order.bonusSpent === 'number' ? order.bonusSpent : null,
         userBonusBalance: currentBonusBalance,
         userId: caller?.id,
         email,
       }, tx)
+      // Same transaction as pricing and the stock guard: the snapshot describes exactly the
+      // products that were priced (pricing already rejected anything not purchasable).
+      const products = await tx.product.findMany({
+        where: { id: { in: [...new Set(lines.map((line) => line.id))] } },
+        select: ORDER_ITEM_SNAPSHOT_SELECT,
+      })
+      const productById = new Map(products.map((product) => [product.id, product]))
+      const missing: string[] = []
+      const invalidVariants: string[] = []
+      const snapshotItems = lines.flatMap((line, idx) => {
+        const product = productById.get(line.id)
+        const priced = pricing.items[idx]
+        if (!product || !priced || priced.id !== line.id) {
+          missing.push(line.id)
+          return []
+        }
+        const selectedVariants = resolveSelectedVariants(product.technicalSpecs, line.selectedVariants)
+        if (!selectedVariants) {
+          invalidVariants.push(line.id)
+          return []
+        }
+        return [buildOrderItemSnapshot(product, {
+          quantity: priced.quantity,
+          price: priced.price,
+          lineKey: buildLineKey(product.id, selectedVariants),
+          variantLabel: selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', ') || undefined,
+          selectedVariants,
+        })]
+      })
+      if (missing.length > 0) throw new ProductUnavailableError([...new Set(missing)])
+      if (invalidVariants.length > 0) throw new InvalidVariantSelectionError([...new Set(invalidVariants)])
       return {
         ...orderBase,
-        items: items.map((item, idx) => ({
-          ...item,
-          price: pricing.items[idx]?.price ?? item.price,
-          quantity: pricing.items[idx]?.quantity ?? item.quantity,
-        })),
+        items: snapshotItems,
         subtotal: pricing.subtotal,
         discount: pricing.discount,
         tax: pricing.tax,
@@ -382,7 +488,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         bonusSpent: pricing.bonusSpent || undefined,
         bonusEarned: pricing.bonusEarned || undefined,
         total: pricing.total,
-        promoCode: pricing.promoApplied ? order.promoCode : undefined,
+        promoCode: pricing.promoApplied ? promoCode : undefined,
       }
     })
 
@@ -400,14 +506,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // "success" — if the gateway call fails, fail the local order (releases the stock hold)
     // rather than showing a confirmation screen with no way to actually pay.
     let paymentUrl: string | undefined
-    if (order.paymentMethod === 'paysera') {
+    if (paymentMethod === 'paysera') {
       try {
         const payment = await createPayseraPaymentForOrder(created)
         await updateServerOrderPayment(created.id, { paymentSessionId: payment.payseraOrderId })
         paymentUrl = payment.paymentUrl
       } catch (error) {
         logOperationalEvent({
-          event: `${order.paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: created.id,
+          event: `${paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: created.id,
         }, error)
         await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => {})
         return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
@@ -450,6 +556,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     if (error instanceof ProductUnavailableError) {
       return NextResponse.json({ error: 'product_unavailable', items: error.items }, { status: 409 })
+    }
+    if (error instanceof InvalidVariantSelectionError) {
+      return NextResponse.json({ error: 'invalid_variant', items: error.items }, { status: 400 })
     }
     logOperationalEvent({ event: 'order_create_failed', level: 'error', alert: true, correlationId }, error)
     if (error instanceof InsufficientStockError) {

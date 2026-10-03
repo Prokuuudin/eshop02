@@ -14,7 +14,7 @@ import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDay
 import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
-import { buildOrderData, mapDbToServerOrder } from '@/lib/orders-data-mapping'
+import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder } from '@/lib/orders-data-mapping'
 import { PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
@@ -355,20 +355,12 @@ export async function updateServerOrderByAdmin(
 
     const items: ServerOrderItem[] = input.items.map((item) => {
       const product = byId.get(item.id)!
-      return {
-        id: product.id,
-        title: product.title,
-        brand: product.brand,
-        image: product.image ?? '',
-        category: product.category,
-        price: toNum(product.price),
-        rating: product.rating,
-        stock: product.stock,
+      return buildOrderItemSnapshot(product, {
         quantity: item.quantity,
-        ...(product.sku ? { sku: product.sku } : {}),
-        ...(item.lineKey ? { lineKey: item.lineKey } : {}),
-        ...(item.variantLabel ? { variantLabel: item.variantLabel } : {}),
-      } as ServerOrderItem
+        price: toNum(product.price),
+        lineKey: item.lineKey,
+        variantLabel: item.variantLabel,
+      })
     })
 
     const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100

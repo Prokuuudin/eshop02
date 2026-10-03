@@ -78,6 +78,25 @@ const VALID_ORDER = {
   language: 'ru',
 }
 
+// What the DB holds for p1 — the only source the persisted line snapshot may come from.
+const DB_PRODUCT_P1 = {
+  id: 'p1',
+  title: 'Shampoo Pro 1000ml',
+  brand: 'Real Brand',
+  image: '/real/p1.jpg',
+  category: 'hair',
+  rating: 4,
+  stock: 10,
+  sku: 'REAL-P1',
+  technicalSpecs: {
+    __variantGroupsJson: JSON.stringify([
+      { name: 'Size', required: false, options: [{ value: '500ml', priceAdjustment: -5 }, { value: '1000ml' }] },
+    ]),
+  },
+}
+const dbProducts = vi.fn(async () => [DB_PRODUCT_P1])
+const fakeTx = { product: { findMany: dbProducts } }
+
 function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKey?: string): NextRequest {
   return new NextRequest('http://localhost/api/orders', {
     method: 'POST',
@@ -89,11 +108,12 @@ function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKe
 describe('POST /api/orders — admin notification', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    dbProducts.mockImplementation(async () => [DB_PRODUCT_P1])
     vi.mocked(getShippingSettings).mockResolvedValue(structuredClone(DEFAULT_COMMERCE_SETTINGS))
     vi.mocked(getServerUser).mockResolvedValue(null)
     // Server assigns the canonical id — echo the payload back under a generated id
     vi.mocked(createServerOrder).mockImplementation(async (order, prepare) => ({
-      ...((prepare ? await prepare({} as never, null) : order) as object),
+      ...((prepare ? await prepare(fakeTx as never, null) : order) as object),
       id: '1001',
     }) as never)
     vi.mocked(getTemplates).mockResolvedValue([])
@@ -493,5 +513,151 @@ describe('POST /api/orders — admin notification', () => {
     }
 
     expect(new Set(subjects).size).toBe(3)
+  })
+
+  // ── B1 regression: the persisted order is built from a server whitelist ──────────────
+
+  /** The order object createServerOrder would persist (prepare step output). */
+  async function persistedOrder(): Promise<Record<string, unknown> & { items: Array<Record<string, unknown>> }> {
+    return await vi.mocked(createServerOrder).mock.results[0].value
+  }
+
+  it('B1: a forged paymentStatus "paid" on a bank order is persisted as unpaid', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank', paymentStatus: 'paid' }))
+    expect(res.status).toBe(200)
+    expect(vi.mocked(createServerOrder).mock.calls[0][0].paymentStatus).toBe('unpaid')
+    expect((await persistedOrder()).paymentStatus).toBe('unpaid')
+  })
+
+  it('B1: forged paymentSessionId / paymentProvider are not persisted', async () => {
+    await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank', paymentProvider: 'paysera', paymentSessionId: 'forged-session' }))
+    const persisted = await persistedOrder()
+    expect(persisted.paymentProvider).toBe('manual')
+    expect(persisted.paymentSessionId).toBeUndefined()
+  })
+
+  it('B1: the payment provider of a Paysera order is decided by the server', async () => {
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({ payseraOrderId: 'pay-1', paymentUrl: 'https://bank.paysera.com/pay/1' })
+    await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera', paymentProvider: 'paypal', paymentStatus: 'paid', paymentSessionId: 'forged' }))
+    const persisted = await persistedOrder()
+    expect(persisted).toMatchObject({ paymentMethod: 'paysera', paymentProvider: 'paysera', paymentStatus: 'unpaid' })
+    expect(persisted.paymentSessionId).toBeUndefined()
+  })
+
+  it('B1: internal and ownership fields from the request body are ignored', async () => {
+    await POST(makeRequest({
+      ...VALID_ORDER,
+      userId: 'someone-else', companyId: 'foreign-company', checkoutKey: 'forged', bonusEarned: 999999,
+      stockReservationStatus: 'released', stockReleasedAt: '2026-01-01T00:00:00.000Z', status: 'delivered',
+      trackingNumber: 'TRACK', language: 'xx',
+    }))
+    const persisted = await persistedOrder()
+    expect(persisted.userId).toBeUndefined()
+    expect(persisted.companyId).toBeUndefined()
+    expect(persisted.checkoutKey).toBeUndefined()
+    expect(persisted.bonusEarned).toBeUndefined()
+    expect(persisted.stockReservationStatus).toBe('reserved')
+    expect(persisted.stockReleasedAt).toBeUndefined()
+    expect(persisted).not.toHaveProperty('status')
+    expect(persisted).not.toHaveProperty('trackingNumber')
+    expect(persisted.language).toBe('ru')
+  })
+
+  it('B1: the line snapshot (title, SKU, brand, image, category) comes from the DB product', async () => {
+    await POST(makeRequest({
+      ...VALID_ORDER,
+      items: [{ id: 'p1', title: 'ДОРОГОЙ ТОВАР', sku: 'FAKE', brand: 'Fake', image: 'https://evil.example/x.png', category: 'equipment', rating: 5, stock: 9999, quantity: 2 }],
+    }))
+    const [item] = (await persistedOrder()).items
+    expect(item).toEqual({
+      id: 'p1', title: 'Shampoo Pro 1000ml', sku: 'REAL-P1', brand: 'Real Brand', image: '/real/p1.jpg',
+      category: 'hair', rating: 4, stock: 10, price: 25, quantity: 2, lineKey: 'p1',
+    })
+    expect(dbProducts).toHaveBeenCalledWith(expect.objectContaining({ where: { id: { in: ['p1'] } } }))
+  })
+
+  it('B1: a forged unit price is ignored — the line price and totals come from server pricing', async () => {
+    await POST(makeRequest({ ...VALID_ORDER, items: [{ id: 'p1', quantity: 2, price: 0.01 }], subtotal: 0.02, total: 0.02 }))
+    expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ items: [{ id: 'p1', quantity: 2 }] }), fakeTx)
+    const persisted = await persistedOrder()
+    expect(persisted.items[0].price).toBe(25)
+    expect(persisted).toMatchObject({ subtotal: 50, total: 64 })
+  })
+
+  it('B1: a variant choice is re-derived from the product (price adjustment and label from DB)', async () => {
+    await POST(makeRequest({
+      ...VALID_ORDER,
+      items: [{ id: 'p1', quantity: 2, selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -24 }], variantLabel: 'Size: 2000ml' }],
+    }))
+    const [item] = (await persistedOrder()).items
+    expect(item).toMatchObject({
+      selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -5 }],
+      variantLabel: 'Size: 500ml',
+      lineKey: 'p1::Size=500ml',
+    })
+  })
+
+  it('B1: a variant the product does not offer rejects the order', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, items: [{ id: 'p1', quantity: 1, selectedVariants: [{ groupName: 'Size', value: '5000ml' }] }] }))
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'invalid_variant', items: ['p1'] })
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('B1: malformed line fields are rejected before any DB work', async () => {
+    for (const items of [
+      [{ id: 'p1', quantity: '2' }],
+      [{ id: 'p1', quantity: 1, selectedVariants: 'Size=500ml' }],
+      [null],
+    ]) {
+      expect((await POST(makeRequest({ ...VALID_ORDER, items }))).status).toBe(400)
+    }
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('B1: a priced product missing from the snapshot read is reported unavailable', async () => {
+    dbProducts.mockImplementation(async () => [])
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'product_unavailable', items: ['p1'] })
+  })
+
+  it('B1: company legal details are rebuilt field by field, extra keys dropped', async () => {
+    await POST(makeRequest({ ...VALID_ORDER, legalDetails: { ...COMPANY_LEGAL_DETAILS, vatNumber: ' LV40001234567 ', injected: 'x' } }))
+    expect(vi.mocked(createServerOrder).mock.calls[0][0].legalDetails).toEqual({ ...COMPANY_LEGAL_DETAILS, vatNumber: 'LV40001234567' })
+  })
+
+  it('normal Paysera checkout still creates the payment link and stores its session id server-side', async () => {
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({ payseraOrderId: 'pay-1', paymentUrl: 'https://bank.paysera.com/pay/1' })
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ success: true, orderId: '1001', paymentUrl: 'https://bank.paysera.com/pay/1' })
+    expect(createPayseraPaymentForOrder).toHaveBeenCalledWith(expect.objectContaining({ id: '1001', total: 64 }))
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-1' })
+  })
+
+  it('normal Paysera checkout fails the order when the gateway is down', async () => {
+    vi.mocked(createPayseraPaymentForOrder).mockRejectedValue(new Error('gateway down'))
+    vi.mocked(updateServerOrderPayment).mockResolvedValue(null)
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
+    expect(res.status).toBe(502)
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
+  })
+
+  it('normal cash checkout at the office persists an unpaid manual order', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId: 'riga-office', paymentMethod: 'cash' }))
+    expect(res.status).toBe(200)
+    expect(await persistedOrder()).toMatchObject({ paymentMethod: 'cash', paymentProvider: 'manual', paymentStatus: 'unpaid', pickupStoreId: 'riga-office' })
+  })
+
+  it('passes bonus spend and promo code to authoritative pricing and persists only the applied promo', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'ivan@example.com' } as never)
+    vi.mocked(recomputeOrderPricing).mockResolvedValue({
+      items: [{ id: 'p1', price: 25, quantity: 2, bonusRate: 0, fromCatalog: true }],
+      subtotal: 50, discount: 5, tax: 7.81, delivery: 5, bonusSpent: 100, bonusEarned: 20, total: 49, promoApplied: true,
+    })
+    await POST(makeRequest({ ...VALID_ORDER, promoCode: ' SALE10 ', bonusSpent: 100 }))
+    expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ promoCode: 'SALE10', bonusSpent: 100, userId: 'u1' }), fakeTx)
+    expect(await persistedOrder()).toMatchObject({ promoCode: 'SALE10', discount: 5, bonusSpent: 100, bonusEarned: 20, total: 49, userId: 'u1' })
   })
 })

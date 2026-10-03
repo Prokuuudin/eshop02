@@ -2,6 +2,48 @@ import { Prisma } from '@/generated/prisma/client'
 import type { Order as PrismaOrder } from '@/generated/prisma/client'
 import { toNum } from './decimal'
 import type { ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from './orders-data-types'
+import type { SelectedVariant } from '@/data/products'
+
+/** Product columns an order line snapshot is built from (plus technicalSpecs for variant validation). */
+export const ORDER_ITEM_SNAPSHOT_SELECT = {
+  id: true, title: true, brand: true, image: true, category: true, rating: true, stock: true, sku: true, technicalSpecs: true,
+} as const
+
+export type OrderItemSnapshotProduct = {
+  id: string
+  title: string
+  brand: string
+  image: string | null
+  category: string
+  rating: number
+  stock: number
+  sku: string | null
+}
+
+/**
+ * Order line snapshot taken from the DB product row. Price and quantity are decided by the
+ * server (catalog pricing / staff edit); nothing descriptive is taken from the request body.
+ */
+export function buildOrderItemSnapshot(
+  product: OrderItemSnapshotProduct,
+  line: { quantity: number; price: number; lineKey?: string; variantLabel?: string; selectedVariants?: SelectedVariant[] },
+): ServerOrderItem {
+  return {
+    id: product.id,
+    title: product.title,
+    brand: product.brand,
+    image: product.image ?? '',
+    category: product.category,
+    price: line.price,
+    rating: product.rating,
+    stock: product.stock,
+    quantity: line.quantity,
+    ...(product.sku ? { sku: product.sku } : {}),
+    ...(line.lineKey ? { lineKey: line.lineKey } : {}),
+    ...(line.variantLabel ? { variantLabel: line.variantLabel } : {}),
+    ...(line.selectedVariants?.length ? { selectedVariants: line.selectedVariants } : {}),
+  }
+}
 
 export function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
   return {

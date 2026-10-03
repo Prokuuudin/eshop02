@@ -16,6 +16,9 @@ export type ServerOrderItem = {
   sku?: string
   lineKey?: string
   variantLabel?: string
+  /** Variant options validated against the product's own variant groups at checkout.
+   *  A type literal (not the SelectedVariant interface) so it stays assignable to Prisma Json. */
+  selectedVariants?: Array<{ groupName: string; value: string; priceAdjustment?: number }>
 }
 
 export type ServerOrderLegalDetails =

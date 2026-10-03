@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getVariantGroups, getMissingRequiredGroups, getPreselectedVariants, sumPriceAdjustment } from './product-variants'
+import { getVariantGroups, getMissingRequiredGroups, getPreselectedVariants, isSelectedVariantsInput, resolveSelectedVariants, sumPriceAdjustment } from './product-variants'
 import type { VariantGroup, SelectedVariant } from '@/data/products'
 
 describe('getVariantGroups', () => {
@@ -115,5 +115,51 @@ describe('sumPriceAdjustment', () => {
 
   it('returns 0 for an empty array', () => {
     expect(sumPriceAdjustment([])).toBe(0)
+  })
+})
+
+describe('resolveSelectedVariants — checkout re-derives the choice from DB variant groups', () => {
+  const specs = {
+    __variantGroupsJson: JSON.stringify([
+      { name: 'BASE', required: true, options: [{ value: 'XT', priceAdjustment: -42.5 }, { value: 'XM', priceAdjustment: 46.04 }] },
+      { name: 'COLOR', required: false, options: [{ value: '111' }] },
+    ]),
+  }
+
+  it('treats a missing selection as no variants', () => {
+    expect(resolveSelectedVariants(specs, undefined)).toEqual([])
+    expect(resolveSelectedVariants(null, null)).toEqual([])
+  })
+
+  it('keeps an existing option and takes priceAdjustment from the product, not the request', () => {
+    expect(resolveSelectedVariants(specs, [
+      { groupName: 'BASE', value: 'XM', priceAdjustment: -999 },
+      { groupName: 'COLOR', value: '111', priceAdjustment: 5 },
+    ])).toEqual([
+      { groupName: 'BASE', value: 'XM', priceAdjustment: 46.04 },
+      { groupName: 'COLOR', value: '111' },
+    ])
+  })
+
+  it.each([
+    [[{ groupName: 'BASE', value: 'FORGED' }]],
+    [[{ groupName: 'NOPE', value: 'XT' }]],
+    [[{ groupName: 'BASE', value: 'XT' }, { groupName: 'BASE', value: 'XM' }]],
+    ['BASE=XT'],
+    [[{ groupName: 'BASE' }]],
+  ])('rejects a selection the product does not offer: %j', (requested) => {
+    expect(resolveSelectedVariants(specs, requested)).toBeNull()
+  })
+
+  it('rejects any selection for a product without variant groups', () => {
+    expect(resolveSelectedVariants({}, [{ groupName: 'BASE', value: 'XT' }])).toBeNull()
+  })
+
+  it('shape-checks untrusted input without a DB lookup', () => {
+    expect(isSelectedVariantsInput(undefined)).toBe(true)
+    expect(isSelectedVariantsInput([{ groupName: 'a', value: 'b' }])).toBe(true)
+    expect(isSelectedVariantsInput([{ groupName: 'a', value: 1 }])).toBe(false)
+    expect(isSelectedVariantsInput([{ groupName: 'a'.repeat(201), value: 'b' }])).toBe(false)
+    expect(isSelectedVariantsInput(Array.from({ length: 21 }, () => ({ groupName: 'a', value: 'b' })))).toBe(false)
   })
 })

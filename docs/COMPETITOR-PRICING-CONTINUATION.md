@@ -4,8 +4,8 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 8 (application contracts + honest admin shell). Pricing Prisma
-repository/DB-backed API/scheduler не начаты.
+Последнее обновление: 2026-10-04, конец ЭТАПА 9A (изолированный DB integration guard и offline preparation).
+Pricing Prisma repository/DB-backed API/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -191,12 +191,13 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ## Current state
 
-ЭТАПЫ 1–8 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–8 и подготовительный ЭТАП 9A завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
 `robots.ts`, JSON-LD Product adapter, synthetic fixtures, deterministic matcher и pure ingestion service с
 repository port/fake tests, pure integer market analysis/recommendation engine и semantic snapshot/hash
 (ничто из этого ещё не вызывается из pricing runtime-кода), Prisma-free application DTO/query contracts и
-`/admin/pricing` shell с disconnected state. Нет: pricing Prisma repository, DB-backed application services/API,
+`/admin/pricing` shell с disconnected state, отдельный fail-closed guard/config/bootstrap для будущей изолированной
+Neon integration DB. Нет: настроенная test DB, pricing Prisma repository, DB-backed application services/API,
 mutation actions, реальных monitoring data и scheduler.
 
 ## Completed
@@ -215,11 +216,17 @@ mutation actions, реальных monitoring data и scheduler.
       filtering, duplicate/outlier policies, clamps/action modes/snapshot; 64 новых теста.
 - [x] ЭТАП 8: Prisma-free application/API DTO contracts, integer cents + ISO date boundary, centralized ru/en/lv
       reason/status presentation, server-authorized `/admin/pricing` shell, honest disconnected state; 31 новый тест.
+- [x] ЭТАП 9A: offline-only preparation изолированной Neon integration DB: отдельный URL без fallback,
+      production denylist/fingerprint/branch/write guards, dedicated Vitest bootstrap/config, migration/rollback
+      static regression; 21 новый unit-тест. К БД не подключались.
 
 ## Remaining
 
-- [ ] ЭТАП 9: только после явного решения по non-production DB — безопасно применить pending migration там,
-      реализовать/test Prisma repositories + application services, затем DB-backed read API/UI и review actions.
+- [ ] ЭТАП 9B: только после ручного подтверждения конкретной non-production Neon branch и успешного offline
+      write-preflight — создать dedicated Prisma CLI/client path, применить/откатить pending migration там,
+      затем реализовать/test repositories + application services. Ничего не переносить в `prisma/migrations/`
+      до доказательства apply/rollback/drift на изолированной ветке.
+- [ ] ЭТАП 9C: DB-backed read API/UI; затем отдельным шагом review actions.
 - [ ] ЭТАП 10 scheduler. ЭТАП 11 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
 ## Important decisions
@@ -321,6 +328,24 @@ mutation actions, реальных monitoring data и scheduler.
 44. (ЭТАП 8) В application/UI boundary нет cookies/headers/raw HTML/robots body/resolved IP/stack/secret query.
     External URL допускается только https hostname, без credentials/IP/internal hostname/query/hash; competitor
     text рендерится React как text. DB-backed routes остаются заблокированы до отдельного non-production DB stage.
+45. (ЭТАП 9A) Integration target читается только из `COMPETITOR_PRICING_TEST_DATABASE_URL`; fallback к
+    `DATABASE_URL`/`POSTGRES_*` запрещён. Обычные DB URL используются только как неизменяемый production denylist;
+    если ни одного нет или любой нельзя безопасно разобрать, guard fail-closed.
+46. (ЭТАП 9A) Target обязан быть PostgreSQL Neon endpoint: host/credentials/database metadata, port 5432,
+    отдельный normalized endpoint от production. `-pooler` и direct формы считаются одним endpoint; даже другое
+    имя database на production endpoint запрещено. Branch label обязателен, но служит только дополнительным guard.
+47. (ЭТАП 9A) Одобряемая identity = SHA-256 от protocol + normalized host + port + database; password/username/query
+    в hash и safe output не входят. Нужен exact fingerprint + `COMPETITOR_PRICING_INTEGRATION_MODE=isolated-test`;
+    write-capable контур дополнительно требует exact `COMPETITOR_PRICING_DB_WRITE_ENABLED=true`.
+48. (ЭТАП 9A) Будущие DB tests имеют отдельный Vitest config/bootstrap, один worker и explicit guarded URL.
+    Они не импортируют global `lib/prisma`, не меняют `DATABASE_URL`: dedicated disposable client передаётся
+    repositories через DI и закрывается в teardown.
+49. (ЭТАП 9A) Pending migration остаётся вне `prisma/migrations/`. Static regression фиксирует: forward создаёт
+    только 6 pricing tables и меняет constraints только в них; rollback удаляет ровно эти 6, `Product` не трогает.
+50. (ЭТАП 9A) Future DB fixtures только synthetic и namespaced (`cp-it-*`); cleanup удаляет только namespace
+    текущего run и проверяет counts. Запрещено выбирать и менять production-cloned Product records.
+51. (ЭТАП 9A) `prisma.config.ts` и `npm run build` небезопасны для test migration: первый читает `.env.local`,
+    второй начинает с `prisma migrate deploy`. Для ЭТАПА 9B нужен отдельный guarded Prisma CLI config/path.
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -804,6 +829,51 @@ Presentational product table принимает DTO rows; synthetic data сущ�
   не добавили. Файл уведомлений не менялся.
 - **DB-backed routes remain blocked until a non-production DB is explicitly configured and pending migration is safely applied there.**
 
+## Stage 9A — Isolated database integration preparation
+
+### Repository audit (static only)
+
+- `prisma.config.ts` always calls `dotenv.config({path: '.env.local'})` and selects `DATABASE_URL`/`POSTGRES_*`,
+  then converts a Neon pooler host to direct. It has no isolated-test target boundary.
+- `lib/prisma.ts` eagerly creates/caches the global application client from the same production-capable fallback
+  list. It is deliberately not imported by the new test bootstrap.
+- `npm run build` starts with `prisma migrate deploy`; build is therefore a DB-writing command and was not run.
+- Existing `vitest.integration.config.ts` contains one mocked transaction suite and no real DB bootstrap/guard.
+- `prepare` only installs `scripts/git-hooks/pre-commit`; that hook runs encoding checks. No hidden migration hook.
+- Pending SQL is still the only `20261003120000_competitor_pricing` directory and is absent from
+  `prisma/migrations/`. No Prisma/DB/migration/integration/build command was run in ЭТАПЕ 9A.
+
+### Fail-closed contract
+
+`integration-db-safety.ts` accepts an injected env object and performs no I/O. Target URL is exclusively
+`COMPETITOR_PRICING_TEST_DATABASE_URL`; the production variables cannot become target fallback. Guard verifies:
+
+1. valid PostgreSQL URL with credentials/host/database and identifiable `ep-*....neon.tech` endpoint on 5432;
+2. exact `isolated-test` mode and non-production Node process;
+3. non-production-like branch label (additional signal only);
+4. exact approved SHA-256 identity fingerprint;
+5. at least one valid production URL denylist entry and difference from every entry, normalizing pooled/direct
+   Neon hostname; the whole Neon endpoint must differ, not only database name;
+6. exact write opt-in only for write-capable operation.
+
+Any ambiguity rejects the operation. Guarded connection string is held in a private field; JSON/string logging
+exposes only safe host/database/endpoint/branch/fingerprint metadata and a boolean that query exists. Password,
+username and query text never enter fingerprint/output/error.
+
+Offline commands: `pricing:db:describe-target`, `pricing:db:preflight`, `pricing:db:preflight:write`. None opens a
+socket or invokes Prisma. With the current environment, write preflight was deliberately run once and correctly
+failed with `test_database_url_required` before network access.
+
+### Future execution boundary
+
+`vitest.competitor-pricing.integration.config.ts` includes only `tests/competitor-pricing-integration/**`, executes
+the write guard before future test modules, uses one worker/no file parallelism. Bootstrap returns the explicit
+guarded URL for a future dedicated disposable client; repository ports will receive it via DI. There is no Prisma
+client/repository implementation in ЭТАПЕ 9A.
+
+Full operator sequence, migration/rollback plan, namespaced synthetic-data/cleanup rules and required PostgreSQL
+transaction/race tests are in `docs/COMPETITOR-PRICING-DATABASE-INTEGRATION.md`.
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -822,9 +892,10 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 — без подключения к БД; + ручные CHECK-constraints) и `rollback.sql` (DROP 6 таблиц; никогда не класть в
 `prisma/migrations/`). Только CREATE TABLE/INDEX/FK из новых таблиц; ни одной правки существующих таблиц.
 
-Применение (НЕ выполнялось): только с явного разрешения и на не-прод БД:
-`npx prisma db execute --file <migration.sql>` → `npx prisma migrate resolve --applied 20261003120000_competitor_pricing`
-→ перенос папки в `prisma/migrations/`. ВНИМАНИЕ: `prisma.config.ts` берёт DATABASE_URL из `.env.local` = прод.
+Применение НЕ выполнялось. Ранее записанная последовательность прямых `npx prisma ...` команд признана
+небезопасной: `prisma.config.ts` берёт URL из `.env.local` = prod, а `migrate resolve` требует отдельно доказанной
+стратегии регистрации. ЭТАП 9B сначала создаёт dedicated config/path с уже guarded URL, затем доказывает
+apply/rollback/drift только на подтверждённой test branch. До этого точной DB-writing команды намеренно нет.
 
 `npx prisma generate` выполнен локально (generated/ в .gitignore; к БД не подключается). Новые модели есть в
 типах клиента, но таблиц в БД нет → ни один runtime-путь их пока не использует. Нельзя мержить код,
@@ -897,6 +968,17 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `app/[lang]/admin/pricing/{layout.tsx,page.tsx}` — server `catalog.read` boundary and disconnected production route.
 - `lib/admin-permissions.ts` + `.test.ts`, `components/admin/{AdminHeaderNav,AdminPageNavigation}.tsx` — pricing path,
   Catalog navigation and parent navigation labels.
+ЭТАП 9A:
+- `lib/competitor-pricing/integration-db-safety.ts` + `.test.ts` — pure Neon target identity, fingerprint,
+  production denylist, explicit mode/branch/write guards и safe redacted output; 18 тестов.
+- `lib/competitor-pricing/integration-db-migration-safety.test.ts` — static allowlist regression для forward/rollback;
+  3 теста, без Prisma/DB.
+- `scripts/competitor-pricing-db-preflight.ts`, `package.json`, `.env.example` — только offline describe/read/write
+  preflight scripts и документированные opt-in variables; ни один script не подключается к БД.
+- `tests/competitor-pricing-integration/{bootstrap.ts,guard.setup.ts}`,
+  `vitest.competitor-pricing.integration.config.ts` — отдельная future DB-test boundary; Prisma client ещё не создан.
+- `docs/COMPETITOR-PRICING-DATABASE-INTEGRATION.md` — operator contract, Stage 9B migration/client/data/cleanup/
+  transaction plan.
 
 ## Tests
 
@@ -983,6 +1065,23 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - Prisma schema/pending migration не менялись; production DB, competitor Prisma runtime/repository, integration/e2e/
   build, scheduler, external network, `applyProductChanges`, ERP actions и Product.price не использовались/не менялись.
 
+ЭТАП 9A (2026-10-04):
+- Pure DB safety guard → 18 passed: dedicated URL/no fallback, malformed URL, scheme/metadata/Neon endpoint, explicit mode,
+  production process, branch label, fingerprint, missing/malformed production denylist, exact/pooler/direct/same-
+  endpoint production equality, all production aliases, write opt-in и secret/query-safe output.
+- Pending migration static safety → 3 passed: ровно 6 create/rollback tables, ALTER только pricing tables,
+  forward без destructive/data mutation, никакой операции над `Product`.
+- `lib/competitor-pricing` → 19 файлов, 479 passed, 4 skipped (те же openssl-dependent TLS tests).
+- `npm run test:unit` → 301 файл, 2486 passed, 4 skipped. Прогон включал существующие чужие изменения
+  `lib/product-form-mapping*`, как в предыдущих этапах.
+- Перепроверка перед коммитом ЭТАПА 9A (Claude, 2026-10-04, другое окружение с openssl): `lib/competitor-pricing` + IP guard + webhook → 21 файл, 580 passed, 0 skipped (TLS-тесты выполнены); `vitest.config.ts` целиком → 301 файл, 2490 passed, 0 skipped; tsc 0; ESLint 9A-файлов 0; security audit passed; encoding passed; `npm run pricing:db:preflight:write` → `test_database_url_required` до любого сетевого доступа (в `.env.local` нет `COMPETITOR_PRICING_*` переменных).
+- `npx tsc --noEmit` → 0; ESLint всех новых TS/config файлов → 0; security audit → passed, 1793 files;
+  encoding check → passed, 1221 source files.
+- Offline `npm run pricing:db:preflight:write` в текущем env ожидаемо отказал с
+  `test_database_url_required`, несмотря на обычный production `DATABASE_URL`: fallback отсутствует.
+- НЕ запускались: Prisma commands, DB/integration/e2e/build, pending migration apply/resolve/generate, внешняя сеть.
+  Production DB/schema/data, `.env.local`, `prisma/migrations/` и existing application Prisma singleton не менялись.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -1032,6 +1131,12 @@ React экранирует недоверенные titles, `dangerouslySetInner
 data или mutation handlers. Read route защищён server-side существующим `catalog.read`; будущие write permissions
 зафиксированы, но actions/API не реализованы.
 
+ЭТАП 9A (DB-target boundary, протестировано offline): отдельный test URL без production fallback; идентичность
+Neon endpoint/database сравнивается со всеми production URL с pooler/direct normalization; branch label не может
+подменить programmatic identity check; fingerprint не включает secrets/query. Missing/ambiguous metadata,
+production process/target или отсутствие exact write opt-in fail closed. Guarded target не сериализует connection
+string. Static migration regression фиксирует allowlist шести pricing tables и rollback scope.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
@@ -1046,21 +1151,25 @@ data или mutation handlers. Read route защищён server-side сущес�
   (`feat(pricing): add deterministic competitor matching`), коммит ЭТАПА 6
   `94083013` (`feat(pricing): add observation ingestion service`), коммит ЭТАПА 7
   `424ba7d4` (`feat(pricing): add deterministic price recommendations`), коммит ЭТАПА 8
-  `feat(pricing): add admin pricing application shell` (хэш — `git log --oneline -9`).
+  `6078af57` (`feat(pricing): add admin pricing application shell`), коммит ЭТАПА 9A
+  `chore(pricing): prepare isolated database integration` (хэш — `git log --oneline -10`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 9 — первый PostgreSQL integration stage, НЕ начинать автоматически. Сначала пользователь должен отдельно
-решить/явно разрешить конфигурацию изолированной non-production DB и безопасное применение pending migration туда.
-После этого: проверить migration/constraints/rollback на non-prod; реализовать Prisma repository adapters для
-observation/recommendation/read models; доказать transaction/locking/idempotency/stale semantics integration-тестами;
-затем подключить application query service, read-only admin API и реальные dashboard/product detail DTO. Только
-после read path отдельно реализовывать review mutations с `catalog.update|prices.update`, CSRF/audit/rate-limit,
-expected current price + revision + input hash и `applyProductChanges` только для допустимой local price.
+ЭТАП 9B — НЕ начинать автоматически. Пользователь/оператор сначала вручную создаёт/подтверждает конкретную
+изолированную non-production Neon branch и задаёт dedicated env из
+`docs/COMPETITOR-PRICING-DATABASE-INTEGRATION.md`. Первая безопасная команда — только offline
+`npm run pricing:db:describe-target`; после ручной сверки fingerprint/endpoint/branch —
+`npm run pricing:db:preflight:write`. Обе команды не подключаются к БД.
 
-**Hard stop:** `.env.local` указывает на production, pending migration не применена. До отдельного решения по
-non-production DB нельзя создавать pricing Prisma runtime path, DB-backed routes, integration tests, scheduler или
-реальные Apply/ERP actions. Production DB и `prisma/migrations/` не трогать.
+После отдельного разрешения на DB work: создать dedicated Prisma CLI config/client, который получает только уже
+guarded URL; затем apply/inspect/rollback/re-apply/drift pending migration на test branch. Только после успешного
+доказательства реализовывать Prisma repository adapters и transaction/locking/idempotency/stale integration tests.
+Application read API/UI и review mutations остаются последующими отдельными шагами.
+
+**Hard stop:** `.env.local` всё ещё указывает на production, test URL/branch не настроены, pending migration не
+применена. Текущие `prisma.config.ts`, `npm run build`, `npm run test:integration` и любые прямые Prisma DB-команды
+не использовать. Production DB и `prisma/migrations/` не трогать; push без разрешения не делать.

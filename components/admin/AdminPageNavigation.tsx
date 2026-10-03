@@ -8,6 +8,7 @@ import { useAdminLocale } from '@/lib/use-admin-locale'
 
 const parentSections = [
   { path: '/admin/products', labels: ['Товары', 'Products', 'Produkti'] },
+  { path: '/admin/pricing', labels: ['Мониторинг цен', 'Competitor pricing', 'Konkurentu cenas'] },
   { path: '/admin/orders', labels: ['Заказы', 'Orders', 'Pasūtījumi'] },
   { path: '/admin/content', labels: ['Контент', 'Content', 'Saturs'] },
   { path: '/admin/customers', href: '/admin/customers/segments', labels: ['Клиенты', 'Customers', 'Klienti'] },

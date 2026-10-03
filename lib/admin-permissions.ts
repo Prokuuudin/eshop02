@@ -71,6 +71,7 @@ const ADMIN_PATH_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> 
   ['/admin/orders', 'orders.read'],
   ['/admin/rfq', 'rfq.read'],
   ['/admin/returns', 'orders.refund'],
+  ['/admin/pricing', 'catalog.read'],
   ['/admin/products/bulk-price', 'prices.update'],
   ['/admin/products', 'catalog.read'],
   ['/admin/categories', 'catalog.read'],

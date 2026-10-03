@@ -4,7 +4,8 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 7 (deterministic market analysis + recommendations). Prisma runtime/UI/scheduler не начаты.
+Последнее обновление: 2026-10-03, конец ЭТАПА 8 (application contracts + honest admin shell). Pricing Prisma
+repository/DB-backed API/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -174,7 +175,9 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ### Routes / pages / API (план)
 
-- Pages: `/admin/pricing` (дашборд + таблица + фильтры), `/admin/pricing/products/[id]`,
+- Реализовано в ЭТАПЕ 8: только `/admin/pricing` — server-authorized shell, disconnected DTO, summary/product/source
+  presentational components и честные empty states. DB-backed API routes и mutations отсутствуют.
+- После разрешения DB-stage: `/admin/pricing/products/[id]`,
   `/admin/pricing/competitors`, `/admin/pricing/runs`, `/admin/pricing/settings`.
 - Права (без новых permission): чтение `catalog.read`, конкуренты/match/rules `catalog.update`,
   Apply `prices.update`. Добавить `['/admin/pricing', 'catalog.read']` в ADMIN_PATH_PERMISSIONS.
@@ -188,11 +191,13 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ## Current state
 
-ЭТАПЫ 1–7 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–8 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
 `robots.ts`, JSON-LD Product adapter, synthetic fixtures, deterministic matcher и pure ingestion service с
 repository port/fake tests, pure integer market analysis/recommendation engine и semantic snapshot/hash
-(ничто из этого ещё не вызывается из runtime-кода). Нет: Prisma repository, DB-backed services, API, UI, scheduler.
+(ничто из этого ещё не вызывается из pricing runtime-кода), Prisma-free application DTO/query contracts и
+`/admin/pricing` shell с disconnected state. Нет: pricing Prisma repository, DB-backed application services/API,
+mutation actions, реальных monitoring data и scheduler.
 
 ## Completed
 
@@ -208,11 +213,14 @@ repository port/fake tests, pure integer market analysis/recommendation engine �
       append/touch/failure/idempotency/concurrency semantics; 35 новых тестов.
 - [x] ЭТАП 7: pure integer market statistics + deterministic median recommendation, trusted/fresh/available
       filtering, duplicate/outlier policies, clamps/action modes/snapshot; 64 новых теста.
+- [x] ЭТАП 8: Prisma-free application/API DTO contracts, integer cents + ISO date boundary, centralized ru/en/lv
+      reason/status presentation, server-authorized `/admin/pricing` shell, honest disconnected state; 31 новый тест.
 
 ## Remaining
 
-- [ ] ЭТАП 8 API/UI + admin review/apply workflow (runtime persistence всё ещё заблокирован pending migration).
-- [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
+- [ ] ЭТАП 9: только после явного решения по non-production DB — безопасно применить pending migration там,
+      реализовать/test Prisma repositories + application services, затем DB-backed read API/UI и review actions.
+- [ ] ЭТАП 10 scheduler. ЭТАП 11 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
 ## Important decisions
 
@@ -302,6 +310,17 @@ repository port/fake tests, pure integer market analysis/recommendation engine �
     exclusion reasons, included competitor groups и inclusive freshness boundary. Hash order-independent и не
     включает произвольный `now`; при переходе observation в stale меняются disposition/hash. `expiresAt` = min
     policy TTL и первого semantic freshness expiry (+1 ms для inclusive boundary).
+41. (ЭТАП 8) Admin/API boundary — plain DTO, не Prisma records: money только branded integer cents, percent changes
+    в integer basis points, date-time только canonical ISO с явной timezone. React ничего не пересчитывает и не
+    использует `Date.now()` для freshness/stale decisions.
+42. (ЭТАП 8) `/admin/pricing` обязан быть честно disconnected: неизвестные summary values = `null`/«—», products и
+    sources пусты; production route не импортирует test fixtures и не показывает synthetic prices/competitors.
+43. (ЭТАП 8) Права не расширены: route/read = `catalog.read`, будущие competitor/mapping writes = `catalog.update`,
+    future local apply = `prices.update`. Shell имеет server permission boundary; disabled action previews не имеют
+    mutation handler и не заменяют будущую server-side authorization.
+44. (ЭТАП 8) В application/UI boundary нет cookies/headers/raw HTML/robots body/resolved IP/stack/secret query.
+    External URL допускается только https hostname, без credentials/IP/internal hostname/query/hash; competitor
+    text рендерится React как text. DB-backed routes остаются заблокированы до отдельного non-production DB stage.
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -316,7 +335,7 @@ erp_pending ─invalidate► stale
 ```
 
 Persist — только условным update `WHERE id=? AND status=<current>`; `openKey = productId` пока pending/erp_pending.
-Apply на ЭТАПЕ 8 дополнительно перепроверяет externalId/erpPriceMissing текущего Product (authority в
+Будущий DB-backed Apply дополнительно перепроверяет externalId/erpPriceMissing текущего Product (authority в
 рекомендации — снимок, а не разрешение).
 
 ## ProductOverride pricing audit (2026-10-03, READ-ONLY)
@@ -720,6 +739,71 @@ full evidence и safeguards помещаются в JSON snapshot/reason params,
 - Engine не persist-ит recommendations; DB-backed repository/race/stale-apply tests всё ещё требуют разрешённую
   non-production DB после применения pending migration.
 
+## Stage 8 — Application contracts and admin shell
+
+### Boundary and DTOs
+
+`application-contracts.ts` фиксирует однонаправленную границу будущего runtime:
+
+```
+PostgreSQL/Prisma repository (ещё нет) → application query service → plain admin/API DTO → React presentation
+```
+
+UI не получает Prisma records/Decimal, parser internals или repository entities. Определены DTO для dashboard
+summary/product rows/source health, product detail, recommendation evidence/safeguards, competitor configuration,
+mapping explanation, price history, rules и monitor runs. `PricingAdminQueryService` — только application-facing
+port; production implementation/fake storage/API route намеренно отсутствуют. Decision request contract заранее
+содержит expected current cents, product revision и input hash, но handler не реализован.
+
+Money на boundary — JSON-safe integer cents (`CentsDto`); положительные prices и signed deltas валидируются против
+Decimal(12,2) range. Percent changes — integer basis points. Formatting отдельно, без деления money на float:
+`€0.01`, `€12.30`, grouping и signed delta строятся из целых major/minor частей. Pricing rules сериализуют percent
+и IQR multiplier в integer hundredths/basis points.
+
+Date-time — canonical UTC ISO string с явной timezone (`IsoDateTimeDto`). Ambiguous local date strings отклоняются.
+UI formatting явно использует `Europe/Riga`, но freshness/stale уже приходит DTO state и в React не вычисляется.
+
+External URL DTO принимает только https hostname без credentials, IP-literal/internal hostname, query и hash;
+длина ограничена. DTO по дизайну не содержат cookies, auth/raw headers, fetched HTML/robots body, resolved IP,
+stack trace или DB internals. Reason/conflict/status остаются typed codes, а не преждевременным свободным текстом.
+
+### Presentation and permissions
+
+`admin-presentation.ts` централизованно отображает все Stage 7 no-recommendation/exclusion codes, recommendation/
+mapping/action/freshness states и все source health states (`ok|stale|transient_error|rate_limited|blocked|disabled`)
+в ru/en/lv label + description. Domain не импортирует UI strings. Badges сопровождаются текстом; цвет не является
+единственным носителем смысла.
+
+Permission contract сохранён без новых прав: read route/data = `catalog.read`; будущие competitor/mapping mutations
+= `catalog.update`; будущий local Apply = `prices.update`. `/admin/pricing` добавлен в path permission map и Catalog
+navigation, а отдельный server layout использует существующий `AdminServerPermission('catalog.read')`. На этапе нет
+mutation routes/actions, поэтому CSRF/audit/apply calls не создавались.
+
+### Route and components
+
+Создан только `/admin/pricing`. Route передаёт `createDisconnectedPricingDashboard()` и никогда не импортирует
+synthetic fixtures. Администратор видит status notice без developer details, восемь summary fields как «—», section
+cards, честные product/source empty states. Не созданы пустые product/competitor/mapping child pages.
+
+`PricingDashboardShell`/`ProductPricingTable`/`CompetitorHealthTable` используют существующие Card/Badge/Button и
+admin table conventions: semantic caption/thead/th scope, horizontal scroll на узком viewport, текстовые statuses.
+Presentational product table принимает DTO rows; synthetic data существует только в server-render unit tests.
+Для recommendation раздельно показываются current/market median+min/recommended/delta cents+bps/reason. Future
+`Apply`/`Send to ERP`/blocked labels тестируются, но кнопки всегда disabled, без handler.
+
+### Known limitations / hard stop
+
+- Summary/table/source data в production shell пусты до реального application service; это намеренное truthful state.
+- Product detail/competitors/mappings/runs/settings routes, filters/loading/error from pricing API и real actions ещё
+  не создавались: без repository они были бы пустым или fake production behavior.
+- Component tests используют `react-dom/server`, потому что unit config = Node и проекта нет jsdom/component-test
+  dependency. Проверены semantic markup/empty/row/action labels/reason/health/XSS escaping; browser interaction не
+  симулируется.
+- Existing admin strict-i18n baseline имеет один unrelated hardcoded Cyrillic string в
+  `app/[lang]/admin/notifications/send/page.tsx:434`; обычная dictionary check проходит, pricing files новых findings
+  не добавили. Файл уведомлений не менялся.
+- **DB-backed routes remain blocked until a non-production DB is explicitly configured and pending migration is safely applied there.**
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -803,6 +887,16 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
   nested array canonicalization и stronger order-independence coverage.
 - `lib/competitor-pricing/recommendation-persistence-money.ts` — isolated Prisma Decimal snapshot/ERP-fulfilment
   helpers, deliberately outside the pure recommendation dependency graph.
+ЭТАП 8:
+- `lib/competitor-pricing/application-contracts.ts` + `.test.ts` — Prisma-free DTO/query/decision contracts,
+  integer cents, canonical ISO, safe display URL, domain recommendation conversion and disconnected dashboard.
+- `lib/competitor-pricing/admin-presentation.ts` + `.test.ts` — centralized ru/en/lv reason/status/health mapping,
+  integer-safe EUR/basis-point formatting.
+- `components/admin/pricing/PricingDashboardShell.tsx` + `lib/competitor-pricing/admin-components.test.ts` —
+  summary/product/source shell, semantic responsive tables, honest empty states, disabled action previews.
+- `app/[lang]/admin/pricing/{layout.tsx,page.tsx}` — server `catalog.read` boundary and disconnected production route.
+- `lib/admin-permissions.ts` + `.test.ts`, `components/admin/{AdminHeaderNav,AdminPageNavigation}.tsx` — pricing path,
+  Catalog navigation and parent navigation labels.
 
 ## Tests
 
@@ -872,6 +966,23 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - Prisma schema/pending migration не менялись; production DB, Prisma runtime, integration/e2e/build, scheduler,
   external network и Product.price не использовались/не изменялись. `prisma validate/generate` не требовались.
 
+ЭТАП 8 (2026-10-03):
+- Новые contracts/presentation/server-render components + permission/navigation regressions → 5 файлов, 40 passed
+  (13 contracts, 10 presentation, 8 component cases, 5 permission, 4 nav; в existing permission test добавлена
+  pricing-path assertion). Новых test cases в трёх pricing test files: 31.
+- Targeted Stage 8 + recommendation/ingestion/matching/adapter → 10 файлов, 232 passed: recommendation 50,
+  ingestion 35, matching 24+31, JSON-LD adapter 52; без skip.
+- `lib/competitor-pricing` → 17 файлов, 458 passed, 4 skipped (те же openssl-dependent TLS tests; Stage 8/domain/
+  ingestion/matching/adapter tests без skip).
+- `npm run test:unit` → 299 файлов, 2465 passed, 4 skipped. Прогон включал существующие чужие изменения
+  `lib/product-form-mapping*` и другие текущие unit-файлы репозитория.
+- `npx tsc --noEmit` → 0; ESLint изменённых TS/TSX-файлов → 0; `git diff --check` → чисто.
+- `npm run check:admin-i18n` → dictionary check passed (423 keys, 70 used), один уже существующий audit finding.
+  Strict mode ожидаемо non-zero только из-за committed baseline `notifications/send/page.tsx:434`; pricing files clean.
+- `npm run audit:security` → passed, 1785 project files; `npm run check:encoding` → passed, 1218 source files.
+- Prisma schema/pending migration не менялись; production DB, competitor Prisma runtime/repository, integration/e2e/
+  build, scheduler, external network, `applyProductChanges`, ERP actions и Product.price не использовались/не менялись.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -914,10 +1025,17 @@ money/statistics/clamps integer/BigInt; input permutations canonical; snapshot h
 persistence helpers изолированы отдельно. Engine не читает env/DB/network и не пишет
 Product/recommendation/match/ERP state.
 
+ЭТАП 8 (application/UI boundary, протестировано): plain DTO не импортируют Prisma/Decimal; money/date валидируются
+до UI, recommendation conversion deterministic. Safe external URLs не переносят credentials/query/hash и не
+принимают HTTP/IP/internal hostnames. Raw fetch data/network details/secrets/stacks отсутствуют в contracts.
+React экранирует недоверенные titles, `dangerouslySetInnerHTML` отсутствует; production shell не содержит synthetic
+data или mutation handlers. Read route защищён server-side существующим `catalog.read`; будущие write permissions
+зафиксированы, но actions/API не реализованы.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
-проверка на коде — ЭТАП 10.
+проверка на коде — ЭТАП 11.
 
 ## Git
 
@@ -927,20 +1045,22 @@ Product/recommendation/match/ERP state.
   `2b181078` (`feat(pricing): parse JSON-LD competitor products`), коммит ЭТАПА 5 `8f3f01a1`
   (`feat(pricing): add deterministic competitor matching`), коммит ЭТАПА 6
   `94083013` (`feat(pricing): add observation ingestion service`), коммит ЭТАПА 7
-  `feat(pricing): add deterministic price recommendations` (хэш — `git log --oneline -8`).
+  `424ba7d4` (`feat(pricing): add deterministic price recommendations`), коммит ЭТАПА 8
+  `feat(pricing): add admin pricing application shell` (хэш — `git log --oneline -9`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 8: admin API/UI + review/apply workflow. Сначала определить application/repository ports и read models для
-dashboard/product detail/competitors/matches/rules/runs, server authz (`catalog.read|update`, `prices.update`),
-CSRF/audit и stale recommendation checks. Presentational UI и pure API validation можно разрабатывать на typed
-fixtures/fakes; `likely` показывать только как candidate, excluded evidence — с reason codes. Apply должен
-переиспользовать `applyProductChanges`, optimistic revision/current price/input hash, запрещать local apply для
-ERP-linked/erpPriceMissing и никогда автоматически не менять цену.
+ЭТАП 9 — первый PostgreSQL integration stage, НЕ начинать автоматически. Сначала пользователь должен отдельно
+решить/явно разрешить конфигурацию изолированной non-production DB и безопасное применение pending migration туда.
+После этого: проверить migration/constraints/rollback на non-prod; реализовать Prisma repository adapters для
+observation/recommendation/read models; доказать transaction/locking/idempotency/stale semantics integration-тестами;
+затем подключить application query service, read-only admin API и реальные dashboard/product detail DTO. Только
+после read path отдельно реализовывать review mutations с `catalog.update|prices.update`, CSRF/audit/rate-limit,
+expected current price + revision + input hash и `applyProductChanges` только для допустимой local price.
 
-**Стоп перед DB-backed routes/Prisma repository остаётся:** pending migration не применена, `.env.local` указывает
-на production. Перед runtime Prisma path/integration tests нужна отдельная явная команда пользователя по
-non-production DB и применению migration. До неё ЭТАП 8 допустим только как pure contracts/fakes/presentational UI.
+**Hard stop:** `.env.local` указывает на production, pending migration не применена. До отдельного решения по
+non-production DB нельзя создавать pricing Prisma runtime path, DB-backed routes, integration tests, scheduler или
+реальные Apply/ERP actions. Production DB и `prisma/migrations/` не трогать.

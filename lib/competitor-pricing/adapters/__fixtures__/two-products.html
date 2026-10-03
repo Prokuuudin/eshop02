@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Synthetic fixture: two different Products with usable prices on one page. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Product",
+            "@id": "#shampoo",
+            "name": "Synthetic Shampoo",
+            "gtin13": "4750000000017",
+            "offers": { "@type": "Offer", "price": "10.00", "priceCurrency": "EUR" }
+          },
+          {
+            "@type": "Product",
+            "@id": "#spray",
+            "name": "Synthetic Spray",
+            "gtin13": "4750000000031",
+            "offers": { "@type": "Offer", "price": "14.00", "priceCurrency": "EUR" }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

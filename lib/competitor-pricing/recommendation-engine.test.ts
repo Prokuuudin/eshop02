@@ -17,7 +17,8 @@ function evidence(id: string, priceCents: number, patch: Partial<CompetitorPrice
     matchStatus: 'confirmed',
     matchMethod: 'ean',
     matchConfidenceThousandths: 980,
-    regularCents: priceCents,
+    observedCents: priceCents,
+    regularCents: null,
     saleCents: null,
     currency: 'EUR',
     availability: 'in_stock',
@@ -180,7 +181,7 @@ describe('one price per competitor', () => {
     expect(result.market.statistics?.count).toBe(1)
     expect(result.market.includedCompetitors).toMatchObject([{
       competitorId: 'same-shop',
-      effectivePriceCents: 1500,
+      observedPriceCents: 1500,
       observationIds: ['observation-page-a', 'observation-page-b'],
     }])
     expect(result.snapshot?.observations.map(({ marketRole }) => marketRole)).toEqual(['included', 'collapsed_duplicate'])
@@ -288,14 +289,47 @@ describe('recommendation target and safeguards', () => {
     expect(result).toMatchObject({ outcome: 'no_recommendation', primaryReason: 'insufficient_competitors' })
   })
 
-  it('uses sale only when includeSalePrices is enabled', () => {
-    const item = evidence('sale', 2000, { saleCents: 1500 })
-    expect(recommendPrice(input([item], { rules: oneCompetitorRules }))).toMatchObject({
-      outcome: 'no_recommendation', primaryReason: 'no_change',
-    })
-    expect(recommendPrice(input([item], { rules: { ...oneCompetitorRules, includeSalePrices: true } }))).toMatchObject({
+  it('market price is observedPrice; proven regular/sale metadata never replaces it', () => {
+    const onSale = evidence('sale', 1500, { regularCents: 2000, saleCents: 1500 })
+    expect(recommendPrice(input([onSale], { rules: oneCompetitorRules }))).toMatchObject({
       outcome: 'recommendation', rawTargetPriceCents: 1500,
     })
+    const listedOnly = evidence('list', 2000, { regularCents: 2000 })
+    expect(recommendPrice(input([listedOnly], { rules: oneCompetitorRules }))).toMatchObject({
+      outcome: 'no_recommendation', primaryReason: 'no_change',
+    })
+  })
+
+  it('evidence without observedPrice is unusable — regular/sale are no fallback', () => {
+    const missing = evidence('missing', 1500, { observedCents: null, regularCents: 1500 })
+    const result = recommendPrice(input([missing], { rules: oneCompetitorRules }))
+    expect(result).toMatchObject({ outcome: 'no_recommendation' })
+    expect(result.market.excludedEvidence).toEqual([expect.objectContaining({ observationId: 'observation-missing', reasons: ['invalid_price'] })])
+  })
+
+  it.each([
+    ['sale without regular', { saleCents: 1500 }],
+    ['sale different from observed', { regularCents: 2000, saleCents: 1400 }],
+    ['regular above observed without sale', { regularCents: 2000 }],
+    ['zero observed', { observedCents: 0 }],
+  ] as const)('inconsistent price semantics (%s) make evidence unusable', (_label, patch) => {
+    const result = recommendPrice(input([evidence('bad', 1500, patch)], { rules: oneCompetitorRules }))
+    expect(result.market.excludedEvidence).toEqual([expect.objectContaining({ reasons: ['invalid_price'] })])
+  })
+
+  it('median uses observed prices of all competitors', () => {
+    const result = recommendPrice(input([
+      evidence('a', 1000, { regularCents: 3000, saleCents: 1000 }), evidence('b', 1200), evidence('c', 1400, { regularCents: 1400 }),
+    ], { rules: { ...oneCompetitorRules, outliers: { mode: 'none' } } }))
+    expect(result).toMatchObject({ outcome: 'recommendation', rawTargetPriceCents: 1200 })
+  })
+
+  it('a change of observedPrice changes the input hash (stale recommendation)', () => {
+    const first = recommendPrice(input([evidence('a', 1500)], { rules: oneCompetitorRules }))
+    const second = recommendPrice(input([evidence('a', 1600)], { rules: oneCompetitorRules }))
+    expect(first.inputHash).not.toBeNull()
+    expect(second.inputHash).not.toBe(first.inputHash)
+    expect(first.snapshot?.observations[0]).toMatchObject({ observedPrice: '15.00', regularPrice: null, salePrice: null })
   })
 })
 

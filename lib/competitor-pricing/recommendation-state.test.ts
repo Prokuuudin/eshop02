@@ -81,14 +81,14 @@ describe('recommendation snapshot', () => {
     algorithmVersion: 'v1',
     product: { id: 'p1', price: '18.90', revision: 3, priceAuthority: 'local', erpPriceMissing: false },
     observations: [
-      { observationId: 'o2', competitorId: 'c2', competitorProductId: 'cp2', matchStatus: 'manual', matchMethod: 'manual', matchConfidenceThousandths: null, regularPrice: '18.20', salePrice: null, currency: 'EUR', availability: 'in_stock', observedAt: '2026-10-03T08:00:00.000Z', lastSeenAt: '2026-10-03T10:00:00.000Z', competitorStatus: 'active', monitoringState: 'active', lastCheckStatus: 'ok', effectivePrice: '18.20', marketRole: 'included', exclusionReasons: [] },
-      { observationId: 'o1', competitorId: 'c1', competitorProductId: 'cp1', matchStatus: 'confirmed', matchMethod: 'ean', matchConfidenceThousandths: 980, regularPrice: '18.50', salePrice: null, currency: 'EUR', availability: 'in_stock', observedAt: '2026-10-03T08:00:00.000Z', lastSeenAt: '2026-10-03T09:00:00.000Z', competitorStatus: 'active', monitoringState: 'active', lastCheckStatus: 'ok', effectivePrice: '18.50', marketRole: 'included', exclusionReasons: [] },
+      { observationId: 'o2', competitorId: 'c2', competitorProductId: 'cp2', matchStatus: 'manual', matchMethod: 'manual', matchConfidenceThousandths: null, regularPrice: '18.20', salePrice: null, currency: 'EUR', availability: 'in_stock', observedAt: '2026-10-03T08:00:00.000Z', lastSeenAt: '2026-10-03T10:00:00.000Z', competitorStatus: 'active', monitoringState: 'active', lastCheckStatus: 'ok', observedPrice: '18.20', marketRole: 'included', exclusionReasons: [] },
+      { observationId: 'o1', competitorId: 'c1', competitorProductId: 'cp1', matchStatus: 'confirmed', matchMethod: 'ean', matchConfidenceThousandths: 980, regularPrice: '18.50', salePrice: null, currency: 'EUR', availability: 'in_stock', observedAt: '2026-10-03T08:00:00.000Z', lastSeenAt: '2026-10-03T09:00:00.000Z', competitorStatus: 'active', monitoringState: 'active', lastCheckStatus: 'ok', observedPrice: '18.50', marketRole: 'included', exclusionReasons: [] },
     ],
     analysis: {
       targetStrategy: 'match_median',
       includedCompetitors: [
-        { competitorId: 'c2', effectivePrice: '18.20', observationIds: ['o2'], competitorProductIds: ['cp2'] },
-        { competitorId: 'c1', effectivePrice: '18.50', observationIds: ['o1'], competitorProductIds: ['cp1'] },
+        { competitorId: 'c2', observedPrice: '18.20', observationIds: ['o2'], competitorProductIds: ['cp2'] },
+        { competitorId: 'c1', observedPrice: '18.50', observationIds: ['o1'], competitorProductIds: ['cp1'] },
       ],
       excludedObservations: [],
       freshnessValidThrough: '2026-10-06T09:00:00.000Z',

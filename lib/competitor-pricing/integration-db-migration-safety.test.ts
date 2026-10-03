@@ -42,6 +42,19 @@ describe('pending competitor pricing migration safety', () => {
     expect(migration).not.toMatch(/^\s*(?:DROP|TRUNCATE|DELETE|UPDATE|INSERT)\b/gim)
   })
 
+  it('stores a mandatory positive observedPrice with literal regular/sale semantics', () => {
+    const observationTable = /CREATE TABLE "CompetitorPriceObservation" \(([\s\S]*?)\n\);/.exec(migration)?.[1] ?? ''
+    expect(observationTable).toMatch(/"observedPrice" DECIMAL\(12,2\) NOT NULL/)
+    expect(observationTable).toMatch(/"regularPrice" DECIMAL\(12,2\),/)
+    expect(observationTable).toMatch(/"salePrice" DECIMAL\(12,2\),/)
+    expect(migration).toMatch(/CHECK \("observedPrice" > 0 AND/)
+    expect(migration).toContain('"CompetitorPriceObservation_price_semantics_check"')
+    expect(migration).toMatch(/"salePrice" = "observedPrice" AND "regularPrice" IS NOT NULL AND "regularPrice" > "salePrice"/)
+    expect(migration).toMatch(/"salePrice" IS NULL AND \("regularPrice" IS NULL OR "regularPrice" = "observedPrice"\)/)
+    // The old ambiguous model ("either regular or sale is the price") must be gone.
+    expect(migration).not.toContain('CompetitorPriceObservation_has_price_check')
+  })
+
   it('rolls back exactly the six pricing tables and never Product', () => {
     expect(captures(rollback, /^DROP TABLE IF EXISTS "([^"]+)"/gim)).toEqual(EXPECTED_TABLES)
     expect(rollback).not.toMatch(/^\s*(?:ALTER|DROP|TRUNCATE)\s+TABLE\s+"Product"\b/gim)

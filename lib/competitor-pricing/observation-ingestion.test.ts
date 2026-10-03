@@ -156,6 +156,8 @@ function parsed(observation: NormalizedObservation): ParsedListing {
     manufacturerSku: null,
     sizeText: null,
     observation,
+    aggregate: null,
+    warnings: [],
   }
 }
 
@@ -185,8 +187,8 @@ function successfulAttempt(raw: RawObservation): ObservationIngestionAttempt {
   return { kind: 'adapter_result', result }
 }
 
-const PRICE_A = { regularPrice: '10.00', currency: 'EUR', availability: 'in_stock' } as const
-const PRICE_B = { regularPrice: '12.00', currency: 'EUR', availability: 'in_stock' } as const
+const PRICE_A = { observedPrice: '10.00', currency: 'EUR', availability: 'in_stock' } as const
+const PRICE_B = { observedPrice: '12.00', currency: 'EUR', availability: 'in_stock' } as const
 
 describe('observation ingestion append/touch', () => {
   it('appends the first observation and mirrors only operational current state', async () => {
@@ -201,7 +203,8 @@ describe('observation ingestion append/touch', () => {
     expect(repository.history(PRODUCT_ID)).toMatchObject([{
       competitorProductId: PRODUCT_ID,
       competitorId: COMPETITOR_ID,
-      regularCents: 1000,
+      observedCents: 1000,
+      regularCents: null,
       saleCents: null,
       currency: 'EUR',
       availability: 'in_stock',
@@ -239,9 +242,9 @@ describe('observation ingestion append/touch', () => {
   })
 
   it.each([
-    ['regular price', { regularPrice: '11.00', currency: 'EUR', availability: 'in_stock' }],
-    ['sale price', { regularPrice: '10.00', salePrice: '9.00', currency: 'EUR', availability: 'in_stock' }],
-    ['availability', { regularPrice: '10.00', currency: 'EUR', availability: 'out_of_stock' }],
+    ['observed price', { observedPrice: '11.00', currency: 'EUR', availability: 'in_stock' }],
+    ['proven regular/sale metadata only', { observedPrice: '10.00', regularPrice: '12.00', salePrice: '10.00', currency: 'EUR', availability: 'in_stock' }],
+    ['availability', { observedPrice: '10.00', currency: 'EUR', availability: 'out_of_stock' }],
   ] as const)('appends when %s changes', async (_label, changed) => {
     const repository = new FakeObservationRepository(emptyProduct())
     await ingestObservation(repository, eventInput(at(10), successfulAttempt(PRICE_A)))
@@ -253,11 +256,11 @@ describe('observation ingestion append/touch', () => {
 
   it('treats equivalent decimal text as one normalized money state', async () => {
     const repository = new FakeObservationRepository(emptyProduct())
-    await ingestObservation(repository, eventInput(at(10), successfulAttempt({ regularPrice: '12.3', currency: 'EUR' })))
-    const outcome = await ingestObservation(repository, eventInput(at(11), successfulAttempt({ regularPrice: '12.30', currency: 'EUR' })))
+    await ingestObservation(repository, eventInput(at(10), successfulAttempt({ observedPrice: '12.3', currency: 'EUR' })))
+    const outcome = await ingestObservation(repository, eventInput(at(11), successfulAttempt({ observedPrice: '12.30', currency: 'EUR' })))
 
     expect(outcome).toMatchObject({ kind: 'success', action: 'touch' })
-    expect(repository.history(PRODUCT_ID)).toMatchObject([{ regularCents: 1230, seenCount: 2 }])
+    expect(repository.history(PRODUCT_ID)).toMatchObject([{ observedCents: 1230, seenCount: 2 }])
   })
 })
 
@@ -269,7 +272,7 @@ describe('observation ingestion history', () => {
     }
 
     expect(repository.history(PRODUCT_ID)).toMatchObject([{
-      regularCents: 1000,
+      observedCents: 1000,
       observedAt: at(10),
       lastSeenAt: at(12),
       seenCount: 3,
@@ -281,7 +284,7 @@ describe('observation ingestion history', () => {
     await ingestObservation(repository, eventInput(at(10), successfulAttempt(PRICE_A)))
     await ingestObservation(repository, eventInput(at(11), successfulAttempt(PRICE_B)))
 
-    expect(repository.history(PRODUCT_ID).map(({ regularCents }) => regularCents)).toEqual([1000, 1200])
+    expect(repository.history(PRODUCT_ID).map(({ observedCents }) => observedCents)).toEqual([1000, 1200])
   })
 
   it('stores A→B→A as three sequential states rather than finding an old hash', async () => {
@@ -290,14 +293,14 @@ describe('observation ingestion history', () => {
     await ingestObservation(repository, eventInput(at(11), successfulAttempt(PRICE_B)))
     await ingestObservation(repository, eventInput(at(12), successfulAttempt(PRICE_A)))
 
-    expect(repository.history(PRODUCT_ID).map(({ regularCents, observedAt, lastSeenAt }) => ({
-      regularCents,
+    expect(repository.history(PRODUCT_ID).map(({ observedCents, observedAt, lastSeenAt }) => ({
+      observedCents,
       observedAt,
       lastSeenAt,
     }))).toEqual([
-      { regularCents: 1000, observedAt: at(10), lastSeenAt: at(10) },
-      { regularCents: 1200, observedAt: at(11), lastSeenAt: at(11) },
-      { regularCents: 1000, observedAt: at(12), lastSeenAt: at(12) },
+      { observedCents: 1000, observedAt: at(10), lastSeenAt: at(10) },
+      { observedCents: 1200, observedAt: at(11), lastSeenAt: at(11) },
+      { observedCents: 1000, observedAt: at(12), lastSeenAt: at(12) },
     ])
   })
 
@@ -317,10 +320,10 @@ describe('observation ingestion history', () => {
 
 describe('observation ingestion failures', () => {
   it.each([
-    ['invalid price', { regularPrice: 'NaN', currency: 'EUR' }, 'invalid_price'],
-    ['zero price', { regularPrice: '0.00', currency: 'EUR' }, 'non_positive_price'],
-    ['foreign currency', { regularPrice: '10.00', currency: 'USD' }, 'unsupported_currency'],
-    ['missing currency', { regularPrice: '10.00' }, 'unsupported_currency'],
+    ['invalid price', { observedPrice: 'NaN', currency: 'EUR' }, 'invalid_price'],
+    ['zero price', { observedPrice: '0.00', currency: 'EUR' }, 'non_positive_price'],
+    ['foreign currency', { observedPrice: '10.00', currency: 'USD' }, 'unsupported_currency'],
+    ['missing currency', { observedPrice: '10.00' }, 'missing_currency'],
   ] as const)('%s is a structured parse failure and writes no observation', async (_label, raw, expectedCode) => {
     const repository = new FakeObservationRepository(emptyProduct())
     const result = adapterResult(raw)
@@ -366,7 +369,7 @@ describe('observation ingestion failures', () => {
     }))
 
     expect(repository.history(PRODUCT_ID)).toMatchObject([{
-      regularCents: 1000,
+      observedCents: 1000,
       observedAt: at(10),
       lastSeenAt: at(10),
       seenCount: 1,
@@ -468,7 +471,7 @@ describe('observation ingestion idempotency and isolation', () => {
     const stale = await ingestObservation(repository, oldEvent)
 
     expect(stale).toMatchObject({ kind: 'no_op', reason: 'stale_event' })
-    expect(repository.history(PRODUCT_ID).map(({ regularCents }) => regularCents)).toEqual([1000, 1200])
+    expect(repository.history(PRODUCT_ID).map(({ observedCents }) => observedCents)).toEqual([1000, 1200])
   })
 
   it('serializes concurrent replays so only one append commits', async () => {
@@ -489,8 +492,8 @@ describe('observation ingestion idempotency and isolation', () => {
     await ingestObservation(repository, eventInput(at(10), successfulAttempt(PRICE_A)))
     await ingestObservation(repository, eventInput(at(10), successfulAttempt(PRICE_B), secondProductId))
 
-    expect(repository.history(PRODUCT_ID).map(({ regularCents }) => regularCents)).toEqual([1000])
-    expect(repository.history(secondProductId).map(({ regularCents }) => regularCents)).toEqual([1200])
+    expect(repository.history(PRODUCT_ID).map(({ observedCents }) => observedCents)).toEqual([1000])
+    expect(repository.history(secondProductId).map(({ observedCents }) => observedCents)).toEqual([1200])
   })
 
   it('rejects a Competitor/CompetitorProduct ownership mismatch before persistence', async () => {

@@ -19,6 +19,7 @@ describe('pricing rules', () => {
     ['unknown outlier mode', { outliers: { mode: 'zscore' } }],
     ['stale observation window too large', { maxObservationAgeHours: 24 * 31 }],
     ['likely matches enabled', { includeLikelyMatches: true }],
+    ['removed sale/regular switch', { includeSalePrices: true }],
   ])('rejects %s', (_label, patch) => {
     expect(parsePricingRules({ ...DEFAULT_PRICING_RULES, ...patch }).ok).toBe(false)
   })

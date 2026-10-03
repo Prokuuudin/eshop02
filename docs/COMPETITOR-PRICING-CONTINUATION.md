@@ -4,7 +4,7 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-04, конец ЭТАПА 9A (изолированный DB integration guard и offline preparation).
+Последнее обновление: 2026-10-04, корректирующий ЭТАП 4R (строгая семантика `observedPrice`) после ЭТАПА 9A.
 Pricing Prisma repository/DB-backed API/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
@@ -129,16 +129,11 @@ Pricing rules — KV `competitor-pricing-rules` + zod (`lib/competitor-pricing/s
 
 ### Adapters
 
-РЕАЛИЗОВАНО в ЭТАПЕ 4: `CompetitorAdapter { key; parse(html, url): ParsedListing | ParseFailure }` и первый
-адаптер `jsonld-product` (schema.org Product/Offer/AggregateOffer из `<script type="application/ld+json">`).
-Без DOM и исполнения JS; поддержаны корневые массивы, `@graph`, ссылки `@id`, массивы `@type`/offers,
-`priceSpecification`, GTIN-варианты/SKU/MPN/brand/size и schema availability. Цена локаль-нормализуется,
-затем обязательно проходит `normalizeObservation`: ≤0/NaN/нет цены/не-EUR → ParseFailure, НИКОГДА 0.
-Сайт-специфичные адаптеры при необходимости должны быть отдельными файлами.
-
-Аудит ЭТАПА 5 ужесточил price normalization: одиночные `1,234`/`1.234` неоднозначны (thousands или
-3 decimal places) и теперь дают `invalid_price`. Поддержаны только однозначные `12.34`, `12,34`,
-`1,234.56`, `1.234,56`, пробелы/NBSP/apostrophe как grouping и EUR/€ по краям.
+РЕАЛИЗОВАНО в ЭТАПЕ 4, **переписано в ЭТАПЕ 4R** (см. «Stage 4R — Strict observed price semantics»):
+`CompetitorAdapter { key; parse(html, url): ParsedListing | ParseFailure }`, адаптер `jsonld-product`.
+`Offer.price` → `observedPrice`; `regularPrice`/`salePrice` — только буквальная доказанная семантика;
+`AggregateOffer.lowPrice/highPrice` никогда не observed price; locale guessing запрещён; любая
+неоднозначность Product/Offer/валюты → parse failure. Сайт-специфичные адаптеры — отдельными файлами.
 
 ### Matching
 
@@ -150,7 +145,7 @@ confidence mapping, conflicts и ограничения подробно опи�
 ### Analysis / recommendation (детерминированно, целые центы)
 
 Последнее наблюдение каждого допустимого match не старше maxObservationAgeHours; out-of-stock исключаются
-(requireAvailability) и показываются отдельно; effective = sale (если includeSalePrices) иначе regular;
+(requireAvailability) и показываются отдельно; цена конкурента = только `observedPrice` (ЭТАП 4R);
 выбросы — IQR при ≥4 точках. Нет рекомендации, если competitors < minimumCompetitors или
 |отклонение от медианы| < minimumDifferencePercent. Цель = медиана, ограничение maxDecrease/maxIncrease
 от текущей цены, округление до цента. Confidence HIGH/MEDIUM по числу/свежести/статусу match.
@@ -191,7 +186,7 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ## Current state
 
-ЭТАПЫ 1–8 и подготовительный ЭТАП 9A завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–8, подготовительный ЭТАП 9A и корректирующий ЭТАП 4R (строгий `observedPrice`) завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
 `robots.ts`, JSON-LD Product adapter, synthetic fixtures, deterministic matcher и pure ingestion service с
 repository port/fake tests, pure integer market analysis/recommendation engine и semantic snapshot/hash
@@ -219,6 +214,8 @@ mutation actions, реальных monitoring data и scheduler.
 - [x] ЭТАП 9A: offline-only preparation изолированной Neon integration DB: отдельный URL без fallback,
       production denylist/fingerprint/branch/write guards, dedicated Vitest bootstrap/config, migration/rollback
       static regression; 21 новый unit-тест. К БД не подключались.
+- [x] ЭТАП 4R (corrective): строгая семантика `observedPrice` — адаптер переписан под ТЗ ЭТАПА 4, `observedPrice` в
+      schema/pending SQL/domain/ingestion/engine/DTO, `includeSalePrices` удалён; +97 тестов, старые ошибочные заменены.
 
 ## Remaining
 
@@ -247,8 +244,9 @@ mutation actions, реальных monitoring data и scheduler.
     (`lib/product-overrides-store.ts` `prisma.product.delete`); Restrict сломал бы его. Решения по рекомендациям
     дублируются в AuditLog (ЭТАП 8), поэтому история решений не теряется. FK на `Competitor` — Restrict
     (конкурента выключают, не удаляют).
-11. (ЭТАП 2) `effectivePrice` в наблюдении НЕ хранится: он зависит от правила includeSalePrices; хранение
-    зашило бы правило в данные. Считается при анализе из regular/sale.
+11. (ЭТАП 2, ЗАМЕНЕНО в ЭТАПЕ 4R) Наблюдение хранит обязательный `observedPrice` (текущая эффективная цена,
+    единственный вход рынка) плюс необязательные `regularPrice`/`salePrice` только с доказанной семантикой.
+    Правило `includeSalePrices` удалено.
 12. (ЭТАП 2) Parse failure → `normalizeObservation` возвращает `{ok:false, code}`; строка наблюдения не
     создаётся; плюс CHECK-constraints в БД (цены > 0, хотя бы одна цена, currency `^[A-Z]{3}$`).
 13. (ЭТАП 2) Валюта: v1 только EUR, без FX.
@@ -265,9 +263,13 @@ mutation actions, реальных monitoring data и scheduler.
 19. (ЭТАП 4) JSON-LD — недоверенный вход: максимум 32 блока, 256 КиБ на блок, 512 КиБ суммарно и 10 000
     узлов; парсинг только `JSON.parse` + обход объектов, без DOM/JS. Циклические `@id`-ссылки не рекурсируют
     бесконечно. Длинные (>200) идентификаторы отбрасываются, а не усекаются до возможного ложного совпадения.
-20. (ЭТАП 4) `Offer.price`, `UnitPriceSpecification.price` и `AggregateOffer.lowPrice` трактуются как текущая
-    публичная regularPrice. Sale/list price не угадывается из диапазона или нескольких offers. Среди offers
-    выбирается первый валидный EUR-кандидат; отсутствие/ошибка/≤0/не-EUR возвращает типизированный ParseFailure.
+20. (ЭТАП 4R, заменяет прежнее решение ЭТАПА 4 — оно противоречило ТЗ) `Offer.price` (и равный ему
+    plain `PriceSpecification.price`) → `observedPrice`, НЕ regular и НЕ sale. `regularPrice` — только из
+    `priceSpecification` с `priceType` `ListPrice`/`StrikethroughPrice` (≥ observed); `salePrice` = observed
+    только если такой reference > observed. `AggregateOffer.lowPrice/highPrice` — только диагностика, не
+    observed/regular и не evidence. Locale guessing запрещён. Никакого «первый»/«минимальный»/«первый EUR»:
+    различающиеся цены → `ambiguous_offers`, разные валюты → `conflicting_currencies`, несколько разных Product →
+    `ambiguous_product`.
 21. (ЭТАП 4) Fixtures только синтетические; HTML реальных конкурентов не сохранялся и сеть не использовалась.
 22. (ЭТАП 5) `Product.barcode`/`sku` nullable, НЕ unique и без DB indexes; matcher всегда принимает уже
     ограниченный список candidates и сам проверяет дубли. `externalId @unique` — ERP identity Hairshop Pro,
@@ -313,7 +315,7 @@ mutation actions, реальных monitoring data и scheduler.
     поэтому лимит никогда не превышается. Minimum difference проверяется exact integer ratio после clamp.
 39. (ЭТАП 7) Action mode: ERP-linked → `erp_required`; local + !erpPriceMissing → `local_apply`; local +
     erpPriceMissing → `apply_blocked`. Engine ничего не применяет и одинаково считает market target для всех.
-40. (ЭТАП 7) Snapshot содержит все raw evidence, operational/match state, effective price, semantic market role,
+40. (ЭТАП 7) Snapshot содержит все raw evidence, operational/match state, observed price, semantic market role,
     exclusion reasons, included competitor groups и inclusive freshness boundary. Hash order-independent и не
     включает произвольный `now`; при переходе observation в stale меняются disposition/hash. `expiresAt` = min
     policy TTL и первого semantic freshness expiry (+1 ms для inclusive boundary).
@@ -598,13 +600,10 @@ Confidence — стабильный label правил для Decimal(4,3), не
 - Rejected candidate может снова оцениваться только при изменении evidence любой стороны; это явно возвращается в
   `reconsideredRejectedProductIds`.
 
-### Stage 4 price-format audit
+### Stage 4 price-format audit (ЗАМЕНЕНО ЭТАПОМ 4R)
 
-Обнаружено и исправлено опасное guessing: старая ветка трактовала одиночные `1,234`/`1.234` как 1234.00.
-Теперь обе формы `invalid_price`. Доказано helper + full adapter tests:
-`12.34`/`12,34` → 12.34; `1,234.56`/`1.234,56`/`1 NBSP 234,56 €` → 1234.56;
-ambiguous single separator, malformed grouping, unknown currency text, NaN/Infinity → failure. Parser не был
-расширен для guessing максимума локалей.
+Исторически ЭТАП 5 запретил одиночные `1,234`/`1.234`, но оставил другие locale-формы. ЭТАП 4R убрал locale
+parsing полностью: допустимы только JSON number и строка `^(0|[1-9]d*)(.d{1,2})?$` (см. Stage 4R).
 
 ### Tests и known limitations
 
@@ -705,8 +704,8 @@ excluded evidence с stable reason codes, outlier details, target/action mode, s
   `clock_anomaly`; malformed/observed-after-last-seen → `invalid_timestamp`.
 - Operational fail-closed: competitor/product должны быть active, latest check — `ok`; paused/gone, blocked и
   parse/fetch/not-found state видны отдельными exclusion reasons. Last known observation не удаляется.
-- Currency: только EUR, без FX. Invalid/non-positive/out-of-Decimal-range price исключается; effective = sale,
-  только когда `includeSalePrices=true` и sale есть, иначе regular.
+- Currency: только EUR, без FX. Цена конкурента = `observedCents` (ЭТАП 4R); отсутствие/≤0/out-of-range observed
+  или противоречивые regular/sale metadata → `invalid_price`. regular/sale никогда не fallback.
 - Availability: `out_of_stock` всегда excluded; default `requireAvailability=true` принимает только `in_stock`.
   При false также допускаются canonical `preorder`/`unknown`. Stage 4 adapter заранее сводит schema.org
   LimitedAvailability→in_stock, SoldOut/Discontinued→out_of_stock, BackOrder→preorder.
@@ -744,7 +743,7 @@ Primary no-recommendation codes: `invalid_own_price`, `invalid_policy`, `no_trus
 ### Snapshot/staleness and schema audit
 
 Расширенный `RecommendationInputSnapshot` хранит canonical money strings, raw evidence + operational/match
-state, computed effective prices, roles `included|collapsed_duplicate|excluded`, reasons, final competitor groups
+state, observed prices, roles `included|collapsed_duplicate|excluded`, reasons, final competitor groups
 и `freshnessValidThrough`. Arrays canonical-sort перед SHA-256. Перестановка input не меняет output/hash;
 произвольное движение `now` внутри той же freshness classification не меняет hash, но переход через boundary
 меняет included/excluded role и hash. Future apply additionally compares current time with recommendation expiry.
@@ -874,6 +873,111 @@ client/repository implementation in ЭТАПЕ 9A.
 Full operator sequence, migration/rollback plan, namespaced synthetic-data/cleanup rules and required PostgreSQL
 transaction/race tests are in `docs/COMPETITOR-PRICING-DATABASE-INTEGRATION.md`.
 
+## Stage 4R — Strict observed price semantics (corrective, 2026-10-04)
+
+Причина: адаптер ЭТАПА 4 (Codex) брал первый валидный EUR-кандидат по всем Product/Offer, `AggregateOffer.lowPrice`
+как `regularPrice` и угадывал locale (`12,34`, `1.234,56 €`) — нарушение ТЗ ЭТАПА 4. Исправлено одним коммитом.
+Принцип: **отсутствие observation лучше неверной observation.**
+
+### observedPrice
+
+`observedPrice` = текущая эффективная цена, которую источник однозначно публикует сейчас. Обязательна, > 0.
+Это не list/regular, не sale и не нижняя граница диапазона. `regularPrice`/`salePrice` — отдельные поля только с
+доказанной семантикой. Инвариант (domain + DB CHECK): `sale ≠ null ⇒ sale = observed ∧ regular ≠ null ∧ regular > sale`;
+`sale = null ⇒ regular = null ∨ regular = observed`.
+
+### Accepted / rejected price formats
+
+Принимается: JSON number (если `String(n)` строгий decimal, напр. `12.34`, `12`) и строка `"12"`, `"12.3"`, `"12.34"`.
+Отклоняется (`invalid_price`): `"12,34"`, `"12,34 €"`, `"€12.34"`, `"1.234,56"`, `"1,234.56"`, NBSP/apostrophe grouping,
+символы/коды валют в строке, пробелы вокруг, `"012.00"`, `"12."`, `".5"`, `"+12"`, экспонента, >2 знаков, `0.1+0.2`,
+текст. `0`/`-1` → `non_positive_price`. Одна грамматика: `parseStrictPriceString` в `observation.ts`
+(чистая целочисленная арифметика, без Prisma/Decimal/float).
+
+### Product selection
+
+Кандидаты: top-level узлы (root, root arrays, `@graph`, глубина ≤ 8) с типом schema.org `Product` + `mainEntity`
+top-level страниц. Вложенные `isRelatedTo`/`hasVariant`/`itemListElement` — не кандидаты. Product без `offers` —
+игнорируется (warning `product_without_offers_ignored`). Ровно один Product с offers → его результат. Несколько:
+все должны быть usable и доказуемо одной сущностью (одинаковый `@id` или одинаковый valid GTIN, без конфликтов
+GTIN/SKU) с идентичным state hash → collapse (`equivalent_products_collapsed`); иначе `ambiguous_product`
+(в т.ч. usable + unusable). Malformed identifier никогда не доказывает identity. Порядок не влияет (permutation tests).
+
+### Offer selection
+
+Offer = `@type Offer` или без `@type`; `AggregateOffer.offers` — тоже offers. `itemCondition` ≠ NewCondition →
+offer исключается (`non_new_condition_offer_ignored`). Текущая цена offer: `Offer.price` и plain
+`PriceSpecification/UnitPriceSpecification` без `priceType` — должны совпадать, иначе `ambiguous_offers`.
+Спецификации с `referenceQuantity`/`eligibleQuantity`/`minPrice`/`maxPrice`/`validFrom`/`validThrough`/unit/billing
+и прочие priceType (MSRP, SRP…) игнорируются с warning. Offer без цены игнорируется (`offer_without_price_ignored`).
+Любая invalid/≤0/без валюты цена у любого offer → failure продукта. Несколько offers: разные валюты →
+`conflicting_currencies`; разные observed → `ambiguous_offers`; одинаковые → collapse
+(`duplicate_offers_collapsed`); разные availability при той же цене → `unknown` + `conflicting_availability`;
+разные reference → regular=null + `conflicting_reference_prices`.
+
+### AggregateOffer
+
+`lowPrice`/`highPrice` никогда не observed/regular и не попадают в рекомендации. Только aggregate →
+`aggregate_offer_only` с `aggregate: {lowCents, highCents, currency, offerCount}` (диагностика сохранена).
+Отдельный однозначный Offer + aggregate: используется Offer, если валюта совпадает и цена внутри [low, high]
+(иначе `conflicting_currencies`/`ambiguous_offers`); aggregate остаётся в `ParsedListing.aggregate` + warning.
+
+### Error taxonomy (ParseFailureCode) и warnings
+
+Failures: `no_jsonld`, `invalid_jsonld` (любой битый блок — fail closed), limits (`too_many_jsonld_blocks`,
+`jsonld_block_too_large`, `jsonld_total_too_large`, `jsonld_too_complex`), `no_product`, `ambiguous_product`,
+`no_offer`, `no_price`, `ambiguous_offers`, `aggregate_offer_only`, `invalid_price`, `non_positive_price`,
+`missing_currency`, `unsupported_currency`, `conflicting_currencies`, `inconsistent_price_semantics`.
+Порядок приоритета при нескольких failures фиксирован (не зависит от JSON order). Parse failures — не BLOCKED.
+Warnings (машинные, sorted unique): `malformed_identifier` (числовой/битый/не той длины GTIN, SKU>200 —
+identifier отбрасывается, цена/товар остаются), `conflicting_identifiers`, `missing_gtin`, `missing_sku`,
+`duplicate_offers_collapsed`, `equivalent_products_collapsed`, `conflicting_availability`,
+`conflicting_reference_prices`, `reference_price_ignored`, `aggregate_offer_ignored`, `offer_without_price_ignored`,
+`non_new_condition_offer_ignored`, `unsupported_price_specification_ignored`, `unknown_availability`,
+`product_without_offers_ignored`. GTIN-13 и его zero-padded GTIN-14 — один идентификатор.
+
+### Extraction / limits
+
+Линейный сканер: пропускает HTML-комментарии, читает `<script>` до первого `</script` (как браузер); только
+`type=application/ld+json` (регистр/параметры игнорируются, `data-type` не считается). Лимиты: 32 блока, 256 КиБ
+блок, 512 КиБ суммарно, 10 000 узлов, глубина контейнеров 8, ≤100 offers/priceSpecifications на сущность.
+Только `JSON.parse`; `__proto__`/`constructor` — обычные данные. type только schema.org (bare/`schema:`/URL).
+
+### Downstream
+
+- `NormalizedObservation`/`PersistedPriceObservation`: `observedCents` (обяз.) + `regularCents`/`saleCents` (proven).
+  State hash `v2|observed|regular|sale|currency|availability`: observed €12→€13 и смена proven metadata → APPEND.
+- Ingestion: valid observation требует observed; parse failure не создаёт/не touch-ит/не заменяет; A→B→A сохранён.
+- Recommendation: `CompetitorPriceEvidence.observedCents` — единственный рыночный вход; regular/sale только metadata
+  (противоречивые → `invalid_price`). `includeSalePrices` удалён из правил и DTO. Snapshot `observedPrice` (raw) +
+  `regularPrice`/`salePrice`; `RECOMMENDATION_ALGORITHM_VERSION = market-median-v2`.
+- DTO: `RecommendationEvidenceDto.observedPriceCents` (было effective), `PriceHistoryPointDto.observedPriceCents` (обяз.)
+  + regular/sale nullable. UI shell не отображал эти поля — правок компонентов не потребовалось.
+
+### Schema / migration
+
+`CompetitorPriceObservation.observedPrice Decimal(12,2) NOT NULL`; CHECK `observedPrice > 0` + regular/sale > 0 +
+`CompetitorPriceObservation_price_semantics_check` (инвариант выше); старый `has_price_check` удалён. Pending SQL
+обновлён на месте (нигде не применён); offline-сверка: `prisma migrate diff --from-schema <schema@67589105>
+--to-schema prisma/schema.prisma --script` (без БД) идентичен сгенерированной части pending SQL. Rollback не менялся
+(DROP 6 таблиц). Статический тест миграции проверяет `observedPrice` и новые CHECK.
+
+### Tests (ЭТАП 4R)
+
+Adapter 126 (было 43; старые тесты, закреплявшие locale parsing, `lowPrice`→regular, «первый EUR offer» и
+«битый блок игнорируется», заменены требованиями ТЗ), observation 28, ingestion 35, engine+matching 88, contracts/
+migration/settings дополнены. `lib/competitor-pricing` + IP guard + webhook → 21 файл, 677 passed. Весь unit →
+301 файл, 2587 passed (было 2490), 0 skipped. tsc 0, ESLint изменённых файлов 0, `prisma validate` valid,
+`git diff --check` чисто, security audit passed (1797 files), encoding passed.
+
+### Known limitations
+
+- Строгость намеренно снижает долю успешно разобранных страниц (варианты/несколько продавцов/только диапазон
+  → нет observation).
+- `manufacturerSku` по-прежнему `sku ?? mpn` (как в ЭТАПЕ 4/5); schema.org `sku` — идентификатор продавца, не
+  производителя. Не менялось в 4R (затрагивает matching) — кандидат на отдельное решение.
+- Даты `validFrom/validThrough` не оцениваются: такие спецификации просто игнорируются.
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -926,7 +1030,7 @@ apply/rollback/drift только на подтверждённой test branch.
 ЭТАП 4:
 - `lib/competitor-pricing/adapters/types.ts` — `CompetitorAdapter`, `ParsedListing`, типизированные ParseFailure.
 - `lib/competitor-pricing/adapters/jsonld-product.ts` + `.test.ts` — ограниченное извлечение/разбор JSON-LD,
-  Product/Offer/AggregateOffer, локаль-нормализация цены → `normalizeObservation`, metadata/availability.
+  Product/Offer/AggregateOffer, metadata/availability. (Locale-нормализация и выбор «первого» кандидата удалены в ЭТАПЕ 4R.)
 - `lib/competitor-pricing/adapters/__fixtures__/{basic-product,graph-aggregate,array-products}.html` — только
   синтетический HTML, включая root array, `@graph`/`@id`, AggregateOffer и UnitPriceSpecification.
 ЭТАП 5:
@@ -979,6 +1083,16 @@ apply/rollback/drift только на подтверждённой test branch.
   `vitest.competitor-pricing.integration.config.ts` — отдельная future DB-test boundary; Prisma client ещё не создан.
 - `docs/COMPETITOR-PRICING-DATABASE-INTEGRATION.md` — operator contract, Stage 9B migration/client/data/cleanup/
   transaction plan.
+ЭТАП 4R:
+- `lib/competitor-pricing/adapters/{types.ts,jsonld-product.ts,jsonld-product.test.ts}` — строгий адаптер, warnings, aggregate diagnostics.
+- `lib/competitor-pricing/adapters/__fixtures__/` — обновлены (machine prices, валидные GTIN) + новые синтетические
+  `list-price-sale`, `variant-offers`, `two-products`, `commented-and-js`.
+- `lib/competitor-pricing/observation.ts` (+test) — `observedCents`, строгая грамматика цены, инвариант семантики, hash v2.
+- `observation-repository.ts`, `observation-ingestion.ts` (+test) — `observedCents` в persistence-контракте.
+- `recommendation-engine.ts` (+test), `recommendation-snapshot.ts`, `settings.ts` (+test), `application-contracts.ts` (+test),
+  `admin-components.test.ts`, `matching-engine.test.ts`, `recommendation-state.test.ts` — observed-only рынок, без `includeSalePrices`.
+- `prisma/schema.prisma`, `prisma/pending-migrations/20261003120000_competitor_pricing/migration.sql`,
+  `integration-db-migration-safety.test.ts` — `observedPrice` + CHECK семантики.
 
 ## Tests
 
@@ -1082,6 +1196,10 @@ apply/rollback/drift только на подтверждённой test branch.
 - НЕ запускались: Prisma commands, DB/integration/e2e/build, pending migration apply/resolve/generate, внешняя сеть.
   Production DB/schema/data, `.env.local`, `prisma/migrations/` и existing application Prisma singleton не менялись.
 
+ЭТАП 4R (2026-10-04): см. «Stage 4R — Tests». Коротко: 677 passed в модуле, весь unit 2587 passed, 0 skipped;
+tsc/ESLint/prisma validate/diff-check/security/encoding чисто; offline migrate diff совпадает с pending SQL.
+К БД (prod и non-prod) не подключались; реальных запросов к конкурентам не было.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -1131,6 +1249,10 @@ React экранирует недоверенные titles, `dangerouslySetInner
 data или mutation handlers. Read route защищён server-side существующим `catalog.read`; будущие write permissions
 зафиксированы, но actions/API не реализованы.
 
+ЭТАП 4R (data-integrity, протестировано): неоднозначная цена не может стать evidence — отказ при нескольких
+разных Product/Offer/валютах, AggregateOffer только диагностика, locale guessing запрещён, битый JSON-LD блок fail
+closed, закомментированный JSON-LD игнорируется, regular/sale не fallback; DB CHECK дублирует инвариант семантики.
+
 ЭТАП 9A (DB-target boundary, протестировано offline): отдельный test URL без production fallback; идентичность
 Neon endpoint/database сравнивается со всеми production URL с pooler/direct normalization; branch label не может
 подменить programmatic identity check; fingerprint не включает secrets/query. Missing/ambiguous metadata,
@@ -1152,12 +1274,15 @@ string. Static migration regression фиксирует allowlist шести pric
   `94083013` (`feat(pricing): add observation ingestion service`), коммит ЭТАПА 7
   `424ba7d4` (`feat(pricing): add deterministic price recommendations`), коммит ЭТАПА 8
   `6078af57` (`feat(pricing): add admin pricing application shell`), коммит ЭТАПА 9A
-  `chore(pricing): prepare isolated database integration` (хэш — `git log --oneline -10`).
+  `8d096950` (`chore(pricing): prepare isolated database integration`), корректирующий коммит ЭТАПА 4R
+  `fix(pricing): enforce strict observed price semantics` (хэш — `git log --oneline -3`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
+
+ЭТАП 4R завершён; блокеров со стороны модели цены для 9B больше нет.
 
 ЭТАП 9B — НЕ начинать автоматически. Пользователь/оператор сначала вручную создаёт/подтверждает конкретную
 изолированную non-production Neon branch и задаёт dedicated env из

@@ -15,7 +15,9 @@ const listing = (overrides: Partial<ParsedListing> = {}): ParsedListing => ({
   ean: null,
   manufacturerSku: null,
   sizeText: '250 ml',
-  observation: { regularCents: 1000, saleCents: null, currency: 'EUR', availability: 'in_stock' },
+  observation: { observedCents: 1000, regularCents: null, saleCents: null, currency: 'EUR', availability: 'in_stock' },
+  aggregate: null,
+  warnings: [],
   ...overrides,
 })
 

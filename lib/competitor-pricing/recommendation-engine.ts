@@ -18,7 +18,7 @@ import {
 } from './recommendation-snapshot'
 import { parsePricingRules, percentToBasisPoints, type PricingRules } from './settings'
 
-export const RECOMMENDATION_ALGORITHM_VERSION = 'market-median-v1'
+export const RECOMMENDATION_ALGORITHM_VERSION = 'market-median-v2'
 export type RecommendationTargetStrategy = 'match_median'
 export type RecommendationActionMode = 'local_apply' | 'erp_required' | 'apply_blocked'
 
@@ -30,7 +30,11 @@ export type CompetitorPriceEvidence = {
   matchMethod: MatchMethod
   /** Fixed matching-rule score in thousandths; null for a manual decision. */
   matchConfidenceThousandths: number | null
+  /** Current effective competitor price (the only market price input). */
+  observedCents: number | null
+  /** Literal list/strikethrough price metadata; never used as market price. */
   regularCents: number | null
+  /** Proven sale metadata (= observed when set); never used as market price. */
   saleCents: number | null
   currency: string
   availability: Availability | string
@@ -80,7 +84,7 @@ export type ExcludedCompetitorEvidence = {
 
 export type IncludedMarketCompetitor = {
   competitorId: string
-  effectivePriceCents: number
+  observedPriceCents: number
   observationIds: string[]
   competitorProductIds: string[]
   matchStatuses: Array<'confirmed' | 'manual'>
@@ -169,13 +173,13 @@ export type RecommendationEngineResult = PriceRecommendation | NoPriceRecommenda
 
 type EligibleEvidence = {
   input: CompetitorPriceEvidence
-  effectivePriceCents: number
+  observedPriceCents: number
   lastSeenMs: number
 }
 
 type MarketCompetitorInternal = {
   competitorId: string
-  effectivePriceCents: number
+  observedPriceCents: number
   evidence: EligibleEvidence[]
   freshestLastSeenMs: number
 }
@@ -227,13 +231,18 @@ function validDate(value: Date): boolean {
   return value instanceof Date && Number.isFinite(value.getTime())
 }
 
-function effectivePrice(evidence: CompetitorPriceEvidence, includeSalePrices: boolean): number | null {
-  const regularValid = evidence.regularCents === null || isPositiveCents(evidence.regularCents)
-  const saleValid = evidence.saleCents === null || isPositiveCents(evidence.saleCents)
-  if (!regularValid || !saleValid) return null
-  if (evidence.regularCents === null && evidence.saleCents === null) return null
-  if (evidence.regularCents !== null && evidence.saleCents !== null && evidence.saleCents > evidence.regularCents) return null
-  return includeSalePrices && evidence.saleCents !== null ? evidence.saleCents : evidence.regularCents
+/**
+ * Market evidence is the observed (current effective) competitor price only. regular/sale
+ * are metadata and never a fallback; inconsistent metadata makes the evidence unusable.
+ */
+function usableObservedPrice(evidence: CompetitorPriceEvidence): number | null {
+  const observed = evidence.observedCents
+  if (!isPositiveCents(observed)) return null
+  const { regularCents: regular, saleCents: sale } = evidence
+  if (regular !== null && !isPositiveCents(regular)) return null
+  if (sale !== null && (sale !== observed || regular === null || regular <= sale)) return null
+  if (sale === null && regular !== null && regular !== observed) return null
+  return observed
 }
 
 function addExcluded(
@@ -272,7 +281,7 @@ function classifyEvidence(
       addExcluded(excluded, item, 'unsupported_currency')
       continue
     }
-    const price = effectivePrice(item, rules.includeSalePrices)
+    const price = usableObservedPrice(item)
     if (price === null) {
       addExcluded(excluded, item, 'invalid_price')
       continue
@@ -321,7 +330,7 @@ function classifyEvidence(
       continue
     }
     counts.available += 1
-    candidates.push({ input: item, effectivePriceCents: price, lastSeenMs })
+    candidates.push({ input: item, observedPriceCents: price, lastSeenMs })
   }
 
   return { candidates, excluded, counts }
@@ -342,7 +351,7 @@ function collapseCompetitors(
   const competitors: MarketCompetitorInternal[] = []
   for (const competitorId of [...grouped.keys()].sort(compareText)) {
     const group = grouped.get(competitorId)!.sort((a, b) => compareText(evidenceKey(a.input), evidenceKey(b.input)))
-    const prices = new Set(group.map((candidate) => candidate.effectivePriceCents))
+    const prices = new Set(group.map((candidate) => candidate.observedPriceCents))
     if (prices.size !== 1) {
       counts.conflicts += 1
       for (const candidate of group) addExcluded(excluded, candidate.input, 'conflicting_competitor_evidence')
@@ -350,7 +359,7 @@ function collapseCompetitors(
     }
     competitors.push({
       competitorId,
-      effectivePriceCents: group[0].effectivePriceCents,
+      observedPriceCents: group[0].observedPriceCents,
       evidence: group,
       freshestLastSeenMs: group.reduce((latest, candidate) => Math.max(latest, candidate.lastSeenMs), group[0].lastSeenMs),
     })
@@ -362,7 +371,7 @@ function publicCompetitor(competitor: MarketCompetitorInternal): IncludedMarketC
   const statuses = [...new Set(competitor.evidence.map(({ input }) => input.matchStatus as 'confirmed' | 'manual'))].sort(compareText)
   return {
     competitorId: competitor.competitorId,
-    effectivePriceCents: competitor.effectivePriceCents,
+    observedPriceCents: competitor.observedPriceCents,
     observationIds: competitor.evidence.map(({ input }) => input.observationId).sort(compareText),
     competitorProductIds: [...new Set(competitor.evidence.map(({ input }) => input.competitorProductId))].sort(compareText),
     matchStatuses: statuses,
@@ -428,7 +437,7 @@ function buildSnapshot(
         competitorStatus: isOneOf(COMPETITOR_STATUSES, item.competitorStatus) ? item.competitorStatus : 'blocked',
         monitoringState: isOneOf(MONITORING_STATES, item.monitoringState) ? item.monitoringState : 'gone',
         lastCheckStatus: isOneOf(CHECK_STATUSES, item.lastCheckStatus) ? item.lastCheckStatus : null,
-        effectivePrice: safeMoneyString(effectivePrice(item, input.rules.includeSalePrices)),
+        observedPrice: safeMoneyString(item.observedCents),
         marketRole: roles.get(item.observationId) ?? 'excluded',
         exclusionReasons: excludedById.get(item.observationId)?.reasons ?? [],
       })),
@@ -436,7 +445,7 @@ function buildSnapshot(
       targetStrategy: 'match_median',
       includedCompetitors: included.map((competitor) => ({
         competitorId: competitor.competitorId,
-        effectivePrice: centsToMoneyString(competitor.effectivePriceCents),
+        observedPrice: centsToMoneyString(competitor.observedPriceCents),
         observationIds: competitor.evidence.map(({ input: item }) => item.observationId).sort(compareText),
         competitorProductIds: [...new Set(competitor.evidence.map(({ input: item }) => item.competitorProductId))].sort(compareText),
       })),
@@ -543,11 +552,11 @@ export function recommendPrice(input: RecommendationEngineInput): Recommendation
   const multiplier = input.rules.outliers.mode === 'iqr' ? Math.round(input.rules.outliers.iqrMultiplier * 100) : 0
   const outlierResult = input.rules.outliers.mode === 'iqr'
     ? filterIqrOutliers(
-      competitors.map((competitor) => ({ key: competitor.competitorId, priceCents: competitor.effectivePriceCents })),
+      competitors.map((competitor) => ({ key: competitor.competitorId, priceCents: competitor.observedPriceCents })),
       multiplier,
       input.rules.outliers.minPointsForFiltering,
     )
-    : { included: competitors.map((competitor) => ({ key: competitor.competitorId, priceCents: competitor.effectivePriceCents })), excluded: [], applied: false, q1Cents: null, q3Cents: null, iqrCents: null }
+    : { included: competitors.map((competitor) => ({ key: competitor.competitorId, priceCents: competitor.observedPriceCents })), excluded: [], applied: false, q1Cents: null, q3Cents: null, iqrCents: null }
   const outlierIds = new Set(outlierResult.excluded.map(({ key }) => key))
   for (const competitor of competitors) {
     if (outlierIds.has(competitor.competitorId)) {
@@ -559,7 +568,7 @@ export function recommendPrice(input: RecommendationEngineInput): Recommendation
   const includedPublic = competitors.map(publicCompetitor)
   const statistics = competitors.length === 0
     ? null
-    : calculateMarketStatistics(competitors.map(({ effectivePriceCents }) => effectivePriceCents), input.product.currentPriceCents)
+    : calculateMarketStatistics(competitors.map(({ observedPriceCents }) => observedPriceCents), input.product.currentPriceCents)
   const market: MarketAnalysis = {
     statistics,
     includedCompetitors: includedPublic,

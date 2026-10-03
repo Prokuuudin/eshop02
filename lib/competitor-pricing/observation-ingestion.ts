@@ -246,6 +246,7 @@ export async function ingestObservation(
       persisted = await transaction.appendObservation({
         competitorProductId: product.id,
         competitorId: product.competitorId,
+        observedCents: listing.observation.observedCents,
         regularCents: listing.observation.regularCents,
         saleCents: listing.observation.saleCents,
         currency: listing.observation.currency,

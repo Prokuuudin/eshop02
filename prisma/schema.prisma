@@ -905,14 +905,17 @@ model CompetitorProductMatch {
 }
 
 // Change-only history: a row is appended only when the normalized state
-// (regular, sale, currency, availability) differs from the latest row;
+// (observed, regular, sale, currency, availability) differs from the latest row;
 // otherwise lastSeenAt/seenCount are refreshed. Parse failures never create rows.
+// observedPrice = current effective price the source unambiguously publishes (market input).
+// regularPrice/salePrice = literal, proven list/sale semantics only; never a fallback.
 model CompetitorPriceObservation {
   id                  String            @id
   competitorProductId String
   competitorProduct   CompetitorProduct @relation(fields: [competitorProductId], references: [id], onDelete: Cascade)
   competitorId        String
   competitor          Competitor        @relation(fields: [competitorId], references: [id], onDelete: Restrict)
+  observedPrice       Decimal           @db.Decimal(12, 2)
   regularPrice        Decimal?          @db.Decimal(12, 2)
   salePrice           Decimal?          @db.Decimal(12, 2)
   currency            String            @db.VarChar(3)

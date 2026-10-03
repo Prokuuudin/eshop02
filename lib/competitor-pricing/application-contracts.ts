@@ -55,7 +55,7 @@ export type RecommendationEvidenceDto = {
   competitorName: string | null
   competitorProductIds: string[]
   observationIds: string[]
-  effectivePriceCents: CentsDto | null
+  observedPriceCents: CentsDto | null
   freshestLastSeenAt: IsoDateTimeDto | null
   exclusionReasons: EvidenceExclusionReason[]
 }
@@ -195,7 +195,11 @@ export type PricingMappingDto = {
 export type PriceHistoryPointDto = {
   observationId: string
   competitorId: string
+  /** Current effective competitor price — the value market statistics use. */
+  observedPriceCents: CentsDto
+  /** Only when the source declares a list/strikethrough price; never a fallback. */
   regularPriceCents: CentsDto | null
+  /** Only when proven (observed below a declared list price); never a fallback. */
   salePriceCents: CentsDto | null
   currency: 'EUR'
   availability: string
@@ -234,7 +238,6 @@ export type PricingRulesDto = {
   maxIncreaseBasisPoints: number
   minimumDifferenceBasisPoints: number
   minimumCompetitors: number
-  includeSalePrices: boolean
   requireAvailability: boolean
   outliers: { mode: 'none' } | { mode: 'iqr'; multiplierHundredths: number; minPointsForFiltering: number }
   maxObservationAgeHours: number
@@ -372,7 +375,7 @@ export function recommendationDtoFromDomain(
       competitorName: names[competitor.competitorId] ?? null,
       competitorProductIds: [...competitor.competitorProductIds].sort(),
       observationIds: [...competitor.observationIds].sort(),
-      effectivePriceCents: serializePriceCents(competitor.effectivePriceCents),
+      observedPriceCents: serializePriceCents(competitor.observedPriceCents),
       freshestLastSeenAt: serializeIsoDateTime(competitor.freshestLastSeenAt),
       exclusionReasons: [],
     }))
@@ -387,7 +390,7 @@ export function recommendationDtoFromDomain(
       competitorName: names[evidence.competitorId] ?? null,
       competitorProductIds: [evidence.competitorProductId],
       observationIds: [evidence.observationId],
-      effectivePriceCents: null,
+      observedPriceCents: null,
       freshestLastSeenAt: null,
       exclusionReasons: [...evidence.reasons],
     }))
@@ -445,7 +448,6 @@ export function pricingRulesDtoFromDomain(rules: PricingRules): PricingRulesDto 
     maxIncreaseBasisPoints: Math.round(rules.maxIncreasePercent * 100),
     minimumDifferenceBasisPoints: Math.round(rules.minimumDifferencePercent * 100),
     minimumCompetitors: rules.minimumCompetitors,
-    includeSalePrices: rules.includeSalePrices,
     requireAvailability: rules.requireAvailability,
     outliers: rules.outliers.mode === 'none'
       ? { mode: 'none' }

@@ -80,6 +80,7 @@ CREATE TABLE "CompetitorPriceObservation" (
     "id" TEXT NOT NULL,
     "competitorProductId" TEXT NOT NULL,
     "competitorId" TEXT NOT NULL,
+    "observedPrice" DECIMAL(12,2) NOT NULL,
     "regularPrice" DECIMAL(12,2),
     "salePrice" DECIMAL(12,2),
     "currency" VARCHAR(3) NOT NULL,
@@ -230,9 +231,14 @@ ALTER TABLE "PricingRecommendation" ADD CONSTRAINT "PricingRecommendation_produc
 -- A parse failure must never be stored as a 0 price.
 ALTER TABLE "CompetitorPriceObservation"
   ADD CONSTRAINT "CompetitorPriceObservation_price_positive_check"
-    CHECK (("regularPrice" IS NULL OR "regularPrice" > 0) AND ("salePrice" IS NULL OR "salePrice" > 0)),
-  ADD CONSTRAINT "CompetitorPriceObservation_has_price_check"
-    CHECK ("regularPrice" IS NOT NULL OR "salePrice" IS NOT NULL),
+    CHECK ("observedPrice" > 0 AND ("regularPrice" IS NULL OR "regularPrice" > 0) AND ("salePrice" IS NULL OR "salePrice" > 0)),
+  -- Literal semantics: a sale is the observed price below a declared regular price;
+  -- without a sale, a declared regular price equals the observed price.
+  ADD CONSTRAINT "CompetitorPriceObservation_price_semantics_check"
+    CHECK (
+      ("salePrice" IS NOT NULL AND "salePrice" = "observedPrice" AND "regularPrice" IS NOT NULL AND "regularPrice" > "salePrice")
+      OR ("salePrice" IS NULL AND ("regularPrice" IS NULL OR "regularPrice" = "observedPrice"))
+    ),
   ADD CONSTRAINT "CompetitorPriceObservation_currency_check"
     CHECK ("currency" ~ '^[A-Z]{3}$');
 

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Synthetic fixture: a commented-out stale JSON-LD block and JSON inside an ordinary script.
+    <script type="application/ld+json">
+      { "@type": "Product", "name": "Stale", "offers": { "@type": "Offer", "price": "1.00", "priceCurrency": "EUR" } }
+    </script>
+    -->
+    <script>
+      var data = { "@type": "Product", "offers": { "@type": "Offer", "price": "2.00", "priceCurrency": "EUR" } };
+    </script>
+    <script data-type="application/ld+json">
+      { "@type": "Product", "offers": { "@type": "Offer", "price": "3.00", "priceCurrency": "EUR" } }
+    </script>
+    <SCRIPT Type = "Application/LD+JSON">
+      { "@type": "Product", "name": "Real", "offers": { "@type": "Offer", "price": "9.99", "priceCurrency": "EUR" } }
+    </SCRIPT>
+  </head>
+  <body></body>
+</html>

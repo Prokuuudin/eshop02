@@ -24,7 +24,8 @@ function evidence(id: string, competitorId: string, priceCents: number): Competi
     matchStatus: 'confirmed',
     matchMethod: 'ean',
     matchConfidenceThousandths: 980,
-    regularCents: priceCents,
+    observedCents: priceCents,
+    regularCents: null,
     saleCents: null,
     currency: 'EUR',
     availability: 'in_stock',
@@ -120,7 +121,6 @@ describe('admin pricing application boundary', () => {
       maxIncreaseBasisPoints: 1000,
       minimumDifferenceBasisPoints: 200,
       minimumCompetitors: 2,
-      includeSalePrices: false,
       requireAvailability: true,
       outliers: { mode: 'iqr', multiplierHundredths: 150, minPointsForFiltering: 4 },
       maxObservationAgeHours: 72,
@@ -142,6 +142,19 @@ describe('admin pricing application boundary', () => {
     expect(dashboard.products).toEqual([])
     expect(dashboard.sources).toEqual([])
     expect(Object.values(dashboard.summary).every((value) => value === null)).toBe(true)
+  })
+
+  it('names the competitor market price observedPriceCents and never takes it from regular/sale metadata', () => {
+    const onSale = { ...evidence('sale', 'competitor-a', 1500), regularCents: 2500, saleCents: 1500 }
+    const dto = recommendationDtoFromDomain(recommendation([onSale]))
+    expect(dto.includedCompetitors).toEqual([expect.objectContaining({ competitorId: 'competitor-a', observedPriceCents: 1500 })])
+    const serialized = JSON.stringify(dto)
+    expect(serialized).not.toContain('effectivePrice')
+    expect(serialized).not.toContain('regularPrice')
+  })
+
+  it('pricing rules DTO has no sale/regular selection switch', () => {
+    expect(Object.keys(pricingRulesDtoFromDomain(DEFAULT_PRICING_RULES))).not.toContain('includeSalePrices')
   })
 
   it('does not import Prisma or Decimal in the application contract', () => {

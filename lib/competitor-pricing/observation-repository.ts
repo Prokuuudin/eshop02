@@ -19,7 +19,11 @@ export type PersistedPriceObservation = {
   id: string
   competitorProductId: string
   competitorId: string
+  /** Current effective price; never a fallback for regular/sale. */
+  observedCents: number
+  /** Only with literal list/strikethrough semantics from the source. */
   regularCents: number | null
+  /** Only when the source proves observed < a declared reference price. */
   saleCents: number | null
   currency: SupportedCurrency
   availability: Availability

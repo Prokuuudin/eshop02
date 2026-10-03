@@ -36,7 +36,6 @@ export const pricingRulesSchema = z.object({
   maxIncreasePercent: percent(50),
   minimumDifferencePercent: percent(50),
   minimumCompetitors: z.number().int().min(1).max(20),
-  includeSalePrices: z.boolean(),
   requireAvailability: z.boolean(),
   outliers: outliersSchema,
   /** Observations whose lastSeenAt is older than this are not market evidence. */
@@ -58,7 +57,6 @@ export const DEFAULT_PRICING_RULES: PricingRules = {
   maxIncreasePercent: 10,
   minimumDifferencePercent: 2,
   minimumCompetitors: 2,
-  includeSalePrices: false,
   requireAvailability: true,
   outliers: { mode: 'iqr', iqrMultiplier: 1.5, minPointsForFiltering: 4 },
   maxObservationAgeHours: 72,

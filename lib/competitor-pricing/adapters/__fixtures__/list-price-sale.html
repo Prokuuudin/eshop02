@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Synthetic fixture: schema.org strikethrough (list) price next to the current offer price. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "Synthetic Repair Mask",
+        "gtin13": "4750000000017",
+        "sku": "FIX-MASK-200",
+        "offers": {
+          "@type": "Offer",
+          "price": "15.20",
+          "priceCurrency": "EUR",
+          "availability": "https://schema.org/InStock",
+          "priceSpecification": [
+            { "@type": "UnitPriceSpecification", "price": "15.20", "priceCurrency": "EUR" },
+            {
+              "@type": "UnitPriceSpecification",
+              "priceType": "https://schema.org/StrikethroughPrice",
+              "price": "19.00",
+              "priceCurrency": "EUR"
+            }
+          ]
+        }
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

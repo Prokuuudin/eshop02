@@ -23,14 +23,14 @@ export type SnapshotObservation = {
   competitorStatus: CompetitorStatus
   monitoringState: MonitoringState
   lastCheckStatus: CheckStatus | null
-  effectivePrice: string | null
+  observedPrice: string | null
   marketRole: 'included' | 'collapsed_duplicate' | 'excluded'
   exclusionReasons: string[]
 }
 
 export type SnapshotMarketCompetitor = {
   competitorId: string
-  effectivePrice: string
+  observedPrice: string
   observationIds: string[]
   competitorProductIds: string[]
 }

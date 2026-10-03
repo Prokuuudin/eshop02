@@ -4,7 +4,7 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 3 (безопасный сетевой слой). Adapters/scraping/UI/scheduler не начаты.
+Последнее обновление: 2026-10-03, конец ЭТАПА 4 (JSON-LD adapter). Matching/services/UI/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -128,9 +128,12 @@ Pricing rules — KV `competitor-pricing-rules` + zod (`lib/competitor-pricing/s
 
 ### Adapters
 
-`CompetitorAdapter { key; parse(html, url): ParsedListing | ParseFailure }`. Первый — `jsonld-product`
-(schema.org Product/Offer из `<script type="application/ld+json">`), сайт-специфичные — отдельными файлами
-при необходимости. Цена: строка → целые центы → Decimal; ≤0/NaN/нет цены/не-EUR → ParseFailure, НИКОГДА 0.
+РЕАЛИЗОВАНО в ЭТАПЕ 4: `CompetitorAdapter { key; parse(html, url): ParsedListing | ParseFailure }` и первый
+адаптер `jsonld-product` (schema.org Product/Offer/AggregateOffer из `<script type="application/ld+json">`).
+Без DOM и исполнения JS; поддержаны корневые массивы, `@graph`, ссылки `@id`, массивы `@type`/offers,
+`priceSpecification`, GTIN-варианты/SKU/MPN/brand/size и schema availability. Цена локаль-нормализуется,
+затем обязательно проходит `normalizeObservation`: ≤0/NaN/нет цены/не-EUR → ParseFailure, НИКОГДА 0.
+Сайт-специфичные адаптеры при необходимости должны быть отдельными файлами.
 
 ### Matching
 
@@ -181,10 +184,10 @@ LIKELY/AMBIGUOUS. В рекомендациях по умолчанию толь
 
 ## Current state
 
-ЭТАПЫ 1–3 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–4 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
-`robots.ts` (ни один ещё не вызывается из runtime-кода). Нет: adapters, сервисов с Prisma-запросами, API,
-UI, scheduler.
+`robots.ts`, JSON-LD Product adapter и синтетические HTML fixtures (ничто из этого ещё не вызывается из
+runtime-кода). Нет: matching workflow, сервисов с Prisma-запросами, API, UI, scheduler.
 
 ## Completed
 
@@ -194,10 +197,10 @@ UI, scheduler.
 - [x] ЭТАП 2: schema + pending migration + rollback.sql + domain helpers + 107 unit-тестов.
 - [x] ЭТАП 3: `lib/net-ip-guard.ts` (webhook-sender переведён на него), `safe-fetch.ts`, `robots.ts`,
       domain-валидация конкурента ужесточена до https-only; 212 новых тестов.
+- [x] ЭТАП 4: `CompetitorAdapter` types + `jsonld-product`, только синтетические fixtures; 43 новых unit-теста.
 
 ## Remaining
 
-- [ ] ЭТАП 4 adapter jsonld-product + локальные HTML fixtures.
 - [ ] ЭТАП 5 matching. ЭТАП 6 observations. ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
 - [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
@@ -234,6 +237,13 @@ UI, scheduler.
 17. (ЭТАП 3) DNS: все ответы должны быть публичными, иначе хост отклоняется целиком (mixed public/private →
     `unsafe_address`); соединение — на IP-литерал из того же ответа, повторного lookup нет.
 18. (ЭТАП 3) robots.txt fail-safe: недоступен/ошибка → запрет (кроме 404/410 → разрешено).
+19. (ЭТАП 4) JSON-LD — недоверенный вход: максимум 32 блока, 256 КиБ на блок, 512 КиБ суммарно и 10 000
+    узлов; парсинг только `JSON.parse` + обход объектов, без DOM/JS. Циклические `@id`-ссылки не рекурсируют
+    бесконечно. Длинные (>200) идентификаторы отбрасываются, а не усекаются до возможного ложного совпадения.
+20. (ЭТАП 4) `Offer.price`, `UnitPriceSpecification.price` и `AggregateOffer.lowPrice` трактуются как текущая
+    публичная regularPrice. Sale/list price не угадывается из диапазона или нескольких offers. Среди offers
+    выбирается первый валидный EUR-кандидат; отсутствие/ошибка/≤0/не-EUR возвращает типизированный ParseFailure.
+21. (ЭТАП 4) Fixtures только синтетические; HTML реальных конкурентов не сохранялся и сеть не использовалась.
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -463,6 +473,12 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `lib/competitor-pricing/safe-fetch.ts` + `.test.ts` — безопасный fetch, лимиты, классификация ошибок
 - `lib/competitor-pricing/robots.ts` + `.test.ts` — robots.txt парсер/политика/кэш
 - `lib/competitor-pricing/competitor-config.ts` + `.test.ts` — baseUrl и URL товара только https
+ЭТАП 4:
+- `lib/competitor-pricing/adapters/types.ts` — `CompetitorAdapter`, `ParsedListing`, типизированные ParseFailure.
+- `lib/competitor-pricing/adapters/jsonld-product.ts` + `.test.ts` — ограниченное извлечение/разбор JSON-LD,
+  Product/Offer/AggregateOffer, локаль-нормализация цены → `normalizeObservation`, metadata/availability.
+- `lib/competitor-pricing/adapters/__fixtures__/{basic-product,graph-aggregate,array-products}.html` — только
+  синтетический HTML, включая root array, `@graph`/`@id`, AggregateOffer и UnitPriceSpecification.
 
 ## Tests
 
@@ -486,6 +502,16 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - prisma schema в ЭТАПЕ 3 не менялась (validate не требовался). Миграция всё ещё только в
   `prisma/pending-migrations/`, в `prisma/migrations/` её нет. Команд, подключающихся к БД, в ЭТАПЕ 3 не было.
 
+ЭТАП 4 (2026-10-03):
+- `npx vitest run --config vitest.config.ts lib/competitor-pricing/adapters/jsonld-product.test.ts` →
+  1 файл, 43 passed.
+- `npx vitest run --config vitest.config.ts lib/competitor-pricing` → 9 файлов, 264 passed, 4 skipped
+  (TLS-тесты safe-fetch пропущены окружением из-за недоступного openssl; adapter-тесты не пропускались).
+- `npm run test:unit` → 291 файл, 2271 passed, 4 skipped. Прогон включал чужие незакоммиченные правки
+  `lib/product-form-mapping*`, как и в предыдущих этапах.
+- `npx tsc --noEmit` → 0. `npx eslint lib/competitor-pricing/adapters` → 0. `git diff --check` → чисто.
+- Prisma schema/migration не менялись; БД, integration/e2e/build и внешняя сеть не использовались.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -506,6 +532,11 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 (delay ≥ 1 c, concurrency ≤ 2, poll ≥ 60 мин, ответ ≤ 5 МБ); поля credentials отклоняются strict-схемой.
 Это логическая граница, НЕ сетевая SSRF-защита (ЭТАП 3).
 
+ЭТАП 4 (parser-level, протестировано): JSON-LD ограничен по числу/размеру/числу узлов; JS не исполняется,
+обычные `<script>` игнорируются, HTML/JSON-LD не сохраняется и не рендерится. Циклы `@id` прекращаются;
+невалидная, нулевая и не-EUR цена не создаёт observation. Текстовые metadata остаются недоверенным текстом
+и ограничиваются по длине; identifier >200 символов отбрасывается целиком.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
@@ -515,16 +546,19 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 
 - Branch: `main`. HEAD на старте задачи: `67589105`.
 - Коммиты задачи: `627c0b5d` (ЭТАП 1, docs), `fec60300` (ЭТАП 2), коммит ЭТАПА 3
-  `feat(pricing): safe competitor fetch infrastructure` (хэш — `git log --oneline -4`).
+  `b7afb2eb` (`feat(pricing): safe competitor fetch infrastructure`), коммит ЭТАПА 4
+  `feat(pricing): parse JSON-LD competitor products` (хэш — `git log --oneline -5`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 4: создать `lib/competitor-pricing/adapters/types.ts` (`CompetitorAdapter { key; parse(html, url) }` →
-`ParsedListing | ParseFailure`) и `adapters/jsonld-product.ts`: извлечение `<script type="application/ld+json">`
-без DOM/JS, `@graph`/массивы, schema.org Product/Offer/AggregateOffer, price/priceCurrency/availability/gtin*/sku;
-локаль-нормализация цены в строку "12.34" и передача в `normalizeObservation` (никогда 0); лимиты на
-количество/размер JSON-блоков; fixtures — только синтетические HTML-файлы в `lib/competitor-pricing/adapters/__fixtures__/`
-(без HTML реальных конкурентов, без сети).
+ЭТАП 5: реализовать чистый deterministic matching-слой поверх `ParsedListing` и нашего Product (без Prisma/API):
+консервативная нормализация EAN/GTIN и SKU; точное сравнение parsed `ean`/`manufacturerSku` с
+`Product.barcode`/`sku`; явный результат match/mismatch/missing/conflict с method/reason и без fuzzy title-match.
+Автоматический код никогда не выдаёт trusted-статус: точное совпадение — кандидат `likely`, конфликт
+идентификаторов — `ambiguous`; перевод в `confirmed` делает только админ через уже существующий
+`assertMatchDecision`. Добавить unit-тесты на leading zero, пробелы/дефисы, регистр SKU, разные EAN/SKU,
+совпадение одного при конфликте другого, отсутствующие/слишком длинные identifiers. Не обращаться к БД/сети;
+не начинать persistence/API до отдельного этапа.

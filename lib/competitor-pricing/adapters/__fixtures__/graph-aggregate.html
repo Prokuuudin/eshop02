@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="lv">
+  <head>
+    <script data-fixture="synthetic" TYPE='application/ld+json; charset=utf-8'>
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@id": "#product",
+            "@type": ["Thing", "https://schema.org/Product"],
+            "productID": "fixture-aggregate-1",
+            "name": "Synthetic Salon Set",
+            "brand": "Fixture Brand",
+            "gtin14": "04750000000018",
+            "mpn": "FIX-SET",
+            "offers": { "@id": "#offer" }
+          },
+          {
+            "@id": "#offer",
+            "@type": "https://schema.org/AggregateOffer",
+            "lowPrice": "1.234,50 €",
+            "highPrice": "1.400,00 €",
+            "priceCurrency": "EUR",
+            "availability": "http://schema.org/OutOfStock",
+            "offerCount": 3
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body></body>
+</html>

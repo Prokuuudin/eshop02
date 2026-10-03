@@ -4,7 +4,7 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 4 (JSON-LD adapter). Matching/services/UI/scheduler не начаты.
+Последнее обновление: 2026-10-03, конец ЭТАПА 5 (deterministic product matching). Persistence/services/UI/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -135,12 +135,16 @@ Pricing rules — KV `competitor-pricing-rules` + zod (`lib/competitor-pricing/s
 затем обязательно проходит `normalizeObservation`: ≤0/NaN/нет цены/не-EUR → ParseFailure, НИКОГДА 0.
 Сайт-специфичные адаптеры при необходимости должны быть отдельными файлами.
 
+Аудит ЭТАПА 5 ужесточил price normalization: одиночные `1,234`/`1.234` неоднозначны (thousands или
+3 decimal places) и теперь дают `invalid_price`. Поддержаны только однозначные `12.34`, `12,34`,
+`1,234.56`, `1.234,56`, пробелы/NBSP/apostrophe как grouping и EUR/€ по краям.
+
 ### Matching
 
-v1: админ вставляет URL товара конкурента на карточке нашего товара → match MANUAL; при первом fetch
-сверяем EAN/SKU страницы с нашим (`Product.barcode`/`sku`): совпало → CONFIRMED-кандидат (подтверждает
-админ), расхождение → AMBIGUOUS + предупреждение. Авто-поиск по каталогу конкурента — позже, всегда как
-LIKELY/AMBIGUOUS. В рекомендациях по умолчанию только CONFIRMED + MANUAL.
+РЕАЛИЗОВАНО в ЭТАПЕ 5 как чистый domain layer без Prisma: adapter `ParsedListing` + переданный ограниченный
+список Product candidates → объяснимый `protected | likely | ambiguous | no_match`. Автоматический matcher
+выдаёт только `likely`/`ambiguous`, никогда `confirmed`/`manual`; trusted existing match защищён. Политики,
+confidence mapping, conflicts и ограничения подробно описаны в «Stage 5 — Deterministic matching».
 
 ### Analysis / recommendation (детерминированно, целые центы)
 
@@ -184,10 +188,10 @@ LIKELY/AMBIGUOUS. В рекомендациях по умолчанию толь
 
 ## Current state
 
-ЭТАПЫ 1–4 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–5 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
-`robots.ts`, JSON-LD Product adapter и синтетические HTML fixtures (ничто из этого ещё не вызывается из
-runtime-кода). Нет: matching workflow, сервисов с Prisma-запросами, API, UI, scheduler.
+`robots.ts`, JSON-LD Product adapter, synthetic fixtures и deterministic matcher (ничто из этого ещё не
+вызывается из runtime-кода). Нет: persistence/services с Prisma-запросами, API, UI, scheduler.
 
 ## Completed
 
@@ -198,10 +202,11 @@ runtime-кода). Нет: matching workflow, сервисов с Prisma-зап�
 - [x] ЭТАП 3: `lib/net-ip-guard.ts` (webhook-sender переведён на него), `safe-fetch.ts`, `robots.ts`,
       domain-валидация конкурента ужесточена до https-only; 212 новых тестов.
 - [x] ЭТАП 4: `CompetitorAdapter` types + `jsonld-product`, только синтетические fixtures; 43 новых unit-теста.
+- [x] ЭТАП 5: pure deterministic matching + conservative normalization + Stage 4 price audit; 64 новых теста.
 
 ## Remaining
 
-- [ ] ЭТАП 5 matching. ЭТАП 6 observations. ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
+- [ ] ЭТАП 6 observations/persistence. ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
 - [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
 ## Important decisions
@@ -244,6 +249,22 @@ runtime-кода). Нет: matching workflow, сервисов с Prisma-зап�
     публичная regularPrice. Sale/list price не угадывается из диапазона или нескольких offers. Среди offers
     выбирается первый валидный EUR-кандидат; отсутствие/ошибка/≤0/не-EUR возвращает типизированный ParseFailure.
 21. (ЭТАП 4) Fixtures только синтетические; HTML реальных конкурентов не сохранялся и сеть не использовалась.
+22. (ЭТАП 5) `Product.barcode`/`sku` nullable, НЕ unique и без DB indexes; matcher всегда принимает уже
+    ограниченный список candidates и сам проверяет дубли. `externalId @unique` — ERP identity Hairshop Pro,
+    не competitor identifier и matching его игнорирует.
+23. (ЭТАП 5) Только check-digit-valid GTIN-8/12/13/14 является exact identifier; leading zero сохраняется.
+    Нестандартный/невалидный barcode классифицируется как legacy и не создаёт GTIN evidence.
+24. (ЭТАП 5) SKU normalization минимальна: NFKC + trim/case/whitespace; punctuation значима (`AB-123 ≠ AB123`).
+    SKU exact без exact-normalized brand недостаточен для `likely`; duplicate SKU всегда `ambiguous`.
+25. (ЭТАП 5) Brand aliases отсутствуют: punctuation tokenized, но диакритика не снимается и fuzzy aliases не
+    создаются (`L'Oréal ≠ Loreal`). Title similarity только ранжирует manual-review candidates.
+26. (ЭТАП 5) Size хранится как integer milli-base units (`ml`/`g`) или count; l/kg конвертируются без float.
+    Pack structure сохраняется: `2×250 ml ≠ 500 ml`; неоднозначный size снижает результат до manual review.
+27. (ЭТАП 5) Fixed confidence: unique GTIN 0.980, unique SKU+brand 0.900, exact brand+title+size 0.780;
+    conflict/duplicate 0.500, SKU without brand 0.600. Это rule labels, не вероятностная модель.
+28. (ЭТАП 5) Existing confirmed/manual всегда protected. Rejected candidate исключён при том же pair evidenceKey;
+    legacy rejection без fingerprint исключён до ручной очистки; повторная оценка допустима только при новом
+    нормализованном evidence.
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -425,6 +446,96 @@ px-captcha) только в теле 403/429/503. 2xx-страницы на ма
   задаётся requestDelayMs конкурента).
 - Webhook-sender не получил IP-pinning (вне scope).
 
+## Stage 5 — Deterministic matching
+
+### Реальные Product fields (проверено по Prisma/code, без запроса к БД)
+
+| Назначение | Поля | Политика v1 |
+|---|---|---|
+| Primary identity | `id` | Только candidate/result identity. |
+| Barcode | `barcode String?` | Nullable, НЕ unique, без index. Только valid GTIN даёт exact evidence. |
+| SKU | `sku String?` | Nullable, НЕ unique, без index. Exact требует brand context; дубли → ambiguous. |
+| ERP identity | `externalId String? @unique` | Никогда не competitor identifier; matcher полностью игнорирует. |
+| Название | `title`, `titleKey?`, `titleEn?`, `titleLv?` | v1 использует primary `title`; alternate titles пока не смешиваются. |
+| Brand | `brand` | Exact-normalized only, без alias/fuzzy. |
+| Size | `specVolume?`, также текст `title` | Используются вместе; противоречие источников → ambiguous. |
+| Packaging | `packagingSize?`, `unitOfMeasure?` | Поля существуют, но их product-size семантика не доказана → matcher не синтезирует из них размер. |
+| Context | `category`, `manufacturerName?`, `specType?` | Доступны, но не являются identity evidence в v1. `manufacturerName` — текст, не manufacturer id. |
+
+Отдельных MPN/manufacturer-product-id полей у `Product` нет. `ParsedListing.manufacturerSku` сравнивается
+только с `Product.sku`. Реальную уникальность/качество данных без production DB не утверждаем.
+
+### Pure API и candidate generation
+
+`matching-normalization.ts` не знает о Prisma. `matching-engine.ts` принимает `ParsedListing` и
+`ProductMatchCandidate[]`, то есть уже ограниченный список. `candidateGenerationHints()` возвращает только
+repository-friendly hints: valid GTIN, conservative exact SKU/brand, title tokens, size key. Будущий DB layer
+может отдельно получать candidates по barcode/SKU и ограниченному search, но не должен fuzzy-сравнивать весь
+каталог внутри domain matcher. Текущая схема не имеет indexes на barcode/SKU — это ограничение будущего слоя,
+не повод считать их unique.
+
+Структурированный `MatchResult`: `protected | likely | ambiguous | no_match`, допустимый proposedStatus,
+candidate id (только когда один объяснимый candidate), method (`ean|sku|title`), fixed confidence, reason codes,
+все candidate evaluations, positive evidence, conflicting evidence, normalized identity, excluded/reconsidered
+rejections. Автоматический output никогда не содержит `confirmed`/`manual`.
+
+### Normalization policies
+
+- **GTIN:** NFKC/trim, удаляются только whitespace и `-`; leading zero сохраняется. Только digits длины
+  8/12/13/14 + корректный check digit → `valid_gtin`. Остальное → `legacy_barcode` с reason и не участвует
+  в exact GTIN. Internal barcode не объявляется EAN.
+- **SKU:** NFKC, trim, case-fold, whitespace collapse. Punctuation не удаляется: `AB-123`, `AB123`, `AB.123`
+  разные. Старые sync-specific leading-zero/dot/internal-space transforms намеренно НЕ переиспользованы.
+- **Brand:** NFKC, case-fold, whitespace и punctuation tokenization. Диакритика не снимается, alias table нет:
+  `L'Oréal` и `Loreal` несовместимы автоматически.
+- **Title:** NFKC, case-fold, punctuation tokenization, order-independent exact token key + deterministic Dice
+  для ranking. Распознанный size вырезается только из title identity tokens и сравнивается отдельным слоем;
+  shade/model numbers сохраняются. Простая явная taxonomy ловит shampoo/conditioner, refill, set/kit и gender
+  conflicts. Fuzzy title никогда сам не даёт likely/trusted match.
+- **Size:** поддержаны ml/l, g/kg, pcs/gab/шт.; decimal разбирается в integer milli-base units через BigInt,
+  без float. `0.25 l = 250 ml`, `0.5 kg = 500 g`. Multipack хранит `{count,item}`:
+  `2×250 ml ≠ single 500 ml`; несколько размеров или size+count без ясной pack structure → ambiguous.
+
+### Evidence hierarchy и conflicts
+
+1. Unique valid GTIN exact → `likely/ean`, 0.980, но только если нет hard conflicts.
+2. Exact SKU + exact-normalized brand → `likely/sku`, 0.900; exact SKU без brand → ambiguous 0.600.
+3. Exact brand + order-independent exact title + exact size → `likely/title`, 0.780.
+4. Brand+title, title+size, title-only или fuzzy title → только ambiguous/manual ranking (0.650/0.550/0.400/0.350).
+5. Нет positive evidence → no_match.
+
+Один exact identifier у нескольких Product не разрешается ranking-ом: duplicate GTIN/SKU → ambiguous 0.500,
+candidate не выбирается. Hard conflicts: brand, size/pack, ambiguous size, product kind, shade/model number,
+refill, set/kit, gender. Даже GTIN exact + size conflict → ambiguous 0.500 с обоими evidence в результате.
+Confidence — стабильный label правил для Decimal(4,3), не статистическая вероятность.
+
+### Existing/rejected behavior
+
+- Existing `confirmed`/`manual` → `protected`; matcher не оценивает replacement candidates.
+- Rejected candidate с тем же pair `evidenceKey` (competitor + конкретный Product identity) исключается.
+- Legacy rejected без fingerprint исключается до явной очистки админом.
+- Rejected candidate может снова оцениваться только при изменении evidence любой стороны; это явно возвращается в
+  `reconsideredRejectedProductIds`.
+
+### Stage 4 price-format audit
+
+Обнаружено и исправлено опасное guessing: старая ветка трактовала одиночные `1,234`/`1.234` как 1234.00.
+Теперь обе формы `invalid_price`. Доказано helper + full adapter tests:
+`12.34`/`12,34` → 12.34; `1,234.56`/`1.234,56`/`1 NBSP 234,56 €` → 1234.56;
+ambiguous single separator, malformed grouping, unknown currency text, NaN/Infinity → failure. Parser не был
+расширен для guessing максимума локалей.
+
+### Tests и known limitations
+
+55 новых matching tests: GTIN 8/12/13/14/check digit/leading zero/duplicate/conflict; SKU/brand conservative
+rules; exact/fuzzy title ranking; size/mass/count/multipack; kind/model/refill/set/gender conflicts; duplicate,
+rejected/new-evidence и protected trusted match. Ещё 9 новых Stage 4 price-audit regressions, всего +64.
+
+Known limitations: нет brand alias table; multilingual title aliases ограничены явными conflict markers;
+поддержаны только ml/l/g/kg/pcs; oz и неоднозначные наборы не угадываются; `packagingSize/unitOfMeasure` не
+используются; alternate Product titles не объединяются; matcher не выполняет DB candidate lookup и не знает
+фактическое распределение дублей. Это сознательные fail-closed границы до persistence/UI и проверки бизнеса.
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -479,6 +590,13 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
   Product/Offer/AggregateOffer, локаль-нормализация цены → `normalizeObservation`, metadata/availability.
 - `lib/competitor-pricing/adapters/__fixtures__/{basic-product,graph-aggregate,array-products}.html` — только
   синтетический HTML, включая root array, `@graph`/`@id`, AggregateOffer и UnitPriceSpecification.
+ЭТАП 5:
+- `lib/competitor-pricing/matching-normalization.ts` + `.test.ts` — GTIN/check digit/legacy classification,
+  conservative SKU/brand/title normalization, integer size/count/multipack parsing, 24 tests.
+- `lib/competitor-pricing/matching-engine.ts` + `.test.ts` — candidate hints, evidence/conflicts, fixed confidence,
+  duplicate/rejected/existing-match policies, 31 tests.
+- `lib/competitor-pricing/adapters/jsonld-product.ts` + `.test.ts` — ambiguous single-separator prices теперь
+  fail closed; 9 дополнительных price-format regressions (adapter suite теперь 52).
 
 ## Tests
 
@@ -512,6 +630,16 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `npx tsc --noEmit` → 0. `npx eslint lib/competitor-pricing/adapters` → 0. `git diff --check` → чисто.
 - Prisma schema/migration не менялись; БД, integration/e2e/build и внешняя сеть не использовались.
 
+ЭТАП 5 (2026-10-03):
+- Matching + Stage 4 price audit targeted → 3 файла, 107 passed (24 normalization + 31 matcher + 52 adapter).
+- `npx vitest run --config vitest.config.ts lib/competitor-pricing` → 11 файлов, 328 passed, 4 skipped
+  (те же openssl-dependent TLS tests; matching/adapter tests без skip).
+- `npm run test:unit` → 293 файла, 2335 passed, 4 skipped. Прогон включал существующие чужие изменения
+  `lib/product-form-mapping*` и другие текущие unit-файлы репозитория.
+- `npx tsc --noEmit` → 0; ESLint всех изменённых TS-файлов → 0; `git diff --check` → чисто.
+- `npm run audit:security` → passed, 1768 files; `npm run check:encoding` → passed, 1201 source files.
+- Prisma schema/migration не менялись; production DB, integration/e2e/build и внешняя сеть не использовались.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -537,6 +665,11 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 невалидная, нулевая и не-EUR цена не создаёт observation. Текстовые metadata остаются недоверенным текстом
 и ограничиваются по длине; identifier >200 символов отбрасывается целиком.
 
+ЭТАП 5 (identity-integrity, протестировано): invalid/legacy barcode не становится GTIN; дубли не разрешаются
+выбором первого; SKU punctuation и GTIN leading zero сохраняются; fuzzy title/brand не создаёт trusted match;
+hard conflicts не скрываются сильным identifier; rejected/trusted decisions защищены. Matcher pure, не импортирует
+Prisma, не читает env/DB/сеть и не пишет цены. Ambiguous JSON-LD price separators теперь fail closed.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
@@ -547,18 +680,21 @@ IP-литералов (v4/v6/hex/decimal), localhost/.local/.internal/…; allow
 - Branch: `main`. HEAD на старте задачи: `67589105`.
 - Коммиты задачи: `627c0b5d` (ЭТАП 1, docs), `fec60300` (ЭТАП 2), коммит ЭТАПА 3
   `b7afb2eb` (`feat(pricing): safe competitor fetch infrastructure`), коммит ЭТАПА 4
-  `feat(pricing): parse JSON-LD competitor products` (хэш — `git log --oneline -5`).
+  `2b181078` (`feat(pricing): parse JSON-LD competitor products`), коммит ЭТАПА 5
+  `feat(pricing): add deterministic competitor matching` (хэш — `git log --oneline -6`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 5: реализовать чистый deterministic matching-слой поверх `ParsedListing` и нашего Product (без Prisma/API):
-консервативная нормализация EAN/GTIN и SKU; точное сравнение parsed `ean`/`manufacturerSku` с
-`Product.barcode`/`sku`; явный результат match/mismatch/missing/conflict с method/reason и без fuzzy title-match.
-Автоматический код никогда не выдаёт trusted-статус: точное совпадение — кандидат `likely`, конфликт
-идентификаторов — `ambiguous`; перевод в `confirmed` делает только админ через уже существующий
-`assertMatchDecision`. Добавить unit-тесты на leading zero, пробелы/дефисы, регистр SKU, разные EAN/SKU,
-совпадение одного при конфликте другого, отсутствующие/слишком длинные identifiers. Не обращаться к БД/сети;
-не начинать persistence/API до отдельного этапа.
+ЭТАП 6: observation ingestion/persistence boundary. Сначала спроектировать pure orchestration + repository port
+для `ParsedListing` → normalized observation → stateHash → append/touch, timestamps, `seenCount`, run counters и
+typed parse/fetch failures; fake repository tests должны доказать A→B→A, concurrency/idempotency и отсутствие
+строки на parse failure. Затем отдельно определить Prisma transaction implementation для
+`CompetitorProduct`/`CompetitorPriceObservation`/`CompetitorMonitorRun` и race-safe conditional touch/append.
+
+**Стоп перед любым runtime Prisma path/DB test:** pending migration всё ещё не применена, `.env.local` указывает
+на production. Не подключаться к БД, не применять migration и не запускать integration/build. Если для проверки
+persistence нужна non-production DB/Neon branch — сначала получить отдельное решение пользователя. До этого
+допустимы только pure/fake-repository unit tests и не подключённый к runtime Prisma code.

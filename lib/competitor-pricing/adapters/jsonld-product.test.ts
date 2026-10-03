@@ -33,7 +33,7 @@ describe('normalizeJsonLdPrice', () => {
     expect(normalizeJsonLdPrice(input)).toEqual({ kind: 'value', value: expected })
   })
 
-  it.each(['12.3456', '1,23,4', '12 EUR x', 'NaN', {}, Number.POSITIVE_INFINITY])('rejects malformed value %j', (input) => {
+  it.each(['1,234', '1.234', '12.3456', '1,23,4', '12 EUR x', 'NaN', {}, Number.POSITIVE_INFINITY])('rejects malformed or ambiguous value %j', (input) => {
     expect(normalizeJsonLdPrice(input)).toEqual({ kind: 'invalid' })
   })
 
@@ -74,6 +74,22 @@ describe('jsonLdProductAdapter', () => {
       ean: '4750000000002',
       observation: { regularCents: 6995, currency: 'EUR', availability: 'preorder' },
     })
+  })
+
+  it.each([
+    ['12.34', 1234],
+    ['12,34', 1234],
+    ['1,234.56', 123456],
+    ['1.234,56', 123456],
+    [' 1\u00a0234,56 € ', 123456],
+  ])('passes unambiguous machine-readable price %j through observation normalization', (price, regularCents) => {
+    const html = script({ '@type': 'Product', offers: { '@type': 'Offer', price, priceCurrency: 'EUR' } })
+    expect(jsonLdProductAdapter.parse(html, 'https://fixture.invalid/item')).toMatchObject({ ok: true, observation: { regularCents } })
+  })
+
+  it.each(['1,234', '1.234'])('fails closed for locale-ambiguous price %j on the full adapter path', (price) => {
+    const html = script({ '@type': 'Product', offers: { '@type': 'Offer', price, priceCurrency: 'EUR' } })
+    expect(jsonLdProductAdapter.parse(html, 'https://fixture.invalid/item')).toEqual({ ok: false, code: 'invalid_price' })
   })
 
   it('accepts schema.org type URLs and @type arrays but not unrelated JSON-LD', () => {

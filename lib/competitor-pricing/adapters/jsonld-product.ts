@@ -186,8 +186,15 @@ export function normalizeJsonLdPrice(value: unknown): PriceNormalization {
     const separator: '.' | ',' = dotCount > 0 ? '.' : ','
     const count = dotCount + commaCount
     const trailingDigits = input.length - input.lastIndexOf(separator) - 1
-    if (count === 1 && trailingDigits <= 2) decimalSeparator = separator
-    else groupingSeparator = separator
+    if (count === 1) {
+      // A single separator followed by exactly three digits is locale-ambiguous:
+      // "1,234" / "1.234" may mean either 1234 or a 3-decimal value. JSON-LD is
+      // machine-readable, so fail closed instead of guessing a different price.
+      if (trailingDigits < 1 || trailingDigits > 2) return { kind: 'invalid' }
+      decimalSeparator = separator
+    } else {
+      groupingSeparator = separator
+    }
   }
 
   const decimalParts = decimalSeparator ? input.split(decimalSeparator) : [input]

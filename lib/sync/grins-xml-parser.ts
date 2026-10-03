@@ -38,6 +38,13 @@ interface RawRoot {
   root?: { item?: RawItem[] }
 }
 
+export type GrinsRawItem = RawItem & Record<string, unknown>
+
+/** Raw <item> records exactly as the production parser sees them (strings, untrimmed). */
+export function readGrinsXmlItems(xml: string): GrinsRawItem[] {
+  return ((parser.parse(xml) as RawRoot).root?.item ?? []) as GrinsRawItem[]
+}
+
 export interface GrinsXmlAudit {
   validXml: boolean
   validationError?: string

@@ -18,7 +18,7 @@ vi.mock('basic-ftp', () => ({
 }))
 
 import { Client } from 'basic-ftp'
-import { getFtpsConfigFromEnv, downloadFtpsFile } from './ftps-client'
+import { getFtpsConfigForSource, getFtpsConfigFromEnv, downloadFtpsFile } from './ftps-client'
 
 describe('getFtpsConfigFromEnv', () => {
   const ORIGINAL_ENV = process.env
@@ -60,6 +60,36 @@ describe('getFtpsConfigFromEnv', () => {
   })
 })
 
+describe('getFtpsConfigForSource (FTPS source migration)', () => {
+  const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv
+  const PRIMARY = { GRINS_FTPS_HOST: 'old.example', GRINS_FTPS_USER: 'old-user', GRINS_FTPS_PASSWORD: 'old-pass', GRINS_FTPS_REMOTE_PATH: 'export.xml' }
+  const CANDIDATE = { GRINS_FTPS_CANDIDATE_HOST: 'new.example', GRINS_FTPS_CANDIDATE_USER: 'new-user', GRINS_FTPS_CANDIDATE_PASSWORD: 'new-pass', GRINS_FTPS_CANDIDATE_REMOTE_PATH: 'pro/export.xml', GRINS_FTPS_CANDIDATE_PORT: '2121' }
+  const ORIGINAL_ENV = process.env
+  afterEach(() => { process.env = ORIGINAL_ENV })
+
+  it('reads the candidate source only from GRINS_FTPS_CANDIDATE_*', () => {
+    expect(getFtpsConfigForSource('candidate', env({ ...PRIMARY, ...CANDIDATE }))).toEqual({ host: 'new.example', user: 'new-user', password: 'new-pass', remotePath: 'pro/export.xml', port: 2121 })
+  })
+
+  it('never fills missing candidate values from the primary source', () => {
+    expect(() => getFtpsConfigForSource('candidate', env({ ...PRIMARY, GRINS_FTPS_CANDIDATE_HOST: 'new.example' }))).toThrow(/GRINS_FTPS_CANDIDATE_USER/)
+  })
+
+  it('production config (scheduled sync) ignores candidate variables entirely', () => {
+    process.env = env({ ...CANDIDATE })
+    expect(() => getFtpsConfigFromEnv()).toThrow(/GRINS_FTPS_HOST/)
+    process.env = env({ ...PRIMARY, ...CANDIDATE })
+    expect(getFtpsConfigFromEnv()).toEqual({ host: 'old.example', user: 'old-user', password: 'old-pass', remotePath: 'export.xml' })
+  })
+
+  it('accepts an optional primary port and rejects invalid ports', () => {
+    expect(getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_PORT: '990' })).port).toBe(990)
+    expect(getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_PORT: '' }))).not.toHaveProperty('port')
+    expect(() => getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_PORT: 'abc' }))).toThrow(/GRINS_FTPS_PORT/)
+    expect(() => getFtpsConfigForSource('candidate', env({ ...CANDIDATE, GRINS_FTPS_CANDIDATE_PORT: '70000' }))).toThrow(/GRINS_FTPS_CANDIDATE_PORT/)
+  })
+})
+
 describe('downloadFtpsFile', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -69,6 +99,11 @@ describe('downloadFtpsFile', () => {
     expect(accessMock).toHaveBeenCalledWith({ host: 'h', user: 'u', password: 'p', secure: true })
     expect(downloadToMock).toHaveBeenCalledWith(expect.anything(), 'export.xml')
     expect(result).toBe('<root></root>')
+  })
+
+  it('passes a configured port to the explicit-TLS connection', async () => {
+    await downloadFtpsFile({ host: 'h', user: 'u', password: 'p', remotePath: 'export.xml', port: 2121 })
+    expect(accessMock).toHaveBeenCalledWith({ host: 'h', user: 'u', password: 'p', port: 2121, secure: true })
   })
 
   it('always closes the client, even on failure', async () => {

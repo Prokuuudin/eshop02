@@ -35,6 +35,8 @@ data/*.json
 
 # Local ERP source snapshot and generated synchronization diagnostics.
 /export.xml
+# FTPS source migration: downloaded exports + verification/comparison reports.
+/.ftps-migration/
 /*-audit.json
 /*-audit.md
 /*-result.json

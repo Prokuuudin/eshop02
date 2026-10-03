@@ -30,7 +30,7 @@ import { auditGrinsXml, parseGrinsXml } from '@/lib/sync/grins-xml-parser'
 import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv } from '@/lib/sync/ftps-client'
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
-import { structuralFailures } from '@/lib/sync/sync-preflight'
+import { evaluatePreflight, loadPreflightState, structuralFailures } from '@/lib/sync/sync-preflight'
 
 config({ path: '.env.local' })
 
@@ -74,6 +74,10 @@ async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): P
   ])
   const diff = buildSyncDryRunReport(products, dbProducts, extraData)
   if (diff.duplicateExternalIds.length > 0) critical.push(`${diff.duplicateExternalIds.length} externalId conflicts across XML/database`)
+  // Same read-only HARD/WARNING gates the scheduled run applies before its first write,
+  // so a dry-run of a new source predicts whether the scheduled sync would accept it.
+  const scheduledPreflight = evaluatePreflight({ audit, products, ...(await loadPreflightState(prisma)) })
+  for (const failure of scheduledPreflight.hard) if (!critical.includes(failure)) critical.push(`scheduled preflight: ${failure}`)
 
   const warnings = [
     ...(audit.negativePrices.length ? [`${audit.negativePrices.length} negative price values`] : []),
@@ -88,7 +92,7 @@ async function runDryRun(prisma: import('@/lib/prisma').ExtendedPrismaClient): P
   console.log(JSON.stringify({
     event: 'sync_dry_run_report', mode: 'dry-run', databaseWrites: 0, catalogUnchanged, catalogBefore, catalogAfter,
     source: { kind: source.kind, modifiedAt: source.modifiedAt, sizeBytes: Buffer.byteLength(source.content), sha256: checksum },
-    xml: audit, diff, critical, warnings,
+    xml: audit, diff, scheduledPreflight, critical, warnings,
   }, null, 2))
   return critical.length ? 2 : 0
 }

@@ -207,7 +207,9 @@ externalId-бэкфилл выполнен, первый production FULL sync д
 Task **может не наследовать** — поэтому на сервере в `.env.local` должны быть:
 
 -   `DATABASE_URL` — production Neon;
--   `GRINS_FTPS_HOST`, `GRINS_FTPS_USER`, `GRINS_FTPS_PASSWORD`, `GRINS_FTPS_REMOTE_PATH`;
+-   `GRINS_FTPS_HOST`, `GRINS_FTPS_USER`, `GRINS_FTPS_PASSWORD`, `GRINS_FTPS_REMOTE_PATH`
+    (+ опционально `GRINS_FTPS_PORT`, пусто = 21). Смена FTPS-источника —
+    только по `docs/erp-ftps-source-migration.md`;
 -   `SMTP_*` (для алерта) и `SYNC_ALERT_EMAIL`;
 -   `SYNC_PULL_ENABLED=true` — **только в момент ручного включения**. Любое
     другое значение = kill-switch: запуск завершается с кодом 0, ничего не

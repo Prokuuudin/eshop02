@@ -56,7 +56,6 @@ export function assertMatchDecision(decision: MatchDecision): void {
 }
 
 /** Which matches may feed market statistics / recommendations. */
-export function isMatchUsableForPricing(status: string, options: { includeLikelyMatches: boolean }): boolean {
-  if (isTrustedMatchStatus(status)) return true
-  return options.includeLikelyMatches && status === 'likely'
+export function isMatchUsableForPricing(status: string, _options: { includeLikelyMatches: false }): boolean {
+  return isTrustedMatchStatus(status)
 }

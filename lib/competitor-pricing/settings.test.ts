@@ -15,8 +15,10 @@ describe('pricing rules', () => {
     ['fractional competitors', { minimumCompetitors: 1.5 }],
     ['both limits zero', { maxDecreasePercent: 0, maxIncreasePercent: 0 }],
     ['iqr multiplier too small', { outliers: { mode: 'iqr', iqrMultiplier: 0.1, minPointsForFiltering: 4 } }],
+    ['iqr multiplier with excess precision', { outliers: { mode: 'iqr', iqrMultiplier: 1.005, minPointsForFiltering: 4 } }],
     ['unknown outlier mode', { outliers: { mode: 'zscore' } }],
     ['stale observation window too large', { maxObservationAgeHours: 24 * 31 }],
+    ['likely matches enabled', { includeLikelyMatches: true }],
   ])('rejects %s', (_label, patch) => {
     expect(parsePricingRules({ ...DEFAULT_PRICING_RULES, ...patch }).ok).toBe(false)
   })

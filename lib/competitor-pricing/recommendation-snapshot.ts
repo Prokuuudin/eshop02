@@ -1,8 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { Prisma } from '@/generated/prisma/client'
-import { centsToMoneyString, moneyToCents } from './money'
 import type { PricingRules } from './settings'
-import type { MatchStatus, PriceAuthority } from './constants'
+import type { CheckStatus, CompetitorStatus, MatchMethod, MatchStatus, MonitoringState, PriceAuthority } from './constants'
 
 // Immutable input snapshot stored with every PricingRecommendation. It is enough to
 // explain the decision, audit it, reproduce it (same algorithm version + snapshot ⇒ same
@@ -14,11 +12,35 @@ export type SnapshotObservation = {
   competitorId: string
   competitorProductId: string
   matchStatus: MatchStatus
+  matchMethod: MatchMethod
+  matchConfidenceThousandths: number | null
   regularPrice: string | null
   salePrice: string | null
   currency: string
   availability: string
+  observedAt: string
   lastSeenAt: string
+  competitorStatus: CompetitorStatus
+  monitoringState: MonitoringState
+  lastCheckStatus: CheckStatus | null
+  effectivePrice: string | null
+  marketRole: 'included' | 'collapsed_duplicate' | 'excluded'
+  exclusionReasons: string[]
+}
+
+export type SnapshotMarketCompetitor = {
+  competitorId: string
+  effectivePrice: string
+  observationIds: string[]
+  competitorProductIds: string[]
+}
+
+export type RecommendationAnalysisSnapshot = {
+  targetStrategy: 'match_median'
+  includedCompetitors: SnapshotMarketCompetitor[]
+  excludedObservations: Array<{ observationId: string; reasons: string[] }>
+  /** Inclusive freshness boundary derived from evidence, not from a random clock tick. */
+  freshnessValidThrough: string | null
 }
 
 export type RecommendationInputSnapshot = {
@@ -31,6 +53,7 @@ export type RecommendationInputSnapshot = {
     erpPriceMissing: boolean
   }
   observations: SnapshotObservation[]
+  analysis: RecommendationAnalysisSnapshot
   rules: PricingRules
 }
 
@@ -44,23 +67,30 @@ function canonicalJson(value: unknown): string {
     .join(',')}}`
 }
 
+function compareStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 /** Order-independent for observations (sorted by id) and key-order independent. */
 export function recommendationInputHash(snapshot: RecommendationInputSnapshot): string {
-  const normalized = { ...snapshot, observations: [...snapshot.observations].sort((a, b) => (a.observationId < b.observationId ? -1 : a.observationId > b.observationId ? 1 : 0)) }
+  const normalized = {
+    ...snapshot,
+    observations: [...snapshot.observations]
+      .map((observation) => ({ ...observation, exclusionReasons: [...observation.exclusionReasons].sort() }))
+      .sort((a, b) => compareStrings(a.observationId, b.observationId)),
+    analysis: {
+      ...snapshot.analysis,
+      includedCompetitors: [...snapshot.analysis.includedCompetitors]
+        .map((competitor) => ({
+          ...competitor,
+          observationIds: [...competitor.observationIds].sort(),
+          competitorProductIds: [...competitor.competitorProductIds].sort(),
+        }))
+        .sort((a, b) => compareStrings(a.competitorId, b.competitorId)),
+      excludedObservations: [...snapshot.analysis.excludedObservations]
+        .map((observation) => ({ ...observation, reasons: [...observation.reasons].sort() }))
+        .sort((a, b) => compareStrings(a.observationId, b.observationId)),
+    },
+  }
   return createHash('sha256').update(canonicalJson(normalized)).digest('hex')
-}
-
-export function snapshotMoney(value: Prisma.Decimal | string): string {
-  return centsToMoneyString(moneyToCents(value))
-}
-
-/**
- * erp_pending → erp_applied: the ERP-owned Product.price (after sync) equals the
- * recommended price exactly at cent precision, and the product is still ERP-linked.
- */
-export function isRecommendationFulfilledByErp(
-  product: { externalId: string | null; price: Prisma.Decimal | string },
-  recommendedPrice: Prisma.Decimal | string,
-): boolean {
-  return product.externalId !== null && moneyToCents(product.price) === moneyToCents(recommendedPrice)
 }

@@ -10,19 +10,21 @@ import { z } from 'zod'
 
 export const PRICING_RULES_KEY = 'competitor-pricing-rules'
 
-/** Percent with at most 2 fraction digits, stored as given and converted to basis points for math. */
-const percent = (max: number) =>
-  z.number().finite().min(0).max(max).refine(
+/** Decimal setting with at most 2 fraction digits; engines convert it to an integer scale before math. */
+const boundedTwoDecimal = (min: number, max: number) =>
+  z.number().finite().min(min).max(max).refine(
     (value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-9,
     { message: 'At most 2 decimal places' },
   )
+
+const percent = (max: number) => boundedTwoDecimal(0, max)
 
 const outliersSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('none') }).strict(),
   z.object({
     mode: z.literal('iqr'),
     // Tukey fences: points outside [Q1 − k·IQR, Q3 + k·IQR] are ignored.
-    iqrMultiplier: z.number().finite().min(0.5).max(5),
+    iqrMultiplier: boundedTwoDecimal(0.5, 5),
     // Below this many usable prices outlier filtering is skipped (too few points to judge).
     minPointsForFiltering: z.number().int().min(4).max(50),
   }).strict(),
@@ -39,8 +41,8 @@ export const pricingRulesSchema = z.object({
   outliers: outliersSchema,
   /** Observations whose lastSeenAt is older than this are not market evidence. */
   maxObservationAgeHours: z.number().int().min(1).max(24 * 30),
-  /** Auto-detected (unconfirmed) matches never count unless explicitly enabled. */
-  includeLikelyMatches: z.boolean(),
+  /** Reserved compatibility field. Automatic recommendations are always trusted-match only. */
+  includeLikelyMatches: z.literal(false),
   recommendationTtlHours: z.number().int().min(1).max(24 * 30),
 }).strict().refine(
   (rules) => rules.maxDecreasePercent > 0 || rules.maxIncreasePercent > 0,

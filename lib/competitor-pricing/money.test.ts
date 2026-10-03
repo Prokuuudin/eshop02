@@ -50,6 +50,7 @@ describe('isPositiveCents / sameMoneyExact', () => {
     expect(isPositiveCents(-1)).toBe(false)
     expect(isPositiveCents(null)).toBe(false)
     expect(isPositiveCents(1)).toBe(true)
+    expect(isPositiveCents(1_000_000_000_000)).toBe(false)
   })
 
   it('compares Decimal values at cent precision', () => {

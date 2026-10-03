@@ -4,7 +4,7 @@
 > сверь с разделом Git → продолжай с «Next exact step». Если handoff расходится с Git — истина Git;
 > сначала поправь этот файл.
 
-Последнее обновление: 2026-10-03, конец ЭТАПА 6 (pure observation ingestion + persistence contract). Prisma runtime/UI/scheduler не начаты.
+Последнее обновление: 2026-10-03, конец ЭТАПА 7 (deterministic market analysis + recommendations). Prisma runtime/UI/scheduler не начаты.
 Миграция НЕ применена ни к одной БД. Реальных запросов к конкурентам не было.
 
 ## Goal
@@ -188,11 +188,11 @@ confidence mapping, conflicts и ограничения подробно опи�
 
 ## Current state
 
-ЭТАПЫ 1–6 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
+ЭТАПЫ 1–7 завершены. Есть: Prisma-схема 6 моделей, pending migration (не применена), domain-слой
 `lib/competitor-pricing/*`, общий IP guard `lib/net-ip-guard.ts`, безопасный fetch `safe-fetch.ts` и
 `robots.ts`, JSON-LD Product adapter, synthetic fixtures, deterministic matcher и pure ingestion service с
-repository port/fake tests (ничто из этого ещё не вызывается из runtime-кода). Нет: Prisma repository,
-DB-backed services, API, UI, scheduler.
+repository port/fake tests, pure integer market analysis/recommendation engine и semantic snapshot/hash
+(ничто из этого ещё не вызывается из runtime-кода). Нет: Prisma repository, DB-backed services, API, UI, scheduler.
 
 ## Completed
 
@@ -206,10 +206,12 @@ DB-backed services, API, UI, scheduler.
 - [x] ЭТАП 5: pure deterministic matching + conservative normalization + Stage 4 price audit; 64 новых теста.
 - [x] ЭТАП 6: pure observation ingestion + узкий atomic repository contract + test-only transactional fake;
       append/touch/failure/idempotency/concurrency semantics; 35 новых тестов.
+- [x] ЭТАП 7: pure integer market statistics + deterministic median recommendation, trusted/fresh/available
+      filtering, duplicate/outlier policies, clamps/action modes/snapshot; 64 новых теста.
 
 ## Remaining
 
-- [ ] ЭТАП 7 analysis/recommendation. ЭТАП 8 UI.
+- [ ] ЭТАП 8 API/UI + admin review/apply workflow (runtime persistence всё ещё заблокирован pending migration).
 - [ ] ЭТАП 9 scheduler. ЭТАП 10 threat-model review, tests, `docs/COMPETITOR-PRICING.md`.
 
 ## Important decisions
@@ -280,6 +282,26 @@ DB-backed services, API, UI, scheduler.
 32. (ЭТАП 6) Цена не дублируется в `CompetitorProduct`: источник истины — последняя observation. Там остаются
     только `lastAvailability`, last check/success timestamps, status/error и `consecutiveFailures`. Существующая
     schema уже имеет first/last seen и `seenCount`, поэтому schema/pending migration не менялись.
+33. (ЭТАП 7) Market evidence — только `confirmed`/`manual`; `likely` никогда не влияет на цену. Сохранённое для
+    совместимости поле settings `includeLikelyMatches` теперь строго `false`; true делает rules invalid/fail-closed.
+34. (ЭТАП 7) Единственная target strategy v1 — `match_median`, как было принято в архитектуре. Median/average
+    округляют exact half-cent вверх; никаких `.99`, cost/margin, FX или VAT-преобразований нет.
+35. (ЭТАП 7) Freshness использует `lastSeenAt`, boundary max age включительно; future timestamp = clock anomaly.
+    Current operational error/blocked/paused исключает evidence из текущего анализа, но history не изменяет.
+36. (ЭТАП 7) `out_of_stock` исключается всегда; при default `requireAvailability=true` также исключаются
+    `preorder`/`unknown`. JSON-LD limited/online-only уже canonical `in_stock`, sold-out/discontinued —
+    `out_of_stock`, backorder — `preorder`; неизвестное значение fail-closed.
+37. (ЭТАП 7) Один Competitor имеет один вес: одинаковые цены нескольких trusted страниц collapse, разные цены
+    исключают этого конкурента как conflicting. IQR — nearest-rank Q1/Q3, integer multiplier hundredths,
+    Tukey fences; фильтр не включается ниже `minPointsForFiltering`/4 точек.
+38. (ЭТАП 7) Percent clamps считаются BigInt: lower decrease bound округляется вверх, upper increase bound вниз,
+    поэтому лимит никогда не превышается. Minimum difference проверяется exact integer ratio после clamp.
+39. (ЭТАП 7) Action mode: ERP-linked → `erp_required`; local + !erpPriceMissing → `local_apply`; local +
+    erpPriceMissing → `apply_blocked`. Engine ничего не применяет и одинаково считает market target для всех.
+40. (ЭТАП 7) Snapshot содержит все raw evidence, operational/match state, effective price, semantic market role,
+    exclusion reasons, included competitor groups и inclusive freshness boundary. Hash order-independent и не
+    включает произвольный `now`; при переходе observation в stale меняются disposition/hash. `expiresAt` = min
+    policy TTL и первого semantic freshness expiry (+1 ms для inclusive boundary).
 
 ## Recommendation state machine (ЭТАП 2, `lib/competitor-pricing/recommendation-state.ts`)
 
@@ -613,6 +635,91 @@ Schema и pending migration НЕ менялись. `updatedAt` для истор
 отложены до явного разрешения non-production DB и применения pending migration; текущий fake доказывает service
 semantics, но не PostgreSQL isolation/locking.
 
+## Stage 7 — Market analysis and recommendations
+
+### Pure input/output contract
+
+`recommendPrice()` не получает данные и не импортирует DB repository/Prisma runtime. Чистые integer-money primitives
+вынесены в `integer-money.ts`; Prisma Decimal conversions и ERP persistence comparison остаются за отдельными
+adapter-модулями. Caller передаёт:
+
+- Product identity/revision, current `Product.price` в integer cents, `externalId`, `erpPriceMissing`;
+- server-controlled `now`;
+- prepared evidence: observation/product/competitor ids, regular/sale cents, EUR currency, availability,
+  observed/last-seen timestamps, match status/method/confidence и current competitor/product/check states;
+- единственный Stage 2 `PricingRules` object.
+
+Output — discriminated `recommendation | no_recommendation`: market stats, sorted included competitors, sorted
+excluded evidence с stable reason codes, outlier details, target/action mode, snapshot/hash. Recommendation также
+содержит raw target, final cents, signed difference cents/bps, applied safeguards, confidence и expiry. Engine не
+пишет `PricingRecommendation`/`Product`, не вызывает match/apply/ERP handlers.
+
+### Evidence policies
+
+- Pricing trust: только `confirmed` и `manual`. `likely`/`ambiguous`/`rejected` → `untrusted_mapping`.
+- Freshness: `lastSeenAt >= now - maxObservationAgeHours`; exact boundary usable. Future time →
+  `clock_anomaly`; malformed/observed-after-last-seen → `invalid_timestamp`.
+- Operational fail-closed: competitor/product должны быть active, latest check — `ok`; paused/gone, blocked и
+  parse/fetch/not-found state видны отдельными exclusion reasons. Last known observation не удаляется.
+- Currency: только EUR, без FX. Invalid/non-positive/out-of-Decimal-range price исключается; effective = sale,
+  только когда `includeSalePrices=true` и sale есть, иначе regular.
+- Availability: `out_of_stock` всегда excluded; default `requireAvailability=true` принимает только `in_stock`.
+  При false также допускаются canonical `preorder`/`unknown`. Stage 4 adapter заранее сводит schema.org
+  LimitedAvailability→in_stock, SoldOut/Discontinued→out_of_stock, BackOrder→preorder.
+- Один competitor = один market point. Несколько usable страниц с одной ценой collapse; разные цены исключают
+  весь competitor как `conflicting_competitor_evidence`.
+
+### Statistics, outliers and target
+
+`market-statistics.ts` считает count/min/max/median/average/spread и signed current-vs-min/median в cents.
+Average и even median используют BigInt division, exact half-cent округляется вверх. Input order не влияет.
+
+IQR включается только при `N >= max(4, minPointsForFiltering)`. Q1/Q3 — deterministic nearest-rank;
+fences = Q1/Q3 ± multiplier×IQR, multiplier заранее переводится в integer hundredths. Extreme low и high
+обрабатываются одинаково и попадают в explanation; при малом N фильтрации нет.
+
+Target v1 только `match_median` (не «всегда самый дешёвый»). Median уже whole cents; дополнительного
+маркетингового rounding нет. Confidence = high при ≥3 included competitors, каждый подтверждён не старше
+половины freshness window; иначе medium.
+
+### Safeguards and no-recommendation
+
+Max decrease/increase применяются к current price в basis points через BigInt. Lower bound округляется ceiling,
+upper — floor: half-cent никогда не позволяет превысить процентный cap. `minimumDifferencePercent` сравнивается
+как exact integer ratio после target rounding/clamp; equality считается meaningful. Нулевой final delta даёт
+`no_change`.
+
+Primary no-recommendation codes: `invalid_own_price`, `invalid_policy`, `no_trusted_mappings`,
+`unsupported_currency_or_data`, `no_fresh_observations`, `no_available_competitors`,
+`conflicting_competitor_evidence`, `all_observations_excluded`, `insufficient_competitors`, `no_change`,
+`difference_below_threshold`. Detailed per-evidence reasons не теряются даже при другом primary reason.
+
+Никаких cost/margin/profitability checks: доказанного cost source нет, price3 — partner tier. Product.price
+сравнивается с публичным EUR market как есть; VAT semantics по-прежнему open business question.
+
+### Snapshot/staleness and schema audit
+
+Расширенный `RecommendationInputSnapshot` хранит canonical money strings, raw evidence + operational/match
+state, computed effective prices, roles `included|collapsed_duplicate|excluded`, reasons, final competitor groups
+и `freshnessValidThrough`. Arrays canonical-sort перед SHA-256. Перестановка input не меняет output/hash;
+произвольное движение `now` внутри той же freshness classification не меняет hash, но переход через boundary
+меняет included/excluded role и hash. Future apply additionally compares current time with recommendation expiry.
+
+Существующий `PricingRecommendation` уже имеет все обязательные persisted columns (market min/median/max/count,
+current/recommended/difference/percent, confidence/reason/snapshot/hash/version/revision/expiry). Average/spread,
+full evidence и safeguards помещаются в JSON snapshot/reason params, поэтому Prisma schema/pending migration не
+менялись.
+
+### Known limitations
+
+- v1 target только median; match-lowest/below-lowest и `.99` rounding не добавлены без business decision.
+- Operational policy намеренно strict: даже fresh last-known price временно не участвует после current fetch/
+  parse error; UI всё равно сможет показать её как excluded evidence.
+- `requireAvailability` — один conservative boolean, а не отдельная матрица по availability status.
+- Confidence — fixed explainable rule, не вероятность/ML. Нет category/brand-specific policies.
+- Engine не persist-ит recommendations; DB-backed repository/race/stale-apply tests всё ещё требуют разрешённую
+  non-production DB после применения pending migration.
+
 ## Database
 
 Prisma schema (`prisma/schema.prisma`, +201 строка, только добавления):
@@ -653,7 +760,7 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - `lib/competitor-pricing/match.ts` — trusted statuses, exclusiveKey, правила «авто ≠ confirmed»
 - `lib/competitor-pricing/observation.ts` — normalizeObservation (никогда 0), stateHash, append/touch
 - `lib/competitor-pricing/recommendation-state.ts` — state machine, openKey, priceAuthorityFor, actions
-- `lib/competitor-pricing/recommendation-snapshot.ts` — snapshot type, canonical inputHash, ERP-fulfilment check
+- `lib/competitor-pricing/recommendation-snapshot.ts` — snapshot type, canonical inputHash
 - `*.test.ts` рядом для каждого модуля (6 файлов)
 ЭТАП 3:
 - `lib/net-ip-guard.ts` + `.test.ts` — общий IP guard (новый)
@@ -681,6 +788,21 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
   monotonic-event idempotency, append/touch и failure state transitions.
 - `lib/competitor-pricing/observation-ingestion.test.ts` — test-only transactional in-memory fake и 35 тестов.
 - `lib/competitor-pricing/adapters/types.ts` — parse failure codes `ambiguous_product`/`ambiguous_offers`.
+ЭТАП 7:
+- `lib/competitor-pricing/market-statistics.ts` + `.test.ts` — BigInt average/median, min/max/spread/deviations,
+  nearest-rank IQR/Tukey filtering; 12 тестов.
+- `lib/competitor-pricing/recommendation-engine.ts` + `.test.ts` — pure evidence classification, one-price-per-
+  competitor, median target, safeguards/action modes/no-recommendation/snapshot expiry; 50 тестов.
+- `lib/competitor-pricing/settings.ts` + `.test.ts` — likely pricing forbidden (`literal(false)`), deterministic
+  2-decimal IQR multiplier; +2 tests.
+- `lib/competitor-pricing/match.ts` + `.test.ts` — pricing helper now trusted-only regardless of automatic score.
+- `lib/competitor-pricing/money.ts` + `.test.ts` — `isPositiveCents` also enforces Decimal(12,2) upper bound.
+- `lib/competitor-pricing/integer-money.ts` — pure integer/BigInt money primitives without generated Prisma runtime;
+  `money.ts` re-exports them and retains only Decimal persistence conversions.
+- `lib/competitor-pricing/recommendation-snapshot.ts`, `recommendation-state.test.ts` — semantic analysis snapshot,
+  nested array canonicalization и stronger order-independence coverage.
+- `lib/competitor-pricing/recommendation-persistence-money.ts` — isolated Prisma Decimal snapshot/ERP-fulfilment
+  helpers, deliberately outside the pure recommendation dependency graph.
 
 ## Tests
 
@@ -736,6 +858,20 @@ Pending migration: `prisma/pending-migrations/20261003120000_competitor_pricing/
 - Prisma schema/pending migration не менялись; production DB, integration/e2e/build, scheduler и внешняя сеть
   не использовались. `prisma validate/generate` не требовались и не запускались.
 
+ЭТАП 7 (2026-10-03):
+- New analysis/recommendation targeted → 2 файла, 62 passed (12 statistics + 50 engine).
+- Settings/match/money/snapshot regression вместе с новыми → 6 файлов, 112 passed.
+- Observation ingestion → 35 passed; matching → 55 passed; JSON-LD adapter → 52 passed.
+- `lib/competitor-pricing` → 14 файлов, 427 passed, 4 skipped (те же openssl-dependent TLS tests;
+  analysis/ingestion/matching/adapter tests без skip).
+- `npm run test:unit` → 296 файлов, 2434 passed, 4 skipped. Прогон включал существующие чужие изменения
+  `lib/product-form-mapping*` и другие текущие unit-файлы репозитория.
+- Новых тестов ЭТАПА 7: 64 (62 новых engine/statistics + 2 settings validation cases).
+- `npx tsc --noEmit` → 0; ESLint всех изменённых TS-файлов → 0; `git diff --check` → чисто.
+- `npm run audit:security` → passed, 1777 project files; `npm run check:encoding` → passed, 1210 source files.
+- Prisma schema/pending migration не менялись; production DB, Prisma runtime, integration/e2e/build, scheduler,
+  external network и Product.price не использовались/не изменялись. `prisma validate/generate` не требовались.
+
 ## Known issues (смежные, вне scope — не чинить без разрешения)
 
 - ProductOverride price path — см. раздел «ProductOverride pricing audit» (Medium, латентный, 0 товаров сейчас).
@@ -771,6 +907,13 @@ stale events fail closed без counters; competitor ownership проверяе�
 integer cents; atomic contract требует conditional latest touch и сериализацию per product. Service/fake не
 импортируют Prisma Client, не читают env/DB/сеть, не меняют Product.price/matches/recommendations.
 
+ЭТАП 7 (recommendation-integrity, протестировано): только human-trusted mappings; stale/future/blocked/error/
+unavailable/unsupported evidence fail closed с reason codes; один competitor имеет один вес; outliers объяснимы;
+money/statistics/clamps integer/BigInt; input permutations canonical; snapshot hash отражает semantic composition
+и freshness transition. Engine/snapshot hash dependency graph не загружает generated Prisma runtime; Decimal/ERP
+persistence helpers изолированы отдельно. Engine не читает env/DB/network и не пишет
+Product/recommendation/match/ERP state.
+
 Проверено: существующие authz/CSRF/audit/rate-limit/SSRF-утилиты (см. таблицу). Threat model модуля
 (SSRF, redirect SSRF, DNS rebinding, XSS, malicious HTML, oversized/decompression bomb, CSRF, SQLi —
 только Prisma/параметризованный SQL, scheduler abuse, log injection) — заложена в архитектуру,
@@ -783,19 +926,21 @@ integer cents; atomic contract требует conditional latest touch и сер
   `b7afb2eb` (`feat(pricing): safe competitor fetch infrastructure`), коммит ЭТАПА 4
   `2b181078` (`feat(pricing): parse JSON-LD competitor products`), коммит ЭТАПА 5 `8f3f01a1`
   (`feat(pricing): add deterministic competitor matching`), коммит ЭТАПА 6
-  `feat(pricing): add observation ingestion service` (хэш — `git log --oneline -7`).
+  `94083013` (`feat(pricing): add observation ingestion service`), коммит ЭТАПА 7
+  `feat(pricing): add deterministic price recommendations` (хэш — `git log --oneline -8`).
 - Чужие незакоммиченные изменения в дереве (НЕ трогать, не коммитить): `components/admin/products/AddProductForm.tsx`,
   `docs/deployment-checklist.md`, `lib/product-form-mapping*.ts`, корневые `*.json/*.md/*.csv` отчёты синка.
 - Push не выполнялся (запрещён без отдельного разрешения).
 
 ## Next exact step
 
-ЭТАП 7: pure analysis/recommendation engine без Prisma/runtime wiring. На integer cents отбирать только trusted
-(`confirmed`/`manual`) matches с EUR observations не старше `maxObservationAgeHours`; отдельно учитывать
-availability, sale-price rule, minimumCompetitors, IQR outliers, median, minimum difference и max increase/decrease;
-строить детерминированный immutable input snapshot/hash/reason/confidence и тестировать stale/edge cases. Не писать
-`Product.price`, не создавать Prisma repository/API/UI и не запускать DB/integration/build.
+ЭТАП 8: admin API/UI + review/apply workflow. Сначала определить application/repository ports и read models для
+dashboard/product detail/competitors/matches/rules/runs, server authz (`catalog.read|update`, `prices.update`),
+CSRF/audit и stale recommendation checks. Presentational UI и pure API validation можно разрабатывать на typed
+fixtures/fakes; `likely` показывать только как candidate, excluded evidence — с reason codes. Apply должен
+переиспользовать `applyProductChanges`, optimistic revision/current price/input hash, запрещать local apply для
+ERP-linked/erpPriceMissing и никогда автоматически не менять цену.
 
-**Стоп перед любым runtime Prisma path/DB test остаётся:** pending migration не применена, `.env.local` указывает
-на production. Prisma observation repository — отдельная будущая работа только после явного решения по
-non-production DB/application of migration; ЭТАП 7 должен оставаться pure.
+**Стоп перед DB-backed routes/Prisma repository остаётся:** pending migration не применена, `.env.local` указывает
+на production. Перед runtime Prisma path/integration tests нужна отдельная явная команда пользователя по
+non-production DB и применению migration. До неё ЭТАП 8 допустим только как pure contracts/fakes/presentational UI.

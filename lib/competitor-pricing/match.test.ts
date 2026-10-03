@@ -35,11 +35,11 @@ describe('isMatchUsableForPricing', () => {
     expect(isMatchUsableForPricing('confirmed', { includeLikelyMatches: false })).toBe(true)
     expect(isMatchUsableForPricing('manual', { includeLikelyMatches: false })).toBe(true)
     expect(isMatchUsableForPricing('likely', { includeLikelyMatches: false })).toBe(false)
-    expect(isMatchUsableForPricing('ambiguous', { includeLikelyMatches: true })).toBe(false)
-    expect(isMatchUsableForPricing('rejected', { includeLikelyMatches: true })).toBe(false)
+    expect(isMatchUsableForPricing('ambiguous', { includeLikelyMatches: false })).toBe(false)
+    expect(isMatchUsableForPricing('rejected', { includeLikelyMatches: false })).toBe(false)
   })
 
-  it('includes likely matches only when explicitly enabled', () => {
-    expect(isMatchUsableForPricing('likely', { includeLikelyMatches: true })).toBe(true)
+  it('never lets an automatic likely match influence pricing', () => {
+    expect(isMatchUsableForPricing('likely', { includeLikelyMatches: false })).toBe(false)
   })
 })

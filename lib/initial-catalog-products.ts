@@ -104,7 +104,7 @@ export async function getInitialCatalogProducts({
         ids: subcategoryIds,
         brandNames,
         search,
-        searchLocalizedTitles: true,
+        searchLanguage: language,
         searchExtendedFields: false,
         orderBy,
         skip: offset,

@@ -3,7 +3,7 @@ import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { createHash, randomUUID } from 'node:crypto'
-import { createProduct, getMergedProductsWithPrices, upsertProductOverride } from '@/lib/product-overrides-store'
+import { createProduct, getActiveProductIds, upsertProductOverride } from '@/lib/product-overrides-store'
 import type { Product, CategoryType, BadgeType } from '@/data/products'
 import { revalidatePath } from 'next/cache'
 
@@ -131,8 +131,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       after: { mode, rowCount: rows.length, payloadHash },
     }))
 
-    const existing = await getMergedProductsWithPrices()
-    const existingIds = new Set(existing.map((p) => p.id))
+    const existingIds = new Set(await getActiveProductIds())
 
     const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] }
 

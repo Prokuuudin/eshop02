@@ -38,6 +38,8 @@ import {
   getAdminProducts,
   getAdminProductById,
   getDuplicateProductMetadataFlags,
+  getActiveProductIds,
+  getInvoiceProductTitlesByIds,
   getAdminProductsPaginated,
   getDbProductsPaginated,
   getMergedProductById,
@@ -620,6 +622,27 @@ describe('bounded admin product reads', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith({
       where: { isDeleted: false, id: { not: 'p1' } },
       select: { id: true, metaTitle: true, metaDescription: true },
+    })
+  })
+
+  it('loads only ids for import existence checks', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([{ id: 'p1' }, { id: 'p2' }] as never)
+    await expect(getActiveProductIds()).resolves.toEqual(['p1', 'p2'])
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isDeleted: false, isActive: true },
+      select: { id: true },
+    })
+  })
+
+  it('loads invoice titles only for the bounded order item ids and applies title overrides', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([{ id: 'p1', titleEn: 'Base EN', titleLv: 'Base LV' }] as never)
+    settingFindUniqueMock.mockResolvedValue({ value: { p1: { titleEn: 'Override EN' } } } as never)
+    await expect(getInvoiceProductTitlesByIds(['p1'])).resolves.toEqual([
+      { id: 'p1', titleEn: 'Override EN', titleLv: 'Base LV' },
+    ])
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { id: { in: ['p1'] }, isDeleted: false, isActive: true },
+      select: { id: true, titleEn: true, titleLv: true },
     })
   })
 })

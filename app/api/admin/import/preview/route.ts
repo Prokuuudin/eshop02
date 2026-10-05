@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminPermission } from '@/lib/server-auth'
-import { getMergedProductsWithPrices } from '@/lib/product-overrides-store'
+import { getActiveProductIds } from '@/lib/product-overrides-store'
 import type { CategoryType } from '@/data/products'
 
 export const runtime = 'nodejs'
@@ -76,8 +76,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'too_many_rows', max: MAX_IMPORT_ROWS }, { status: 413 })
     }
 
-    const existing = await getMergedProductsWithPrices()
-    const existingIds = new Set(existing.map((p) => p.id))
+    const existingIds = new Set(await getActiveProductIds())
 
     const previewRows: PreviewRow[] = []
     const summary = { create: 0, update: 0, skip: 0, error: 0 }

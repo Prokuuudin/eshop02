@@ -1,0 +1,37 @@
+{
+  "mode": "shadow",
+  "source": { "dbPath": "C:\\Grins\\Sklad\\DB" },
+  "paths": {
+    "workDir": "C:\\GrinsProExporter\\work",
+    "outputDir": "C:\\GrinsProExporter\\out",
+    "logDir": "C:\\GrinsProExporter\\logs",
+    "stateDir": "C:\\GrinsProExporter\\state"
+  },
+  "snapshot": {
+    "maxAttempts": 3,
+    "pauseBetweenCopiesSeconds": 5,
+    "retryDelaySeconds": 60,
+    "keepRuns": 3
+  },
+  "keepOutputs": 14,
+  "preflight": {
+    "minProducts": 14000,
+    "maxDropRatio": 0.10,
+    "maxGrowthRatio": 0.20,
+    "maxQuantityDropRatio": 0.30,
+    "maxQuantityGrowthFactor": 3
+  },
+  "publish": {
+    "label": "candidate",
+    "host": "ftps.example.invalid",
+    "port": 21,
+    "remoteDir": "/hairshop-pro",
+    "fileName": "export.xml",
+    "manifestFileName": "export.manifest.json",
+    "credentialTarget": "GrinsProExporter/ftps",
+    "caFile": null,
+    "timeoutSeconds": 60,
+    "requireRemoteSize": true
+  },
+  "alerts": { "type": "none" }
+}

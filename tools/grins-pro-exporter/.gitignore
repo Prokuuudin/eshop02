@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+# local runtime data never belongs in Git
+config.json
+work/
+out/
+logs/
+state/
+*.xml
+*.DB
+*.db

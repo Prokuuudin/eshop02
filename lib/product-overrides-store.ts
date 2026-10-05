@@ -171,6 +171,7 @@ export async function getDbProductsPaginated(opts: {
     ids?: string[];
     search?: string;
     searchLocalizedTitles?: boolean;
+    searchLanguage?: 'ru' | 'en' | 'lv';
     searchExtendedFields?: boolean;
     minPrice?: number;
     maxPrice?: number;
@@ -179,6 +180,9 @@ export async function getDbProductsPaginated(opts: {
     projection?: 'full' | 'card';
 }): Promise<{ products: Product[]; total: number }> {
     const search = opts.search?.trim();
+    const localizedSearchFields = opts.searchLanguage !== undefined
+        ? opts.searchLanguage === 'en' ? ['titleEn' as const] : opts.searchLanguage === 'lv' ? ['titleLv' as const] : []
+        : opts.searchLocalizedTitles ? ['titleEn' as const, 'titleLv' as const] : [];
     const price = opts.minPrice !== undefined || opts.maxPrice !== undefined
         ? { ...(opts.minPrice !== undefined ? { gte: opts.minPrice } : {}), ...(opts.maxPrice !== undefined ? { lte: opts.maxPrice } : {}) }
         : undefined;
@@ -192,10 +196,7 @@ export async function getDbProductsPaginated(opts: {
         ...(search ? {
             OR: [
                 { title: { contains: search, mode: 'insensitive' } },
-                ...(opts.searchLocalizedTitles ? [
-                    { titleEn: { contains: search, mode: 'insensitive' as const } },
-                    { titleLv: { contains: search, mode: 'insensitive' as const } },
-                ] : []),
+                ...localizedSearchFields.map((field) => ({ [field]: { contains: search, mode: 'insensitive' as const } })),
                 { brand: { contains: search, mode: 'insensitive' } },
                 ...(opts.searchExtendedFields === false ? [] : [
                     { sku: { contains: search, mode: 'insensitive' as const } },
@@ -212,10 +213,7 @@ export async function getDbProductsPaginated(opts: {
     if (search) {
         relevantOverrideFields.add('title');
         relevantOverrideFields.add('brand');
-        if (opts.searchLocalizedTitles) {
-            relevantOverrideFields.add('titleEn');
-            relevantOverrideFields.add('titleLv');
-        }
+        for (const field of localizedSearchFields) relevantOverrideFields.add(field);
         if (opts.searchExtendedFields !== false) {
             relevantOverrideFields.add('sku');
             relevantOverrideFields.add('description');
@@ -242,7 +240,7 @@ export async function getDbProductsPaginated(opts: {
                 const fields = [
                     product.title,
                     product.brand,
-                    ...(opts.searchLocalizedTitles ? [product.titleEn, product.titleLv] : []),
+                    ...localizedSearchFields.map((field) => product[field]),
                     ...(opts.searchExtendedFields === false ? [] : [product.sku, product.description]),
                 ];
                 if (!fields.some((field) => field?.toLocaleLowerCase().includes(query))) return false;
@@ -389,12 +387,17 @@ export const getStorefrontFacetProducts = cache(async (): Promise<Product[]> => 
 });
 
 export async function getStorefrontBrandNames(): Promise<string[]> {
-    const rows = await prisma.product.findMany({
+    const [rows, overrides] = await Promise.all([prisma.product.findMany({
         where: STOREFRONT_WHERE,
         distinct: ['brand'],
         select: { brand: true },
-    });
-    return rows.map((row) => row.brand);
+    }), getProductOverrides().catch(() => ({} as Record<string, ProductOverride>))]);
+    // Candidate names include override-only brands. The paginated helper checks
+    // effective brands against active products before counting or returning them.
+    return [...new Set([
+        ...rows.map((row) => row.brand),
+        ...Object.values(overrides).flatMap((override) => typeof override.brand === 'string' ? [override.brand] : []),
+    ])];
 }
 
 export async function getPublicProductSitemapRows(): Promise<Array<{ id: string; updatedAt: Date }>> {
@@ -426,15 +429,18 @@ export async function getActiveProductIds(): Promise<string[]> {
 export async function getInvoiceProductTitlesByIds(
     productIds: string[],
 ): Promise<Array<{ id: string; titleEn?: string; titleLv?: string }>> {
-    const ids = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
+    const ids = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))];
     if (!ids.length) return [];
-    const [rows, overrides]: [Array<{ id: string; titleEn: string | null; titleLv: string | null }>, Record<string, ProductOverride>] = await Promise.all([
-        prisma.product.findMany({
-            where: { id: { in: ids }, ...STOREFRONT_WHERE },
+    const overrides = await getProductOverrides().catch(() => ({} as Record<string, ProductOverride>));
+    const rows: Array<{ id: string; titleEn: string | null; titleLv: string | null }> = [];
+    // Admin orders allow up to 500 lines: retain every ID, bounding each query
+    // to 100 translations and keeping only one batch in flight.
+    for (let offset = 0; offset < ids.length; offset += 100) {
+        rows.push(...await prisma.product.findMany({
+            where: { id: { in: ids.slice(offset, offset + 100) }, ...STOREFRONT_WHERE },
             select: { id: true, titleEn: true, titleLv: true },
-        }),
-        getProductOverrides().catch(() => ({})),
-    ]);
+        }));
+    }
     return rows.map((row) => ({
         id: row.id,
         titleEn: overrides[row.id]?.titleEn ?? row.titleEn ?? undefined,

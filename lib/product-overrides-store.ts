@@ -415,12 +415,39 @@ export async function getPublicProductCategories(): Promise<string[]> {
     return rows.map((row) => row.category);
 }
 
+export async function getActiveProductIds(): Promise<string[]> {
+    const rows = await prisma.product.findMany({
+        where: STOREFRONT_WHERE,
+        select: { id: true },
+    });
+    return rows.map((row) => row.id);
+}
+
+export async function getInvoiceProductTitlesByIds(
+    productIds: string[],
+): Promise<Array<{ id: string; titleEn?: string; titleLv?: string }>> {
+    const ids = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
+    if (!ids.length) return [];
+    const [rows, overrides]: [Array<{ id: string; titleEn: string | null; titleLv: string | null }>, Record<string, ProductOverride>] = await Promise.all([
+        prisma.product.findMany({
+            where: { id: { in: ids }, ...STOREFRONT_WHERE },
+            select: { id: true, titleEn: true, titleLv: true },
+        }),
+        getProductOverrides().catch(() => ({})),
+    ]);
+    return rows.map((row) => ({
+        id: row.id,
+        titleEn: overrides[row.id]?.titleEn ?? row.titleEn ?? undefined,
+        titleLv: overrides[row.id]?.titleLv ?? row.titleLv ?? undefined,
+    }));
+}
+
 // Storefront/public catalog: products without a valid B2B price carry no monetary fields.
 export const getMergedProducts = cache(async (): Promise<Product[]> => {
     return toStorefrontProducts(await getDbProducts());
 });
 
-// Admin-only consumers (export/import/invoices) that must see the stored local price.
+// Admin-only full export that must see the stored local price for every active product.
 export const getMergedProductsWithPrices = cache(async (): Promise<Product[]> => {
     return getDbProducts();
 });

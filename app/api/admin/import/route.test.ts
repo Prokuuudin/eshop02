@@ -6,7 +6,7 @@ vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: vi.fn((cb: (tx: unknown
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/product-overrides-store', () => ({
   createProduct: vi.fn(),
-  getMergedProductsWithPrices: vi.fn().mockResolvedValue([]),
+  getActiveProductIds: vi.fn().mockResolvedValue([]),
   upsertProductOverride: vi.fn(),
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))

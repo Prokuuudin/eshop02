@@ -4,7 +4,7 @@ import { requireAdminPermission } from '@/lib/server-auth'
 import { buildInvoiceHtml, type InvoiceLang } from '@/lib/invoice-template'
 import { sendEmail } from '@/lib/mailer'
 import { getServerOrderById } from '@/lib/orders-data-store'
-import { getMergedProductsWithPrices } from '@/lib/product-overrides-store'
+import { getInvoiceProductTitlesByIds } from '@/lib/product-overrides-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
@@ -58,11 +58,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Названия товаров на языке инвойса; для EN фолбэк — латышское название
-    const orderItemIds = new Set(order.items.map((i) => i.id))
-    const products = await getMergedProductsWithPrices()
+    const orderItemIds = [...new Set(order.items.map((i) => i.id))]
+    const products = await getInvoiceProductTitlesByIds(orderItemIds)
     const titles: Record<string, string> = {}
     for (const p of products) {
-      if (!orderItemIds.has(p.id)) continue
       const title = lang === 'en' ? p.titleEn || p.titleLv : p.titleLv
       if (title) titles[p.id] = title
     }
@@ -84,7 +83,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, code: 'send_failed' }, { status: 500 })
   }
 }
-
 
 
 

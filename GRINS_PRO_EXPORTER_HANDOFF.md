@@ -1,6 +1,6 @@
 # GRINS PRO EXPORTER — HANDOFF
 
-Last updated: 2026-10-05. Для любого следующего агента (любая модель/инструмент). Секретов здесь нет и не должно быть.
+Last updated: 2026-10-05 (этап 2: операционная готовность — см. раздел «ЭТАП 2» в конце; он имеет приоритет над §§ 13, 16, 22, 24, 25 ниже). Для любого следующего агента (любая модель/инструмент). Секретов здесь нет и не должно быть.
 Историческое доказательство алгоритма — `GRINS_PARADOX_RESEARCH_HANDOFF.md` (не редактировать).
 
 ## 1. Цель
@@ -78,7 +78,7 @@ symlink/reparse point и файлы < 4 KB отвергаются. Попытк�
 размер → `RNFR/RNTO export.xml.part → export.xml` → `SIZE`; затем так же manifest. Ошибка на любом шаге → `.part`
 удаляется, `export.xml` на сервере не трогается. **Нет delete+rename fallback.** Отказ сервера переименовать поверх
 существующего файла = отказ публикации. Перед загрузкой локальный XML перехэшируется и сверяется с manifest.
-`probe-ftps` проверяет возможности сервера только на `probe-*` файлах (`atomicPublishSupported`).
+`probe-ftps` проверяет возможности сервера тем же `_put_atomic`, только на `probe-*` файлах (этап 2: замена существующего файла доказывается SIZE; вердикт `FTPS ATOMIC PUBLISH: PASS|FAIL`).
 
 ## 9. Manifest
 
@@ -154,8 +154,7 @@ Exit: 0 ok, 2 compare suspicious, 10 lock занят (skipped), 20 config, 30 sn
 - Консистентность копии на уровне GrinS-транзакций не гарантируется (A/B совпадение + окно после 19:00/16:00
   снижают риск; файлы копируются последовательно, не атомарно вместе).
 - Scheduled sync не проверяет manifest/freshness (только candidate-инструмент).
-- Витрина: строка «Елгава» (`lib/warehouse-availability.ts`, public) теперь получает `null` → «Нет в наличии» (как и
-  раньше фактически было 0). Скрывать ли Елгаву — решение владельца.
+- Витрина: Елгава (10010) скрыта из блока наличия товара на этапе 2; справочник магазинов (data/stores.ts) не тронут.
 - Неизвестные legacy-коды складов с нулевым остатком (`0,11,1917,4318,4869,5732,90009`, пустой) логируются как info.
 
 ## 17. Deployment prerequisites
@@ -240,3 +239,146 @@ No push.** Legacy Hairshop.lv integration и её креды не тронуты
 
 Установить exporter на Windows-машину GrinS в shadow-режиме на несколько дней → `probe-ftps` на candidate FTPS →
 mode publish в candidate → сравнить candidate с primary → отдельно согласовать cutover.
+
+---
+
+## ЭТАП 2 — ОПЕРАЦИОННАЯ ГОТОВНОСТЬ (2026-10-05)
+
+Цель: Git-аудит, готовность к установке, shadow/probe-процедуры, мелкие решения. Архитектура не менялась.
+
+### E2.1 Git-аудит `origin/main..main` (15 локальных коммитов, НИЧЕГО не запушено)
+
+`origin/main` = `67589105`. Push в `main` = деплой всех 15 сразу (выборочного push без переписывания истории нет;
+история не переписывалась). Секрет-скан всех 15: реальных секретов нет (единственные похожие строки — фейковые
+фикстуры `test-secret`/`production-secret` в pricing-тестах `8d096950`; их хосты не совпадают с хостами из `.env*`).
+Бинарников/данных GrinS нет; `git show --check` чисто для GrinS-коммитов.
+
+| commit | purpose | files (суть) | GrinS | safe to push | action |
+|---|---|---|---|---|---|
+| 627c0b5d | docs(pricing) continuation | 1 doc | нет | да | KEEP |
+| fec60300 | pricing schema + domain | `prisma/schema.prisma` (+6 моделей), `prisma/pending-migrations/…` (НЕ в `prisma/migrations` → `migrate deploy` её не применит), `lib/competitor-pricing/*` | нет | условно: модели без таблиц, runtime к ним не обращается | REVIEW (владелец pricing) |
+| b7afb2eb | safe fetch, `net-ip-guard`, рефакторинг `lib/webhook-sender.ts` | меняет SSRF-guard живой доставки webhook (тестировано) | нет | условно | REVIEW |
+| 2b181078 | JSON-LD adapter | lib only, не подключено | нет | да | KEEP |
+| 8f3f01a1 | matching engine | lib only | нет | да | KEEP |
+| 94083013 | observation ingestion | lib only | нет | да | KEEP |
+| 424ba7d4 | recommendations | lib only | нет | да | KEEP |
+| 6078af57 | admin pricing shell | новый маршрут `/admin/pricing` + пункт меню (видно админам) | нет | условно | REVIEW |
+| 8d096950 | isolated DB integration | `.env.example`, `package.json` (opt-in скрипты), vitest-конфиг | нет | да (без влияния на build) | KEEP |
+| fa1b97ac | pricing semantics | lib + pending migration + schema | нет | условно | REVIEW (как fec60300) |
+| 1108d19a | research GrinS | research/, research handoff | да | да | KEEP |
+| a9cf2d29 | Pro exporter | tools/grins-pro-exporter | да | да (не деплоится на сайт) | KEEP |
+| aee5ac73 | consumer: slot 9 → null, manifest check | lib/sync, scripts/verify-ftps-source.ts | да | да | KEEP |
+| 0971144e | docs exporter | docs, handoff | да | да | KEEP |
+| 64f6c4ab (было 678e1bc8) | **параллельная работа**: storefront «prevent full catalog reads» | app pages/API, `lib/product-overrides-store.ts` (+361), catalog-service | нет | неизвестно (не проверял) | REVIEW (вне этой задачи) |
+
+**SAFE TO PUSH: NO** (как целое): GrinS-коммиты безопасны, но push публикует также REVIEW-коммиты других
+направлений (pricing-схема/админка/webhook-guard, свежий storefront-коммит 678e1bc8). Решение — за владельцем.
+
+### E2.2 Рабочее дерево (UNRELATED WORKTREE CHANGES — не трогались)
+
+`components/admin/products/AddProductForm.tsx`, `docs/deployment-checklist.md`, `lib/product-form-mapping(.test).ts`,
+корневые `*.md/*.json/*.csv` аудитов, `research/grins-paradox/{analyze,control_skus,deep_dive}.py`, 2 старых stash;
+во время этапа параллельная сессия дополнительно меняла `app/api/admin/import/*`, `app/api/admin/orders/send-invoice/*`,
+`lib/product-overrides-store.ts` (и закоммитила 678e1bc8). Всё это — чужая работа, не включалась в коммиты этапа.
+Ни stash, ни reset, ни checkout не выполнялись.
+
+### E2.3 Изменения этапа 2
+
+- `publish.py`: `probe-ftps` теперь использует ровно `_put_atomic` (STOR .part → SIZE → RNFR/RNTO → SIZE) на
+  `probe-<runId>.txt`: шаг 1 — на свободное имя, шаг 2 — ДЛИННЕЕ файл на уже существующее имя; SIZE после rename
+  доказывает, что замена произошла (ловит «молчаливый» отказ). PASS требует SIZE. Файлы probe удаляются;
+  `export.xml`, `export.manifest.json` и их `.part` не затрагиваются (тест). CLI: `probe-ftps` пишет вердикт
+  `FTPS ATOMIC PUBLISH: PASS|FAIL`, exit 0 / 60.
+- `model.py`: Kolvo fail-closed — тип нарушения (`fractional` / `too_large`), SKU, склад; точный счётчик и выборка ≤ 20
+  (исправлено: раньше `inf` давал OverflowError → exit 70, а список рос без ограничения).
+- `runner.py`: `runStartedAt` в manifest, `durationSeconds` в `export_completed`/`export_failed`.
+- `lib/warehouse-availability.ts`: Елгава (10010) `public: false` → скрыта из блока «Наличие в магазинах» на
+  странице товара (+ тест `lib/warehouse-availability.test.ts`).
+- `docs/grins-pro-exporter-runbook.md` переписан как пошаговая инструкция оператора.
+
+### E2.4 Елгава — решение
+
+Скрыта ТОЛЬКО в наличии товара (`lib/warehouse-availability.ts`; модуль используется лишь
+`/api/products/[id]/availability` → `ProductStoreAvailability`). НЕ тронуто: `data/stores.ts` (id `jelgava`) —
+используется checkout (pickup), `app/api/orders`, счета (`lib/invoice-template.ts`), адреса заказов, история, контакты,
+CMS `lib/content-registry.ts`, переводы, `/stores/jelgava.jpg`. Убирать магазин из pickup/контактов — отдельное решение
+владельца (persisted `pickupStoreId` в старых заказах). `EXCLUDED_STOCK_WAREHOUSE_IDS` с '10010' — безвредно, оставлено.
+
+### E2.5 Shadow — точные команды (из кода)
+
+```
+cd /d C:\GrinsProExporter
+py -3 -m grins_pro_exporter --config C:\GrinsProExporter\config.json check-config
+py -3 -m grins_pro_exporter --config C:\GrinsProExporter\config.json run --dry-run
+py -3 -m grins_pro_exporter --config C:\GrinsProExporter\config.json run --shadow
+```
+Конфиг для shadow — БЕЗ секции `publish` (runbook §3). Приёмка: exit 0, события до `export_completed`,
+≥ 3 вечера на разных снимках; сводка — однострочник runbook §6 (runId, старт, snapshotAt, count, XML SHA, total
+quantity, SHA CENIC/OSTATOK, ignored warehouses). Проверено на golden-копии: 2 прогона exit 0, XML SHA
+`706260fe…`, 10.6 с.
+
+### E2.6 Windows / account / candidate
+
+Требования — runbook §1 (Windows 10+/Server 2016+; Win7 → только Python 3.8; Python из python.org с `py`;
+одна учётка задачи: чтение GrinS DB, полный доступ к `C:\GrinsProExporter`, секреты в её Credential Manager;
+задача планировщика с сохранённым паролем `/RP` — S4U не видит Credential Manager).
+Candidate FTPS — НЕ ХВАТАЕТ: host, port, user (+ пароль в Credential Manager), remoteDir, подтверждение доверенного
+сертификата и passive-портов; на сервере Hairshop Pro — `GRINS_FTPS_CANDIDATE_*` для чтения. Вымышленные значения не
+создавались; сетевые проверки не выполнялись.
+
+### E2.7 XML + manifest атомарность
+
+Пара файлов не меняется транзакционно (FTPS этого не умеет). Порядок: XML, затем manifest. Окно «новый XML + старый
+manifest» и гонка при скачивании consumer'ом детектируются: `verifyExportManifest` требует
+`manifest.xmlSha256 == SHA(скачанного XML)`, размер и productCount → иначе FAIL (повторить позже). Это уже в
+`verify-ftps-source --source candidate --manifest` (+ `--manifest-file`), тесты есть. Scheduled sync manifest пока
+не проверяет (см. E2.8).
+
+### E2.8 Freshness — план для scheduled sync (НЕ внедрено; отдельный этап перед cutover)
+
+`lib/sync/scheduled-sync.ts`, сразу после `source = await deps.download()`: если `GRINS_FTPS_REQUIRE_MANIFEST === 'true'`
+— `deps.downloadManifest()` (тот же FTPS-конфиг, путь `manifestPathFor(remotePath)`), `verifyExportManifest(source.content,
+manifest, now())`; при FAIL → существующий `fail('export manifest check failed: …', { stage: 'manifest', xmlSha256 })`
+(без записей в Product, SyncRun failed, alert; следующий часовой запуск повторит). По умолчанию флаг выключен →
+поведение production не меняется до cutover. Тесты: свежий/устаревший/несовпадающий manifest, флаг выключен.
+Порог 36 ч (экспорт раз в сутки в 20:00).
+
+### E2.9 Alerts
+
+Реализован SMTP-адаптер (STARTTLS с проверкой сертификата, получатели в `alerts.to`). Технический получатель не
+задан (sales@ не используется) → `"type": "none"` до решения владельца; провал всё равно в логе + exit ≠ 0 +
+история Task Scheduler. Заполнить ДО включения расписания.
+
+### E2.10 Тесты этапа 2
+
+Python exporter 77 OK / 1 skipped (symlink); golden (research-эмулятор = эталон `12a7ff3a…`, Pro SHA `706260fe…`)
+внутри; research 14 OK; vitest `lib/sync` + availability 361 passed; `tsc --noEmit` 0; eslint изменённых файлов 0;
+реальные CLI-прогоны: shadow ×2, check-config, probe-ftps без publish → exit 20.
+
+### E2.11 Что блокирует
+
+- **Candidate**: параметры candidate FTPS + `probe-ftps` = `FTPS ATOMIC PUBLISH: PASS`; ≥ 3 успешных shadow на машине
+  GrinS; одобрение владельца на publish.
+- **Cutover**: всё выше + сравнение candidate vs primary (`compare-ftps-exports`, `sync-products --dry-run --file`),
+  freshness-enforcement в scheduled sync (E2.8), alert-получатель, деплой consumer-коммитов (push = отдельное решение),
+  отдельное одобрение.
+
+### E2.12a Коммиты этапа 2 (локальные, НЕ запушены)
+
+- `f73a5536 fix(exporter): prove atomic replace in probe; harden Kolvo diagnostics`
+- `8c9392d8 fix(storefront): hide closing Jelgava warehouse from product availability` (проверено живым API dev-сервера:
+  `/api/products/21797/availability` → 7 магазинов, без Елгавы)
+- `docs: GrinS exporter operational runbook and stage-2 handoff` (этот файл + runbook)
+Параллельная сессия за время этапа добавила ещё `14e3317a fix: bound remaining admin product reads` (и amend-ила свой
+`762b03da→678e1bc8→64f6c4ab`; один её `--amend` в 15:52 ошибочно попал на мой `8c9392d8`, через 2 минуты она сама
+вернула HEAD и разнесла изменения — содержимое моих коммитов проверено, чистое). Итого `origin/main..main` = 19.
+SAFE TO PUSH: NO (см. E2.1; 14e3317a — тоже чужое, REVIEW).
+
+### E2.12 Production
+
+Production source NOT switched. Production DB NOT modified. No production sync executed. No candidate publication
+performed. No production deployment performed. No push.
+
+### Следующий шаг
+
+Получить/подтвердить Windows-машину GrinS и service account, установить exporter и выполнить первый ручной shadow run.

@@ -3,7 +3,14 @@ import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns';
-import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
+import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, hasValidB2BPrice, toStorefrontProducts } from '@/lib/product-sellability';
+import {
+    getProductSubcategory,
+    mapDbToProduct,
+    mapProductToDbCreate,
+    STOREFRONT_PRODUCT_SELECT,
+    type StorefrontProductRow,
+} from '@/lib/product-overrides-mapping';
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>;
 
@@ -38,46 +45,374 @@ export type ArchivedProductRecord = {
 
 const DELETED_ARCHIVE_KEY = 'deleted-products-archive';
 
+const STOREFRONT_WHERE = { isDeleted: false, isActive: true } as const;
+
+const STOREFRONT_CARD_SELECT = {
+    id: true, title: true, titleKey: true, titleEn: true, titleLv: true,
+    brand: true, price: true, oldPrice: true, rating: true, image: true,
+    badges: true, category: true, stock: true, createdAt: true, isActive: true,
+    externalId: true, erpPriceMissing: true, manualPriceApproved: true,
+    manualApprovedPrice: true, sku: true, minOrderQuantities: true,
+    technicalSpecs: true, bulkPricingTiers: true,
+} satisfies Prisma.ProductSelect;
+
+type StorefrontCardRow = Prisma.ProductGetPayload<{ select: typeof STOREFRONT_CARD_SELECT }>;
+
+const STOREFRONT_FILTER_INDEX_SELECT = {
+    id: true, title: true, titleEn: true, titleLv: true, description: true,
+    brand: true, sku: true, price: true, category: true, stock: true,
+    createdAt: true, externalId: true, erpPriceMissing: true,
+    manualPriceApproved: true, manualApprovedPrice: true,
+} satisfies Prisma.ProductSelect;
+
+type StorefrontFilterIndexRow = Prisma.ProductGetPayload<{ select: typeof STOREFRONT_FILTER_INDEX_SELECT }>;
+
+async function normalizeMergedRows(
+    rows: StorefrontProductRow[],
+    overrides?: Record<string, ProductOverride>,
+): Promise<Product[]> {
+    const [resolvedOverrides, campaigns] = await Promise.all([
+        overrides ?? getProductOverrides().catch(() => ({})),
+        readPromoCampaigns(prisma),
+    ]);
+    const merged = mergeProductsWithOverrides(rows.map(mapDbToProduct), resolvedOverrides);
+    return attachCampaignOffers(merged, campaigns);
+}
+
+async function normalizeStorefrontRows(
+    rows: StorefrontProductRow[],
+    overrides?: Record<string, ProductOverride>,
+): Promise<Product[]> {
+    return toStorefrontProducts(await normalizeMergedRows(rows, overrides));
+}
+
+async function normalizeStorefrontCardRows(
+    rows: StorefrontCardRow[],
+    existingOverrides?: Record<string, ProductOverride>,
+): Promise<Product[]> {
+    const [overrides, campaigns] = await Promise.all([
+        existingOverrides ?? getProductOverrides().catch(() => ({})),
+        readPromoCampaigns(prisma),
+    ]);
+    const products: Product[] = rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        titleKey: row.titleKey ?? undefined,
+        titleEn: row.titleEn ?? undefined,
+        titleLv: row.titleLv ?? undefined,
+        brand: row.brand,
+        price: Number(row.price),
+        oldPrice: row.oldPrice === null ? undefined : Number(row.oldPrice),
+        rating: row.rating,
+        image: row.image ?? undefined,
+        badges: row.badges as Product['badges'],
+        category: row.category as Product['category'],
+        subcategory: getProductSubcategory(row.id),
+        stock: row.stock,
+        createdAt: row.createdAt,
+        isActive: row.isActive,
+        erpPriceMissing: row.erpPriceMissing,
+        manualPriceApproved: row.manualPriceApproved,
+        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
+        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
+        sku: row.sku ?? undefined,
+        minOrderQuantities: (row.minOrderQuantities ?? undefined) as Product['minOrderQuantities'],
+        technicalSpecs: (row.technicalSpecs ?? undefined) as Product['technicalSpecs'],
+        bulkPricingTiers: (row.bulkPricingTiers ?? undefined) as Product['bulkPricingTiers'],
+    }));
+    return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
+}
+
+function normalizeStorefrontFilterIndexRows(
+    rows: StorefrontFilterIndexRow[],
+    overrides: Record<string, ProductOverride>,
+): Product[] {
+    const products: Product[] = rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        titleEn: row.titleEn ?? undefined,
+        titleLv: row.titleLv ?? undefined,
+        description: row.description ?? undefined,
+        brand: row.brand,
+        sku: row.sku ?? undefined,
+        price: Number(row.price),
+        rating: 0,
+        category: row.category as Product['category'],
+        subcategory: getProductSubcategory(row.id),
+        stock: row.stock,
+        createdAt: row.createdAt,
+        erpPriceMissing: row.erpPriceMissing,
+        manualPriceApproved: row.manualPriceApproved,
+        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
+        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
+    }));
+    return toStorefrontProducts(mergeProductsWithOverrides(products, overrides));
+}
+
 const getDbProducts = cache(async (): Promise<Product[]> => {
     const [rows, overrides] = await Promise.all([
         prisma.product.findMany({
-            where: { isDeleted: false, isActive: true },
+            where: STOREFRONT_WHERE,
             orderBy: { createdAt: 'desc' },
+            select: STOREFRONT_PRODUCT_SELECT,
         }),
         getProductOverrides().catch(() => ({})),
     ]);
-    return attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma));
+    return normalizeMergedRows(rows, overrides);
 });
 
-// Примечание: category-фильтр ниже сравнивается с базовым (пред-override) значением
-// Product.category на уровне SQL. Если admin когда-нибудь переопределит category
-// конкретного товара через override, для пагинированного по категории списка он
-// продолжит фильтроваться по старой базовой категории. Известное ограничение,
-// не решается здесь — переопределение category встречается на практике крайне редко.
+// Fast path uses SQL filters and pagination. If an override changes a field used by
+// the current filter, the fallback scans only filter-index columns and still fetches
+// full storefront data for the bounded result page, preserving override semantics.
 export async function getDbProductsPaginated(opts: {
     category?: string;
     skip?: number;
     take?: number;
     ids?: string[];
+    search?: string;
+    searchLocalizedTitles?: boolean;
+    searchExtendedFields?: boolean;
+    minPrice?: number;
+    maxPrice?: number;
+    brandNames?: string[];
+    orderBy?: Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[];
+    projection?: 'full' | 'card';
 }): Promise<{ products: Product[]; total: number }> {
-    const where = {
+    const search = opts.search?.trim();
+    const price = opts.minPrice !== undefined || opts.maxPrice !== undefined
+        ? { ...(opts.minPrice !== undefined ? { gte: opts.minPrice } : {}), ...(opts.maxPrice !== undefined ? { lte: opts.maxPrice } : {}) }
+        : undefined;
+    const where: Prisma.ProductWhereInput = {
         isDeleted: false,
         isActive: true,
         ...(opts.category ? { category: opts.category } : {}),
         ...(opts.ids ? { id: { in: opts.ids } } : {}),
+        ...(opts.brandNames ? { brand: { in: opts.brandNames } } : {}),
+        ...(price ? { price } : {}),
+        ...(search ? {
+            OR: [
+                { title: { contains: search, mode: 'insensitive' } },
+                ...(opts.searchLocalizedTitles ? [
+                    { titleEn: { contains: search, mode: 'insensitive' as const } },
+                    { titleLv: { contains: search, mode: 'insensitive' as const } },
+                ] : []),
+                { brand: { contains: search, mode: 'insensitive' } },
+                ...(opts.searchExtendedFields === false ? [] : [
+                    { sku: { contains: search, mode: 'insensitive' as const } },
+                    { description: { contains: search, mode: 'insensitive' as const } },
+                ]),
+            ],
+        } : {}),
     };
-    const [rows, total, overrides] = await Promise.all([
+    const overrides = await getProductOverrides().catch(() => ({}));
+    const relevantOverrideFields = new Set<string>();
+    if (opts.category) relevantOverrideFields.add('category');
+    if (opts.brandNames) relevantOverrideFields.add('brand');
+    if (opts.minPrice !== undefined || opts.maxPrice !== undefined) relevantOverrideFields.add('price');
+    if (search) {
+        relevantOverrideFields.add('title');
+        relevantOverrideFields.add('brand');
+        if (opts.searchLocalizedTitles) {
+            relevantOverrideFields.add('titleEn');
+            relevantOverrideFields.add('titleLv');
+        }
+        if (opts.searchExtendedFields !== false) {
+            relevantOverrideFields.add('sku');
+            relevantOverrideFields.add('description');
+        }
+    }
+    const needsOverrideFallback = relevantOverrideFields.size > 0 && Object.values(overrides).some((override) =>
+        Object.keys(override).some((field) => relevantOverrideFields.has(field))
+    );
+
+    if (needsOverrideFallback) {
+        const indexRows = await prisma.product.findMany({
+            where: STOREFRONT_WHERE,
+            orderBy: { createdAt: 'desc' },
+            select: STOREFRONT_FILTER_INDEX_SELECT,
+        });
+        const query = search?.toLocaleLowerCase();
+        const filtered = normalizeStorefrontFilterIndexRows(indexRows, overrides).filter((product) => {
+            if (opts.ids && !opts.ids.includes(product.id)) return false;
+            if (opts.category && product.category !== opts.category) return false;
+            if (opts.brandNames && !opts.brandNames.includes(product.brand)) return false;
+            if (opts.minPrice !== undefined && !(product.price >= opts.minPrice)) return false;
+            if (opts.maxPrice !== undefined && !(product.price <= opts.maxPrice)) return false;
+            if (query) {
+                const fields = [
+                    product.title,
+                    product.brand,
+                    ...(opts.searchLocalizedTitles ? [product.titleEn, product.titleLv] : []),
+                    ...(opts.searchExtendedFields === false ? [] : [product.sku, product.description]),
+                ];
+                if (!fields.some((field) => field?.toLocaleLowerCase().includes(query))) return false;
+            }
+            return true;
+        });
+        const pageIds = filtered.slice(opts.skip ?? 0, opts.take === undefined ? undefined : (opts.skip ?? 0) + opts.take)
+            .map((product) => product.id);
+        if (!pageIds.length) return { products: [], total: filtered.length };
+        const pageProducts = opts.projection === 'card'
+            ? await prisma.product.findMany({
+                where: { id: { in: pageIds }, ...STOREFRONT_WHERE },
+                select: STOREFRONT_CARD_SELECT,
+            }).then((rows) => normalizeStorefrontCardRows(rows, overrides))
+            : await prisma.product.findMany({
+                where: { id: { in: pageIds }, ...STOREFRONT_WHERE },
+                select: STOREFRONT_PRODUCT_SELECT,
+            }).then((rows) => normalizeStorefrontRows(rows, overrides));
+        const byId = new Map(pageProducts.map((product) => [product.id, product]));
+        return {
+            products: pageIds.flatMap((id) => byId.get(id) ? [byId.get(id)!] : []),
+            total: filtered.length,
+        };
+    }
+
+    if (opts.projection === 'card') {
+        const [rows, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                orderBy: opts.orderBy ?? { createdAt: 'desc' },
+                skip: opts.skip,
+                take: opts.take,
+                select: STOREFRONT_CARD_SELECT,
+            }),
+            prisma.product.count({ where }),
+        ]);
+        return { products: await normalizeStorefrontCardRows(rows, overrides), total };
+    }
+
+    const [rows, total] = await Promise.all([
         prisma.product.findMany({
             where,
-            orderBy: { createdAt: 'desc' },
+            orderBy: opts.orderBy ?? { createdAt: 'desc' },
             skip: opts.skip,
             take: opts.take,
+            select: STOREFRONT_PRODUCT_SELECT,
         }),
         prisma.product.count({ where }),
-        getProductOverrides().catch(() => ({})),
     ]);
+    return { products: await normalizeStorefrontRows(rows, overrides), total };
+}
 
-    return { products: toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides), await readPromoCampaigns(prisma))), total };
+/** One public Product row; memoized across metadata and page rendering. */
+export const getMergedProductById = cache(async (productId: string): Promise<Product | null> => {
+    const id = productId.trim();
+    if (!id) return null;
+    const row = await prisma.product.findFirst({
+        where: { id, ...STOREFRONT_WHERE },
+        select: STOREFRONT_PRODUCT_SELECT,
+    });
+    if (!row) return null;
+    return (await normalizeStorefrontRows([row]))[0] ?? null;
+});
+
+/** Bounded batch lookup. Result order follows `ids`, not database order. */
+export async function getMergedProductsByIds(ids: string[]): Promise<Product[]> {
+    const boundedIds = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 100);
+    if (!boundedIds.length) return [];
+    const rows = await prisma.product.findMany({
+        where: { id: { in: boundedIds }, ...STOREFRONT_WHERE },
+        select: STOREFRONT_CARD_SELECT,
+    });
+    const products = await normalizeStorefrontCardRows(rows);
+    const byId = new Map(products.map((product) => [product.id, product]));
+    return boundedIds.flatMap((id) => byId.get(id) ? [byId.get(id)!] : []);
+}
+
+export async function getRelatedStorefrontProducts(product: Product, take = 4): Promise<Product[]> {
+    const explicit = await getMergedProductsByIds(product.relatedProductIds ?? []);
+    if (explicit.length) return explicit.filter((candidate) => candidate.id !== product.id).slice(0, take);
+
+    const groups = await Promise.all([
+        prisma.product.findMany({
+            where: { ...STOREFRONT_WHERE, id: { not: product.id }, brand: product.brand, category: product.category },
+            orderBy: { createdAt: 'desc' }, take, select: STOREFRONT_CARD_SELECT,
+        }),
+        prisma.product.findMany({
+            where: { ...STOREFRONT_WHERE, id: { not: product.id }, brand: product.brand, category: { not: product.category } },
+            orderBy: { createdAt: 'desc' }, take, select: STOREFRONT_CARD_SELECT,
+        }),
+        prisma.product.findMany({
+            where: { ...STOREFRONT_WHERE, id: { not: product.id }, category: product.category, brand: { not: product.brand } },
+            orderBy: { createdAt: 'desc' }, take, select: STOREFRONT_CARD_SELECT,
+        }),
+    ]);
+    const normalized = await normalizeStorefrontCardRows(groups.flat());
+    return [...new Map(normalized.map((candidate) => [candidate.id, candidate])).values()].slice(0, take);
+}
+
+export async function getBoughtTogetherStorefrontProducts(
+    product: Product,
+    copurchaseIds: string[],
+    take = 4,
+): Promise<Product[]> {
+    const explicit = await getMergedProductsByIds(product.oftenBoughtTogether ?? []);
+    if (explicit.length) return explicit.filter((candidate) => candidate.id !== product.id).slice(0, take);
+    return (await getMergedProductsByIds(copurchaseIds)).filter((candidate) => candidate.id !== product.id).slice(0, take);
+}
+
+const STOREFRONT_FACET_SELECT = {
+    id: true, title: true, titleEn: true, titleLv: true, brand: true,
+    price: true, oldPrice: true, rating: true, badges: true, category: true, stock: true,
+    createdAt: true, externalId: true, erpPriceMissing: true,
+    manualPriceApproved: true, manualApprovedPrice: true,
+} satisfies Prisma.ProductSelect;
+
+/** Whole-catalog row count is intentional: facets need it, but heavy columns never leave Neon. */
+export const getStorefrontFacetProducts = cache(async (): Promise<Product[]> => {
+    const [rows, overrides, campaigns] = await Promise.all([
+        prisma.product.findMany({ where: STOREFRONT_WHERE, orderBy: { createdAt: 'desc' }, select: STOREFRONT_FACET_SELECT }),
+        getProductOverrides().catch(() => ({})),
+        readPromoCampaigns(prisma),
+    ]);
+    const products = rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        titleEn: row.titleEn ?? undefined,
+        titleLv: row.titleLv ?? undefined,
+        brand: row.brand,
+        price: Number(row.price),
+        oldPrice: row.oldPrice === null ? undefined : Number(row.oldPrice),
+        rating: row.rating,
+        badges: row.badges as Product['badges'],
+        category: row.category as Product['category'],
+        subcategory: getProductSubcategory(row.id),
+        stock: row.stock,
+        createdAt: row.createdAt,
+        erpPriceMissing: row.erpPriceMissing,
+        manualPriceApproved: row.manualPriceApproved,
+        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
+        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
+    })) as Product[];
+    return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
+});
+
+export async function getStorefrontBrandNames(): Promise<string[]> {
+    const rows = await prisma.product.findMany({
+        where: STOREFRONT_WHERE,
+        distinct: ['brand'],
+        select: { brand: true },
+    });
+    return rows.map((row) => row.brand);
+}
+
+export async function getPublicProductSitemapRows(): Promise<Array<{ id: string; updatedAt: Date }>> {
+    return prisma.product.findMany({
+        where: STOREFRONT_WHERE,
+        orderBy: { id: 'asc' },
+        select: { id: true, updatedAt: true },
+    });
+}
+
+export async function getPublicProductCategories(): Promise<string[]> {
+    const rows = await prisma.product.findMany({
+        where: STOREFRONT_WHERE,
+        distinct: ['category'],
+        orderBy: { category: 'asc' },
+        select: { category: true },
+    });
+    return rows.map((row) => row.category);
 }
 
 // Storefront/public catalog: products without a valid B2B price carry no monetary fields.
@@ -98,6 +433,41 @@ export const getAdminProducts = cache(async (): Promise<Product[]> => {
     ]);
     return mergeProductsWithOverrides(rows.map(mapDbToProduct), overrides);
 });
+
+export async function getAdminProductById(productId: string): Promise<Product | null> {
+    const id = productId.trim();
+    if (!id) return null;
+    const [row, overrides]: [StorefrontProductRow | null, Record<string, ProductOverride>] = await Promise.all([
+        prisma.product.findFirst({
+            where: { id, isDeleted: false },
+            select: STOREFRONT_PRODUCT_SELECT,
+        }),
+        getProductOverrides().catch(() => ({})),
+    ]);
+    if (!row) return null;
+    return applyProductOverride(mapDbToProduct(row), overrides[id]);
+}
+
+export async function getDuplicateProductMetadataFlags(
+    productId: string,
+    metaTitle?: string | null,
+    metaDescription?: string | null,
+): Promise<{ duplicateMetaTitle: boolean; duplicateMetaDescription: boolean }> {
+    const normalize = (value: string | null | undefined): string => value?.trim().toLocaleLowerCase() ?? '';
+    const normalizedTitle = normalize(metaTitle);
+    const normalizedDescription = normalize(metaDescription);
+    if (!normalizedTitle && !normalizedDescription) {
+        return { duplicateMetaTitle: false, duplicateMetaDescription: false };
+    }
+    const rows = await prisma.product.findMany({
+        where: { isDeleted: false, id: { not: productId } },
+        select: { id: true, metaTitle: true, metaDescription: true },
+    });
+    return {
+        duplicateMetaTitle: Boolean(normalizedTitle && rows.some((row) => normalize(row.metaTitle) === normalizedTitle)),
+        duplicateMetaDescription: Boolean(normalizedDescription && rows.some((row) => normalize(row.metaDescription) === normalizedDescription)),
+    };
+}
 
 export async function getAdminProductsPaginated(opts: {
     search?: string;
@@ -443,6 +813,4 @@ export const purgeDeletedProductArchive = async (
         return { success: true as const, archive: nextArchive };
     });
 };
-import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping';
-
 export { mapDbToProduct } from '@/lib/product-overrides-mapping';

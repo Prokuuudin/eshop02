@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination, parseFilters } from '@/lib/api-helpers'
-import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getDbProductsPaginated } from '@/lib/product-overrides-store'
 
 /**
  * GET /api/v1/products
@@ -30,36 +30,14 @@ export async function GET(req: NextRequest): Promise<Response> {
     const { page, limit, offset } = parsePagination(req)
     const filters = parseFilters(req)
 
-    // Get all products with applied admin overrides
-    let products = await getMergedProducts()
-
-    if (filters.category) {
-      products = products.filter((product) => product.category === filters.category)
-    }
-
-    // Apply search filter if provided
-    if (filters.search) {
-      const q = filters.search.toLowerCase()
-      products = products.filter(p =>
-        p.title.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q)
-      )
-    }
-
-    // Apply price range filter
-    const { minPrice, maxPrice } = filters
-    if (minPrice) {
-      products = products.filter(p => p.price >= minPrice)
-    }
-    if (maxPrice) {
-      products = products.filter(p => p.price <= maxPrice)
-    }
-
-    // Pagination
-    const total = products.length
-    const paginatedProducts = products.slice(offset, offset + limit)
+    const { products: paginatedProducts, total } = await getDbProductsPaginated({
+      category: filters.category,
+      search: filters.search,
+      minPrice: filters.minPrice || undefined,
+      maxPrice: filters.maxPrice || undefined,
+      skip: offset,
+      take: limit,
+    })
 
     // Format response with public pricing
     const formattedProducts = paginatedProducts.map(product => ({

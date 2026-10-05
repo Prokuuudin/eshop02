@@ -1,16 +1,91 @@
 import { type Product, type BadgeType, type CategoryType } from '@/data/products';
-import type { Product as PrismaProduct } from '@/generated/prisma/client';
+import { Prisma } from '@/generated/prisma/client';
 import productSubcategories from '@/data/product-subcategories.json';
 import { toNum, toNumOrNull } from '@/lib/decimal';
 import { hasValidB2BPrice } from '@/lib/product-sellability';
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>;
 
+/**
+ * The canonical Product projection used by storefront product cards/details.
+ * Keep this next to the mapper so a new mapped field cannot silently turn an
+ * otherwise bounded query back into `SELECT Product.*`.
+ */
+export const STOREFRONT_PRODUCT_SELECT = {
+    id: true,
+    title: true,
+    titleKey: true,
+    titleEn: true,
+    titleLv: true,
+    description: true,
+    brand: true,
+    price: true,
+    oldPrice: true,
+    rating: true,
+    ratingCount: true,
+    reviewCount: true,
+    image: true,
+    images: true,
+    metaTitle: true,
+    metaDescription: true,
+    ogImage: true,
+    ogAlt: true,
+    badges: true,
+    category: true,
+    stock: true,
+    createdAt: true,
+    updatedAt: true,
+    revision: true,
+    isActive: true,
+    externalId: true,
+    erpPriceMissing: true,
+    manualPriceApproved: true,
+    manualApprovedPrice: true,
+    barcode: true,
+    relatedProductIds: true,
+    oftenBoughtTogether: true,
+    minOrderQuantities: true,
+    technicalSpecs: true,
+    bulkPricingTiers: true,
+    demoVideo: true,
+    distributorName: true,
+    distributorAddress: true,
+    sku: true,
+    unitOfMeasure: true,
+    certificates: true,
+    packagingSize: true,
+    compatibleEquipment: true,
+    manufacturerName: true,
+    manufacturerAddress: true,
+    manufacturerEmail: true,
+    distributorEmail: true,
+    bonusRate: true,
+    feature1: true,
+    feature1En: true,
+    feature1Lv: true,
+    feature2: true,
+    feature2En: true,
+    feature2Lv: true,
+    feature3: true,
+    feature3En: true,
+    feature3Lv: true,
+    feature4: true,
+    feature4En: true,
+    feature4Lv: true,
+    specVolume: true,
+    specType: true,
+    specCountry: true,
+} satisfies Prisma.ProductSelect;
+
+export type StorefrontProductRow = Prisma.ProductGetPayload<{
+    select: typeof STOREFRONT_PRODUCT_SELECT;
+}>;
+
 export function getProductSubcategory(productId: string): string | undefined {
     return SUBCATEGORY_BY_PRODUCT_ID[productId];
 }
 
-export function mapDbToProduct(p: PrismaProduct): Product {
+export function mapDbToProduct(p: StorefrontProductRow): Product {
     return {
         id: p.id,
         title: p.title,

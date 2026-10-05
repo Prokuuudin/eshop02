@@ -4,10 +4,13 @@ import { notFound } from 'next/navigation';
 import ProductPageContent from '@/components/ProductPageContent';
 import { getSiteUrl } from '@/lib/site-url';
 import { localizePath, resolveLanguage } from '@/lib/i18n-routing';
-import { getMergedProducts } from '@/lib/product-overrides-store';
+import {
+    getBoughtTogetherStorefrontProducts,
+    getMergedProductById,
+    getRelatedStorefrontProducts,
+} from '@/lib/product-overrides-store';
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store';
 import { brandSlug } from '@/lib/brand-slug';
-import { buildProductIndex, pickRelated, pickBoughtTogether } from '@/lib/related-products';
 import copurchaseData from '@/data/product-bought-together.json';
 import { serializeJsonLd } from '@/lib/json-ld';
 import { getServerUser } from '@/lib/server-auth';
@@ -25,7 +28,7 @@ type PageProps = {
     }>;
 };
 
-const localizedProductText = (product: Awaited<ReturnType<typeof getMergedProducts>>[number], language: string) => ({
+const localizedProductText = (product: NonNullable<Awaited<ReturnType<typeof getMergedProductById>>>, language: string) => ({
     title: language === 'en'
         ? product.titleEn?.trim() || product.title
         : language === 'lv'
@@ -41,8 +44,7 @@ const localizedProductText = (product: Awaited<ReturnType<typeof getMergedProduc
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
-    const mergedProducts = await getMergedProducts();
-    const product = mergedProducts.find((p) => p.id === id);
+    const product = await getMergedProductById(id);
 
     if (!product) notFound();
 
@@ -71,17 +73,18 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
     const { id, lang } = await params;
     const language = resolveLanguage(lang);
     const t = translations[language];
-    const mergedProducts = await getMergedProducts();
-    const product = mergedProducts.find((p) => p.id === id);
+    const product = await getMergedProductById(id);
     if (!product) notFound();
 
-    const [serverUser, approvedReviews] = await Promise.all([
+    const [serverUser, approvedReviews, brandsConfig, relatedProducts, oftenBoughtTogether] = await Promise.all([
         getServerUser(),
         getProductPublicReviews(product.id),
+        getBrandsConfigFromStore(),
+        getRelatedStorefrontProducts(product),
+        getBoughtTogetherStorefrontProducts(product, COPURCHASE[product.id] ?? []),
     ]);
     const canSeePrices = Boolean(serverUser);
 
-    const brandsConfig = await getBrandsConfigFromStore();
     const productBrandSlug = brandSlug(product.brand);
     const productBrandLower = product.brand.toLowerCase();
     const brand = brandsConfig.brands.find(
@@ -147,9 +150,6 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
         } : {}),
     };
 
-    const productIndex = buildProductIndex(mergedProducts);
-    const relatedProducts = pickRelated(product, mergedProducts, productIndex);
-    const oftenBoughtTogether = pickBoughtTogether(product, productIndex, COPURCHASE);
     const visibleProduct = canSeePrices ? product : redactProductPrices(product);
     const visibleRelated = canSeePrices ? relatedProducts : redactProductPrices(relatedProducts);
     const visibleBoughtTogether = canSeePrices ? oftenBoughtTogether : redactProductPrices(oftenBoughtTogether);

@@ -3,14 +3,24 @@ import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns';
-import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, hasValidB2BPrice, toStorefrontProducts } from '@/lib/product-sellability';
+import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
 import {
-    getProductSubcategory,
     mapDbToProduct,
     mapProductToDbCreate,
     STOREFRONT_PRODUCT_SELECT,
     type StorefrontProductRow,
 } from '@/lib/product-overrides-mapping';
+import {
+    mapStorefrontCardRow,
+    mapStorefrontFacetRow,
+    mapStorefrontFilterIndexRow,
+    STOREFRONT_CARD_SELECT,
+    STOREFRONT_FACET_SELECT,
+    STOREFRONT_FILTER_INDEX_SELECT,
+    STOREFRONT_WHERE,
+    type StorefrontCardRow,
+    type StorefrontFilterIndexRow,
+} from '@/lib/product-storefront-rows';
 
 export type ProductOverride = Partial<Omit<Product, 'id'>>;
 
@@ -45,28 +55,6 @@ export type ArchivedProductRecord = {
 
 const DELETED_ARCHIVE_KEY = 'deleted-products-archive';
 
-const STOREFRONT_WHERE = { isDeleted: false, isActive: true } as const;
-
-const STOREFRONT_CARD_SELECT = {
-    id: true, title: true, titleKey: true, titleEn: true, titleLv: true,
-    brand: true, price: true, oldPrice: true, rating: true, image: true,
-    badges: true, category: true, stock: true, createdAt: true, isActive: true,
-    externalId: true, erpPriceMissing: true, manualPriceApproved: true,
-    manualApprovedPrice: true, sku: true, minOrderQuantities: true,
-    technicalSpecs: true, bulkPricingTiers: true,
-} satisfies Prisma.ProductSelect;
-
-type StorefrontCardRow = Prisma.ProductGetPayload<{ select: typeof STOREFRONT_CARD_SELECT }>;
-
-const STOREFRONT_FILTER_INDEX_SELECT = {
-    id: true, title: true, titleEn: true, titleLv: true, description: true,
-    brand: true, sku: true, price: true, category: true, stock: true,
-    createdAt: true, externalId: true, erpPriceMissing: true,
-    manualPriceApproved: true, manualApprovedPrice: true,
-} satisfies Prisma.ProductSelect;
-
-type StorefrontFilterIndexRow = Prisma.ProductGetPayload<{ select: typeof STOREFRONT_FILTER_INDEX_SELECT }>;
-
 async function normalizeMergedRows(
     rows: StorefrontProductRow[],
     overrides?: Record<string, ProductOverride>,
@@ -94,32 +82,7 @@ async function normalizeStorefrontCardRows(
         existingOverrides ?? getProductOverrides().catch(() => ({})),
         readPromoCampaigns(prisma),
     ]);
-    const products: Product[] = rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        titleKey: row.titleKey ?? undefined,
-        titleEn: row.titleEn ?? undefined,
-        titleLv: row.titleLv ?? undefined,
-        brand: row.brand,
-        price: Number(row.price),
-        oldPrice: row.oldPrice === null ? undefined : Number(row.oldPrice),
-        rating: row.rating,
-        image: row.image ?? undefined,
-        badges: row.badges as Product['badges'],
-        category: row.category as Product['category'],
-        subcategory: getProductSubcategory(row.id),
-        stock: row.stock,
-        createdAt: row.createdAt,
-        isActive: row.isActive,
-        erpPriceMissing: row.erpPriceMissing,
-        manualPriceApproved: row.manualPriceApproved,
-        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
-        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
-        sku: row.sku ?? undefined,
-        minOrderQuantities: (row.minOrderQuantities ?? undefined) as Product['minOrderQuantities'],
-        technicalSpecs: (row.technicalSpecs ?? undefined) as Product['technicalSpecs'],
-        bulkPricingTiers: (row.bulkPricingTiers ?? undefined) as Product['bulkPricingTiers'],
-    }));
+    const products = rows.map(mapStorefrontCardRow);
     return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
 }
 
@@ -127,26 +90,7 @@ function normalizeStorefrontFilterIndexRows(
     rows: StorefrontFilterIndexRow[],
     overrides: Record<string, ProductOverride>,
 ): Product[] {
-    const products: Product[] = rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        titleEn: row.titleEn ?? undefined,
-        titleLv: row.titleLv ?? undefined,
-        description: row.description ?? undefined,
-        brand: row.brand,
-        sku: row.sku ?? undefined,
-        price: Number(row.price),
-        rating: 0,
-        category: row.category as Product['category'],
-        subcategory: getProductSubcategory(row.id),
-        stock: row.stock,
-        createdAt: row.createdAt,
-        erpPriceMissing: row.erpPriceMissing,
-        manualPriceApproved: row.manualPriceApproved,
-        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
-        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
-    }));
-    return toStorefrontProducts(mergeProductsWithOverrides(products, overrides));
+    return toStorefrontProducts(mergeProductsWithOverrides(rows.map(mapStorefrontFilterIndexRow), overrides));
 }
 
 const getDbProducts = cache(async (): Promise<Product[]> => {
@@ -350,13 +294,6 @@ export async function getBoughtTogetherStorefrontProducts(
     return (await getMergedProductsByIds(copurchaseIds)).filter((candidate) => candidate.id !== product.id).slice(0, take);
 }
 
-const STOREFRONT_FACET_SELECT = {
-    id: true, title: true, titleEn: true, titleLv: true, brand: true,
-    price: true, oldPrice: true, rating: true, badges: true, category: true, stock: true,
-    createdAt: true, externalId: true, erpPriceMissing: true,
-    manualPriceApproved: true, manualApprovedPrice: true,
-} satisfies Prisma.ProductSelect;
-
 /** Whole-catalog row count is intentional: facets need it, but heavy columns never leave Neon. */
 export const getStorefrontFacetProducts = cache(async (): Promise<Product[]> => {
     const [rows, overrides, campaigns] = await Promise.all([
@@ -364,25 +301,7 @@ export const getStorefrontFacetProducts = cache(async (): Promise<Product[]> => 
         getProductOverrides().catch(() => ({})),
         readPromoCampaigns(prisma),
     ]);
-    const products = rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        titleEn: row.titleEn ?? undefined,
-        titleLv: row.titleLv ?? undefined,
-        brand: row.brand,
-        price: Number(row.price),
-        oldPrice: row.oldPrice === null ? undefined : Number(row.oldPrice),
-        rating: row.rating,
-        badges: row.badges as Product['badges'],
-        category: row.category as Product['category'],
-        subcategory: getProductSubcategory(row.id),
-        stock: row.stock,
-        createdAt: row.createdAt,
-        erpPriceMissing: row.erpPriceMissing,
-        manualPriceApproved: row.manualPriceApproved,
-        manualApprovedPrice: row.manualApprovedPrice === null ? undefined : Number(row.manualApprovedPrice),
-        ...(hasValidB2BPrice(row) ? {} : { priceUnavailable: true }),
-    })) as Product[];
+    const products = rows.map(mapStorefrontFacetRow);
     return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
 });
 

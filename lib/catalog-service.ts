@@ -1,8 +1,9 @@
-import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getDbProductsPaginated, getPublicProductCategories } from '@/lib/product-overrides-store'
 import { getDisplayPrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
 import { toNum, toNumOrNull } from '@/lib/decimal'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
+import type { Product } from '@/data/products'
 
 export interface CatalogItem {
   id: string
@@ -22,27 +23,29 @@ export interface CatalogItem {
   compatibleEquipment?: string[]
 }
 
+const toCatalogItem = (p: Product): CatalogItem => ({
+  id: p.id,
+  title: p.title,
+  brand: p.brand,
+  sku: p.sku,
+  image: p.image || '',
+  category: p.category,
+  price: p.price,
+  oldPrice: p.oldPrice,
+  rating: p.rating,
+  stock: p.stock,
+  description: p.description,
+  technicalSpecs: p.technicalSpecs
+    ? Object.fromEntries(Object.entries(p.technicalSpecs).filter(([key]) => key !== '__variantGroupsJson'))
+    : p.technicalSpecs,
+  certificates: p.certificates,
+  bulkPricingTiers: p.bulkPricingTiers,
+  compatibleEquipment: p.compatibleEquipment,
+})
+
 export async function getCatalogItems(category?: string): Promise<CatalogItem[]> {
-  const products = await getMergedProducts()
-  return products.filter(p => !category || p.category === category).map(p => ({
-    id: p.id,
-    title: p.title,
-    brand: p.brand,
-    sku: p.sku,
-    image: p.image || '',
-    category: p.category,
-    price: p.price,
-    oldPrice: p.oldPrice,
-    rating: p.rating,
-    stock: p.stock,
-    description: p.description,
-    technicalSpecs: p.technicalSpecs
-      ? Object.fromEntries(Object.entries(p.technicalSpecs).filter(([key]) => key !== '__variantGroupsJson'))
-      : p.technicalSpecs,
-    certificates: p.certificates,
-    bulkPricingTiers: p.bulkPricingTiers,
-    compatibleEquipment: p.compatibleEquipment
-  }))
+  const { products } = await getDbProductsPaginated({ category })
+  return products.map(toCatalogItem)
 }
 
 export function formatCatalogForDisplay(
@@ -62,8 +65,7 @@ export function formatCatalogForDisplay(
 }
 
 export async function getCatalogCategories(): Promise<string[]> {
-  const products = await getMergedProducts()
-  return Array.from(new Set(products.map(p => p.category)))
+  return getPublicProductCategories()
 }
 
 export function generateCsvCatalog(
@@ -171,8 +173,11 @@ export async function searchCatalog(query: string, items?: CatalogItem[]): Promi
 }
 
 export async function getFeaturedProducts(limit = 6): Promise<CatalogItem[]> {
-  const items = await getCatalogItems()
-  return items
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, limit)
+  const take = Math.max(1, Math.min(100, Math.trunc(limit)))
+  const { products } = await getDbProductsPaginated({
+    skip: 0,
+    take,
+    orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+  })
+  return products.map(toCatalogItem)
 }

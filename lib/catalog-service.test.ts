@@ -1,8 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 // Mock the DB-dependent modules before importing catalog-service
+const getDbProductsPaginatedMock = vi.hoisted(() => vi.fn().mockResolvedValue({ products: [], total: 0 }))
+const getPublicProductCategoriesMock = vi.hoisted(() => vi.fn().mockResolvedValue([]))
 vi.mock('@/lib/product-overrides-store', () => ({
-  getMergedProducts: vi.fn().mockResolvedValue([])
+  getDbProductsPaginated: getDbProductsPaginatedMock,
+  getPublicProductCategories: getPublicProductCategoriesMock,
 }))
 
 vi.mock('@/lib/prisma', () => ({
@@ -13,9 +16,28 @@ import {
   formatCatalogForDisplay,
   generateCsvCatalog,
   generateStructuredCatalog,
+  getCatalogCategories,
+  getFeaturedProducts,
   searchCatalog,
   type CatalogItem
 } from '@/lib/catalog-service'
+
+describe('bounded catalog data access', () => {
+  it('reads category names through a distinct narrow query helper', async () => {
+    getPublicProductCategoriesMock.mockResolvedValueOnce(['body', 'hair'])
+    await expect(getCatalogCategories()).resolves.toEqual(['body', 'hair'])
+    expect(getPublicProductCategoriesMock).toHaveBeenCalledOnce()
+  })
+
+  it('bounds featured products in the database', async () => {
+    await getFeaturedProducts(6)
+    expect(getDbProductsPaginatedMock).toHaveBeenCalledWith({
+      skip: 0,
+      take: 6,
+      orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+    })
+  })
+})
 
 const sampleItems: CatalogItem[] = [
   {

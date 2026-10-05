@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { getMergedProducts } from '@/lib/product-overrides-store'
+import { getPublicProductSitemapRows } from '@/lib/product-overrides-store'
 import { getBlogPosts } from '@/lib/blog-store'
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store'
 import { getSiteUrl } from '@/lib/site-url'
@@ -47,7 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Each dynamic section is isolated so a single store failure can't blank the sitemap.
   let productRoutes: MetadataRoute.Sitemap = []
   try {
-    const products = await getMergedProducts()
+    const products = await getPublicProductSitemapRows()
     productRoutes = products.flatMap((product) => entriesFor(`/product/${product.id}`, product.updatedAt))
   } catch {
     /* skip products on failure */

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getAdminProducts } from '@/lib/product-overrides-store';
+import { getAdminProductById, getDuplicateProductMetadataFlags } from '@/lib/product-overrides-store';
 import { mapProductToFormValues } from '@/lib/product-form-mapping';
 import ProductEditPageContent from './ProductEditPageContent';
 
@@ -13,21 +13,18 @@ export const revalidate = 0;
 export default async function ProductEditPage({ params, searchParams }: PageProps): Promise<React.ReactElement> {
     const { id } = await params;
     const query = await searchParams;
-    const products = await getAdminProducts();
-    const product = products.find((p) => p.id === id);
+    const product = await getAdminProductById(id);
 
     if (!product) return notFound();
 
     const initialValues = mapProductToFormValues(product);
-    const normalizeMeta = (value: string | null | undefined): string => value?.trim().toLowerCase() ?? '';
-    const metaTitle = normalizeMeta(product.metaTitle);
-    const metaDescription = normalizeMeta(product.metaDescription);
-    const duplicateMetaTitle = Boolean(metaTitle && products.some((candidate) => candidate.id !== product.id && normalizeMeta(candidate.metaTitle) === metaTitle));
-    const duplicateMetaDescription = Boolean(metaDescription && products.some((candidate) => candidate.id !== product.id && normalizeMeta(candidate.metaDescription) === metaDescription));
     const requestedReturnTo = query.from === 'seo' ? query.returnTo : undefined;
     const returnTo = requestedReturnTo === '/admin/analytics' || requestedReturnTo?.startsWith('/admin/analytics?') || requestedReturnTo?.startsWith('/admin/analytics#')
         ? requestedReturnTo
         : undefined;
+    const { duplicateMetaTitle, duplicateMetaDescription } = returnTo
+        ? await getDuplicateProductMetadataFlags(product.id, product.metaTitle, product.metaDescription)
+        : { duplicateMetaTitle: false, duplicateMetaDescription: false };
 
     return (
         <ProductEditPageContent

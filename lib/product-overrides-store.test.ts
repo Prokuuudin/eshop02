@@ -6,6 +6,7 @@ const settingFindUniqueMock = vi.hoisted(() => vi.fn())
 vi.mock('@/lib/prisma', () => {
   const client = {
     product: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       findMany: vi.fn(),
       count: vi.fn(),
@@ -35,8 +36,17 @@ import {
   mergeProductsWithOverrides,
   getProductOverrides,
   getAdminProducts,
+  getAdminProductById,
+  getDuplicateProductMetadataFlags,
   getAdminProductsPaginated,
   getDbProductsPaginated,
+  getMergedProductById,
+  getMergedProductsWithPrices,
+  getMergedProductsByIds,
+  getRelatedStorefrontProducts,
+  getPublicProductSitemapRows,
+  getPublicProductCategories,
+  getStorefrontFacetProducts,
   upsertProductOverride,
   resetProductOverride,
   restoreDeletedProduct,
@@ -542,6 +552,195 @@ describe('getDbProductsPaginated', () => {
     await getDbProductsPaginated({ skip: 0, take: 10 })
     const call = vi.mocked(prisma.product.findMany).mock.calls[0][0] as { where: Record<string, unknown> }
     expect(call.where).not.toHaveProperty('id')
+  })
+
+  it('uses DB-level bounds and the explicit storefront projection', async () => {
+    await getDbProductsPaginated({ skip: 96, take: 24, search: 'mask' })
+    expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      skip: 96,
+      take: 24,
+      select: expect.objectContaining({ id: true, title: true, technicalSpecs: true }),
+    }))
+    expect(prisma.product.count).toHaveBeenCalledOnce()
+  })
+
+  it('preserves filter-affecting overrides via a narrow index scan plus a bounded page fetch', async () => {
+    const indexRow = {
+      id: 'p2', title: 'Product', titleEn: null, titleLv: null, description: null,
+      brand: 'Brand', sku: null, price: 10, category: 'body', stock: 1,
+      createdAt: new Date(), externalId: null, erpPriceMissing: false,
+      manualPriceApproved: false, manualApprovedPrice: null,
+    }
+    vi.mocked(prisma.product.findMany)
+      .mockResolvedValueOnce([indexRow] as never)
+      .mockResolvedValueOnce([indexRow] as never)
+    settingFindUniqueMock.mockResolvedValue({ value: { p2: { category: 'hair' } } } as never)
+
+    const result = await getDbProductsPaginated({ category: 'hair', skip: 0, take: 24 })
+
+    expect(result.total).toBe(1)
+    expect(result.products[0]).toMatchObject({ id: 'p2', category: 'hair' })
+    expect(prisma.product.count).not.toHaveBeenCalled()
+    const firstQuery = vi.mocked(prisma.product.findMany).mock.calls[0][0] as { select: Record<string, boolean> }
+    expect(firstQuery.select).toMatchObject({ id: true, category: true, description: true })
+    expect(firstQuery.select).not.toHaveProperty('technicalSpecs')
+    expect(vi.mocked(prisma.product.findMany).mock.calls[1][0]).toEqual(expect.objectContaining({
+      where: { id: { in: ['p2'] }, isDeleted: false, isActive: true },
+    }))
+  })
+})
+
+describe('bounded admin product reads', () => {
+  it('loads one admin product by id and applies its override', async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({
+      id: 'p1', title: 'Base', brand: 'Brand', price: 10, rating: 0, category: 'hair', stock: 1,
+      externalId: null, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null,
+      images: [], badges: [], relatedProductIds: [], oftenBoughtTogether: [], certificates: [],
+      compatibleEquipment: [], createdAt: new Date(), updatedAt: new Date(), revision: 1, isActive: true,
+    } as never)
+    settingFindUniqueMock.mockResolvedValue({ value: { p1: { title: 'Override' } } } as never)
+
+    const product = await getAdminProductById('p1')
+
+    expect(product?.title).toBe('Override')
+    expect(prisma.product.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'p1', isDeleted: false },
+    }))
+    expect(prisma.product.findMany).not.toHaveBeenCalled()
+  })
+
+  it('checks SEO duplicates with only id/meta columns', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 'p2', metaTitle: ' Same title ', metaDescription: 'Other' },
+    ] as never)
+    await expect(getDuplicateProductMetadataFlags('p1', 'same TITLE', 'Unique')).resolves.toEqual({
+      duplicateMetaTitle: true,
+      duplicateMetaDescription: false,
+    })
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isDeleted: false, id: { not: 'p1' } },
+      select: { id: true, metaTitle: true, metaDescription: true },
+    })
+  })
+})
+
+describe('bounded public product reads', () => {
+  const detailRow = {
+    id: '19073', title: 'Detail', titleKey: null, titleEn: null, titleLv: null,
+    description: null, brand: 'Brand', price: 10, oldPrice: null, rating: 0,
+    ratingCount: 0, reviewCount: 0, image: null, images: [], metaTitle: null,
+    metaDescription: null, ogImage: null, ogAlt: null, badges: [], category: 'hair',
+    stock: 1, createdAt: new Date(), updatedAt: new Date(), revision: 1, isActive: true,
+    externalId: null, erpPriceMissing: false, manualPriceApproved: false,
+    manualApprovedPrice: null, barcode: null, relatedProductIds: [], oftenBoughtTogether: [],
+    minOrderQuantities: null, technicalSpecs: null, bulkPricingTiers: null, demoVideo: null,
+    distributorName: null, distributorAddress: null, sku: null, unitOfMeasure: null,
+    certificates: [], packagingSize: null, compatibleEquipment: [], manufacturerName: null,
+    manufacturerAddress: null, manufacturerEmail: null, distributorEmail: null, bonusRate: null,
+    feature1: null, feature1En: null, feature1Lv: null, feature2: null, feature2En: null,
+    feature2Lv: null, feature3: null, feature3En: null, feature3Lv: null, feature4: null,
+    feature4En: null, feature4Lv: null, specVolume: null, specType: null, specCountry: null,
+  }
+
+  it.each(['19073', '17228', '20561', '21360', '22272'])(
+    'loads regression product %s with one-row predicates and no catalog read', async (id) => {
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ ...detailRow, id } as never)
+      settingFindUniqueMock.mockResolvedValue(null)
+
+      const product = await getMergedProductById(id)
+
+      expect(product?.id).toBe(id)
+      expect(prisma.product.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id, isDeleted: false, isActive: true },
+        select: expect.objectContaining({ id: true, title: true, price: true }),
+      }))
+      expect(prisma.product.findMany).not.toHaveBeenCalled()
+    },
+  )
+
+  it('returns null for a missing product without falling back to findMany', async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null)
+    expect(await getMergedProductById('missing')).toBeNull()
+    expect(prisma.product.findMany).not.toHaveBeenCalled()
+  })
+
+  it('uses a bounded card projection for id batches', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    settingFindUniqueMock.mockResolvedValue(null)
+    await getMergedProductsByIds(['p1', 'p2'])
+    const query = vi.mocked(prisma.product.findMany).mock.calls[0][0] as {
+      where: unknown
+      select: Record<string, boolean>
+    }
+    expect(query.where).toEqual({ id: { in: ['p1', 'p2'] }, isDeleted: false, isActive: true })
+    expect(query.select).toMatchObject({
+      id: true, title: true, image: true, minOrderQuantities: true,
+      technicalSpecs: true, bulkPricingTiers: true,
+    })
+    expect(query.select).not.toHaveProperty('description')
+    expect(query.select).not.toHaveProperty('images')
+  })
+
+  it('bounds every fallback recommendation query', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    settingFindUniqueMock.mockResolvedValue(null)
+    await getRelatedStorefrontProducts({
+      id: 'p1', title: 'Product', brand: 'Brand', price: 10, rating: 0, category: 'hair', stock: 1,
+    })
+    expect(prisma.product.findMany).toHaveBeenCalledTimes(3)
+    for (const [query] of vi.mocked(prisma.product.findMany).mock.calls) {
+      expect(query).toEqual(expect.objectContaining({ take: 4 }))
+    }
+  })
+
+  it('reads only id and updatedAt for the sitemap', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    await getPublicProductSitemapRows()
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isDeleted: false, isActive: true },
+      orderBy: { id: 'asc' },
+      select: { id: true, updatedAt: true },
+    })
+  })
+
+  it('reads distinct category names without loading products', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([{ category: 'hair' }] as never)
+    await expect(getPublicProductCategories()).resolves.toEqual(['hair'])
+    expect(prisma.product.findMany).toHaveBeenCalledWith({
+      where: { isDeleted: false, isActive: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+      select: { category: true },
+    })
+  })
+
+  it('uses a narrow projection for the intentional whole-catalog facet scan', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    settingFindUniqueMock.mockResolvedValue(null)
+    await getStorefrontFacetProducts()
+    expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      select: {
+        id: true, title: true, titleEn: true, titleLv: true, brand: true,
+        price: true, oldPrice: true, rating: true, badges: true, category: true, stock: true,
+        createdAt: true, externalId: true, erpPriceMissing: true,
+        manualPriceApproved: true, manualApprovedPrice: true,
+      },
+    }))
+  })
+
+  it('keeps stored prices for admin full-catalog consumers', async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([{
+      ...detailRow,
+      externalId: 'erp-19073',
+      erpPriceMissing: true,
+      manualPriceApproved: false,
+      price: 26,
+    }] as never)
+    settingFindUniqueMock.mockResolvedValue(null)
+
+    const [product] = await getMergedProductsWithPrices()
+
+    expect(product).toMatchObject({ id: '19073', price: 26, priceUnavailable: true })
   })
 })
 

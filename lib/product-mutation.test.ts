@@ -57,3 +57,40 @@ describe('applyProductChanges — manual ERP price approval', () => {
     expect(dataOf(updateMany)).not.toHaveProperty('manualPriceApproved')
   })
 })
+
+describe('applyProductChanges — partial changes from the edit form', () => {
+  const current = {
+    id: 'p1', title: 'Shampoo', titleEn: 'English title', description: 'Kept description', brand: 'B', category: 'hair',
+    price: 10, oldPrice: null, rating: 0, stock: 2, badges: ['new'], images: ['/a.jpg'], technicalSpecs: { 'Тип': 'крем' },
+    isCustom: false, isDeleted: false, isActive: true, revision: 3, externalId: null,
+    erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null,
+  }
+  const makeTx = () => {
+    const updateMany = vi.fn(async (_args: { where: Record<string, unknown>; data: Record<string, unknown> }) => ({ count: 1 }))
+    const tx = {
+      product: {
+        findUnique: vi.fn(async () => current), findUniqueOrThrow: vi.fn(async () => current),
+        findFirst: vi.fn(async () => null), count: vi.fn(async () => 0), updateMany,
+      },
+      keyValueSetting: { findUnique: vi.fn(async () => null), update: vi.fn() },
+    }
+    return { tx: tx as unknown as ExtendedTransactionClient, updateMany }
+  }
+
+  it('stores explicit clears and keeps every absent field unchanged', async () => {
+    const { tx, updateMany } = makeTx()
+    await applyProductChanges(tx, 'p1', 3, { titleEn: '', images: [], technicalSpecs: {} })
+    const { where, data } = updateMany.mock.calls[0][0]
+    expect(where).toEqual({ id: 'p1', revision: 3 })
+    expect(data).toMatchObject({
+      titleEn: '', images: [], technicalSpecs: {},
+      title: 'Shampoo', description: 'Kept description', badges: ['new'], price: 10, stock: 2,
+    })
+  })
+
+  it('rejects a stale revision before writing', async () => {
+    const { tx, updateMany } = makeTx()
+    await expect(applyProductChanges(tx, 'p1', 2, { titleEn: '' })).rejects.toMatchObject({ status: 409 })
+    expect(updateMany).not.toHaveBeenCalled()
+  })
+})

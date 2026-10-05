@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { mapProductToFormValues, mapFormValuesToProductPatch } from './product-form-mapping'
+import { mapProductToFormValues, mapFormValuesToProductPatch, mapChangedFormValuesToProductPatch } from './product-form-mapping'
 import type { Product, VariantGroup } from '@/data/products'
+import { updateProductRequestSchema } from './product-mutation-schema'
 
 const baseProduct: Product = {
   id: 'p1',
@@ -326,4 +327,151 @@ describe('ingredients round-trip through technicalSpecs', () => {
     const patch = mapFormValuesToProductPatch(values)
     expect(patch.technicalSpecs).toBeUndefined()
   })
+})
+
+import type { AddProductFormValues } from '@/components/admin/products/productFormSchema'
+
+const values = {
+  id: 'p1', sku: '', barcode: '', brand: 'Brand', category: 'hair', status: 'active',
+  title: 'Product', titleEn: '', titleLv: '', description: '', descriptionEn: '', descriptionLv: '',
+  ingredients: '', ingredientsKey: 'INGREDIENTS', application: '', applicationEn: '', applicationLv: '',
+  warnings: '', warningsEn: '', warningsLv: '', price: 10, oldPrice: 0, bulkPricingTiers: [],
+  stock: 1, minOrder: 1, image: '', images: [], badges: [], technicalSpecs: [], reservedTechSpecs: {},
+  variantGroups: [], compatibleEquipment: [], certificates: [], relatedProductIds: [], oftenBoughtTogether: [],
+  demoVideo: [], metaTitle: '', metaDescription: '', ogImage: '', ogAlt: '', manufacturerName: '',
+  manufacturerAddress: '', manufacturerEmail: '', distributorName: { ru: '', en: '', lv: '' },
+  distributorAddress: { ru: '', en: '', lv: '' }, distributorEmail: '', bonusRate: undefined,
+  rating: undefined, feature1: '', feature1En: '', feature1Lv: '', feature2: '', feature2En: '',
+  feature2Lv: '', feature3: '', feature3En: '', feature3Lv: '', feature4: '', feature4En: '', feature4Lv: '',
+} satisfies AddProductFormValues
+
+describe('mapChangedFormValuesToProductPatch', () => {
+  it('sends only the changed price from an otherwise unchanged product', () => {
+    expect(mapChangedFormValuesToProductPatch({ ...values, price: 12.5 }, values)).toEqual({ price: 12.5 })
+  })
+
+  it('returns an empty patch for an unchanged form', () => {
+    expect(mapChangedFormValuesToProductPatch({ ...values }, values)).toEqual({})
+  })
+})
+
+describe('changed-only PATCH: explicit clears survive JSON transport', () => {
+  type FormValues = ReturnType<typeof mapProductToFormValues>
+
+  // What the browser actually sends: undefined-valued keys disappear here.
+  const overTheWire = (changes: object): Record<string, unknown> => JSON.parse(JSON.stringify(changes))
+  const parseUpdate = (changes: object) =>
+    updateProductRequestSchema.safeParse({ id: 'p1', revision: 1, changes: overTheWire(changes) })
+
+  const filledProduct: Product = {
+    ...baseProduct,
+    sku: 'SKU-1', barcode: '4750000000001', titleEn: 'English title', titleLv: 'Latviešu nosaukums',
+    description: 'Описание', image: '/img/main.jpg', images: ['/img/a.jpg'], badges: ['new'],
+    metaTitle: 'Meta', metaDescription: 'Meta description', ogImage: '/img/og.jpg', ogAlt: 'Alt',
+    manufacturerName: 'Maker', manufacturerAddress: 'Riga', manufacturerEmail: 'maker@example.com',
+    distributorName: { ru: 'Дистрибьютор', en: '', lv: '' }, distributorAddress: { ru: '', en: 'Street 1', lv: '' },
+    distributorEmail: 'dist@example.com', compatibleEquipment: ['Dryer'], certificates: ['/cert.pdf'],
+    bulkPricingTiers: [{ quantity: 10, pricePerUnit: 9 }], feature1: 'Feature', feature4Lv: 'Iezīme',
+    technicalSpecs: { 'Тип': 'крем' },
+  }
+
+  const clearable: Array<[string, (values: FormValues) => void, string, unknown]> = [
+    ['titleEn', (v) => { v.titleEn = '' }, 'titleEn', ''],
+    ['titleLv', (v) => { v.titleLv = '' }, 'titleLv', ''],
+    ['description', (v) => { v.description = '' }, 'description', ''],
+    ['sku', (v) => { v.sku = '' }, 'sku', ''],
+    ['barcode', (v) => { v.barcode = '' }, 'barcode', ''],
+    ['image', (v) => { v.image = '' }, 'image', ''],
+    ['metaTitle', (v) => { v.metaTitle = '' }, 'metaTitle', ''],
+    ['metaDescription', (v) => { v.metaDescription = '' }, 'metaDescription', ''],
+    ['ogImage', (v) => { v.ogImage = '' }, 'ogImage', ''],
+    ['ogAlt', (v) => { v.ogAlt = '' }, 'ogAlt', ''],
+    ['manufacturerName', (v) => { v.manufacturerName = '' }, 'manufacturerName', ''],
+    ['manufacturerAddress', (v) => { v.manufacturerAddress = '' }, 'manufacturerAddress', ''],
+    ['feature1', (v) => { v.feature1 = '' }, 'feature1', ''],
+    ['feature4Lv', (v) => { v.feature4Lv = '' }, 'feature4Lv', ''],
+    ['images', (v) => { v.images = [] }, 'images', []],
+    ['badges', (v) => { v.badges = [] }, 'badges', []],
+    ['compatibleEquipment', (v) => { v.compatibleEquipment = [] }, 'compatibleEquipment', []],
+    ['certificates', (v) => { v.certificates = [] }, 'certificates', []],
+    ['bulkPricingTiers', (v) => { v.bulkPricingTiers = [] }, 'bulkPricingTiers', []],
+    ['technicalSpecs rows', (v) => { v.technicalSpecs = [] }, 'technicalSpecs', {}],
+    ['distributorName', (v) => { v.distributorName = { ru: '', en: '', lv: '' } }, 'distributorName', { ru: '', en: '', lv: '' }],
+    ['distributorAddress', (v) => { v.distributorAddress = { ru: '', en: '', lv: '' } }, 'distributorAddress', { ru: '', en: '', lv: '' }],
+  ]
+
+  it.each(clearable)('keeps a cleared %s in the serialized request as an explicit clear', (_label, clear, key, cleared) => {
+    const initial = mapProductToFormValues(filledProduct)
+    const values = structuredClone(initial)
+    clear(values)
+
+    const wire = overTheWire(mapChangedFormValuesToProductPatch(values, initial))
+
+    expect(wire).toEqual({ [key]: cleared })
+    const parsed = parseUpdate(wire)
+    expect(parsed.success).toBe(true)
+    expect(parsed.data?.changes).toEqual({ [key]: cleared })
+  })
+
+  it('clears translated descriptions stored inside technicalSpecs with an empty specs object', () => {
+    const initial = mapProductToFormValues({ ...baseProduct, technicalSpecs: { __descriptionEn: 'EN text' } })
+    const values = { ...initial, descriptionEn: '' }
+
+    const wire = overTheWire(mapChangedFormValuesToProductPatch(values, initial))
+
+    expect(wire).toEqual({ technicalSpecs: {} })
+    expect(parseUpdate(wire).success).toBe(true)
+  })
+
+  it('sends only the cleared field when other fields are untouched', () => {
+    const initial = mapProductToFormValues(filledProduct)
+    const wire = overTheWire(mapChangedFormValuesToProductPatch({ ...initial, titleEn: '' }, initial))
+    expect(Object.keys(wire)).toEqual(['titleEn'])
+  })
+
+  it('never reports a change that JSON transport would drop', () => {
+    const initial = mapProductToFormValues(filledProduct)
+    for (const [, clear] of clearable) {
+      const values = structuredClone(initial)
+      clear(values)
+      const changes = mapChangedFormValuesToProductPatch(values, initial)
+      expect(Object.keys(overTheWire(changes))).toEqual(Object.keys(changes))
+    }
+  })
+
+  it('does not send fields that were empty before and are still empty', () => {
+    const initial = mapProductToFormValues(baseProduct)
+    expect(mapChangedFormValuesToProductPatch({ ...initial, titleEn: '', images: [], technicalSpecs: [] }, initial)).toEqual({})
+  })
+
+  it('keeps zero and false as real values', () => {
+    const initial = mapProductToFormValues(baseProduct)
+    const wire = overTheWire(mapChangedFormValuesToProductPatch({ ...initial, price: 0, stock: 0, status: 'hidden' }, initial))
+    expect(wire).toEqual({ price: 0, stock: 0, isActive: false })
+    expect(parseUpdate(wire).success).toBe(true)
+  })
+
+  it('clears an old price with null, the existing update marker', () => {
+    const initial = mapProductToFormValues({ ...baseProduct, oldPrice: 15 })
+    const wire = overTheWire(mapChangedFormValuesToProductPatch({ ...initial, oldPrice: undefined }, initial))
+    expect(wire).toEqual({ oldPrice: null })
+    expect(parseUpdate(wire).success).toBe(true)
+  })
+
+  it('sends whitespace-only input, which the server trims to an explicit clear', () => {
+    const initial = mapProductToFormValues(filledProduct)
+    const parsed = parseUpdate(mapChangedFormValuesToProductPatch({ ...initial, titleEn: '   ' }, initial))
+    expect(parsed.success).toBe(true)
+    expect(parsed.data?.changes).toEqual({ titleEn: '' })
+  })
+
+  it.each(['manufacturerEmail', 'distributorEmail'] as const)(
+    'sends a cleared %s explicitly; the current server contract rejects an empty email instead of ignoring it',
+    (key) => {
+      const initial = mapProductToFormValues(filledProduct)
+      const wire = overTheWire(mapChangedFormValuesToProductPatch({ ...initial, [key]: '' }, initial))
+      expect(wire).toEqual({ [key]: '' })
+      expect(parseUpdate(wire).success).toBe(false)
+    },
+  )
 })

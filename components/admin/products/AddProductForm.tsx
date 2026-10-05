@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { createAddProductSchema, AddProductFormValues, LANGUAGES, Language } from './productFormSchema';
 import { useTranslation } from '@/lib/use-translation';
-import { mapFormValuesToNewProduct, mapFormValuesToProductPatch } from '@/lib/product-form-mapping';
+import { mapChangedFormValuesToProductPatch, mapFormValuesToNewProduct, mapFormValuesToProductPatch } from '@/lib/product-form-mapping';
 
 import ProductBasicFields from './ProductBasicFields';
 import ProductBadgesFields from './ProductBadgesFields';
@@ -241,10 +241,17 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         setIsSubmitting(true);
         try {
             if (isEdit && productId) {
+                const changes = initialValues
+                    ? mapChangedFormValuesToProductPatch(data, initialValues)
+                    : mapFormValuesToProductPatch(data);
+                if (Object.keys(changes).length === 0) {
+                    router.push(seoContext?.returnTo ?? '/admin/products');
+                    return;
+                }
                 const res = await fetch('/api/admin/products', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: productId, revision, changes: mapFormValuesToProductPatch(data) }),
+                    body: JSON.stringify({ id: productId, revision, changes }),
                 });
                 if (!res.ok) {
                     const json = await res.json().catch(() => ({})) as { error?: string };

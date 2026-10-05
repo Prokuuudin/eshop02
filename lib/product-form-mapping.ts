@@ -225,6 +225,51 @@ export function mapFormValuesToProductPatch(
     };
 }
 
+type ProductPatch = ReturnType<typeof mapFormValuesToProductPatch>;
+
+// The full patch maps an emptied field to undefined, which JSON.stringify drops, so in
+// a changed-only PATCH a clear would be indistinguishable from "unchanged". These are the
+// update API's clear values: the server spreads changes over the stored product, so an
+// absent key keeps the old value. oldPrice is cleared with null by the full patch already.
+// Fields without an entry (bonusRate, rating) have no clear value in the update schema.
+const CLEARED_PATCH_VALUES: Partial<Record<keyof ProductPatch, unknown>> = {
+    sku: '', barcode: '', titleEn: '', titleLv: '', description: '', image: '',
+    metaTitle: '', metaDescription: '', ogImage: '', ogAlt: '',
+    manufacturerName: '', manufacturerAddress: '', manufacturerEmail: '', distributorEmail: '',
+    feature1: '', feature1En: '', feature1Lv: '', feature2: '', feature2En: '', feature2Lv: '',
+    feature3: '', feature3En: '', feature3Lv: '', feature4: '', feature4En: '', feature4Lv: '',
+    images: [], badges: [], compatibleEquipment: [], certificates: [], bulkPricingTiers: [],
+    technicalSpecs: {},
+    distributorName: { ru: '', en: '', lv: '' },
+    distributorAddress: { ru: '', en: '', lv: '' },
+};
+
+/**
+ * Build a PATCH payload for the edit form without resending untouched legacy
+ * fields. Some older products can contain values that no longer satisfy the
+ * current create/update schema; an unrelated price edit must not be rejected
+ * because of one of those fields. A field the admin emptied is sent with its
+ * explicit clear value, so every returned key survives JSON serialization.
+ */
+export function mapChangedFormValuesToProductPatch(
+    values: AddProductFormValues,
+    initialValues: AddProductFormValues
+): ProductPatch {
+    const current = mapFormValuesToProductPatch(values);
+    const initial = mapFormValuesToProductPatch(initialValues);
+    const changes: Record<string, unknown> = {};
+
+    for (const key of Object.keys(current) as Array<keyof ProductPatch>) {
+        const value = current[key] === undefined && initial[key] !== undefined
+            ? CLEARED_PATCH_VALUES[key]
+            : current[key];
+        if (value === undefined) continue;
+        if (JSON.stringify(value) !== JSON.stringify(initial[key])) changes[key] = value;
+    }
+
+    return changes as ProductPatch;
+}
+
 export function mapFormValuesToNewProduct(values: AddProductFormValues): Product {
     return {
         id: values.id,

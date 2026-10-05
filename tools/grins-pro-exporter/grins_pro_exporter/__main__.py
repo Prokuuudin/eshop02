@@ -144,7 +144,9 @@ def main(argv=None) -> int:
             pub = FtpsPublisher(p.host, p.port, p.remote_dir, read_windows_credential(p.credential_target),
                                 context=make_tls_context(p.ca_file), timeout=p.timeout_seconds,
                                 require_remote_size=p.require_remote_size, log=log)
-            res = pub.probe(run_id)
+            probe_dir = os.path.join(cfg.work_dir, 'probe')
+            os.makedirs(probe_dir, exist_ok=True)
+            res = pub.probe(run_id, probe_dir)
         except (PublishError, SecretError, OSError) as e:
             log('probe_failed', level='error', reason=str(e))
             return EXIT_PUBLISH

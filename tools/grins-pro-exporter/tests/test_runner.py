@@ -69,8 +69,9 @@ class RunnerTests(unittest.TestCase):
 
     def test_shadow_writes_local_xml_and_manifest_never_publishes(self):
         cfg = self.cfg()
-        code, events, _ = self.go(cfg, 'shadow')
+        code, events, log = self.go(cfg, 'shadow')
         self.assertEqual(code, 0, events)
+        self.assertIsInstance([e for e in log.events if e['event'] == 'export_completed'][0]['durationSeconds'], float)
         for e in ('export_started', 'snapshot_started', 'snapshot_completed', 'paradox_validation_completed',
                   'export_generated', 'export_preflight_completed', 'export_completed'):
             self.assertIn(e, events)
@@ -85,6 +86,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(man['productCount'], 20)
         self.assertEqual(man['warehousePolicy'], '10000-10007')
         self.assertTrue(man['generatedAt'].endswith('Z'))
+        self.assertTrue(man['runStartedAt'].endswith('Z'))
         self.assertEqual(set(man['sourceHashes']), {'CENIC.DB', 'OSTATOK.DB'})
         self.assertEqual(man['stats']['totalQuantity'], 5)               # 10010 lot ignored
         self.assertIn(b'<quantity>5</quantity>', xml)

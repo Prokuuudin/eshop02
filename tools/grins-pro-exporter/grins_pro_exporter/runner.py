@@ -67,13 +67,15 @@ def generate_from_dir(snapshot_dir: str) -> dict:
             'stock': agg.diagnostics(), 'build': diag}
 
 
-def build_manifest(run_id: str, mode: str, result: dict, metrics: dict, snap: Optional[dict], xml_name: str) -> dict:
+def build_manifest(run_id: str, mode: str, result: dict, metrics: dict, snap: Optional[dict], xml_name: str,
+                   run_started_at: Optional[str] = None) -> dict:
     xml = result['xml']
     files = (snap or {}).get('files', {})
     return {
         'schemaVersion': 1,
         'exporterVersion': __version__,
         'runId': run_id,
+        'runStartedAt': run_started_at,
         'mode': mode,
         'generatedAt': utc_iso(),
         'generatedAtLocal': datetime.now().astimezone().isoformat(timespec='seconds'),
@@ -124,6 +126,8 @@ def run(cfg: Config, mode: str, log: JsonLogger,
         snapshotter: Callable[..., dict] = take_stable_snapshot) -> int:
     """mode: 'dry-run' | 'shadow' | 'publish'."""
     run_id = log.run_id
+    started, started_at = time.monotonic(), utc_iso()
+    elapsed = lambda: round(time.monotonic() - started, 1)  # noqa: E731
     lock = SingleInstanceLock(cfg.state_dir)
     stage = 'lock'
     try:
@@ -168,10 +172,10 @@ def run(cfg: Config, mode: str, log: JsonLogger,
             raise StageError(stage, EXIT_PREFLIGHT, '; '.join(e.failures))
         xml_name = cfg.publish.file_name if cfg.publish else 'export.xml'
         manifest_name = cfg.publish.manifest_file_name if cfg.publish else 'export.manifest.json'
-        manifest = build_manifest(run_id, mode, result, metrics, snap, xml_name)
+        manifest = build_manifest(run_id, mode, result, metrics, snap, xml_name, started_at)
         log('export_preflight_completed', metrics=metrics, previousProductCount=(previous or {}).get('productCount'))
         if mode == 'dry-run':
-            log('export_completed', mode=mode, published=False, xmlSha256=manifest['xmlSha256'])
+            log('export_completed', mode=mode, published=False, xmlSha256=manifest['xmlSha256'], durationSeconds=elapsed())
             return EXIT_OK
 
         stage = 'local_output'
@@ -211,22 +215,23 @@ def run(cfg: Config, mode: str, log: JsonLogger,
 
         write_verified(os.path.join(cfg.state_dir, LAST_GOOD), manifest_bytes)
         prune_runs(os.path.join(cfg.output_dir), cfg.keep_outputs)
-        log('export_completed', mode=mode, published=mode == 'publish', xmlSha256=manifest['xmlSha256'],
+        log('export_completed', mode=mode, published=mode == 'publish', xmlSha256=manifest['xmlSha256'], durationSeconds=elapsed(),
             productCount=manifest['productCount'], outputDir=out_dir)
         return EXIT_OK
     except StageError as e:
-        _fail(cfg, log, e.stage, e.reason, credential_reader)
+        _fail(cfg, log, e.stage, e.reason, credential_reader, duration=elapsed())
         return e.code
     except Exception as e:  # noqa: BLE001 - last line of defence, still fail closed
-        _fail(cfg, log, stage, '%s: %s' % (e.__class__.__name__, e), credential_reader, traceback.format_exc(limit=5))
+        _fail(cfg, log, stage, '%s: %s' % (e.__class__.__name__, e), credential_reader, traceback.format_exc(limit=5), elapsed())
         return EXIT_INTERNAL
     finally:
         prune_runs(os.path.join(cfg.work_dir, 'runs'), cfg.keep_runs)
         lock.release()
 
 
-def _fail(cfg: Config, log: JsonLogger, stage: str, reason: str, credential_reader, tb: Optional[str] = None) -> None:
-    log('export_failed', level='error', stage=stage, reason=reason, **({'traceback': tb} if tb else {}))
+def _fail(cfg: Config, log: JsonLogger, stage: str, reason: str, credential_reader, tb: Optional[str] = None,
+          duration: Optional[float] = None) -> None:
+    log('export_failed', level='error', stage=stage, reason=reason, durationSeconds=duration, **({'traceback': tb} if tb else {}))
     body = {'runId': log.run_id, 'stage': stage, 'reason': reason, 'at': utc_iso(),
             'note': 'Nothing was published; the previous export.xml on the FTPS server is unchanged.'}
     try:

@@ -168,31 +168,39 @@ class FtpsPublisher:
             self._close(ftp)
         return {'xml': xml, 'manifest': manifest}
 
-    def probe(self, run_id: str) -> dict:
-        """Capability check using only probe-* files: TLS, login, STOR, SIZE, rename onto a new name
-        and onto an EXISTING name (the atomic-replace requirement). Never touches export files."""
-        import io
-        result = {'connected': False, 'stor': False, 'size': False, 'renameNew': False, 'renameOverExisting': False}
+    def probe(self, run_id: str, workdir: str) -> dict:
+        """Capability check with the production algorithm (_put_atomic: STOR .part -> SIZE -> RNFR/RNTO
+        -> SIZE) on probe-* names only, so export.xml / export.manifest.json and their .part files can
+        never be touched. Step 1 creates probe-<run>.txt (rename onto a free name); step 2 publishes a
+        LONGER file onto the now EXISTING name — the exact replace export.xml needs. The size check
+        after the rename proves the destination really holds the new content. Probe files are removed."""
+        target = validate_remote_name('probe-%s.txt' % run_id)
+        if not target.startswith('probe-'):
+            raise PublishError('probe target must be a probe-* file')
+        result = {'connected': False, 'renameNew': False, 'renameOverExisting': False, 'sizeSupported': None}
         ftp = self.connect()
         result['connected'] = True
-        target = 'probe-%s.txt' % run_id
         try:
-            for i, label in ((1, 'renameNew'), (2, 'renameOverExisting')):
-                part = '%s.%d.part' % (target, i)
-                ftp.storbinary('STOR ' + part, io.BytesIO(b'probe %d\n' % i))
-                result['stor'] = True
-                result['size'] = self._size(ftp, part) == len(b'probe %d\n' % i)
+            for step, label, payload in ((1, 'renameNew', b'probe\n'), (2, 'renameOverExisting', b'probe replaced\n')):
+                local = os.path.join(workdir, '%s.%d' % (target, step))
+                with open(local, 'wb') as fh:
+                    fh.write(payload)
                 try:
-                    ftp.rename(part, target)
+                    put = self._put_atomic(ftp, local, target)
                     result[label] = True
-                except ftplib.all_errors as e:
-                    result[label + 'Error'] = _safe_error(e, self.credential)
-                    self._try_delete(ftp, part)
+                    result['sizeSupported'] = put.get('remoteSizeBytes') is not None
+                except PublishError as e:
+                    result[label + 'Error'] = str(e)
+                    break
+                finally:
+                    os.remove(local)
         finally:
             self._try_delete(ftp, target)
+            self._try_delete(ftp, target + '.part')
             self._close(ftp)
-        result['atomicPublishSupported'] = bool(result['stor'] and result['renameOverExisting'] and
-                                                (result['size'] or not self.require_remote_size))
+        # Without SIZE the replacement of the existing file cannot be proven -> not a PASS.
+        result['atomicPublishSupported'] = bool(result['renameNew'] and result['renameOverExisting'] and result['sizeSupported'])
+        result['verdict'] = 'FTPS ATOMIC PUBLISH: %s' % ('PASS' if result['atomicPublishSupported'] else 'FAIL')
         return result
 
 

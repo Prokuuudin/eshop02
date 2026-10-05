@@ -81,6 +81,7 @@ class StockAggregation:
         self.ignored_positive_qty: Counter = Counter()
         self.unknown_warehouses: Counter = Counter()
         self.errors: List[str] = []
+        self.error_count = 0
 
     def add(self, tovar: Optional[str], sklad_raw: Optional[str], kolvo: Optional[float]) -> None:
         self.rows += 1
@@ -100,11 +101,12 @@ class StockAggregation:
         if kolvo < 0:
             self.negative_lots += 1   # max(0, Kolvo): a negative lot never reduces another lot
             return
-        if kolvo != int(kolvo) or kolvo > INT32_MAX:
-            if len(self.errors) < 20:
-                self.errors.append('non-integer or out-of-range Kolvo %r for %r in %s' % (kolvo, tovar.strip(), sklad))
-            else:
-                self.errors.append('...')
+        # Fail closed: never round or clamp. Range is checked first (int(inf) would raise).
+        kind = 'too_large' if kolvo > INT32_MAX else 'fractional' if kolvo != int(kolvo) else None
+        if kind:
+            self.error_count += 1
+            if len(self.errors) < 20:   # bounded sample: SKU, warehouse, kind — never a data dump
+                self.errors.append('%s Kolvo %r for SKU %r in warehouse %s' % (kind, kolvo, to_sku(tovar), sklad))
             return
         self.counted_lots += 1
         self.stock[(tovar, sklad)] += int(kolvo)
@@ -124,9 +126,9 @@ def aggregate_ostatok(rows: Iterable[list], idx: Dict[str, int]) -> StockAggrega
     i_s, i_t, i_k = idx['SkladKod'], idx['TovarKod'], idx['Kolvo']
     for r in rows:
         agg.add(r[i_t], r[i_s], r[i_k])
-    if agg.errors:
-        raise ExportDataError('OSTATOK: %d lots with unusable Kolvo in allowed warehouses: %s' % (
-            len(agg.errors), '; '.join(agg.errors[:5])))
+    if agg.error_count:
+        raise ExportDataError('OSTATOK: %d lots with unusable Kolvo in allowed warehouses (fail closed): %s' % (
+            agg.error_count, '; '.join(agg.errors[:5])))
     return agg
 
 

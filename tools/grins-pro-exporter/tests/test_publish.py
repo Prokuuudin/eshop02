@@ -172,16 +172,47 @@ class PublishTests(unittest.TestCase):
         with self.assertRaises(PublishError):
             FtpsPublisher('h', 0, '', CRED)
 
-    def test_probe_detects_missing_atomic_replace(self):
-        ok = self.pub(FakeFtp()).probe('t1')
+    def test_probe_uses_publisher_algorithm_on_probe_files_only(self):
+        ftp = FakeFtp({'export.xml': b'live', 'export.xml.part': b'stale part', 'export.manifest.json': b'{}'})
+        ok = self.pub(ftp).probe('t1', self.tmp.name)
         self.assertTrue(ok['atomicPublishSupported'])
+        self.assertEqual(ok['verdict'], 'FTPS ATOMIC PUBLISH: PASS')
+        self.assertTrue(ok['sizeSupported'])
+        touched = {c[1] for c in ftp.cmds if c[0] in ('stor', 'delete')} | {n for c in ftp.cmds if c[0] == 'rename' for n in c[1:]}
+        self.assertTrue(all(n.startswith('probe-t1.txt') for n in touched), touched)
+        self.assertEqual(ftp.files, {'export.xml': b'live', 'export.xml.part': b'stale part', 'export.manifest.json': b'{}'})
+        renames = [c for c in ftp.cmds if c[0] == 'rename']
+        self.assertEqual(renames, [('rename', 'probe-t1.txt.part', 'probe-t1.txt')] * 2)   # 2nd = over existing
+        self.assertEqual(os.listdir(self.tmp.name), ['export.manifest.json', 'export.xml'])   # local probe files removed
+
+    def test_probe_fails_when_server_cannot_replace_existing(self):
         bad_ftp = FakeFtp(rename_over_existing=False)
-        bad = self.pub(bad_ftp).probe('t2')
+        bad = self.pub(bad_ftp).probe('t2', self.tmp.name)
         self.assertTrue(bad['renameNew'])
         self.assertFalse(bad['renameOverExisting'])
-        self.assertFalse(bad['atomicPublishSupported'])
+        self.assertEqual(bad['verdict'], 'FTPS ATOMIC PUBLISH: FAIL')
         self.assertEqual(bad_ftp.files, {})                     # probe cleans up after itself
         self.assertNotIn('s3cr3t-pass', str(bad))
+
+    def test_probe_without_size_support_is_not_a_pass(self):
+        class NoSize(FakeFtp):
+            def size(self, name):
+                raise ftplib.error_perm('502 SIZE not implemented')
+        res = self.pub(NoSize(), require_remote_size=False).probe('t4', self.tmp.name)
+        self.assertTrue(res['renameOverExisting'])
+        self.assertFalse(res['sizeSupported'])
+        self.assertEqual(res['verdict'], 'FTPS ATOMIC PUBLISH: FAIL')
+
+    def test_probe_detects_silent_non_replacement(self):
+        class KeepsOld(FakeFtp):
+            def rename(self, a, b):                              # "succeeds" but keeps the old destination
+                self.cmds.append(('rename', a, b))
+                if b not in self.files:
+                    self.files[b] = self.files[a]
+                self.files.pop(a)
+        res = self.pub(KeepsOld()).probe('t3', self.tmp.name)
+        self.assertFalse(res['renameOverExisting'])
+        self.assertIn('after rename', res['renameOverExistingError'])
 
     def test_credential_repr_hides_secret(self):
         self.assertNotIn('s3cr3t-pass', repr(CRED))

@@ -94,8 +94,17 @@ class StockPolicyTests(unittest.TestCase):
         self.assertEqual(st['ignoredPositiveQuantityByWarehouse']['10010'], '300')
 
     def test_non_integer_kolvo_in_allowed_warehouse_fails_closed(self):
-        with self.assertRaises(m.ExportDataError):
+        with self.assertRaises(m.ExportDataError) as ctx:
             self.wh([lot(1, '10000', 'A', 1.5)])
+        self.assertIn("fractional Kolvo 1.5 for SKU 'A' in warehouse 10000", str(ctx.exception))
+        for huge in (3e9, float('inf')):
+            with self.assertRaises(m.ExportDataError) as ctx:
+                self.wh([lot(1, '10003', 'A', huge)])
+            self.assertIn('too_large', str(ctx.exception))
+        lots = [lot(i, '10001', 'A', 0.5) for i in range(1, 31)]
+        with self.assertRaises(m.ExportDataError) as ctx:
+            self.wh(lots)
+        self.assertIn('30 lots', str(ctx.exception))                  # exact count, bounded sample
         it, _ = self.wh([lot(1, '10010', 'A', 1.5)])                # ignored warehouse: no effect
         self.assertEqual(it['quantity'], 0)
 

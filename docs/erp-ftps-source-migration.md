@@ -36,6 +36,17 @@ Transport: explicit TLS (`AUTH TLS`) with Node's normal certificate validation.
 Implicit TLS (port 990) and self-signed/untrusted certificates are **not**
 supported and are not bypassed — they fail verification with the TLS error.
 
+## New source = Hairshop Pro exporter (tools/grins-pro-exporter)
+
+Installation/shadow/candidate steps: `docs/grins-pro-exporter-runbook.md`. Its export differs from
+Hairshop.lv **intentionally** (owner decision 2026-10-05): `warehouse id="9"` is always 0 (legacy
+wrote 10009 there — it was never Jelgava/10010) and `quantity` = sum of ids 1..8 instead of all
+warehouses. Neither is used by `Product.stock`/`Product.price`, so `compare` below reports no
+REVIEW reason for them; `python -m grins_pro_exporter compare --legacy ... --pro ...` classifies them
+explicitly. Add `--manifest` to `verify --source candidate` to also check `export.manifest.json`
+(SHA/size/count match the downloaded XML and `generatedAt` ≤ 36 h — distinguishes a fresh export
+from yesterday's file downloaded again).
+
 ## 1. Verify the new source (read-only, no DB)
 
 On the server, add to `.env.local` (values from the sysadmin):

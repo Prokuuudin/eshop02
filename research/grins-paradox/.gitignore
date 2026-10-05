@@ -1,0 +1,22 @@
+# Research inputs/outputs never go into Git (GrinS data, exports, reports, binaries).
+*.DB
+*.db
+*.PX
+*.px
+*.MB
+*.mb
+*.X*
+*.Y*
+*.VAL
+*.LCK
+*.xml
+*.zip
+*.exe
+*.dll
+*.pdb
+*.log
+*.json
+*.csv
+out*/
+input*/
+__pycache__/

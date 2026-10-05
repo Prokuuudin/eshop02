@@ -32,7 +32,10 @@ const WAREHOUSES: readonly WarehouseDefinition[] = [
   { id: '10003', names: { ru: 'Лиепая', en: 'Liepāja', lv: 'Liepāja' }, address: 'Graudu iela 43N, Liepāja', public: true },
   { id: '10006', names: { ru: 'Валмиера', en: 'Valmiera', lv: 'Valmiera' }, address: 'Stacijas iela 17, Valmiera', public: true },
   { id: '10007', names: { ru: 'Резекне', en: 'Rēzekne', lv: 'Rēzekne' }, address: 'Atbrīvošanas aleja 128, Rēzekne', public: true },
-  { id: '10010', names: { ru: 'Елгава', en: 'Jelgava', lv: 'Jelgava' }, address: 'Katoļu iela 1A, Jelgava', public: true },
+  // Jelgava (10010) is closing and its stock is not exported to Hairshop Pro (owner decision
+  // 2026-10-05), so the row would always read "out of stock": hidden from product availability.
+  // The Jelgava store itself (data/stores.ts: contacts, pickup, orders) is a separate decision.
+  { id: '10010', names: { ru: 'Елгава', en: 'Jelgava', lv: 'Jelgava' }, address: 'Katoļu iela 1A, Jelgava', public: false },
   { id: '10000', names: { ru: 'Центральный склад', en: 'Central warehouse', lv: 'Centrālā noliktava' }, address: 'Rencēnu iela 10A, Rīga', public: false },
 ]
 

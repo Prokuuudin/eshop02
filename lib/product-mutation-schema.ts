@@ -19,6 +19,8 @@ const bulkTiers = z.array(z.object({
   }
 })
 const multilingual = z.object({ ru: shortText, en: shortText, lv: shortText }).strict()
+// '' is the edit form's explicit clear; any non-empty value must still be a valid email.
+const optionalEmail = z.string().trim().max(320).pipe(z.union([z.literal(''), z.email()]))
 
 export const productChangesSchema = z.object({
   title: shortText.min(1), titleKey: shortText.optional(), titleEn: shortText.optional(), titleLv: shortText.optional(),
@@ -33,8 +35,8 @@ export const productChangesSchema = z.object({
   demoVideo: z.array(z.object({ src: resource.min(1), poster: resource.optional() }).strict()).max(20).optional(),
   compatibleEquipment: stringList.optional(), certificates: stringList.optional(), packagingSize: z.number().int().min(1).max(1_000_000).optional(),
   unitOfMeasure: shortText.optional(), metaTitle: z.string().trim().max(200).optional(), metaDescription: z.string().trim().max(500).optional(), ogImage: resource.optional(), ogAlt: shortText.optional(),
-  manufacturerName: shortText.optional(), manufacturerAddress: z.string().trim().max(1_000).optional(), manufacturerEmail: z.string().trim().email().max(320).optional(),
-  distributorName: multilingual.optional(), distributorAddress: multilingual.optional(), distributorEmail: z.string().trim().email().max(320).optional(),
+  manufacturerName: shortText.optional(), manufacturerAddress: z.string().trim().max(1_000).optional(), manufacturerEmail: optionalEmail.optional(),
+  distributorName: multilingual.optional(), distributorAddress: multilingual.optional(), distributorEmail: optionalEmail.optional(),
   bonusRate: z.number().finite().min(0).max(100).optional(),
   feature1: shortText.optional(), feature1En: shortText.optional(), feature1Lv: shortText.optional(), feature2: shortText.optional(), feature2En: shortText.optional(), feature2Lv: shortText.optional(),
   feature3: shortText.optional(), feature3En: shortText.optional(), feature3Lv: shortText.optional(), feature4: shortText.optional(), feature4En: shortText.optional(), feature4Lv: shortText.optional(),

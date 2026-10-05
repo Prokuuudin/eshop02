@@ -466,12 +466,12 @@ describe('changed-only PATCH: explicit clears survive JSON transport', () => {
   })
 
   it.each(['manufacturerEmail', 'distributorEmail'] as const)(
-    'sends a cleared %s explicitly; the current server contract rejects an empty email instead of ignoring it',
+    'sends a cleared %s as an explicit empty string the update API accepts',
     (key) => {
       const initial = mapProductToFormValues(filledProduct)
       const wire = overTheWire(mapChangedFormValuesToProductPatch({ ...initial, [key]: '' }, initial))
       expect(wire).toEqual({ [key]: '' })
-      expect(parseUpdate(wire).success).toBe(false)
+      expect(parseUpdate(wire).data?.changes).toEqual({ [key]: '' })
     },
   )
 })

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { hasSkuChanged } from './product-sku'
 import { applyProductChanges } from './product-mutation'
+import { updateProductRequestSchema } from './product-mutation-schema'
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: {} }))
@@ -65,11 +66,12 @@ describe('applyProductChanges — partial changes from the edit form', () => {
     isCustom: false, isDeleted: false, isActive: true, revision: 3, externalId: null,
     erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null,
   }
-  const makeTx = () => {
+  const makeTx = (fields: Record<string, unknown> = {}) => {
+    const row = { ...current, ...fields }
     const updateMany = vi.fn(async (_args: { where: Record<string, unknown>; data: Record<string, unknown> }) => ({ count: 1 }))
     const tx = {
       product: {
-        findUnique: vi.fn(async () => current), findUniqueOrThrow: vi.fn(async () => current),
+        findUnique: vi.fn(async () => row), findUniqueOrThrow: vi.fn(async () => row),
         findFirst: vi.fn(async () => null), count: vi.fn(async () => 0), updateMany,
       },
       keyValueSetting: { findUnique: vi.fn(async () => null), update: vi.fn() },
@@ -86,6 +88,13 @@ describe('applyProductChanges — partial changes from the edit form', () => {
       titleEn: '', images: [], technicalSpecs: {},
       title: 'Shampoo', description: 'Kept description', badges: ['new'], price: 10, stock: 2,
     })
+  })
+
+  it('saves a price change together with a cleared manufacturer email', async () => {
+    const { tx, updateMany } = makeTx({ manufacturerEmail: 'maker@example.com' })
+    const { changes } = updateProductRequestSchema.parse({ id: 'p1', revision: 3, changes: { price: 12.5, manufacturerEmail: '' } })
+    await applyProductChanges(tx, 'p1', 3, changes)
+    expect(updateMany.mock.calls[0][0].data).toMatchObject({ price: 12.5, manufacturerEmail: '', title: 'Shampoo' })
   })
 
   it('rejects a stale revision before writing', async () => {

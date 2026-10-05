@@ -25,6 +25,17 @@ describe('product mutation schemas', () => {
     ] } }).success).toBe(false)
   })
 
+  it.each(['manufacturerEmail', 'distributorEmail'])('validates, saves or clears an optional %s', (field) => {
+    const update = (changes: Record<string, unknown>) => updateProductRequestSchema.safeParse({ id: valid.id, revision: 1, changes })
+    const missing = update({ price: 9 })
+    expect(missing.success && field in missing.data.changes).toBe(false)
+    expect(update({ [field]: 'office@example.com' }).data?.changes).toEqual({ [field]: 'office@example.com' })
+    expect(update({ [field]: '' }).data?.changes).toEqual({ [field]: '' })
+    expect(update({ [field]: '   ' }).data?.changes).toEqual({ [field]: '' })
+    expect(update({ [field]: 'not-an-email' }).success).toBe(false)
+    expect(update({ [field]: `${'a'.repeat(320)}@example.com` }).success).toBe(false)
+  })
+
   it('rejects duplicate related IDs and excessive lengths', () => {
     expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 1, changes: { relatedProductIds: ['P2', 'P2'] } }).success).toBe(false)
     expect(updateProductRequestSchema.safeParse({ id: valid.id, revision: 1, changes: { title: 'x'.repeat(301) } }).success).toBe(false)

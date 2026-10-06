@@ -1,5 +1,15 @@
 import type { Product } from '@/data/products'
 
+/** Keep the selected ordering within each availability group. */
+export function sortAvailableProductsFirst(products: Product[]): Product[] {
+  const available: Product[] = []
+  const unavailable: Product[] = []
+  for (const product of products) {
+    (product.stock === 0 || product.priceUnavailable === true ? unavailable : available).push(product)
+  }
+  return [...available, ...unavailable]
+}
+
 function createdAtTimestamp(product: Product): number {
   if (!product.createdAt) return Number.NEGATIVE_INFINITY
 

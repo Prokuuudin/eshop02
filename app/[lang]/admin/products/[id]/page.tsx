@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { hasAdminPermission } from '@/lib/admin-permissions';
+import { getServerUser } from '@/lib/server-auth';
 import { getAdminProductById, getDuplicateProductMetadataFlags } from '@/lib/product-overrides-store';
 import { mapProductToFormValues } from '@/lib/product-form-mapping';
 import ProductEditPageContent from './ProductEditPageContent';
@@ -11,6 +13,12 @@ interface PageProps {
 export const revalidate = 0;
 
 export default async function ProductEditPage({ params, searchParams }: PageProps): Promise<React.ReactElement> {
+    // Authorize before any product read. The admin layout's redirect is not a data
+    // boundary: Next renders the layout and this page in parallel, so without this
+    // check the editor payload (prices, stock, ERP flags) streams to anyone.
+    // Same permission as GET /api/admin/products.
+    if (!hasAdminPermission(await getServerUser(), 'catalog.read')) return notFound();
+
     const { id } = await params;
     const query = await searchParams;
     const product = await getAdminProductById(id);

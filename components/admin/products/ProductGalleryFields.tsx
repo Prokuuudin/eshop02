@@ -11,7 +11,9 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
-const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) => {
+export interface ProductImageUploadState { pending: boolean; error: string }
+
+const ProductGalleryFields: React.FC<{ productId?: string; onUploadStateChange?: (state: ProductImageUploadState) => void }> = ({ productId, onUploadStateChange }) => {
     const { register, control, setValue, getValues, formState: { errors } } = useFormContext<AddProductFormValues>();
     // useFieldArray supports objects, not a flat string array. Keep gallery URLs
     // controlled as one field so blank rows and multiple uploads are preserved.
@@ -24,13 +26,21 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
     const [uploadingGallery, setUploadingGallery] = React.useState(false);
     const [uploadError, setUploadError] = React.useState('');
 
+    React.useEffect(() => {
+        onUploadStateChange?.({ pending: uploadingMain || uploadingGallery, error: uploadError });
+    }, [uploadingMain, uploadingGallery, uploadError, onUploadStateChange]);
+
     const uploadImage = async (file: File): Promise<string> => {
         const formData = new FormData();
         formData.set('file', file);
         const response = await fetch('/api/admin/content/upload', { method: 'POST', body: formData });
         const result = await response.json().catch(() => ({})) as { path?: string; error?: string };
         if (!response.ok || !result.path) {
-            const message = result.error === 'file_too_large'
+            const message = response.status === 413
+                ? l('Файл слишком большой для загрузки. Уменьшите размер изображения и повторите.', 'The upload is too large. Reduce the image size and try again.', 'Fails ir pārāk liels. Samaziniet attēla izmēru un mēģiniet vēlreiz.')
+                : response.status === 401 || response.status === 403
+                    ? l('Нет доступа к загрузке изображений. Проверьте вход в аккаунт и права.', 'Image upload is not authorized. Check your login and permissions.', 'Attēlu augšupielāde nav atļauta. Pārbaudiet pieteikšanos un tiesības.')
+                : result.error === 'file_too_large'
                 ? l('Файл превышает 10 МБ', 'The file exceeds 10 MB', 'Fails pārsniedz 10 MB')
                 : result.error === 'unsupported_file_type'
                     ? l('Неподдерживаемый формат изображения', 'Unsupported image format', 'Neatbalstīts attēla formāts')
@@ -143,7 +153,12 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
                     </div>
                 </div>
             </div>
-            {uploadError && <p role="alert" className="mt-3 text-sm text-destructive">{uploadError}</p>}
+            {uploadError && <div className="mt-3 space-y-2">
+                <p role="alert" className="text-sm text-destructive">{uploadError}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => setUploadError('')}>
+                    {l('Отменить неудачную загрузку', 'Discard failed upload', 'Atcelt neizdevušos augšupielādi')}
+                </Button>
+            </div>}
         </div>
     );
 };

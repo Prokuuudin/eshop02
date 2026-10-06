@@ -17,7 +17,7 @@ import ProductPricingFields from './ProductPricingFields';
 import ProductInventoryFields from './ProductInventoryFields';
 import ProductSeoFields from './ProductSeoFields';
 import ProductTranslationsFields from './ProductTranslationsFields';
-import ProductGalleryFields from './ProductGalleryFields';
+import ProductGalleryFields, { type ProductImageUploadState } from './ProductGalleryFields';
 import ProductTechSpecsFields from './ProductTechSpecsFields';
 import ProductVariantGroupsFields from './ProductVariantGroupsFields';
 import ProductCertificatesFields from './ProductCertificatesFields';
@@ -150,6 +150,10 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const confirmAction = useAdminConfirm();
     const [language, setLanguage] = useState<Language>('ru');
     const [submitError, setSubmitError] = useState('');
+    const [saveMessage, setSaveMessage] = useState('');
+    const [imageUploadState, setImageUploadState] = useState<ProductImageUploadState>({ pending: false, error: '' });
+    const savedValuesRef = useRef(initialValues);
+    const revisionRef = useRef(revision);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
@@ -166,7 +170,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         mode: 'onChange',
     });
 
-    const { handleSubmit } = methods;
+    const { handleSubmit, formState: { isDirty } } = methods;
 
     useEffect(() => {
         if (!mobileActionsOpen) return;
@@ -201,7 +205,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     const localizedTitle = language === 'en' ? titleEn : language === 'lv' ? titleLv : title;
 
     const restorePreviousVersion = async () => {
-        if (!productId || !revision) return;
+        if (!productId || !revisionRef.current) return;
         const decision = await confirmAction({
             title: l('Вернуть предыдущую версию товара?', 'Restore the previous product version?', 'Atjaunot preces iepriekšējo versiju?'),
             description: l('Последнее сохранение будет отменено. Текущее состояние останется в истории, поэтому откат тоже можно будет отменить.', 'The latest save will be undone. The current state remains in history, so this restore can also be undone.', 'Pēdējā saglabāšana tiks atsaukta. Pašreizējais stāvoklis paliks vēsturē, tāpēc arī šo atjaunošanu varēs atsaukt.'),
@@ -216,7 +220,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
             const response = await fetch(`/api/admin/products/${encodeURIComponent(productId)}/restore-previous`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ revision }),
+                body: JSON.stringify({ revision: revisionRef.current }),
             });
             const result = await response.json().catch(() => ({})) as { error?: string };
             if (!response.ok) throw new Error(result.error || l('Не удалось восстановить версию', 'Failed to restore version', 'Neizdevās atjaunot versiju'));
@@ -228,21 +232,26 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
     };
 
     const onSubmit: SubmitHandler<AddProductFormValues> = async (data) => {
+        if (imageUploadState.pending || imageUploadState.error) {
+            setSubmitError(imageUploadState.error || l('Дождитесь загрузки изображения', 'Wait for the image upload to finish', 'Pagaidiet, līdz attēla augšupielāde beidzas'));
+            return;
+        }
         setSubmitError('');
+        setSaveMessage('');
         setIsSubmitting(true);
         try {
             if (isEdit && productId) {
-                const changes = initialValues
-                    ? mapChangedFormValuesToProductPatch(data, initialValues)
+                const changes = savedValuesRef.current
+                    ? mapChangedFormValuesToProductPatch(data, savedValuesRef.current)
                     : mapFormValuesToProductPatch(data);
                 if (Object.keys(changes).length === 0) {
-                    router.push(seoContext?.returnTo ?? '/admin/products');
+                    setSaveMessage(l('Нет изменений для сохранения', 'No changes to save', 'Nav saglabājamu izmaiņu'));
                     return;
                 }
                 const res = await fetch('/api/admin/products', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: productId, revision, changes }),
+                    body: JSON.stringify({ id: productId, revision: revisionRef.current, changes }),
                 });
                 if (!res.ok) {
                     const json = await res.json().catch(() => ({})) as { error?: string };
@@ -250,6 +259,15 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                         ? l('Этот SKU уже используется другим товаром', 'This SKU is already used by another product', 'Šo SKU jau izmanto cita prece')
                         : json.error ?? l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda'));
                 }
+                const result = await res.json() as { data?: { product?: { revision?: number } } };
+                const savedRevision = result.data?.product?.revision;
+                if (typeof savedRevision !== 'number') throw new Error(l('Не удалось подтвердить сохранение. Обновите карточку товара.', 'Could not confirm the save. Reload the product editor.', 'Neizdevās apstiprināt saglabāšanu. Atjauniniet preces redaktoru.'));
+                revisionRef.current = savedRevision;
+                savedValuesRef.current = data;
+                methods.reset(data);
+                setSaveMessage(l('Изменения сохранены', 'Changes saved', 'Izmaiņas saglabātas'));
+                router.refresh();
+                return;
             } else {
                 const res = await fetch('/api/admin/products', {
                     method: 'POST',
@@ -291,7 +309,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
             <FormProvider {...methods}>
                 <form
                     className="add-product add-product__layout"
-                    onSubmit={handleSubmit(onSubmit, onInvalid)}
+                    onSubmit={(event) => void handleSubmit(onSubmit, onInvalid)(event)}
                     autoComplete="off"
                     noValidate
                 >
@@ -331,7 +349,9 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 <ProductInventoryFields />
                             </ProductFormAccordionSection>
                             <ProductFormAccordionSection id="product-form-images-section" title={l('Изображения', 'Images', 'Attēli')}>
-                                <ProductGalleryFields productId={isEdit ? productId : undefined} />
+                                <fieldset disabled={isSubmitting || isRestoring}>
+                                    <ProductGalleryFields productId={isEdit ? productId : undefined} onUploadStateChange={setImageUploadState} />
+                                </fieldset>
                             </ProductFormAccordionSection>
                             <div className="add-product__options-row">
                                 <ProductFormAccordionSection title={l('Совместимое оборудование', 'Compatible equipment', 'Saderīgs aprīkojums')}>
@@ -372,7 +392,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                         <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-md border border-zinc-700 bg-zinc-950 p-1 text-white shadow-2xl ring-1 ring-black/20 dark:border-zinc-500 dark:bg-zinc-800 dark:shadow-black/60 dark:ring-white/15">
                                             <button
                                                 type="button"
-                                                disabled={isSubmitting || isRestoring}
+                                                disabled={isSubmitting || isRestoring || imageUploadState.pending || Boolean(imageUploadState.error)}
                                                 onClick={() => {
                                                     setMobileActionsOpen(false);
                                                     void handleSubmit(onSubmit, onInvalid)();
@@ -416,7 +436,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 </div>
                             )}
                             <div className={isEdit ? 'hidden flex-wrap gap-4 sm:flex' : 'flex flex-wrap gap-4'}>
-                                <Button type="submit" disabled={isSubmitting || isRestoring}>
+                                <Button type="submit" disabled={isSubmitting || isRestoring || imageUploadState.pending || Boolean(imageUploadState.error)}>
                                     {isSubmitting
                                         ? l('Сохраняю...', 'Saving...', 'Saglabā...')
                                         : isEdit
@@ -449,12 +469,14 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                     </Button>
                                 )}
                             </div>
-                            {submitError && (
+                            {imageUploadState.pending && <p role="status" className="text-sm text-muted-foreground">{l('Загружаю изображение. Дождитесь завершения перед сохранением.', 'Uploading image. Wait for it to finish before saving.', 'Attēls tiek augšupielādēts. Pirms saglabāšanas pagaidiet, līdz tas beidzas.')}</p>}
+                            {saveMessage && !isDirty && !submitError && !imageUploadState.error && !imageUploadState.pending && <p role="status" className="text-sm text-green-700 dark:text-green-400">{saveMessage}</p>}
+                            {(submitError || imageUploadState.error) && (
                                 <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900 shadow-sm dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
                                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
                                     <div>
                                         <p className="text-sm font-semibold">{l('Не удалось сохранить товар', 'Could not save product', 'Neizdevās saglabāt preci')}</p>
-                                        <p className="mt-0.5 text-sm leading-relaxed">{submitError}</p>
+                                        <p className="mt-0.5 text-sm leading-relaxed">{imageUploadState.error || submitError}</p>
                                     </div>
                                 </div>
                             )}

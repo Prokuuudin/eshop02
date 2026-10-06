@@ -1,3 +1,5 @@
+import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
+import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest } from 'next/server'
 import { createHash } from 'node:crypto'
 import { logApiError } from '@/lib/observability'
@@ -119,6 +121,12 @@ export async function POST(req: NextRequest): Promise<Response> {
       return errorResponse('No valid items', 400)
     }
 
+    const destination = validateOrderDelivery({
+      ...address, country: body.country === undefined ? address.country : body.country, deliveryMethod: body.deliveryMethod,
+      pickupStoreId: body.pickupStoreId, deliveryLocationId: body.deliveryLocationId,
+    }, await getShippingSettings())
+    if (payment === 'cash' && (destination.deliveryMethod !== 'pickup' || destination.pickupStoreId !== 'riga-office')) return errorResponse('cash_payment_unavailable', 400)
+    if (payment === 'paypal') return errorResponse('payment_method_unavailable', 400)
     const customerEmail = (typeof body.email === 'string' && body.email) || auth.user.email || 'api-user@example.com'
     // Build full order line items from the catalog (title/brand/etc.) for display.
     const products = await prisma.product.findMany({
@@ -148,7 +156,6 @@ export async function POST(req: NextRequest): Promise<Response> {
       subtotal: 0,
       tax: 0,
       delivery: 0,
-      deliveryMethod: typeof body.deliveryMethod === 'string' ? body.deliveryMethod : 'courier',
       paymentMethod: payment || 'transfer',
       discount: 0,
       total: 0,
@@ -156,10 +163,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       lastName: address.lastName || 'User',
       email: customerEmail,
       phone: address.phone || '',
-      address: address.address || '',
-      city: address.city || '',
-      postalCode: address.postalCode,
+      ...destination,
       paymentStatus: 'unpaid',
+      paymentProvider: payment === 'paysera' ? 'paysera' : 'manual',
+      stockReservationStatus: payment === 'paysera' ? 'reserved' : 'committed',
+      stockReservedUntil: payment === 'paysera' ? new Date(Date.now() + 35 * 60 * 1000).toISOString() : undefined,
       companyId: auth.user.companyId,
       userId: auth.user.id,
       language: 'ru',
@@ -173,6 +181,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         items: normalizedItems,
         promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
         deliveryMethod: order.deliveryMethod,
+        country: destination.country,
         userBonusBalance: null,
         userId: auth.user.id,
         email: customerEmail,
@@ -199,6 +208,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         orderId: created.id,
         status: created.paymentStatus,
         total: created.total,
+        order: created,
         createdAt: created.createdAt,
         notes,
         message: 'Order created successfully',
@@ -206,10 +216,15 @@ export async function POST(req: NextRequest): Promise<Response> {
       201
     )
   } catch (error) {
+    if (error instanceof OrderDeliveryError) return errorResponse(error.message, 400)
     if (error instanceof ExistingCheckoutOrderError) {
+      if (error.order.stockReservationStatus === 'released' || (error.order.stockReservationStatus === 'reserved'
+        && (!error.order.stockReservedUntil || new Date(error.order.stockReservedUntil) <= new Date()))) {
+        return errorResponse('stock_reservation_expired', 409)
+      }
       return successResponse({
         orderId: error.order.id, status: error.order.paymentStatus,
-        total: error.order.total, createdAt: error.order.createdAt,
+        order: error.order, total: error.order.total, createdAt: error.order.createdAt,
         message: 'Order already created', idempotent: true,
       }, 200)
     }

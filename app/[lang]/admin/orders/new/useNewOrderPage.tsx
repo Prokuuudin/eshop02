@@ -86,6 +86,7 @@ function useNewOrderPageState() {
     const [city, setCity] = useState('');
     const [country, setCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
     const [deliveryLocationId, setDeliveryLocationId] = useState('');
+    const [pickupStoreId, setPickupStoreId] = useState('');
     const [postalCode, setPostalCode] = useState('');
 
     // ── Payment
@@ -293,6 +294,7 @@ function useNewOrderPageState() {
                         quantity: i.quantity,
                         unitPrice: i.unitPrice,
                     })),
+                    pickupStoreId: deliveryMethod === 'pickup' ? pickupStoreId : undefined,
                     deliveryLocationId: deliveryLocationId || undefined,
                     country,
                     deliveryMethod,
@@ -383,6 +385,7 @@ function useNewOrderPageState() {
         setManualDiscountPct,
         deliveryMethod,
         setDeliveryMethod,
+        pickupStoreId, setPickupStoreId,
         deliveryLocationId,
         setDeliveryLocationId,
         country,

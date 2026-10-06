@@ -48,7 +48,7 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.value
 }
 
-export type PayseraPayment = { payseraOrderId: string; paymentUrl: string }
+export type PayseraPayment = { payseraOrderId: string; paymentUrl: string; order?: import('./orders-data-types').ServerOrder }
 
 export async function createPayseraPayment(params: {
   orderReference: string
@@ -58,6 +58,7 @@ export async function createPayseraPayment(params: {
   failureUrl: string
   callbackUrl: string
   language?: string
+  lifetime?: number
 }): Promise<PayseraPayment> {
   const token = await getAccessToken()
   const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
@@ -89,7 +90,7 @@ export async function createPayseraPayment(params: {
     body: JSON.stringify({
       order_id: order.order_id,
       name: `Order ${params.orderReference}`,
-      lifetime: 3600,
+      lifetime: params.lifetime ?? 3600,
       purchase: { amount: params.amountCents },
       experience: { language: params.language ?? 'lv' },
     }),
@@ -108,16 +109,22 @@ export async function createPayseraPayment(params: {
  * customer-facing "retry payment" endpoint — each needs a *fresh* link, never a cached one.
  */
 export async function createPayseraPaymentForOrder(order: { id: string; total: number; language?: string }): Promise<PayseraPayment> {
-  const lang = order.language === 'en' || order.language === 'lv' ? order.language : 'ru'
-  const siteUrl = getSiteUrl()
-  return createPayseraPayment({
-    orderReference: order.id,
-    amountCents: Math.round(order.total * 100),
-    currency: 'EUR',
-    successUrl: `${siteUrl}/${lang}/order/${order.id}?payment=success`,
-    failureUrl: `${siteUrl}/${lang}/order/${order.id}?payment=failed`,
-    callbackUrl: `${siteUrl}/api/webhooks/paysera`,
-    language: lang,
+  const { createOrderPaymentSession } = await import('./orders-data-store')
+  return createOrderPaymentSession(order.id, async current => {
+    const lang = current.language === 'en' || current.language === 'lv' ? current.language : 'ru'
+    const siteUrl = getSiteUrl()
+    return createPayseraPayment({
+      orderReference: current.id,
+      amountCents: Math.round(current.total * 100),
+      currency: 'EUR',
+      lifetime: current.stockReservedUntil
+        ? Math.max(1, Math.min(3600, Math.floor((new Date(current.stockReservedUntil).getTime() - Date.now()) / 1000)))
+        : 3600,
+      successUrl: `${siteUrl}/${lang}/order/${current.id}?payment=success`,
+      failureUrl: `${siteUrl}/${lang}/order/${current.id}?payment=failed`,
+      callbackUrl: `${siteUrl}/api/webhooks/paysera`,
+      language: lang,
+    })
   })
 }
 

@@ -16,10 +16,11 @@ function makeRequest(body: string, signature: string | null = 'sig'): NextReques
 }
 
 const ORDER_EVENT = (status: string) =>
-  JSON.stringify({ event: { type: 'order', name: 'amount_paid_updated' }, order: { merchant_order_id: '1001', status } })
+  JSON.stringify({ event: { type: 'order', name: 'amount_paid_updated' }, order: { merchant_order_id: '1001', paysera_order_id: 'ps1', amount: 10000, amount_paid: 10000, currency: 'EUR', status } })
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(updateServerOrderPayment).mockResolvedValue({ id: '1001' } as never)
 })
 
 describe('POST /api/webhooks/paysera', () => {
@@ -38,7 +39,7 @@ describe('POST /api/webhooks/paysera', () => {
     const res = await POST(makeRequest(ORDER_EVENT('paid')))
 
     expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'paid', paymentProvider: 'paysera' })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'paid', paymentProvider: 'paysera' }, { sessionId: 'ps1', amount: 10000, amountPaid: 10000, currency: 'EUR' })
   })
 
   it('marks the order failed (releasing the stock hold) on a verified "canceled" order event', async () => {
@@ -47,7 +48,7 @@ describe('POST /api/webhooks/paysera', () => {
     const res = await POST(makeRequest(ORDER_EVENT('canceled')))
 
     expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed', paymentProvider: 'paysera' })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed', paymentProvider: 'paysera' }, { sessionId: 'ps1', amount: 10000, amountPaid: 10000, currency: 'EUR' })
   })
 
   it('acknowledges but ignores non-order events (thin payment/refund envelopes)', async () => {

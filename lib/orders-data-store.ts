@@ -1,6 +1,6 @@
+import { validateOrderDelivery } from './validate-order-delivery'
 import { Prisma } from '@/generated/prisma/client'
-import { requiresDeliveryLocation, resolveDeliveryLocation } from './delivery-locations'
-import { isDeliveryAvailable, calcDeliveryFee } from './delivery'
+import { calcDeliveryFee } from './delivery'
 import { getShippingSettings } from './shipping-settings-server'
 import { prisma } from '@/lib/prisma'
 import type { NextRequest } from 'next/server'
@@ -239,10 +239,14 @@ export async function applyOrderReservationPaymentState(
   paymentStatus: ServerPaymentStatus,
 ): Promise<void> {
   if (paymentStatus === 'paid') {
-    await tx.order.updateMany({
+    const committed = await tx.order.updateMany({
       where: { id: orderId, stockReservationStatus: 'reserved' },
       data: { stockReservationStatus: 'committed', stockReservedUntil: null },
     })
+    if (committed.count !== 1) {
+      const order = await tx.order.findUnique({ where: { id: orderId } })
+      if (order?.stockReservationStatus !== 'committed') throw new Error('stock_not_committed')
+    }
     return
   }
   if (paymentStatus === 'failed') {
@@ -269,17 +273,29 @@ export async function releaseExpiredStockReservations(now = new Date()): Promise
 
 export const updateServerOrderPayment = async (
   orderId: string,
-  updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>
+  updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>,
+  evidence?: { sessionId: string; amount?: number; amountPaid?: number; currency?: string },
 ): Promise<ServerOrder | null> => {
   const row = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
     const existing = await tx.order.findUnique({ where: { id: orderId } })
     if (!existing) return null
+    if (updates.paymentProvider === 'paysera') {
+      if (!evidence?.sessionId || existing.paymentMethod !== 'paysera' || evidence.sessionId !== existing.paymentSessionId) {
+        throw new Error('invalid_payment_session')
+      }
+      if (updates.paymentStatus === 'paid' && (evidence.currency !== 'EUR'
+        || evidence.amount !== Math.round(toNum(existing.total) * 100)
+        || evidence.amountPaid !== evidence.amount)) throw new Error('invalid_payment_amount')
+    }
+    // Paid is terminal: never release its stock on a delayed cancellation.
+    if (existing.paymentStatus === 'paid') return existing
+    if (updates.paymentStatus === 'paid' && (!['reserved', 'committed'].includes(existing.stockReservationStatus)
+      || (existing.stockReservationStatus === 'reserved' && existing.stockReservedUntil && existing.stockReservedUntil <= new Date()))) {
+      throw new Error('stock_reservation_expired')
+    }
     if (updates.paymentStatus) {
       await applyOrderReservationPaymentState(tx, orderId, updates.paymentStatus)
-    }
-    // `paid` is terminal. A delayed verify/expiry request must never downgrade it.
-    if (existing.paymentStatus === 'paid' && updates.paymentStatus && updates.paymentStatus !== 'paid') {
-      return existing
     }
     return tx.order.update({
       where: { id: orderId },
@@ -292,6 +308,25 @@ export const updateServerOrderPayment = async (
   })
 
   return row ? mapDbToServerOrder(row) : null
+}
+
+/** Serialize gateway creation with admin edits, callbacks and reservation release. */
+export async function createOrderPaymentSession(
+  orderId: string,
+  create: (order: ServerOrder) => Promise<{ payseraOrderId: string; paymentUrl: string }>,
+): Promise<{ payseraOrderId: string; paymentUrl: string; order: ServerOrder }> {
+  return prisma.$transaction(async tx => {
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+    const row = await tx.order.findUnique({ where: { id: orderId } })
+    if (!row || row.paymentStatus === 'paid' || row.paymentMethod !== 'paysera') throw new Error('order_not_payable')
+    if (!['reserved', 'committed'].includes(row.stockReservationStatus)
+      || (row.stockReservationStatus === 'reserved' && (!row.stockReservedUntil || row.stockReservedUntil <= new Date()))) throw new Error('stock_reservation_expired')
+    const payment = await create(mapDbToServerOrder(row))
+    // The gateway call may outlive the reservation; do not expose that link.
+    if (row.stockReservationStatus === 'reserved' && (!row.stockReservedUntil || row.stockReservedUntil <= new Date())) throw new Error('stock_reservation_expired')
+    await tx.order.update({ where: { id: orderId }, data: { paymentSessionId: payment.payseraOrderId } })
+    return { ...payment, order: { ...mapDbToServerOrder(row), paymentSessionId: payment.payseraOrderId } }
+  }, { timeout: 20_000 })
 }
 
 function quantitiesByProduct(items: Array<{ id: string; quantity: number }>): Map<string, number> {
@@ -366,16 +401,18 @@ export async function updateServerOrderByAdmin(
     const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
     const oldSubtotal = toNum(current.subtotal)
     const oldDiscount = toNum(current.discount)
-    const discountRate = current.promoCode && oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
+    // Manual/campaign discounts have no promoCode; a destination-only edit must
+    // retain their economic value just as it retains a promo discount.
+    const discountRate = oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
     const discount = Math.round(subtotal * discountRate * 100) / 100
-      const country = input.country ?? (current.country as import('./delivery').DeliveryCountry | undefined) ?? 'LV'
-      if (input.deliveryMethod === 'courier' && (!input.address || !input.city || !input.postalCode)) {
-        throw new AdminOrderUpdateError('Courier address, city and postal code are required', 'invalid_item')
-      }
-    const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, country, input.deliveryLocationId)
-    if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) throw new AdminOrderUpdateError('Invalid delivery location', 'invalid_item')
     const shippingSettings = await getShippingSettings(tx)
-    if (!isDeliveryAvailable(input.deliveryMethod, country, shippingSettings)) throw new AdminOrderUpdateError('Delivery unavailable', 'invalid_item')
+    let destination: ReturnType<typeof validateOrderDelivery>
+    try {
+      destination = validateOrderDelivery({ ...input, country: input.country ?? current.country }, shippingSettings)
+    } catch (error) {
+      throw new AdminOrderUpdateError(error instanceof Error ? error.message : 'Invalid destination', 'invalid_item')
+    }
+    const { country, deliveryLocation } = destination
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, country, shippingSettings)
     const currentTotals = {
       subtotal: oldSubtotal,
@@ -402,11 +439,14 @@ export async function updateServerOrderByAdmin(
         tax,
         total,
         deliveryMethod: input.deliveryMethod,
-        address: input.address,
-        city: input.city,
+        address: destination.address,
+        city: destination.city,
+        pickupStoreId: destination.pickupStoreId ?? null,
         country,
         deliveryLocation: deliveryLocation ?? Prisma.DbNull,
-        postalCode: input.postalCode ?? null,
+        postalCode: destination.postalCode ?? null,
+        // Every edit invalidates the old session, including equal-total item changes.
+        paymentSessionId: null,
       },
     })
 

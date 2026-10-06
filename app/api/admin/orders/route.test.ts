@@ -46,6 +46,7 @@ import { GET, POST } from './route'
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
 const VALID_BODY = {
+  country: 'LV' as const,
   email: 'customer@example.com',
   firstName: 'Ivan',
   lastName: 'Petrov',
@@ -140,6 +141,28 @@ describe('GET /api/admin/orders', () => {
 })
 
 describe('POST /api/admin/orders', () => {
+  it.each([undefined, 'fake-store'])('rejects pickup without a valid store (%s)', async pickupStoreId => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    const response = await POST(makeRequest({ ...VALID_BODY, deliveryMethod: 'pickup', pickupStoreId }))
+    expect(response.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('creates pickup with the server store address and no stale locker', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null)
+    vi.mocked(createServerOrder).mockImplementation(async order => ({ ...order, id: '1048' }))
+    const response = await POST(makeRequest({ ...VALID_BODY, deliveryMethod: 'pickup', pickupStoreId: 'imanta', address: 'forged', deliveryLocationId: '9192' }))
+    expect(response.status).toBe(201)
+    const order = (await response.json()).order
+    expect(order.pickupStoreId).toBe('imanta')
+    expect(order.address).not.toBe('forged')
+    expect(order.deliveryLocation).toBeUndefined()
+    expect(order.total).toBe(50)
+  })
+
   it('rejects non-admins before touching the database', async () => {
     vi.mocked(requireAdminPermission).mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })

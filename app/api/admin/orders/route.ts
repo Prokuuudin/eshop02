@@ -1,5 +1,5 @@
-import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
-import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
+import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
+import { calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
@@ -139,13 +139,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
     const discount = Math.min(input.discount, subtotal)
-    if (input.deliveryMethod === 'courier' && (!input.address || !input.city || !input.postalCode)) {
-      return NextResponse.json({ error: 'missing_delivery_address' }, { status: 400 })
-    }
-    const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, input.country ?? 'LV', input.deliveryLocationId)
-    if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
     const shippingSettings = await getShippingSettings()
-    if (!isDeliveryAvailable(input.deliveryMethod, input.country ?? 'LV', shippingSettings)) return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
+    const destination = validateOrderDelivery(input, shippingSettings)
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, shippingSettings)
     const total = Math.max(0, Math.round((subtotal - discount + delivery) * 100) / 100)
 
@@ -160,7 +155,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       subtotal,
       tax: 0,
       delivery,
-      deliveryMethod: input.deliveryMethod,
       paymentMethod: input.paymentMethod,
       promoCode: input.promoCode,
       discount,
@@ -169,11 +163,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lastName: input.lastName ?? '',
       email: input.email,
       phone: input.phone ?? '',
-      address: input.address || 'Самовывоз',
-      city: input.city || '—',
-      country: input.country,
-      deliveryLocation: deliveryLocation ?? undefined,
-      postalCode: input.postalCode,
+      ...destination,
       paymentStatus: input.paymentStatus,
       paymentProvider: 'manual',
       stockReservationStatus: 'committed',
@@ -208,6 +198,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ order: created, ...(metaWarning ? { warning: metaWarning } : {}) }, { status: 201 })
   } catch (error) {
+    if (error instanceof OrderDeliveryError) return NextResponse.json({ error: error.message }, { status: 400 })
     if (error instanceof InsufficientStockError) {
       return NextResponse.json({ error: 'insufficient_stock', items: error.items }, { status: 409 })
     }

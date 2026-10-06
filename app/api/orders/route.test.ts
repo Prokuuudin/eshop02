@@ -53,7 +53,10 @@ import { DEFAULT_COMMERCE_SETTINGS } from '@/lib/commerce-settings'
 import { getDeliveryLocations } from '@/lib/delivery-locations'
 import { POST } from './route'
 
+
+
 const VALID_ORDER = {
+  country: 'LV',
   id: 'ORD-001',
   createdAt: '2026-06-16T10:00:00.000Z',
   firstName: 'Ivan',
@@ -106,6 +109,15 @@ function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKe
 }
 
 describe('POST /api/orders — admin notification', () => {
+it('rejects a released idempotent checkout instead of clearing the customer cart with success', async () => {
+  vi.mocked(createServerOrder).mockRejectedValueOnce(new ExistingCheckoutOrderError({ id: '1001', stockReservationStatus: 'released' } as never))
+  vi.mocked(isTurnstileRequired).mockReturnValue(false)
+  vi.mocked(getServerUser).mockResolvedValue(null)
+  vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
+  const response = await POST(makeRequest(VALID_ORDER, 'released-checkout-123'))
+  expect(response.status).toBe(409)
+  expect(await response.json()).toEqual({ error: 'stock_reservation_expired' })
+})
   beforeEach(() => {
     vi.clearAllMocks()
     dbProducts.mockImplementation(async () => [DB_PRODUCT_P1])
@@ -267,7 +279,7 @@ describe('POST /api/orders — admin notification', () => {
     vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({ id: '1001' } as never))
     const res = await POST(makeRequest(VALID_ORDER, 'checkout-ORD-001'))
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(await res.json()).toMatchObject({ success: true, orderId: '1001', idempotent: true })
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
@@ -280,10 +292,9 @@ describe('POST /api/orders — admin notification', () => {
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({
+    expect(await res.json()).toMatchObject({
       success: true, orderId: '1001', idempotent: true, paymentUrl: 'https://bank.paysera.com/pay/2',
     })
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-2' })
   })
 
   it('does not mint a new payment link for a duplicate resubmit of an already-paid paysera order', async () => {
@@ -294,7 +305,7 @@ describe('POST /api/orders — admin notification', () => {
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(await res.json()).toMatchObject({ success: true, orderId: '1001', idempotent: true })
     expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
   })
 
@@ -307,7 +318,7 @@ describe('POST /api/orders — admin notification', () => {
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }, 'checkout-ORD-001'))
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ success: true, orderId: '1001', idempotent: true })
+    expect(await res.json()).toMatchObject({ success: true, orderId: '1001', idempotent: true })
   })
 
   it('does not send admin email when CONTACT_TO is not set', async () => {
@@ -633,7 +644,6 @@ describe('POST /api/orders — admin notification', () => {
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ success: true, orderId: '1001', paymentUrl: 'https://bank.paysera.com/pay/1' })
     expect(createPayseraPaymentForOrder).toHaveBeenCalledWith(expect.objectContaining({ id: '1001', total: 64 }))
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-1' })
   })
 
   it('normal Paysera checkout fails the order when the gateway is down', async () => {

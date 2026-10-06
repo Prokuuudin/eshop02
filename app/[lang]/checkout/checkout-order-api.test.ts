@@ -4,10 +4,21 @@ import { createCheckoutOrder } from './checkout-order-api';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('createCheckoutOrder', () => {
+    it('rejects a response without canonical server totals', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ orderId: '1001' }) }));
+        await expect(createCheckoutOrder({ createdAt: new Date(), total: 0.01 }, null)).resolves.toEqual({ ok: false, reason: 'invalid_response' });
+    });
+
+    it.each([60, 70, 100, 59, 69, 54, 68])('uses server total %s even when browser preview is different', async total => {
+        const canonical = { id: '1001', subtotal: 60, discount: 5, delivery: 10, bonusSpent: 100, total, items: [] };
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ orderId: '1001', order: canonical }) }));
+        const result = await createCheckoutOrder({ createdAt: new Date(), total: 0.01 }, null);
+        expect(result).toMatchObject({ ok: true, order: canonical });
+    });
     it('serializes the creation date and returns the server order id', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({ orderId: 1042 }),
+            json: async () => ({ orderId: 1042, order: { id: '1042', total: 69, items: [] } }),
         });
         vi.stubGlobal('fetch', fetchMock);
         const createdAt = new Date('2026-08-30T10:00:00.000Z');
@@ -15,6 +26,7 @@ describe('createCheckoutOrder', () => {
         await expect(createCheckoutOrder({ id: 'browser-order-7', createdAt, total: 25 }, 'token')).resolves.toEqual({
             ok: true,
             orderId: '1042',
+            order: { id: '1042', total: 69, items: [] },
         });
         expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
             order: { id: 'browser-order-7', createdAt: createdAt.toISOString(), total: 25 },
@@ -58,7 +70,7 @@ describe('createCheckoutOrder', () => {
     it('reuses the same key when retrying after an ambiguous network failure', async () => {
         const fetchMock = vi.fn()
             .mockRejectedValueOnce(new Error('connection lost after send'))
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ orderId: '1043' }) });
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ orderId: '1043', order: { id: '1043', total: 25, items: [] } }) });
         vi.stubGlobal('fetch', fetchMock);
         const first = { createdAt: new Date('2026-08-30T10:00:00Z'), total: 25, items: [{ id: 'p1', quantity: 1 }] };
         const retry = { ...first, createdAt: new Date('2026-08-30T10:01:00Z') };

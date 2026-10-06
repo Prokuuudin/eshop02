@@ -225,11 +225,16 @@ type ReservationTx = ExtendedTransactionClient
 
 async function releaseReservation(
   tx: ReservationTx,
-  order: Pick<PrismaOrder, 'id' | 'items'>,
+  orderId: string,
   extraWhere: { stockReservedUntil?: { lte: Date } } = {},
 ): Promise<boolean> {
+  // The expired scan is only a candidate list. Admin edits can change items while
+  // a cleaner waits, so acquire the same Order lock as edit/payment, then reread.
+  await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+  const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
+  if (!order) return false
   const released = await tx.order.updateMany({
-    where: { id: order.id, stockReservationStatus: 'reserved', ...extraWhere },
+    where: { id: orderId, stockReservationStatus: 'reserved', ...extraWhere },
     data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },
   })
   if (released.count !== 1) return false
@@ -281,8 +286,7 @@ export async function applyOrderReservationPaymentState(
     return unchanged
   }
   if (paymentStatus === 'failed') {
-    const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
-    if (order) await releaseReservation(tx, order)
+    await releaseReservation(tx, orderId)
   }
   return unchanged
 }
@@ -291,13 +295,13 @@ export async function applyOrderReservationPaymentState(
 export async function releaseExpiredStockReservations(now = new Date()): Promise<number> {
   const expired = await prisma.order.findMany({
     where: { stockReservationStatus: 'reserved', stockReservedUntil: { lte: now } },
-    select: { id: true, items: true },
+    select: { id: true },
     take: 50,
   })
   let count = 0
   for (const order of expired) {
     const released = await prisma.$transaction((tx) =>
-      releaseReservation(tx, order, { stockReservedUntil: { lte: now } }))
+      releaseReservation(tx, order.id, { stockReservedUntil: { lte: now } }))
     if (released) count += 1
   }
   return count

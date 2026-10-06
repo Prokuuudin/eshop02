@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
-import { canAccessOrder, getServerOrderById, updateServerOrderPayment } from '@/lib/orders-data-store'
+import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -39,6 +39,10 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
     if (order.paymentStatus === 'paid') {
       return NextResponse.json({ error: 'already_paid' }, { status: 409 })
     }
+    if (order.stockReservationStatus === 'released' || (order.stockReservationStatus === 'reserved'
+      && (!order.stockReservedUntil || new Date(order.stockReservedUntil) <= new Date()))) {
+      return NextResponse.json({ error: 'stock_reservation_expired' }, { status: 409 })
+    }
 
     const limited = await checkRateLimit(`order-pay-retry:${id}`, { windowMs: 60 * 60 * 1000, maxAttempts: 10 })
     if (limited.limited) {
@@ -49,10 +53,12 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
     }
 
     const payment = await createPayseraPaymentForOrder(order)
-    await updateServerOrderPayment(order.id, { paymentSessionId: payment.payseraOrderId })
 
-    return NextResponse.json({ paymentUrl: payment.paymentUrl })
+    return NextResponse.json({ paymentUrl: payment.paymentUrl, order: payment.order })
   } catch (error) {
+    if (error instanceof Error && error.message === 'stock_reservation_expired') {
+      return NextResponse.json({ error: 'stock_reservation_expired' }, { status: 409 })
+    }
     logApiError('Orders API pay-retry error:', error)
     return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
   }

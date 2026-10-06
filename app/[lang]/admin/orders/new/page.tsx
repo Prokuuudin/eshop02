@@ -1,4 +1,5 @@
 'use client';
+import { stores } from '@/data/stores';
 import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
@@ -277,6 +278,14 @@ export default function NewOrderPage(): React.ReactElement {
 
                         {/* Delivery */}
                         <Section title={l('Доставка', 'Delivery', 'Piegāde')}>
+                            {deliveryMethod === 'pickup' && (
+                                <label>{l('Магазин самовывоза', 'Pickup store', 'Saņemšanas veikals')}
+                                    <select required value={pageState.pickupStoreId} onChange={e => pageState.setPickupStoreId(e.target.value)} className="ml-3 rounded border bg-card p-2">
+                                        <option value="">{l('Выберите магазин', 'Select store', 'Izvēlieties veikalu')}</option>
+                                        {stores.map(store => <option key={store.id} value={store.id}>{store.address.lv}</option>)}
+                                    </select>
+                                </label>
+                            )}
                             <label className="mb-3 block">{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={country} onChange={e => { setCountry(e.target.value as typeof country); setDeliveryLocationId(''); }}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                             <div className="flex flex-wrap gap-2">
                                 {deliveryOptions.map((opt) => (

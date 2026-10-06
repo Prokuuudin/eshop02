@@ -1,4 +1,5 @@
 'use client';
+import { stores } from '@/data/stores';
 
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
@@ -67,6 +68,14 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                 </div>
                                             </div>
 
+                                            {editDelivery === 'pickup' && (
+                                                <label>{l('Магазин самовывоза', 'Pickup store', 'Saņemšanas veikals')}
+                                                    <select required value={state.editPickupStoreId} onChange={e => state.setEditPickupStoreId(e.target.value)} className="ml-3 rounded border bg-card p-2">
+                                                        <option value="">{l('Выберите магазин', 'Select store', 'Izvēlieties veikalu')}</option>
+                                                        {stores.map(store => <option key={store.id} value={store.id}>{store.address.lv}</option>)}
+                                                    </select>
+                                                </label>
+                                            )}
                                             {requiresDeliveryLocation(editDelivery) && <DeliveryLocationPicker key={editDelivery + ':' + (editCountry)} method={editDelivery} country={editCountry} value={editDeliveryLocationId} onChange={setEditDeliveryLocationId} />}
                                             {/* Delivery method */}
                                             <div className="space-y-2">

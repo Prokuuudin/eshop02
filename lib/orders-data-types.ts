@@ -43,8 +43,7 @@ export type ServerOrder = {
   tax: number
   delivery: number
   deliveryMethod: string
-  /** Магазин самовывоза (id из data/stores.ts). В БД отдельной колонки нет:
-   *  при pickup адрес магазина записывается в address/city (см. /api/orders POST). */
+  /** Server-validated pickup store; its destination is persisted in address/city. */
   pickupStoreId?: string
   paymentMethod: string
   promoCode?: string
@@ -122,6 +121,7 @@ export class AdminOrderUpdateError extends Error {
 }
 
 export type AdminOrderUpdateInput = {
+  pickupStoreId?: string
   items: Array<{ id: string; quantity: number; lineKey?: string; variantLabel?: string }>
   address: string
   city: string

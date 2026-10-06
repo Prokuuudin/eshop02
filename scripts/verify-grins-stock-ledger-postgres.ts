@@ -88,7 +88,7 @@ async function main(): Promise<void> {
       id, createdAt: new Date(), items: items(productId, quantity), subtotal: 10 * quantity, tax: 0, delivery: 0,
       deliveryMethod: 'pickup', paymentMethod: 'paysera', discount: 0, total: 10 * quantity,
       firstName: 'Synthetic', lastName: 'Test', email: `${id}@example.invalid`, phone: '0', address: 'A', city: 'Riga',
-      paymentStatus: state === 'released' ? 'pending' : 'paid', paymentProvider: 'paysera',
+      paymentStatus: state === 'released' ? 'pending' : 'paid', paymentProvider: 'paysera', paymentSessionId: `${id}-session`,
       stockReservationStatus: state, stockReleasedAt: state === 'released' ? new Date() : null,
     },
   })
@@ -127,9 +127,10 @@ async function main(): Promise<void> {
 
     await createProduct('late-product', 'PG-LATE', 0)
     await createOrder('late-order', 'late-product', 1, 'released')
+    const lateEvidence = { sessionId: 'late-order-session', amount: 1000, amountPaid: 1000, currency: 'EUR' }
     await Promise.all([
-      updateServerOrderPayment('late-order', { paymentStatus: 'paid', paymentProvider: 'paysera' }),
-      updateServerOrderPayment('late-order', { paymentStatus: 'paid', paymentProvider: 'paysera' }),
+      updateServerOrderPayment('late-order', { paymentStatus: 'paid', paymentProvider: 'paysera' }, lateEvidence),
+      updateServerOrderPayment('late-order', { paymentStatus: 'paid', paymentProvider: 'paysera' }, lateEvidence),
     ])
     const [lateOrder, lateProduct, lateExceptions] = await Promise.all([
       db.order.findUniqueOrThrow({ where: { id: 'late-order' } }),

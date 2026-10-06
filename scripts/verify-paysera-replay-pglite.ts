@@ -18,10 +18,12 @@ async function main() {
   const { prisma: db } = await import('@/lib/prisma')
   const { createServerOrder } = await import('@/lib/orders-data-store')
   const { POST } = await import('@/app/api/webhooks/paysera/route')
-  const order = () => createServerOrder({ createdAt: new Date().toISOString(), items: [{ id: 'replay-p', title: 'Synthetic', brand: 'B', image: '', category: 'hair', rating: 0, price: 10, stock: 20, quantity: 1 }], subtotal: 10, tax: 0, delivery: 0, deliveryMethod: 'pickup', paymentMethod: 'paysera', paymentProvider: 'paysera', paymentStatus: 'pending', stockReservationStatus: 'reserved', stockReservedUntil: new Date(Date.now() + 300_000).toISOString(), discount: 0, total: 10, firstName: 'Replay', lastName: 'Synthetic', email: 'replay@example.invalid', phone: '000', address: 'Synthetic', city: 'Synthetic' })
+  const createOrder = () => createServerOrder({ createdAt: new Date().toISOString(), items: [{ id: 'replay-p', title: 'Synthetic', brand: 'B', image: '', category: 'hair', rating: 0, price: 10, stock: 20, quantity: 1 }], subtotal: 10, tax: 0, delivery: 0, deliveryMethod: 'pickup', paymentMethod: 'paysera', paymentProvider: 'paysera', paymentStatus: 'pending', stockReservationStatus: 'reserved', stockReservedUntil: new Date(Date.now() + 300_000).toISOString(), discount: 0, total: 10, firstName: 'Replay', lastName: 'Synthetic', email: 'replay@example.invalid', phone: '000', address: 'Synthetic', city: 'Synthetic' })
+  // Webhooks must match the current gateway session, amount and currency.
+  const order = async () => { const created = await createOrder(); await db.order.update({ where: { id: created.id }, data: { paymentSessionId: `${created.id}-session` } }); return created }
   const stock = async () => (await db.product.findUniqueOrThrow({ where: { id: 'replay-p' } })).stock
   const send = (id: string, status: string, valid = true) => {
-    const body = JSON.stringify({ event: { type: 'order' }, order: { merchant_order_id: id, status } })
+    const body = JSON.stringify({ event: { type: 'order' }, order: { merchant_order_id: id, paysera_order_id: `${id}-session`, amount: 1000, amount_paid: 1000, currency: 'EUR', status } })
     const signature = createHmac('sha256', process.env.PAYSERA_CLIENT_SECRET!).update(body).digest('hex')
     return POST(new NextRequest('http://localhost/api/webhooks/paysera', { method: 'POST', headers: { 'content-type': 'application/json', 'x-paysera-signature': valid ? signature : 'invalid' }, body }))
   }

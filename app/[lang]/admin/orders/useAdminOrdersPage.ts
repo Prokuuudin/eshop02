@@ -40,6 +40,7 @@ function useAdminOrdersPageState() {
     const [editCity, setEditCity] = useState('');
     const [editCountry, setEditCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
     const [editDeliveryLocationId, setEditDeliveryLocationId] = useState('');
+    const [editPickupStoreId, setEditPickupStoreId] = useState('');
     const [editPostalCode, setEditPostalCode] = useState('');
     const [editDelivery, setEditDelivery] = useState<string>('pickup');
     const [editProductSearch, setEditProductSearch] = useState('');
@@ -412,6 +413,7 @@ function useAdminOrdersPageState() {
         setEditDeliveryLocationId(order.deliveryLocation?.id ?? '');
         setEditPostalCode(order.postalCode ?? '');
         setEditDelivery(order.deliveryMethod);
+        setEditPickupStoreId(order.pickupStoreId ?? '');
         setEditProductSearch('');
     };
 
@@ -437,6 +439,7 @@ function useAdminOrdersPageState() {
                     })),
                     address: editAddress.trim() || order.address,
                     city: editCity.trim() || order.city,
+                    pickupStoreId: editDelivery === 'pickup' ? editPickupStoreId : undefined,
                     deliveryLocationId: editDeliveryLocationId || undefined,
                     country: editCountry,
                     postalCode: editPostalCode.trim() || undefined,
@@ -503,6 +506,7 @@ function useAdminOrdersPageState() {
         setEditAddress,
         editCity,
         setEditCity,
+        editPickupStoreId, setEditPickupStoreId,
         editDeliveryLocationId,
         setEditDeliveryLocationId,
         editCountry,

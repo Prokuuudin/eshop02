@@ -33,6 +33,14 @@ beforeEach(() => {
 })
 
 describe('POST /api/orders/[id]/pay', () => {
+  it('rejects a released reservation before contacting Paysera', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, stockReservationStatus: 'released' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    const response = await POST(makeRequest(), context)
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'stock_reservation_expired' })
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
   it('returns 404 without leaking existence when the caller cannot access the order', async () => {
     vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
     vi.mocked(getServerUser).mockResolvedValue(null)
@@ -83,7 +91,6 @@ describe('POST /api/orders/[id]/pay', () => {
 
     expect(res.status).toBe(200)
     expect(body).toEqual({ paymentUrl: 'https://bank.paysera.com/pay/9' })
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-9' })
   })
 
   it('rejects a new PayPal payment attempt while PayPal is unavailable to customers', async () => {

@@ -1,7 +1,5 @@
-import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
-import { checkoutDeliveryMethodIds, type DeliveryCountry } from '@/lib/delivery'
+import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
-import { isDeliveryAvailable } from '@/lib/delivery'
 import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
@@ -220,7 +218,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const rawItems: unknown[] = Array.isArray(order.items) ? order.items : []
     const email = typeof order.email === 'string' ? order.email.trim().toLowerCase() : ''
-    const deliveryMethod = text(order.deliveryMethod)
+    const deliveryMethod = text(order.deliveryMethod).trim()
     const paymentMethod = text(order.paymentMethod)
     const promoCode = text(order.promoCode).trim() || undefined
     const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
@@ -317,26 +315,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ...(item.selectedVariants?.length ? { selectedVariants: item.selectedVariants } : {}),
       }
     })
-    if (!(checkoutDeliveryMethodIds as readonly string[]).includes(deliveryMethod)) {
-      return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
-    }
-    if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country as string)) {
-      return NextResponse.json({ error: 'invalid_delivery_country' }, { status: 400 })
-    }
-    const country = (order.country ?? 'LV') as DeliveryCountry
-    if (!isDeliveryAvailable(deliveryMethod, country, await getShippingSettings())) {
-      return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
-    }
-    const deliveryLocation = resolveDeliveryLocation(deliveryMethod, country, text(order.deliveryLocationId))
-    if (requiresDeliveryLocation(deliveryMethod) && !deliveryLocation) {
-      return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
-    }
-    const pickupStore = deliveryMethod === 'pickup'
-      ? stores.find((store) => store.id === order.pickupStoreId)
-      : undefined
-    if (deliveryMethod === 'pickup' && !pickupStore) {
-      return NextResponse.json({ error: 'invalid_pickup_store' }, { status: 400 })
-    }
+    const destination = validateOrderDelivery(order, await getShippingSettings())
+    const { country } = destination
+    const pickupStore = destination.pickupStoreId ? stores.find(store => store.id === destination.pickupStoreId) : undefined
     // PayPal remains integrated for possible future re-enablement, but customer-initiated
     // payments are temporarily disabled at the public API boundary as well as in the UI.
     if (paymentMethod === 'paypal') {
@@ -385,12 +366,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await releaseExpiredStockReservations()
 
-    // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
-    // становится адрес выбранного магазина (клиентский адрес для pickup не нужен).
-    const pickupAddressPatch = pickupStore
-      ? { address: `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
-      : {}
-
     // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
     // holds stock for 35 min instead of committing it immediately, same as a guest.
     const reserveStock = !caller || ['card', 'paysera'].includes(paymentMethod)
@@ -412,14 +387,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lastName: text(order.lastName),
       email,
       phone: text(order.phone),
-      address: text(order.address),
-      city: text(order.city),
-      postalCode: text(order.postalCode),
-      ...pickupAddressPatch,
-      country,
-      deliveryMethod,
-      deliveryLocation: deliveryLocation ?? undefined,
-      pickupStoreId: pickupStore?.id,
+      ...destination,
       paymentMethod,
       // A new order is unpaid until staff or a verified gateway callback confirms payment;
       // the provider follows from the validated payment method, never from the client.
@@ -436,7 +404,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       stockReservedUntil: reserveStock ? new Date(Date.now() + 35 * 60 * 1000).toISOString() : undefined,
     }
 
-    const created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
+    let created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
       const pricing = await recomputeOrderPricing({
         items: lines.map(({ id, quantity }) => ({ id, quantity })),
         promoCode,
@@ -509,7 +477,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (paymentMethod === 'paysera') {
       try {
         const payment = await createPayseraPaymentForOrder(created)
-        await updateServerOrderPayment(created.id, { paymentSessionId: payment.payseraOrderId })
+        created = payment.order ?? created
         paymentUrl = payment.paymentUrl
       } catch (error) {
         logOperationalEvent({
@@ -532,18 +500,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (Math.random() < 0.01) void gcRateLimitStore()
 
-    return NextResponse.json({ success: true, orderId: created.id, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
+    return NextResponse.json({ success: true, orderId: created.id, order: created, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
+    if (error instanceof OrderDeliveryError) return NextResponse.json({ error: error.message }, { status: 400 })
     if (error instanceof ExistingCheckoutOrderError) {
       const existing = error.order
+      if (existing.stockReservationStatus === 'released' || (existing.stockReservationStatus === 'reserved'
+        && (!existing.stockReservedUntil || new Date(existing.stockReservedUntil) <= new Date()))) {
+        return NextResponse.json({ error: 'stock_reservation_expired' }, { status: 409 })
+      }
       // A resubmit (double-click / network retry before the client got the first response)
       // hits the same checkoutKey. The original payment link is gone with that response —
       // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
       if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid') {
         try {
           const payment = await createPayseraPaymentForOrder(existing)
-          await updateServerOrderPayment(existing.id, { paymentSessionId: payment.payseraOrderId })
-          return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
+          return NextResponse.json({ success: true, orderId: existing.id, order: payment.order ?? existing, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
         } catch (gatewayError) {
           logOperationalEvent({
             event: `${existing.paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: existing.id,
@@ -552,7 +524,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           // can retry payment from the order page instead of getting a hard failure here.
         }
       }
-      return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true })
+      return NextResponse.json({ success: true, orderId: existing.id, order: existing, deliveryLocation: existing.deliveryLocation, idempotent: true })
     }
     if (error instanceof ProductUnavailableError) {
       return NextResponse.json({ error: 'product_unavailable', items: error.items }, { status: 409 })

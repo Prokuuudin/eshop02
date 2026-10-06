@@ -335,7 +335,17 @@ function useCheckoutPageState() {
         }
         const { orderId, paymentUrl } = createResult;
 
-        const order = { id: orderId, ...orderData, deliveryLocation: createResult.deliveryLocation };
+        const canonical = createResult.order;
+        const order = {
+            ...canonical,
+            createdAt: new Date(canonical.createdAt),
+            deliveryMethod: canonical.deliveryMethod as import('@/lib/orders-store').DeliveryMethod,
+            items: canonical.items.map((item, index) => ({
+                ...item,
+                lineKey: item.lineKey ?? `${orderId}:${index}`,
+                category: item.category as import('@/data/products').CategoryType,
+            })),
+        };
         addOrder(order);
 
         // Silently keep the address book in sync so next checkout prefills from it.
@@ -361,10 +371,10 @@ function useCheckoutPageState() {
             const invoiceId = await createInvoice({
                 companyId: currentUser.companyId,
                 orderId,
-                subtotal,
-                taxRate: 18,
-                taxAmount,
-                total: grandTotal,
+                subtotal: order.subtotal,
+                taxRate: 21,
+                taxAmount: order.tax,
+                total: order.total,
                 status: 'issued',
                 issuedDate,
                 dueDate,
@@ -380,7 +390,7 @@ function useCheckoutPageState() {
                 {
                     invoiceId,
                     orderId,
-                    amount: grandTotal,
+                    amount: order.total,
                     dueDate: dueDate.toISOString(),
                 },
                 { userName: currentUser.name, userEmail: currentUser.email }

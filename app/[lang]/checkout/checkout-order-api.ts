@@ -5,7 +5,7 @@ type CheckoutOrderPayload = {
 
 export type CheckoutOrderFailure = 'insufficient_stock' | 'product_unavailable' | 'payment_gateway_error' | 'server' | 'invalid_response' | 'network';
 export type CheckoutOrderResult =
-    | { ok: true; orderId: string; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation }
+    | { ok: true; orderId: string; order: import('@/lib/orders-data-types').ServerOrder; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation }
     | { ok: false; reason: CheckoutOrderFailure };
 
 const pendingCheckoutKeys = new Map<string, string>();
@@ -42,10 +42,10 @@ export async function createCheckoutOrder(
             };
         }
 
-        const payload = (await response.json()) as { orderId?: string; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation };
-        if (payload.orderId) {
+        const payload = (await response.json()) as { orderId?: string; order?: import('@/lib/orders-data-types').ServerOrder; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation };
+        if (payload.orderId && payload.order && Number.isFinite(payload.order.total) && Array.isArray(payload.order.items)) {
             pendingCheckoutKeys.delete(fingerprint);
-            return { ok: true, orderId: String(payload.orderId), paymentUrl: payload.paymentUrl, ...(payload.deliveryLocation ? { deliveryLocation: payload.deliveryLocation } : {}) };
+            return { ok: true, orderId: String(payload.orderId), paymentUrl: payload.paymentUrl, order: payload.order, ...(payload.deliveryLocation ? { deliveryLocation: payload.deliveryLocation } : {}) };
         }
         return { ok: false, reason: 'invalid_response' };
     } catch {

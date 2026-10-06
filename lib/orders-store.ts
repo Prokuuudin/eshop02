@@ -51,7 +51,7 @@ export interface Order {
   bonusSpent?: number
   bonusEarned?: number
   paymentStatus?: PaymentStatus
-  paymentProvider?: 'manual'
+  paymentProvider?: 'manual' | 'paysera' | 'paypal'
   paymentSessionId?: string
   language?: string
   /** Владелец заказа на момент оформления; см. /api/orders/my (userId OR email). */

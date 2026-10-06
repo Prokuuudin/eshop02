@@ -1,3 +1,4 @@
+import { VAT_RATE } from '@/lib/tax'
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { getInvoicesByCompany, createInvoiceInDb } from '@/lib/invoices-data-store'
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       subtotal: order.subtotal,
       taxAmount: order.tax,
       total: order.total,
-      taxRate: typeof body.taxRate === 'number' ? body.taxRate : 21,
+      taxRate: VAT_RATE * 100,
       // A new invoice is always issued; only admins can move it to a settled state later.
       status: 'issued',
       issuedDate: body.issuedDate ? new Date(body.issuedDate) : new Date(),

@@ -151,7 +151,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         if (status === 'cancelled') {
           if (order.paymentStatus === 'paid') return { error: 'paid_order_requires_refund' as const, current }
           if (order.stockReservationStatus !== 'released') {
-            for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
+            for (const item of [...order.items as Array<{ id?: string; quantity?: number }>].sort((a, b) => (a.id ?? '') < (b.id ?? '') ? -1 : (a.id ?? '') > (b.id ?? '') ? 1 : 0)) {
               if (item.id && Number.isInteger(item.quantity) && Number(item.quantity) > 0) {
                 await tx.product.updateMany({
                   where: { id: item.id, isDeleted: false },
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           }
         }
         if (current === 'cancelled' && status === 'pending' && order.stockReservationStatus === 'released') {
-          for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
+          for (const item of [...order.items as Array<{ id?: string; quantity?: number }>].sort((a, b) => (a.id ?? '') < (b.id ?? '') ? -1 : (a.id ?? '') > (b.id ?? '') ? 1 : 0)) {
             if (!item.id || !Number.isInteger(item.quantity) || Number(item.quantity) <= 0) continue
             const reserved = await tx.product.updateMany({
               where: { id: item.id, isDeleted: false, stock: { gte: Number(item.quantity) } },

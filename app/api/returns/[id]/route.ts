@@ -91,7 +91,7 @@ export async function PATCH(
         } else {
           type ReturnItem = { productId: string; quantity: number }
           const returnItems = ret.items as ReturnItem[]
-          for (const item of returnItems) {
+          for (const item of [...returnItems].sort((a, b) => a.productId < b.productId ? -1 : a.productId > b.productId ? 1 : 0)) {
             if (item.productId && typeof item.quantity === 'number' && item.quantity > 0) {
               const restored = await tx.product.updateMany({
                 // Archived products still own stock and may later be restored.

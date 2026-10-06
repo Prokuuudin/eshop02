@@ -4,15 +4,12 @@ import { isProductOnSale, type Product } from '@/data/products'
 import type { Language } from '@/data/translations'
 import { brandSlug } from '@/lib/brand-slug'
 import {
-  getDbProductsPaginated,
   getMergedProductsByIds,
-  getStorefrontBrandNames,
   getStorefrontFacetProducts,
 } from '@/lib/product-overrides-store'
 import { redactProductPrices } from '@/lib/product-price-visibility'
 import { getServerUser } from '@/lib/server-auth'
-import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
-import productSubcategories from '@/data/product-subcategories.json'
+import { sortAvailableProductsFirst, sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 
 export const CATALOG_PAGE_SIZE = 24
 
@@ -75,55 +72,8 @@ export async function getInitialCatalogProducts({
 }: InitialCatalogFilters): Promise<InitialCatalogPage> {
   const normalizedPage = Number.isInteger(page) && page > 0 ? page : 1
   const offset = (normalizedPage - 1) * CATALOG_PAGE_SIZE
-  const requiresSemanticScan = onSale
-    || minPrice !== undefined
-    || maxPrice !== undefined
-    || order === 'price-asc'
-    || order === 'price-desc'
-    || order === 'name-asc'
-    || order === 'name-desc'
-
-  if (!requiresSemanticScan) {
-    const subcategoryIds = subcategories.length
-      ? Object.entries(productSubcategories as Record<string, string>)
-          .filter(([, subcategory]) => subcategories.includes(subcategory))
-          .map(([id]) => id)
-      : undefined
-    const allBrandNames = brands.length ? await getStorefrontBrandNames() : []
-    const brandNames = brands.length
-      ? allBrandNames.filter((brand) => brands.includes(brandSlug(brand)))
-      : undefined
-    const orderBy = order === 'price-asc'
-      ? { price: 'asc' as const }
-      : order === 'price-desc'
-        ? { price: 'desc' as const }
-        : { createdAt: 'desc' as const }
-    const [{ products, total }, user] = await Promise.all([
-      getDbProductsPaginated({
-        category,
-        ids: subcategoryIds,
-        brandNames,
-        search,
-        searchLanguage: language,
-        searchExtendedFields: false,
-        orderBy,
-        skip: offset,
-        take: CATALOG_PAGE_SIZE,
-        projection: 'card',
-      }),
-      getServerUser(),
-    ])
-    return {
-      products: user ? products : redactProductPrices(products),
-      page: normalizedPage,
-      pageSize: CATALOG_PAGE_SIZE,
-      totalProducts: total,
-      totalPages: Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE)),
-    }
-  }
-
-  // Campaign membership and locale collation are application-level semantics.
-  // Scan only their narrow index fields, then fetch full rows for the selected page.
+  // Reuse the narrow facet index to order the entire filtered result by availability.
+  // Full product rows are fetched only for the selected page.
   const [products, user] = await Promise.all([getStorefrontFacetProducts(), getServerUser()])
   const normalizedSearch = search.trim().toLocaleLowerCase()
 
@@ -145,7 +95,7 @@ export async function getInitialCatalogProducts({
     return true
   })
 
-  const sorted = sortProducts(filtered, order, language, brands.length > 0)
+  const sorted = sortAvailableProductsFirst(sortProducts(filtered, order, language, brands.length > 0))
 
   const totalProducts = sorted.length
   const totalPages = Math.max(1, Math.ceil(totalProducts / CATALOG_PAGE_SIZE))

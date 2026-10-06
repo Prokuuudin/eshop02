@@ -24,18 +24,33 @@ beforeEach(() => {
 })
 
 describe('getInitialCatalogProducts query bounds', () => {
-  it('turns page 5 into a DB-level skip/take query', async () => {
+  it('orders the entire matching result before fetching only page 5', async () => {
+    const products = Array.from({ length: 120 }, (_, index) => ({
+      id: `product-${index}`, title: `Product ${index}`, brand: 'Brand',
+      price: 10, rating: 0, category: 'hair' as const, stock: index < 24 ? 0 : 1,
+    }))
+    vi.mocked(getStorefrontFacetProducts).mockResolvedValue(products)
+
     const result = await getInitialCatalogProducts({ language: 'lv', page: 5 })
 
-    expect(getDbProductsPaginated).toHaveBeenCalledWith(expect.objectContaining({
-      skip: 96,
-      take: 24,
-      orderBy: { createdAt: 'desc' },
-      projection: 'card',
-    }))
-    expect(getStorefrontFacetProducts).not.toHaveBeenCalled()
+    expect(getDbProductsPaginated).not.toHaveBeenCalled()
+    expect(getMergedProductsByIds).toHaveBeenCalledWith(products.slice(0, 24).map(({ id }) => id))
     expect(result).toMatchObject({ page: 5, pageSize: 24, totalProducts: 120, totalPages: 5 })
   })
+
+  it.each(['price-asc', 'price-desc', 'name-asc', 'name-desc', undefined])(
+    'keeps unavailable products last with %s ordering after filtering', async (order) => {
+      vi.mocked(getStorefrontFacetProducts).mockResolvedValue([
+        { id: 'out', title: 'A', brand: 'Brand', price: 1, rating: 0, category: 'hair', stock: 0 },
+        { id: 'other-category', title: 'B', brand: 'Brand', price: 2, rating: 0, category: 'face', stock: 1 },
+        { id: 'in', title: 'Z', brand: 'Brand', price: 20, rating: 0, category: 'hair', stock: 1 },
+      ])
+
+      await getInitialCatalogProducts({ language: 'ru', category: 'hair', order })
+
+      expect(getMergedProductsByIds).toHaveBeenCalledWith(['in', 'out'])
+    }
+  )
 
   it('keeps exact sale semantics on a narrow scan and fetches only the selected card ids', async () => {
     vi.mocked(getStorefrontFacetProducts).mockResolvedValue([

@@ -61,8 +61,8 @@ export default function ProductListRow({ product }: Props): React.ReactElement {
             </div>
           )}
           {isOutOfStock && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">{isNotForSale ? t('product.notForSale') : t('product.outOfStock')}</span>
+            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+              <span className="rounded bg-white/90 px-2 py-1 text-gray-800 text-xs font-semibold">{isNotForSale ? t('product.notForSale') : t('product.outOfStock')}</span>
             </div>
           )}
         </Link>

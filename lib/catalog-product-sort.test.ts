@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Product } from '@/data/products'
-import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
+import { sortAvailableProductsFirst, sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 
 const product = (id: string, createdAt?: Date): Product => ({
   id,
@@ -40,5 +40,22 @@ describe('sortBrandProductsNewestFirst', () => {
       'undated-a',
       'undated-b',
     ])
+  })
+})
+
+describe('sortAvailableProductsFirst', () => {
+  it('preserves ordering within availability groups without changing the source', () => {
+    const products = [
+      { ...product('out-a'), stock: 0 },
+      product('in-a'),
+      { ...product('not-for-sale'), priceUnavailable: true },
+      product('in-b'),
+      { ...product('out-b'), stock: 0 },
+    ]
+
+    expect(sortAvailableProductsFirst(products).map(({ id }) => id)).toEqual([
+      'in-a', 'in-b', 'out-a', 'not-for-sale', 'out-b',
+    ])
+    expect(products[0].id).toBe('out-a')
   })
 })

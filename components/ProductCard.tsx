@@ -88,8 +88,8 @@ export default function ProductCard({ product }: Props): React.ReactElement {
                         </div>
                     )}
                     {isOutOfStock && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                            <span className="text-white font-semibold">
+                        <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                            <span className="rounded bg-white/90 px-2 py-1 text-gray-800 font-semibold">
                                 {t('product.outOfStock')}
                             </span>
                         </div>

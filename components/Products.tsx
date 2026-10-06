@@ -17,7 +17,7 @@ import ProductListRow from './ProductListRow'
 import { SUBCATEGORIES_BY_ID } from '@/data/categories'
 import type { CatalogFacets } from '@/lib/initial-catalog-products'
 import { fetchAllProducts } from '@/lib/client-products'
-import { sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
+import { sortAvailableProductsFirst, sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
 import { usePersistentViewMode } from '@/hooks/usePersistentViewMode'
 import { useAuthStore } from '@/lib/auth-store'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
@@ -237,7 +237,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   };
 
 
-  const filtered = sortProducts(
+  const filtered = sortAvailableProductsFirst(sortProducts(
     searchMatchedProducts.filter(p => {
       const groupOk = !filters.group || p.category === filters.group;
       const subcatOk = !filters.subcat || p.subcategory === filters.subcat;
@@ -252,7 +252,7 @@ export default function Products({ initialProducts, initialFilters, initialSearc
       const maxOk = !filters.maxPrice || priceHidden || p.price <= Number(filters.maxPrice);
       return groupOk && subcatOk && onSaleOk && brandOk && minOk && maxOk;
     }), filters.order
-  );
+  ));
 
   const hasSearchNoResults = normalizedSearch.length > 0 && filtered.length === 0
   const emptyStateMessage = hasSearchNoResults

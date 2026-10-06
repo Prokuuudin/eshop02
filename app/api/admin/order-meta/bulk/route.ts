@@ -55,6 +55,15 @@ export async function POST(req: NextRequest): Promise<Response> {
           throw new Error(`paid_order_requires_refund:${order.id}`)
         }
       }
+      // Acquire all affected Product locks before applying any batch mutations or
+      // taking the audit lock, using the same SKU order as reserve/edit/release.
+      if (parsed.data.status === 'cancelled') {
+        const productIds = [...new Set(orders.filter(order => order.stockReservationStatus !== 'released')
+          .flatMap(order => (order.items as Array<{ id?: string }>).flatMap(item => item.id ? [item.id] : [])))].sort()
+        for (const productId of productIds) {
+          await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${productId} FOR UPDATE`
+        }
+      }
       for (const order of orders) {
         const current = statusSchema.parse(currentById.get(order.id) ?? 'pending')
         if (current === parsed.data.status) continue

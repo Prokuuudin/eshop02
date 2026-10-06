@@ -85,7 +85,7 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
     // not silently create it with unaccounted-for items.
     const sellableWhere = options.staffPricedSale ? { isDeleted: false } : PURCHASABLE_PRODUCT_WHERE
     const outOfStockIds: string[] = []
-    for (const item of order.items) {
+    for (const item of [...order.items].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
       if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
         const result = await tx.product.updateMany({
           where: { id: item.id, ...sellableWhere, stock: { gte: item.quantity } },
@@ -213,16 +213,21 @@ type ReservationTx = ExtendedTransactionClient
 
 async function releaseReservation(
   tx: ReservationTx,
-  order: Pick<PrismaOrder, 'id' | 'items'>,
+  orderId: string,
   extraWhere: { stockReservedUntil?: { lte: Date } } = {},
 ): Promise<boolean> {
+  // The expired scan is only a candidate list. Admin edits can change items while
+  // a cleaner waits, so acquire the same Order lock as edit/payment, then reread.
+  await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+  const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
+  if (!order) return false
   const released = await tx.order.updateMany({
-    where: { id: order.id, stockReservationStatus: 'reserved', ...extraWhere },
+    where: { id: orderId, stockReservationStatus: 'reserved', ...extraWhere },
     data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },
   })
   if (released.count !== 1) return false
 
-  for (const item of order.items as ServerOrderItem[]) {
+  for (const item of [...order.items as ServerOrderItem[]].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) {
     if (item.id && Number.isInteger(item.quantity) && item.quantity > 0) {
       await tx.product.updateMany({
         where: { id: item.id, isDeleted: false },
@@ -250,8 +255,7 @@ export async function applyOrderReservationPaymentState(
     return
   }
   if (paymentStatus === 'failed') {
-    const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
-    if (order) await releaseReservation(tx, order)
+    await releaseReservation(tx, orderId)
   }
 }
 
@@ -259,13 +263,13 @@ export async function applyOrderReservationPaymentState(
 export async function releaseExpiredStockReservations(now = new Date()): Promise<number> {
   const expired = await prisma.order.findMany({
     where: { stockReservationStatus: 'reserved', stockReservedUntil: { lte: now } },
-    select: { id: true, items: true },
+    select: { id: true },
     take: 50,
   })
   let count = 0
   for (const order of expired) {
     const released = await prisma.$transaction((tx) =>
-      releaseReservation(tx, order, { stockReservedUntil: { lte: now } }))
+      releaseReservation(tx, order.id, { stockReservedUntil: { lte: now } }))
     if (released) count += 1
   }
   return count
@@ -370,7 +374,7 @@ export async function updateServerOrderByAdmin(
     const oldQty = quantitiesByProduct(currentItems)
     const newQty = quantitiesByProduct(input.items)
 
-    for (const productId of new Set([...oldQty.keys(), ...newQty.keys()])) {
+    for (const productId of [...new Set([...oldQty.keys(), ...newQty.keys()])].sort()) {
       const delta = (newQty.get(productId) ?? 0) - (oldQty.get(productId) ?? 0)
       if (delta > 0) {
         const changed = await tx.product.updateMany({

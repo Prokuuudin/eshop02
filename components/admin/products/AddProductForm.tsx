@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useForm, useWatch, FormProvider, SubmitHandler } from 'react-hook-form';
+import { useForm, useWatch, FormProvider, SubmitHandler, type SubmitErrorHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -166,16 +166,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         mode: 'onChange',
     });
 
-    const { handleSubmit, formState, trigger } = methods;
-
-    // react-hook-form + zodResolver + mode:'onChange' only computes formState.isValid
-    // after the first validation pass, which normally fires on the user's first onChange —
-    // it does NOT run automatically on mount. Without this, the Save button stays disabled
-    // forever even when defaultValues are already fully valid (formState.errors stays empty
-    // too, so there's no visible field error to explain it).
-    useEffect(() => {
-        void trigger();
-    }, [trigger]);
+    const { handleSubmit } = methods;
 
     useEffect(() => {
         if (!mobileActionsOpen) return;
@@ -278,13 +269,31 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
         }
     };
 
+    const onInvalid: SubmitErrorHandler<AddProductFormValues> = (errors) => {
+        const messages: string[] = [];
+        const collectMessages = (value: unknown): void => {
+            if (!value || typeof value !== 'object') return;
+            const error = value as Record<string, unknown>;
+            if (typeof error.message === 'string') messages.push(error.message);
+            for (const [key, nested] of Object.entries(error)) {
+                if (key !== 'ref' && key !== 'message' && key !== 'type') collectMessages(nested);
+            }
+        };
+        collectMessages(errors);
+        setSubmitError([...new Set(messages)].join('; ') || l('Проверьте заполнение полей', 'Check the form fields', 'Pārbaudiet formas laukus'));
+        // Errors may be inside collapsed sections. Reveal them before RHF focuses
+        // the first invalid input, otherwise the reason for a blocked save is hidden.
+        document.querySelectorAll<HTMLDetailsElement>('.add-product details').forEach((section) => { section.open = true; });
+    };
+
     return (
         <ProductFormModeContext.Provider value={{ isEdit }}>
             <FormProvider {...methods}>
                 <form
                     className="add-product add-product__layout"
-                    onSubmit={handleSubmit(onSubmit)}
+                    onSubmit={handleSubmit(onSubmit, onInvalid)}
                     autoComplete="off"
+                    noValidate
                 >
                     <div className="add-product__form flex flex-col">
                         <div className="add-product__body">
@@ -363,10 +372,10 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                         <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-md border border-zinc-700 bg-zinc-950 p-1 text-white shadow-2xl ring-1 ring-black/20 dark:border-zinc-500 dark:bg-zinc-800 dark:shadow-black/60 dark:ring-white/15">
                                             <button
                                                 type="button"
-                                                disabled={!formState.isValid || isSubmitting}
+                                                disabled={isSubmitting || isRestoring}
                                                 onClick={() => {
                                                     setMobileActionsOpen(false);
-                                                    void handleSubmit(onSubmit)();
+                                                    void handleSubmit(onSubmit, onInvalid)();
                                                 }}
                                                 className="flex w-full rounded-sm px-2 py-2.5 text-left text-sm hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-50 dark:hover:bg-zinc-700"
                                             >
@@ -407,7 +416,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 </div>
                             )}
                             <div className={isEdit ? 'hidden flex-wrap gap-4 sm:flex' : 'flex flex-wrap gap-4'}>
-                                <Button type="submit" disabled={!formState.isValid || isSubmitting}>
+                                <Button type="submit" disabled={isSubmitting || isRestoring}>
                                     {isSubmitting
                                         ? l('Сохраняю...', 'Saving...', 'Saglabā...')
                                         : isEdit

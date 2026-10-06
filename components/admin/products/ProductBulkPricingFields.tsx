@@ -25,6 +25,7 @@ const ProductBulkPricingFields: React.FC = () => {
                         <Input
                             placeholder={l('Цена за ед. (pricePerUnit)', 'Price per unit', 'Cena par vienību')}
                             type="number"
+                            step="0.01"
                             {...register(`bulkPricingTiers.${idx}.pricePerUnit`, { valueAsNumber: true })}
                             className="add-product__input add-product__input--bulk-price"
                         />

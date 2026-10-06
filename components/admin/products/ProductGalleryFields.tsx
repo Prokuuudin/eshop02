@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useController, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AddProductFormValues } from './productFormSchema';
@@ -12,12 +12,14 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
 const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) => {
-    const { register, control, setValue, formState: { errors } } = useFormContext<AddProductFormValues>();
-    const { fields, append, remove } = useFieldArray({ control, name: 'images' as never });
+    const { register, control, setValue, getValues, formState: { errors } } = useFormContext<AddProductFormValues>();
+    // useFieldArray supports objects, not a flat string array. Keep gallery URLs
+    // controlled as one field so blank rows and multiple uploads are preserved.
+    const { field: gallery } = useController({ control, name: 'images' });
     const videos = useFieldArray({ control, name: 'demoVideo' });
     const { l } = useAdminLocale();
     const image = useWatch({ control, name: 'image' });
-    const images = useWatch({ control, name: 'images' }) ?? [];
+    const images = gallery.value ?? [];
     const [uploadingMain, setUploadingMain] = React.useState(false);
     const [uploadingGallery, setUploadingGallery] = React.useState(false);
     const [uploadError, setUploadError] = React.useState('');
@@ -62,7 +64,7 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
         setUploadError('');
         try {
             const paths = await Promise.all(files.map(uploadImage));
-            paths.forEach((path) => append(path as never));
+            setValue('images', [...getValues('images'), ...paths], { shouldDirty: true, shouldValidate: true });
         } catch (error) {
             setUploadError(error instanceof Error ? error.message : l('Ошибка загрузки', 'Upload failed', 'Augšupielādes kļūda'));
         } finally {
@@ -100,19 +102,19 @@ const ProductGalleryFields: React.FC<{ productId?: string }> = ({ productId }) =
                 <div>
                     <p className="mb-2 block text-sm font-medium">{l('Галерея', 'Gallery', 'Galerija')}</p>
                     <div className="flex flex-col gap-2">
-                        {(fields as { id: string }[]).map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2">
+                        {images.map((url, index) => (
+                            <div key={index} className="flex items-center gap-2">
                                 {images[index] && (
                                     <div className="product-image-surface flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border">
                                         <Image unoptimized src={images[index]} alt="" width={48} height={48} className="h-full w-full object-contain p-1" />
                                     </div>
                                 )}
-                                <Input placeholder={l(`Изображение ${index + 1} (URL)`, `Image ${index + 1} (URL)`, `Attēls ${index + 1} (URL)`)} {...register(`images.${index}` as const)} />
-                                <Button type="button" variant="destructive" size="sm" onClick={() => remove(index)}>×</Button>
+                                <Input placeholder={l(`Изображение ${index + 1} (URL)`, `Image ${index + 1} (URL)`, `Attēls ${index + 1} (URL)`)} value={url} onBlur={gallery.onBlur} onChange={(event) => gallery.onChange(images.map((value, i) => i === index ? event.target.value : value))} />
+                                <Button type="button" variant="destructive" size="sm" onClick={() => gallery.onChange(images.filter((_, i) => i !== index))}>×</Button>
                             </div>
                         ))}
                         <div className="mt-1 flex flex-wrap gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => append('' as never)}>
+                            <Button type="button" variant="outline" size="sm" onClick={() => gallery.onChange([...images, ''])}>
                                 + {l('Добавить URL', 'Add URL', 'Pievienot URL')}
                             </Button>
                             <label className="inline-flex cursor-pointer">

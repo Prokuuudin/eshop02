@@ -8,16 +8,15 @@ import { getBrandsConfigFromStore } from '@/lib/brands-server-store'
 import { brandSlug } from '@/lib/brand-slug'
 import { readBannersData, type Banner } from '@/lib/banners-server-store'
 import { sanitizeStoredLink } from '@/lib/safe-link'
-import { mapDbToProduct } from '@/lib/product-overrides-store'
+import { getProductOverrides, mapDbToProduct, mergeProductsWithOverrides } from '@/lib/product-overrides-store'
+import { mapStorefrontCardRow, STOREFRONT_CARD_SELECT } from '@/lib/product-storefront-rows'
 import { getProductSubcategory } from '@/lib/product-overrides-mapping'
 import type { Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
-import { attachCampaignOffers, isCampaignActive, readPromoCampaigns } from '@/lib/promo-campaigns'
+import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
-import { toStorefrontProducts, VALID_B2B_PRICE_WHERE } from '@/lib/product-sellability'
-import productSubcategories from '@/data/product-subcategories.json'
-import type { Prisma } from '@/generated/prisma/client'
+import { toStorefrontProducts } from '@/lib/product-sellability'
 
 export const STOREFRONT_CACHE_TAGS = {
   categories: 'storefront-categories',
@@ -87,29 +86,20 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
 }, ['storefront-bestsellers-v3'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
-  const campaigns = await readPromoCampaigns(prisma)
-  const campaignFilters: Prisma.ProductWhereInput[] = campaigns
-    .filter((campaign) => isCampaignActive(campaign) && campaign.type === 'discount' && campaign.discountPercent > 0)
-    .map((campaign) => ({
-      ...(campaign.targetCategories?.length ? { category: { in: campaign.targetCategories } } : {}),
-      // Match brands after mapping: campaign matching also normalizes whitespace.
-      ...(campaign.targetSubcategories?.length ? { id: { in: Object.entries(productSubcategories)
-        .filter(([, subcategory]) => campaign.targetSubcategories.includes(subcategory)).map(([id]) => id) } } : {}),
-    }))
-  const rows = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      isDeleted: false,
-      AND: [VALID_B2B_PRICE_WHERE, { OR: [
-        { oldPrice: { gt: prisma.product.fields.price } },
-        { badges: { has: 'sale' } },
-        ...campaignFilters,
-      ] }],
-    },
-    orderBy: { id: 'asc' },
-  })
-  return toStorefrontProducts(attachCampaignOffers(rows.map(mapDbToProduct), campaigns))
-    .filter((product) => !product.priceUnavailable && (
+  // Apply the same overrides as the catalog before checking discounts and stock.
+  // SQL price/stock/campaign filters would miss products changed by an override.
+  const [rows, overrides, campaigns] = await Promise.all([
+    prisma.product.findMany({
+      where: { isActive: true, isDeleted: false },
+      orderBy: { id: 'asc' },
+      select: STOREFRONT_CARD_SELECT,
+    }),
+    getProductOverrides(),
+    readPromoCampaigns(prisma),
+  ])
+  const products = mergeProductsWithOverrides(rows.map(mapStorefrontCardRow), overrides)
+  return toStorefrontProducts(attachCampaignOffers(products, campaigns))
+    .filter((product) => !product.priceUnavailable && product.stock > 0 && (
       product.campaignOffers?.length || product.badges?.includes('sale')
       || getValidOldPrice(product.price, product.oldPrice) !== undefined
     ))
@@ -117,7 +107,7 @@ export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]>
       const discount = (product: Product) => product.campaignOffers?.[0]?.discountPercent ?? 0
       return discount(b) - discount(a)
     })
-}, ['storefront-sale-products-v5'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
+}, ['storefront-sale-products-v6'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
 
 export const getCachedLocaleConfig = unstable_cache(getLocaleConfig, ['storefront-locale-v1'], {
   revalidate: 600,

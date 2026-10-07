@@ -64,18 +64,36 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect((await patch({ id: 'u1' })).status).toBe(403)
   })
 
-  it('requires the promotion target to have MFA enabled', async () => {
+  it('lets a customer without MFA be proposed for admin (enrollment happens at their next login)', async () => {
     userFindMock
       .mockResolvedValueOnce({ passwordHash: 'hash', mfaEnabled: true, mfaSecret: 'secret' })
       .mockResolvedValueOnce({ email: 'target@test.com', platformRole: 'customer', mfaEnabled: false, updatedAt: new Date(now) })
     verifyPasswordMock.mockResolvedValue(true)
     verifyTotpMock.mockResolvedValue(true)
+    const tx = {
+      adminRoleChangeRequest: {
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        create: vi.fn().mockResolvedValue({ id: 'approval-2', expiresAt: new Date('2026-09-01T07:00:00Z') }),
+      },
+    }
+    transactionMock.mockImplementation((callback) => callback(tx))
     const response = await patch({
       id: 'u1', expectedUpdatedAt: now, platformRole: 'admin', reason: 'promotion requested',
       currentPassword: 'password', mfaCode: '123456',
     })
-    expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({ error: 'target_mfa_required' })
+    expect(response.status).toBe(202)
+    expect(await response.json()).toMatchObject({ pendingApproval: true, requestId: 'approval-2' })
+  })
+
+  it('still requires the acting admin to pass password + TOTP step-up for a promotion', async () => {
+    userFindMock.mockResolvedValueOnce({ passwordHash: 'hash', mfaEnabled: true, mfaSecret: 'secret' })
+    verifyPasswordMock.mockResolvedValue(true)
+    verifyTotpMock.mockResolvedValue(false)
+    const response = await patch({
+      id: 'u1', expectedUpdatedAt: now, platformRole: 'admin', reason: 'promotion requested',
+      currentPassword: 'password', mfaCode: '123456',
+    })
+    expect(response.status).toBe(401)
     expect(transactionMock).not.toHaveBeenCalled()
   })
 

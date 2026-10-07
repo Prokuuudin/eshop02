@@ -182,8 +182,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
     }
 
-    // Role changes are step-up authenticated. MFA is mandatory for the acting admin,
-    // and a user cannot be promoted until their own TOTP enrollment is complete.
+    // Role changes are step-up authenticated: MFA is mandatory for the acting admin.
+    // The target needs no prior MFA — every session is revoked on promotion and the
+    // next login forces TOTP enrollment before any admin session exists.
     if (roleChangeRequested) {
       if (!reason) return NextResponse.json({ error: 'change_reason_required' }, { status: 400 })
       if (!currentPassword || !mfaCode) {
@@ -205,15 +206,12 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     if (updates.platformRole === 'admin') {
-      const target = await prisma.user.findUnique({ where: { id }, select: { email: true, platformRole: true, mfaEnabled: true, updatedAt: true } })
+      const target = await prisma.user.findUnique({ where: { id }, select: { email: true, platformRole: true, updatedAt: true } })
       if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 })
       if (target.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
         return NextResponse.json({ error: 'optimistic_conflict' }, { status: 409 })
       }
       if (target.platformRole !== 'admin') {
-        if (!target.mfaEnabled) {
-          return NextResponse.json({ error: 'target_mfa_required' }, { status: 409 })
-        }
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
         const approval = await prisma.$transaction(async (tx) => {
           await tx.adminRoleChangeRequest.updateMany({

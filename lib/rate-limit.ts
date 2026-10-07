@@ -20,14 +20,18 @@ export async function checkRateLimit(key: string, options: RateLimitOptions = {}
   const windowMs = options.windowMs ?? WINDOW_MS
   const maxAttempts = options.maxAttempts ?? MAX_ATTEMPTS
   const resetAt = new Date(now + windowMs)
+  // Expiry is compared against the same app clock that wrote resetAt. The column is a
+  // timezone-less timestamp holding UTC, so comparing it to the DB's now() silently
+  // depends on the DB session TimeZone (non-UTC → every window looks expired at once).
+  const nowDate = new Date(now)
   try {
     // Atomic: start a fresh window if the previous one expired, otherwise increment.
     const rows = await prisma.$queryRaw<Array<{ count: number; resetAt: Date }>>`
       INSERT INTO "RateLimit" ("key", "count", "resetAt")
       VALUES (${key}, 1, ${resetAt})
       ON CONFLICT ("key") DO UPDATE SET
-        "count" = CASE WHEN "RateLimit"."resetAt" < now() THEN 1 ELSE "RateLimit"."count" + 1 END,
-        "resetAt" = CASE WHEN "RateLimit"."resetAt" < now() THEN ${resetAt} ELSE "RateLimit"."resetAt" END
+        "count" = CASE WHEN "RateLimit"."resetAt" < ${nowDate} THEN 1 ELSE "RateLimit"."count" + 1 END,
+        "resetAt" = CASE WHEN "RateLimit"."resetAt" < ${nowDate} THEN ${resetAt} ELSE "RateLimit"."resetAt" END
       RETURNING "count", "resetAt"
     `
     const row = rows[0]

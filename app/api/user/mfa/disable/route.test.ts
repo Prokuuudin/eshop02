@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findUnique: vi.fn(), update: vi.fn() }, session: { deleteMany: vi.fn() } },
+  prisma: { user: { findUnique: vi.fn(), update: vi.fn() }, session: { deleteMany: vi.fn() }, mfaChallenge: { deleteMany: vi.fn() } },
 }))
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: vi.fn(),
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
   verifyPassword: vi.fn(),
   createSession: vi.fn(),
   SESSION_COOKIE: 'eshop_session',
@@ -66,7 +67,7 @@ describe('POST /api/user/mfa/disable', () => {
     expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it('disables MFA and rotates sessions on success', async () => {
+  it('clears MFA and revokes every session on success, so the next login forces re-enrollment', async () => {
     vi.mocked(verifyPassword).mockResolvedValue(true)
     vi.mocked(verifyTotpCode).mockResolvedValue(true)
     const res = await POST(makeRequest({ currentPassword: 'right', code: '123456' }))
@@ -77,8 +78,11 @@ describe('POST /api/user/mfa/disable', () => {
       data: { mfaEnabled: false, mfaSecret: null, mfaBackupCodes: [], mfaEnrolledAt: null },
     })
     expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'admin1' } })
-    expect(createSession).toHaveBeenCalledWith('admin1')
-    expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
+    expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { userId: 'admin1' } })
+    // No replacement session: an admin without MFA must not keep any access.
+    expect(createSession).not.toHaveBeenCalled()
+    expect(res.cookies.get('eshop_session')?.value).toBe('')
+    expect(await res.json()).toEqual({ ok: true, reauthenticationRequired: true })
   })
 
   it('falls through to the backup-code check instead of throwing when decrypting the TOTP secret fails', async () => {

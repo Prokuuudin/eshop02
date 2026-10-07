@@ -101,8 +101,9 @@ export default function AdminMfaSection(): React.ReactElement {
                 setError(l('Неверный пароль или код.', 'Invalid password or code.', 'Nederīga parole vai kods.'));
                 return;
             }
-            reset();
-            loadStatus();
+            // MFA is mandatory: the server revoked every session, so the next login
+            // walks through enrollment with the new device.
+            window.location.assign('/auth/login?admin=1&redirect=/account');
         } catch {
             setError(l('Ошибка сервера. Попробуйте позже.', 'Server error. Try again later.', 'Servera kļūda. Mēģiniet vēlāk.'));
         } finally {
@@ -191,7 +192,7 @@ export default function AdminMfaSection(): React.ReactElement {
                             {l('Новые резервные коды', 'New backup codes', 'Jauni rezerves kodi')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => setView('disabling')}>
-                            {l('Отключить', 'Disable', 'Izslēgt')}
+                            {l('Сменить устройство', 'Change device', 'Mainīt ierīci')}
                         </Button>
                     </div>
                 </div>
@@ -234,6 +235,9 @@ export default function AdminMfaSection(): React.ReactElement {
 
             {view === 'disabling' && (
                 <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                        {l('Текущая настройка будет удалена, все сеансы завершены. При следующем входе нужно будет отсканировать новый QR-код.', 'The current setup will be removed and all sessions ended. You will scan a new QR code at the next sign-in.', 'Pašreizējais iestatījums tiks dzēsts un visas sesijas beigtas. Nākamajā pieslēgšanās reizē būs jānoskenē jauns QR kods.')}
+                    </p>
                     <Input
                         type="password"
                         value={currentPassword}
@@ -255,7 +259,7 @@ export default function AdminMfaSection(): React.ReactElement {
                             onClick={() => void disable()}
                             disabled={busy || !currentPassword || code.length < 6}
                         >
-                            {l('Отключить 2FA', 'Disable 2FA', 'Izslēgt 2FA')}
+                            {l('Сбросить и выйти', 'Reset and sign out', 'Atiestatīt un iziet')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={reset}>{l('Отмена', 'Cancel', 'Atcelt')}</Button>
                     </div>

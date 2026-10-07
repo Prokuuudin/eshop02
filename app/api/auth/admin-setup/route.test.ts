@@ -33,7 +33,7 @@ beforeEach(() => {
 })
 
 describe('POST /api/auth/admin-setup', () => {
-  it('creates the first admin in the database and starts a session', async () => {
+  it('creates the first admin without a session, so the first login goes through MFA enrollment', async () => {
     const create = vi.fn(async ({ data }) => ({ ...data }))
     transactionMock.mockImplementation(async (callback) => callback({
       user: { count: vi.fn().mockResolvedValue(0), create },
@@ -47,8 +47,9 @@ describe('POST /api/auth/admin-setup', () => {
     expect(create).toHaveBeenCalledWith({ data: expect.objectContaining({
       email: 'first.admin@example.com', passwordHash: 'hashed-password', platformRole: 'admin',
     }) })
-    expect(createSessionMock).toHaveBeenCalled()
-    expect(response.cookies.get('eshop_session')?.value).toBe('session-token')
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(response.cookies.get('eshop_session')).toBeUndefined()
+    expect((await response.json()).mfaEnrollmentRequired).toBe(true)
   })
 
   it('refuses setup when an administrator already exists', async () => {

@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerUser, verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
+import { getServerUser, requiresAdminMfa, verifyPassword, SESSION_COOKIE } from '@/lib/server-auth'
 import { decryptSecret, verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
 import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
 
-// POST /api/user/mfa/disable — requires both the current password and a valid TOTP/backup
-// code (defense in depth, mirrors how password change requires the old password). Rotates
-// sessions on success: if an attacker who stole the current session tries to strip MFA
-// remotely, the real admin's other sessions die and they'll notice.
+// POST /api/user/mfa/disable — "reset my authenticator". Requires both the current password
+// and a valid TOTP/backup code. MFA is mandatory for admin access, so this is not a way to
+// opt out: every session of the account is revoked, and the next login forces a fresh
+// enrollment before any admin access is possible again.
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
   const user = await getServerUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if (user.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!requiresAdminMfa(user)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : ''
@@ -57,15 +57,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   })
 
   await prisma.session.deleteMany({ where: { userId: user.id } })
-  const newToken = await createSession(user.id)
+  await prisma.mfaChallenge.deleteMany({ where: { userId: user.id } })
 
-  const res = NextResponse.json({ ok: true })
-  res.cookies.set(SESSION_COOKIE, newToken, {
+  const res = NextResponse.json({ ok: true, reauthenticationRequired: true })
+  res.cookies.set(SESSION_COOKIE, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 0,
   })
   return res
 }

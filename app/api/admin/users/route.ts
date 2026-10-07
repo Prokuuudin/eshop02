@@ -43,6 +43,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const { searchParams } = req.nextUrl
     const search = searchParams.get('search')?.trim() || ''
     const role = searchParams.get('role') || ''
+    const teamRole = searchParams.get('teamRole') || ''
     const companyId = searchParams.get('companyId') || ''
     const customerType = searchParams.get('customerType') || ''
     const createdSince = searchParams.get('createdSince') || ''
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       ]
     }
     if (role) where.platformRole = role
+    if (teamRoleSchema.safeParse(teamRole).success) where.teamRole = teamRole
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
     if (hasCard) where.cardNumber = { not: null }

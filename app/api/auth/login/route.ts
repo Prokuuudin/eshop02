@@ -6,10 +6,9 @@ import {
   verifyPassword,
   createSession,
   mapDbToServerUser,
-  hashToken,
-  SESSION_COOKIE,
+  requiresAdminMfa,
 } from '@/lib/server-auth'
-import { randomBytes } from 'node:crypto'
+import { createMfaChallenge, setSessionCookie } from '@/lib/mfa-challenge'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { normalizeCardNumber } from '@/lib/card-number'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
@@ -74,21 +73,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Successful login נreset attempt counter
     await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
 
-    if (user.platformRole === 'admin' && user.mfaEnabled) {
-      const challengeToken = randomBytes(32).toString('hex')
-      // Clear any prior challenges for this user first נotherwise every login attempt
-      // (even ones that never get followed up) leaves a row behind, and a user with
-      // several outstanding challenges could sidestep /verify's per-token attempt limit
-      // by just logging in again for a fresh token.
-      await prisma.mfaChallenge.deleteMany({ where: { userId: user.id } })
-      await prisma.mfaChallenge.create({
-        data: {
-          tokenHash: hashToken(challengeToken),
-          userId: user.id,
-          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        },
-      })
-      return NextResponse.json({ mfaRequired: true, challengeToken })
+    // Anyone with admin-panel access gets no session from the password alone: either
+    // the TOTP step (enrolled) or mandatory first-time enrollment comes next.
+    if (requiresAdminMfa(user)) {
+      const enrollmentRequired = !user.mfaEnabled
+      const challengeToken = await createMfaChallenge(user.id, enrollmentRequired)
+      return NextResponse.json({ mfaRequired: true, enrollmentRequired, challengeToken })
     }
 
     const token = await createSession(user.id)
@@ -104,19 +94,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }).catch((err) => logApiError('[auth/login] activity log failed', err))
     }
 
-    // Mirror createSession()'s own per-role expiry (1 day for admins, 30 for everyone
-    // else) - the cookie used to always outlive the underlying DB session for admins
-    // by 29 days. Harmless (getServerUser() enforces the real DB expiry and deletes
-    // stale rows) but wasteful, so keep the two in sync.
-    const cookieMaxAgeSeconds = (user.platformRole === 'admin' ? 1 : 30) * 60 * 60 * 24
     const res = NextResponse.json({ user: mapDbToServerUser(user) })
-    res.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: cookieMaxAgeSeconds,
-    })
+    setSessionCookie(res, token, user)
     return res
   } catch (e) {
     logApiError("[auth/login]", e)

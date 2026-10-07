@@ -29,6 +29,32 @@ describe('encryptSecret / decryptSecret', () => {
     const b = encryptSecret('JBSWY3DPEHPK3PXP')
     expect(a).not.toBe(b)
   })
+
+  it('rejects tampered ciphertext, a truncated tag and legacy plaintext — never falls back to plaintext', () => {
+    const [iv, tag, ct] = encryptSecret('JBSWY3DPEHPK3PXP').split('.')
+    const flipped = Buffer.from(ct, 'base64')
+    flipped[0] ^= 1
+    expect(() => decryptSecret([iv, tag, flipped.toString('base64')].join('.'))).toThrow()
+    const shortTag = Buffer.from(tag, 'base64').subarray(0, 4).toString('base64')
+    expect(() => decryptSecret([iv, shortTag, ct].join('.'))).toThrow()
+    expect(() => decryptSecret('JBSWY3DPEHPK3PXP')).toThrow()
+  })
+
+  it('fails closed when the key is missing, the wrong size, or a different key', () => {
+    const encrypted = encryptSecret('JBSWY3DPEHPK3PXP')
+    const original = process.env.MFA_ENCRYPTION_KEY
+    try {
+      delete process.env.MFA_ENCRYPTION_KEY
+      expect(() => encryptSecret('x')).toThrow('MFA_ENCRYPTION_KEY is not configured')
+      expect(() => decryptSecret(encrypted)).toThrow()
+      process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(16, 1).toString('base64')
+      expect(() => encryptSecret('x')).toThrow('exactly 32 bytes')
+      process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(32, 9).toString('base64')
+      expect(() => decryptSecret(encrypted)).toThrow()
+    } finally {
+      process.env.MFA_ENCRYPTION_KEY = original
+    }
+  })
 })
 
 describe('generateTotpSecret / buildOtpauthUri', () => {

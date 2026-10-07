@@ -222,7 +222,7 @@ describe('getAdminProductsPaginated', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
       skip: 24,
       take: 24,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       where: expect.objectContaining({
         isDeleted: false,
         OR: expect.arrayContaining([

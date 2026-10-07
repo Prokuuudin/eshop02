@@ -449,7 +449,7 @@ export async function getAdminProductsPaginated(opts: {
     const [rows, total, overrides] = await Promise.all([
         prisma.product.findMany({
             where,
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             skip: opts.skip,
             take: opts.take,
         }),

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
+import { getServerUser, requiresAdminMfa } from '@/lib/server-auth'
 import { decryptSecret, verifyTotpCode, generateBackupCodes, hashBackupCodes } from '@/lib/mfa'
 import { guardOrigin } from '@/lib/api-guard'
 
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const user = await getServerUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if (user.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!requiresAdminMfa(user)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const body = await req.json().catch(() => ({}))
   const code = typeof body.code === 'string' ? body.code : ''

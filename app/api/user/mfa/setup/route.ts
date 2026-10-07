@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import QRCode from 'qrcode'
 import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
+import { getServerUser, requiresAdminMfa } from '@/lib/server-auth'
 import { generateTotpSecret, buildOtpauthUri, encryptSecret } from '@/lib/mfa'
 import { guardOrigin } from '@/lib/api-guard'
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const user = await getServerUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if (user.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!requiresAdminMfa(user)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   // Re-enrollment must go through /disable first (password + code required there). Without
   // this check, a stolen session alone could rebind the second factor to an attacker's device

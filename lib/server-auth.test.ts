@@ -29,10 +29,11 @@ function futureDate() {
   return d
 }
 
-function makeSession(platformRole: string) {
+function makeSession(platformRole: string, mfaVerified = true) {
   return {
     tokenHash: 'hash',
     expiresAt: futureDate(),
+    mfaVerified,
     user: {
       id: 'u1',
       email: 'a@b.c',
@@ -111,6 +112,44 @@ describe('requireAdminPermission', () => {
   })
 })
 
+describe('mandatory admin MFA at the session layer', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('rejects an admin session that was not MFA-verified (password-only / legacy / other route)', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    sessionFindUniqueMock.mockResolvedValue(makeSession('admin', false))
+
+    expect(await getServerUser()).toBeNull()
+    expect(await getServerUser({ allowPasswordChangeRequired: true })).toBeNull()
+    const gate = await requireAdminPermission('admin.access')
+    expect((gate as NextResponse).status).toBe(401)
+  })
+
+  it('rejects a manager session that was not MFA-verified', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    const session = makeSession('customer', false)
+    session.user.teamRole = 'manager'
+    sessionFindUniqueMock.mockResolvedValue(session)
+
+    const gate = await requireAdminPermission('orders.read')
+    expect((gate as NextResponse).status).toBe(401)
+  })
+
+  it('does not affect customers: their sessions never need the MFA flag', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    sessionFindUniqueMock.mockResolvedValue(makeSession('customer', false))
+
+    expect(await getServerUser()).toMatchObject({ id: 'u1', platformRole: 'customer' })
+  })
+
+  it('accepts an MFA-verified admin session', async () => {
+    cookieGet.mockReturnValue({ value: 'tok' })
+    sessionFindUniqueMock.mockResolvedValue(makeSession('admin', true))
+
+    expect(await getAdminAccessLevel(await getServerUser())).toBe('admin')
+  })
+})
+
 describe('restricted onboarding session', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -162,6 +201,20 @@ function makeServerUser(overrides: Partial<ServerUser> = {}): ServerUser {
   }
 }
 
+describe('mapDbToServerUser', () => {
+  it('never exposes the TOTP secret or recovery-code hashes', async () => {
+    const { mapDbToServerUser } = await import('./server-auth')
+    const mapped = mapDbToServerUser({
+      ...makeSession('admin').user, mfaEnabled: true, mfaSecret: 'iv.tag.ct', mfaBackupCodes: ['$2b$12$x'],
+    } as never)
+    const json = JSON.stringify(mapped)
+    expect(json).not.toContain('iv.tag.ct')
+    expect(json).not.toContain('$2b$12$x')
+    expect(mapped).not.toHaveProperty('mfaSecret')
+    expect(mapped).not.toHaveProperty('mfaBackupCodes')
+  })
+})
+
 describe('getAdminAccessLevel', () => {
   it('returns none for no session', () => {
     expect(getAdminAccessLevel(null)).toBe('none')
@@ -193,6 +246,21 @@ describe('createSession', () => {
     const days = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     expect(days).toBeGreaterThan(0.9)
     expect(days).toBeLessThan(1.1)
+  })
+
+  it('stores mfaVerified=false unless the caller explicitly verified a second factor', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
+    await createSession('u1')
+    await createSession('u1', { mfaVerified: true })
+    expect(sessionCreateMock.mock.calls[0][0].data.mfaVerified).toBe(false)
+    expect(sessionCreateMock.mock.calls[1][0].data.mfaVerified).toBe(true)
+  })
+
+  it('gives a staff manager the short admin session lifetime', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'customer', teamRole: 'manager' })
+    await createSession('u1', { mfaVerified: true })
+    const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
+    expect((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)).toBeLessThan(1.1)
   })
 
   it('gives a non-admin a ~30 day session', async () => {

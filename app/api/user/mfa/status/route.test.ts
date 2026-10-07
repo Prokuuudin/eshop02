@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn() } } }))
-vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
+vi.mock('@/lib/server-auth', () => ({
+  getServerUser: vi.fn(),
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
+}))
 
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'

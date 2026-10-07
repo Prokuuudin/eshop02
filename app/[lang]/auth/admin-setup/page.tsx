@@ -61,7 +61,7 @@ export default function AdminSetupPage(): React.ReactElement {
         }
 
         setError('');
-        router.push('/admin');
+        router.push('/auth/login?admin=1&redirect=/admin');
     };
 
     return (

@@ -122,6 +122,9 @@ model Session {
   userId    String
   tokenHash String   @unique
   expiresAt DateTime
+  // True only for sessions issued after a successful TOTP/recovery-code check.
+  // getServerUser() rejects admin-capable users whose session lacks it.
+  mfaVerified Boolean @default(false)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -26,10 +26,14 @@ export function encryptSecret(secret: string): string {
   return [iv, authTag, ciphertext].map((b) => b.toString('base64')).join('.')
 }
 
+/** Throws on any malformed, tampered or wrong-key input — there is no plaintext fallback. */
 export function decryptSecret(encrypted: string): string {
-  const [ivB64, authTagB64, ciphertextB64] = encrypted.split('.')
+  const parts = encrypted.split('.')
+  if (parts.length !== 3) throw new Error('Malformed MFA secret ciphertext')
+  const [ivB64, authTagB64, ciphertextB64] = parts
   const key = getEncryptionKey()
-  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'))
+  // Pin the full 16-byte tag: Node otherwise accepts truncated GCM tags (down to 4 bytes).
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'), { authTagLength: 16 })
   decipher.setAuthTag(Buffer.from(authTagB64, 'base64'))
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(ciphertextB64, 'base64')),

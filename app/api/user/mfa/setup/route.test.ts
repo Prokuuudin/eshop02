@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/prisma', () => ({ prisma: { user: { findUnique: vi.fn(), update: vi.fn() } } }))
-vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
+vi.mock('@/lib/server-auth', () => ({
+  getServerUser: vi.fn(),
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
+}))
 vi.mock('@/lib/mfa', () => ({
   generateTotpSecret: vi.fn(() => 'RAWSECRET'),
   buildOtpauthUri: vi.fn(() => 'otpauth://totp/test'),

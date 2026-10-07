@@ -17,6 +17,8 @@ import { AccountReturnsSection } from '@/components/account/AccountReturnsSectio
 import { AccountReviewsSection } from '@/components/account/AccountReviewsSection';
 import B2BChat from '@/components/B2BChat';
 import AdminAccountDashboard from '@/components/admin/AdminAccountDashboard';
+import AdminMfaSection from '@/components/admin/AdminMfaSection';
+import AdminStaffMfaReset from '@/components/admin/AdminStaffMfaReset';
 
 import { useAccountOrders } from '@/hooks/useAccountOrders';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
@@ -144,6 +146,10 @@ export default function AccountPage(): React.ReactElement {
             <main className="w-full px-4 py-12">
                 <div className="mx-auto max-w-7xl">
                     <AdminAccountDashboard user={user} />
+                    <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <AdminMfaSection />
+                        <AdminStaffMfaReset currentUserId={user.id} />
+                    </div>
                 </div>
             </main>
         );

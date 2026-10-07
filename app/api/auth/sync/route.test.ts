@@ -24,6 +24,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: verifyPasswordMock,
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
   createSession: createSessionMock,
   SESSION_COOKIE: 'eshop_session',
 }))
@@ -61,6 +62,22 @@ describe('POST /api/auth/sync — login only, no self-registration', () => {
     expect((await res.json()).error).toBe('invalid_credentials')
     expect(userUpdateMock).not.toHaveBeenCalled()
     expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('never issues a session to an admin-capable account (TOTP step cannot be skipped)', async () => {
+    for (const account of [
+      { id: 'a1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true },
+      { id: 'm1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer', teamRole: 'manager' },
+    ]) {
+      userFindUniqueMock.mockResolvedValue(account)
+      verifyPasswordMock.mockResolvedValue(true)
+
+      const res = await POST(makeRequest(SYNC_BODY))
+
+      expect(res.status).toBe(401)
+      expect(createSessionMock).not.toHaveBeenCalled()
+      expect(res.cookies.get('eshop_session')).toBeUndefined()
+    }
   })
 
   it('rejects a wrong password for an existing account', async () => {

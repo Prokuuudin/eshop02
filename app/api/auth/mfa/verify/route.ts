@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashToken, createSession, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { hashToken, createSession, mapDbToServerUser } from '@/lib/server-auth'
 import { decryptSecret, verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
-import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
+import {
+  consumeMfaChallenge,
+  findActiveMfaChallenge,
+  mfaAttemptLimited,
+  mfaUserAttemptLimited,
+  resetMfaAttempts,
+  setSessionCookie,
+} from '@/lib/mfa-challenge'
 import { getClientIp } from '@/lib/request-ip'
 
 export const runtime = 'nodejs'
@@ -13,36 +20,26 @@ export const runtime = 'nodejs'
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const body = await req.json().catch(() => ({}))
   const challengeToken = typeof body.challengeToken === 'string' ? body.challengeToken : ''
-  const code = typeof body.code === 'string' ? body.code : ''
+  const code = typeof body.code === 'string' ? body.code.trim() : ''
 
   if (!challengeToken) {
     return NextResponse.json({ error: 'invalid_challenge' }, { status: 401 })
   }
 
   const tokenHash = hashToken(challengeToken)
-  const tokenLimitKey = `mfa:token:${tokenHash}`
-  const ipLimitKey = `mfa:ip:${getClientIp(req)}`
-  const limits = await Promise.all([
-    checkRateLimit(tokenLimitKey, { windowMs: 15 * 60 * 1000, maxAttempts: 5 }),
-    checkRateLimit(ipLimitKey, { windowMs: 15 * 60 * 1000, maxAttempts: 5 }),
-  ])
-  if (limits.some((l) => l.limited)) {
+  const ip = getClientIp(req)
+  if (await mfaAttemptLimited(tokenHash, ip)) {
     return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 })
   }
 
-  const challenge = await prisma.mfaChallenge.findUnique({
-    where: { tokenHash },
-    include: { user: true },
-  })
-  if (!challenge || challenge.expiresAt < new Date()) {
+  const challenge = await findActiveMfaChallenge(challengeToken)
+  // Enrollment challenges (MFA not yet enabled) are completed via /api/auth/mfa/enroll.
+  if (!challenge || !challenge.user.mfaEnabled || !challenge.user.mfaSecret) {
     return NextResponse.json({ error: 'invalid_challenge' }, { status: 401 })
   }
-
   const { user } = challenge
-  // Re-check live state, not just the fact that a challenge exists — role/MFA status
-  // may have changed in the (up to 5-minute) gap since /api/auth/login created it.
-  if (user.platformRole !== 'admin' || !user.mfaEnabled || !user.mfaSecret) {
-    return NextResponse.json({ error: 'invalid_challenge' }, { status: 401 })
+  if (await mfaUserAttemptLimited(user.id)) {
+    return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 })
   }
 
   // A decrypt failure (e.g. MFA_ENCRYPTION_KEY misconfigured/rotated) must not throw before
@@ -50,42 +47,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // fallback at all instead of just falling through to backup codes.
   let totpOk = false
   try {
-    totpOk = await verifyTotpCode(decryptSecret(user.mfaSecret), code)
+    totpOk = await verifyTotpCode(decryptSecret(user.mfaSecret!), code)
   } catch {
     totpOk = false
   }
-  let remainingBackupCodes = user.mfaBackupCodes
-  let usedBackupCode = false
   if (!totpOk) {
     const backupResult = await consumeBackupCode(user.mfaBackupCodes, code)
     if (!backupResult.ok) {
       return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
     }
-    remainingBackupCodes = backupResult.remaining
-    usedBackupCode = true
+    // Compare-and-swap on the exact list we read: two concurrent requests with the
+    // same recovery code cannot both succeed.
+    const { count } = await prisma.user.updateMany({
+      where: { id: user.id, mfaBackupCodes: { equals: user.mfaBackupCodes } },
+      data: { mfaBackupCodes: backupResult.remaining },
+    })
+    if (count !== 1) {
+      return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
+    }
   }
 
-  if (usedBackupCode) {
-    await prisma.user.update({ where: { id: user.id }, data: { mfaBackupCodes: remainingBackupCodes } })
+  if (!(await consumeMfaChallenge(tokenHash))) {
+    return NextResponse.json({ error: 'invalid_challenge' }, { status: 401 })
   }
-  // deleteMany (not delete): idempotent if this row was somehow already removed by a
-  // concurrent double-submit — no P2025 throw for zero rows matched.
-  await prisma.mfaChallenge.deleteMany({ where: { tokenHash: challenge.tokenHash } })
-  // Code confirmed valid — clear both rate-limit counters so a normal successful login
-  // doesn't count against later attempts (mirrors login/route.ts's post-password reset).
-  await Promise.all([resetRateLimit(tokenLimitKey), resetRateLimit(ipLimitKey)])
+  // Code confirmed valid — a normal successful login doesn't count against later attempts.
+  await resetMfaAttempts(tokenHash, ip, user.id)
 
-  const token = await createSession(user.id)
+  const token = await createSession(user.id, { mfaVerified: true })
   const res = NextResponse.json({ user: mapDbToServerUser(user) })
-  // MFA only exists on admin accounts (see login/route.ts's mfaEnabled gate), so this
-  // path is always the 1-day admin session - mirror createSession()'s own expiry
-  // instead of the 30-day default, matching the same fix in login/route.ts.
-  res.cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 1,
-  })
+  setSessionCookie(res, token, user)
   return res
 }

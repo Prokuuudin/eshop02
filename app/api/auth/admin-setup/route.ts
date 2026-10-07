@@ -2,7 +2,7 @@ import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
-import { createSession, hashPassword, mapDbToServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { hashPassword, mapDbToServerUser } from '@/lib/server-auth'
 import { logApiError } from '@/lib/observability'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -48,13 +48,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!user) return NextResponse.json({ error: 'admin_already_exists' }, { status: 409 })
 
-    const token = await createSession(user.id)
-    const res = NextResponse.json({ user: mapDbToServerUser(user) }, { status: 201 })
-    res.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/',
-      maxAge: 60 * 60 * 24,
-    })
-    return res
+    // No session here: the new admin signs in through /api/auth/login, which forces
+    // TOTP enrollment before any admin access exists.
+    return NextResponse.json({ user: mapDbToServerUser(user), mfaEnrollmentRequired: true }, { status: 201 })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && (error.code === 'P2002' || error.code === 'P2034')) {
       return NextResponse.json({ error: 'admin_already_exists' }, { status: 409 })

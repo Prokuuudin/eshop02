@@ -79,10 +79,27 @@ export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-export async function createSession(userId: string): Promise<string> {
+/**
+ * Anyone who can reach the admin panel (platform admin or staff manager) must
+ * pass TOTP before holding a usable session. Customers are never subject to it.
+ */
+export function requiresAdminMfa(subject: { platformRole?: string | null; teamRole?: string | null } | null | undefined): boolean {
+  return getPermissionAccessLevel(subject) !== 'none'
+}
+
+/** Cookie lifetime matching createSession()'s DB expiry for this user. */
+export function sessionCookieMaxAgeSeconds(subject: { platformRole?: string | null; teamRole?: string | null }): number {
+  return (requiresAdminMfa(subject) ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS) * 60 * 60 * 24
+}
+
+/**
+ * `mfaVerified` must only be true when the caller has just checked a TOTP or
+ * recovery code (or is rotating a session that getServerUser already accepted).
+ */
+export async function createSession(userId: string, options: { mfaVerified?: boolean } = {}): Promise<string> {
   const token = generateToken()
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { platformRole: true } })
-  const durationDays = user?.platformRole === 'admin' ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { platformRole: true, teamRole: true } })
+  const durationDays = user && requiresAdminMfa(user) ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + durationDays)
 
@@ -92,6 +109,7 @@ export async function createSession(userId: string): Promise<string> {
       userId,
       tokenHash: hashToken(token),
       expiresAt,
+      mfaVerified: options.mfaVerified === true,
     },
   })
 
@@ -119,6 +137,11 @@ export async function getServerUser(options: { allowPasswordChangeRequired?: boo
       if (session) await prisma.session.delete({ where: { tokenHash } })
       return null
     }
+
+    // Admin access is never granted by a session that skipped the second factor —
+    // whichever route created it. Checked against the live role, so a customer
+    // promoted to staff must also log in again through MFA.
+    if (requiresAdminMfa(session.user) && !session.mfaVerified) return null
 
     const user = mapDbToServerUser(session.user)
     // A shared/temporary onboarding credential must never create a full account

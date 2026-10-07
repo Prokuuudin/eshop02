@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerUser } from '@/lib/server-auth'
+import { getServerUser, requiresAdminMfa } from '@/lib/server-auth'
 
 export const runtime = 'nodejs'
 
@@ -9,7 +9,7 @@ export const runtime = 'nodejs'
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   const user = await getServerUser()
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-  if (user.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (!requiresAdminMfa(user)) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },

@@ -28,6 +28,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: getServerUserMock,
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
   hashPassword: hashPasswordMock,
   verifyPassword: verifyPasswordMock,
   createSession: createSessionMock,
@@ -114,8 +115,17 @@ describe('POST /api/user/password', () => {
 
     // A password change must rotate sessions: kill every existing one and issue a fresh cookie.
     expect(sessionDeleteManyMock).toHaveBeenCalledWith({ where: { userId: 'u1' } })
-    expect(createSessionMock).toHaveBeenCalledWith('u1')
+    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: false })
     expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
+  })
+
+  it('keeps an admin MFA-verified when rotating their (already MFA-verified) session', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'u1', email: 'admin@x.lv', platformRole: 'admin', mustChangePassword: false })
+    userFindUniqueMock.mockResolvedValue({ id: 'u1', passwordHash: 'OLD', mustChangePassword: false })
+    verifyPasswordMock.mockResolvedValue(true)
+    const res = await POST(makeRequest({ currentPassword: 'old-password', newPassword: 'newpassword1' }))
+    expect(res.status).toBe(200)
+    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: true })
   })
 
   it('allows a forced (mustChangePassword) user to set a new password without the current one', async () => {

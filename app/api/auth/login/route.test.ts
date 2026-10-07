@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn(), deleteMany: vi.fn() } },
 }))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: vi.fn(), createSession: vi.fn(), mapDbToServerUser: vi.fn((user) => user),
   hashToken: vi.fn((token: string) => token),
+  requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
+  sessionCookieMaxAgeSeconds: vi.fn(() => 60),
   SESSION_COOKIE: 'eshop_session',
 }))
 vi.mock('@/lib/rate-limit', () => ({
@@ -47,8 +50,8 @@ describe('POST /api/auth/login', () => {
     expect(verifyPassword).not.toHaveBeenCalled()
   })
 
-  it('resets both counters after successful authentication', async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin' } as never)
+  it('resets both counters after a correct password', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true } as never)
     vi.mocked(verifyPassword).mockResolvedValue(true)
 
     const res = await POST(makeRequest())
@@ -56,7 +59,54 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(200)
     expect(resetRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
     expect(resetRateLimit).toHaveBeenCalledWith('login:email:user@test.com')
-    expect(createSession).toHaveBeenCalledWith('u1')
+  })
+
+  it('gives a customer (card login) a normal session with no MFA step', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+      id: 'c1', email: 'c@example.com', cardNumber: '1234', passwordHash: 'hash', platformRole: 'customer', teamRole: 'admin',
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest('1234'))
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json.mfaRequired).toBeUndefined()
+    expect(createSession).toHaveBeenCalledWith('c1')
+    expect(res.cookies.get('eshop_session')?.value).toBe('token')
+    expect(prisma.mfaChallenge.create).not.toHaveBeenCalled()
+  })
+
+  it('forces enrollment for an admin without MFA: challenge only, no session, no cookie', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'admin2', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: false,
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest())
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(json).toEqual({ mfaRequired: true, enrollmentRequired: true, challengeToken: expect.any(String) })
+    expect(createSession).not.toHaveBeenCalled()
+    expect(res.cookies.get('eshop_session')).toBeUndefined()
+    const created = vi.mocked(prisma.mfaChallenge.create).mock.calls[0][0] as { data: { expiresAt: Date } }
+    // Longer window than a plain TOTP step, to install the app and scan the QR code.
+    expect(created.data.expiresAt.getTime() - Date.now()).toBeGreaterThan(10 * 60 * 1000)
+  })
+
+  it('also requires MFA for a staff manager logging in by card number', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+      id: 'm1', email: 'm@example.com', cardNumber: '777', passwordHash: 'hash', platformRole: 'customer', teamRole: 'manager', mfaEnabled: false,
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest('777'))
+    const json = await res.json()
+
+    expect(json.mfaRequired).toBe(true)
+    expect(json.enrollmentRequired).toBe(true)
+    expect(createSession).not.toHaveBeenCalled()
   })
 
   it('rejects customer login by email, but still runs a dummy bcrypt compare (timing-safe) instead of short-circuiting', async () => {
@@ -144,6 +194,7 @@ describe('POST /api/auth/login', () => {
 
     expect(res.status).toBe(200)
     expect(json.mfaRequired).toBe(true)
+    expect(json.enrollmentRequired).toBe(false)
     expect(typeof json.challengeToken).toBe('string')
     expect(json.user).toBeUndefined()
     expect(createSession).not.toHaveBeenCalled()

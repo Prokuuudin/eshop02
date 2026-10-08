@@ -25,7 +25,6 @@ export type CardHolder = {
   address: string | null
   bankName: string | null
   iban: string | null
-  personalCodeMasked: string | null
   registered: boolean
   registeredAt: string | null
   updatedAt: string

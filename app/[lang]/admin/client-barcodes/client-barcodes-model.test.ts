@@ -28,7 +28,7 @@ describe('client barcode model', () => {
       id: '1', email: '1234@client.local', name: null, phone: null, cardNumber: '1234',
       bonusPoints: 0, companyName: null, customerType: null, registrationNumber: null,
       vatNumber: null, legalAddress: null, address: null, bankName: null, iban: null,
-      personalCodeMasked: null, registered: false, registeredAt: null, updatedAt: '2026-01-01',
+      registered: false, registeredAt: null, updatedAt: '2026-01-01',
     } satisfies CardHolder
 
     expect(getCardHolderEdit(holder)).toEqual({

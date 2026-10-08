@@ -321,7 +321,6 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                         <th className="pb-2 pr-4 font-medium">{l('Юр. адрес', 'Legal address', 'Juridiskā adrese')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Адрес', 'Address', 'Adrese')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Банк / IBAN', 'Bank / IBAN', 'Banka / IBAN')}</th>
-                                        <th className="pb-2 pr-4 font-medium">{l('Перс. код', 'Personal ID', 'Personas kods')}</th>
                                         {!registeredOnly && <th className="pb-2 pr-4 font-medium">{l('Регистрация', 'Registration', 'Reģistrācija')}</th>}
                                         <th className="pb-2 font-medium">{l('Бонусы', 'Bonuses', 'Bonusi')}</th>
                                         <th className="pb-2 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
@@ -434,7 +433,6 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                         l('Не указан', 'Not specified', 'Nav norādīts')
                                                     )}
                                                 </td>
-                                                <td className="py-2 pr-4 font-mono text-xs">{edit.customerType === 'individual' ? holder.personalCodeMasked ?? l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
                                                 {!registeredOnly && (
                                                     <td className="py-2 pr-4">
                                                         <span className={holder.registered ? 'text-emerald-600' : 'text-muted-foreground'}>

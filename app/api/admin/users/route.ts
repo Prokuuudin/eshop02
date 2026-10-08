@@ -128,7 +128,6 @@ export async function GET(req: NextRequest): Promise<Response> {
       const profileName = customerType === 'company'
         ? profileText('companyName')
         : [profileText('firstName'), profileText('lastName')].filter(Boolean).join(' ')
-      const personalCode = profileText('personalCode').replace(/\D/gu, '')
       return {
         ...u,
         name: profileName || u.name,
@@ -141,7 +140,6 @@ export async function GET(req: NextRequest): Promise<Response> {
         address: [profileText('address'), profileText('city'), profileText('postalCode')].filter(Boolean).join(', ') || u.legalAddress,
         bankName: profileText('bankName') || null,
         iban: profileText('iban') || null,
-        personalCodeMasked: personalCode ? `••••••-•${personalCode.slice(-4)}` : null,
         registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
         registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,
         createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),

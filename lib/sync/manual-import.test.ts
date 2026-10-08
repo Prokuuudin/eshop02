@@ -1,0 +1,378 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ExtendedPrismaClient } from '@/lib/prisma'
+import {
+  BACKUP_KEY_PREFIX, MANUAL_IMPORT_MAX_BYTES, applyManualImport, consumePendingPreview, createPreImportBackup,
+  decodeUpload, evaluateFeed, restorePreImportBackup, savePendingPreview, sha256Hex,
+} from './manual-import'
+import { PREFLIGHT_THRESHOLDS } from './sync-preflight'
+import type { SyncRunResult } from './sync-runner'
+
+// ─── Fixtures ────────────────────────────────────────────────────────────────
+
+// Parsing a production-sized feed takes seconds; the fixture is 10x smaller and only the
+// ABSOLUTE row minimum is scaled with it. Every ratio threshold stays the production one.
+const ROWS = 1_500
+const thresholds = PREFLIGHT_THRESHOLDS as { feedMinRows: number }
+const originalFeedMinRows = thresholds.feedMinRows
+beforeAll(() => { thresholds.feedMinRows = originalFeedMinRows / 10 })
+afterAll(() => { thresholds.feedMinRows = originalFeedMinRows })
+
+type Item = { sku: string; price2?: string; wh?: number[] }
+
+/** wh = quantities for XML warehouse ids 1..9 (ids 1,2,3,6 = 10000,10001,10002,10005 count). */
+function makeXml(items: Item[]): string {
+  const body = items.map(({ sku, price2 = '10.00', wh = [1, 1, 1, 0, 0, 1, 0, 0, 0] }) =>
+    `<item><sku>${sku}</sku><price1>12</price1><price2>${price2}</price2><price3>5</price3><price4>0</price4><quantity>4</quantity>` +
+    `<warehouses>${wh.map((q, i) => `<warehouse id="${i + 1}">${q}</warehouse>`).join('')}</warehouses></item>`).join('')
+  return `﻿<?xml version="1.0" encoding="utf-8"?><root>${body}</root>`
+}
+
+const baseItems = (): Item[] => Array.from({ length: ROWS }, (_, i) => ({ sku: `S${i}` }))
+
+interface DbState {
+  kv: Map<string, unknown>
+  lockHeld: boolean
+  previousProductsTotal: number | null
+  linked: Array<{ externalId: string; price: string; stock: number; isActive: boolean; isDeleted: boolean; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }>
+}
+
+function makeDb(overrides: Partial<DbState> = {}) {
+  const state: DbState = {
+    kv: new Map(),
+    lockHeld: false,
+    previousProductsTotal: ROWS,
+    linked: Array.from({ length: ROWS }, (_, i) => ({ externalId: `S${i}`, price: '10.00', stock: 4, isActive: true, isDeleted: false, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null })),
+    ...overrides,
+  }
+  let runSeq = 0
+  const db = {
+    $queryRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => {
+      if (sql.includes('AS held')) return [{ held: state.lockHeld }]
+      if (sql.includes('INSERT INTO "KeyValueSetting"')) return state.lockHeld ? [] : [{ key: 'sync-run-lock' }]
+      if (sql.startsWith('DELETE FROM "KeyValueSetting"')) {
+        const [key, previewId, sha, actorId] = params as string[]
+        const value = state.kv.get(key) as Record<string, string> | undefined
+        if (!value || value.previewId !== previewId || value.sha256 !== sha || value.actorId !== actorId) return []
+        state.kv.delete(key)
+        return [{ value }]
+      }
+      if (sql.includes('"manualPriceApproved"')) return state.linked.filter(p => !p.isDeleted)
+      if (sql.includes('"isActive", "isDeleted"')) return state.linked
+      throw new Error(`unexpected SQL: ${sql.slice(0, 80)}`)
+    }),
+    $executeRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => (sql.includes('UPDATE "Product"') ? params.length / 6 : 1)),
+    keyValueSetting: {
+      findUnique: vi.fn(async ({ where }: { where: { key: string } }) => (state.kv.has(where.key) ? { key: where.key, value: state.kv.get(where.key) } : null)),
+      upsert: vi.fn(async ({ where, create }: { where: { key: string }; create: { value: unknown } }) => { state.kv.set(where.key, structuredClone(create.value)) }),
+      create: vi.fn(async ({ data }: { data: { key: string; value: unknown } }) => {
+        if (state.kv.has(data.key)) throw new Error('unique violation')
+        state.kv.set(data.key, structuredClone(data.value))
+      }),
+      findMany: vi.fn(async ({ where }: { where: { key: { startsWith: string } } }) =>
+        [...state.kv.keys()].filter(k => k.startsWith(where.key.startsWith)).sort().reverse().map(key => ({ key }))),
+      deleteMany: vi.fn(async ({ where }: { where: { key: { in: string[] } } }) => { for (const k of where.key.in) state.kv.delete(k) }),
+    },
+    syncRun: {
+      findFirst: vi.fn(async () => (state.previousProductsTotal === null ? null : { productsTotal: state.previousProductsTotal })),
+      create: vi.fn(async () => ({ id: `run-${++runSeq}` })),
+      update: vi.fn(async () => ({})),
+    },
+    product: {
+      findMany: vi.fn(async () => state.linked.map((p, i) => ({ id: `p${i}`, sku: p.externalId, ...p }))),
+    },
+  }
+  ;(db as typeof db & { $transaction: unknown }).$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(db))
+  return { db: db as unknown as ExtendedPrismaClient, raw: db, state }
+}
+
+const completed = (overrides: Partial<SyncRunResult> = {}): SyncRunResult => ({ runId: 'sync-1', status: 'completed', productsSynced: ROWS, deactivated: 0, errorCount: 0, ...overrides })
+
+async function preview(db: ExtendedPrismaClient, xml: string, actorId = 'admin-1') {
+  const decoded = decodeUpload(new TextEncoder().encode(xml), 'export.xml')
+  if (!decoded.ok) throw new Error(decoded.error)
+  const evaluation = await evaluateFeed(db, decoded.xml)
+  const pending = await savePendingPreview(db, { sha256: decoded.sha256, fileName: 'export.xml', sizeBytes: xml.length, actorId, xml: decoded.xml })
+  return { evaluation, pending }
+}
+
+// ─── Upload validation ───────────────────────────────────────────────────────
+
+describe('decodeUpload', () => {
+  const enc = (s: string) => new TextEncoder().encode(s)
+
+  it('accepts a UTF-8 export.xml and hashes the exact uploaded bytes (BOM included)', () => {
+    const bytes = enc(makeXml([{ sku: 'A' }]))
+    const result = decodeUpload(bytes, 'export.xml')
+    expect(result).toMatchObject({ ok: true, sha256: sha256Hex(bytes) })
+    if (result.ok) expect(sha256Hex(result.xml)).toBe(result.sha256)
+  })
+
+  it.each([
+    ['empty file', new Uint8Array(), 'export.xml', 'empty_file'],
+    ['wrong extension', enc('<root/>'), 'export.csv', 'not_xml_file'],
+    ['invalid UTF-8', new Uint8Array([0x3c, 0xff, 0xfe, 0x3e]), 'export.xml', 'invalid_encoding'],
+    ['non-UTF-8 declaration', enc('<?xml version="1.0" encoding="windows-1257"?><root/>'), 'export.xml', 'invalid_encoding'],
+    ['DOCTYPE (XXE)', enc('<?xml version="1.0"?><!DOCTYPE r [<!ENTITY x SYSTEM "file:///etc/passwd">]><root>&x;</root>'), 'export.xml', 'forbidden_xml_construct'],
+    ['ENTITY expansion', enc('<root><!ENTITY a "aaaa"></root>'), 'export.xml', 'forbidden_xml_construct'],
+  ])('rejects %s', (_label, bytes, name, error) => {
+    expect(decodeUpload(bytes, name)).toEqual({ ok: false, error })
+  })
+
+  it('rejects files above the size limit without decoding them', () => {
+    expect(decodeUpload(new Uint8Array(MANUAL_IMPORT_MAX_BYTES + 1), 'export.xml')).toEqual({ ok: false, error: 'file_too_large' })
+  })
+})
+
+// ─── Preview (read-only evaluation) ──────────────────────────────────────────
+
+describe('evaluateFeed', () => {
+  it('passes a correct full export and reports matched rows with no inserts or deactivations', async () => {
+    const items = baseItems()
+    items[0].price2 = '11.00'
+    const { db, raw } = makeDb()
+    const { preflight, summary } = await evaluateFeed(db, makeXml(items))
+    expect(preflight.hard).toEqual([])
+    expect(summary).toMatchObject({ rows: ROWS, matched: ROWS, unlinked: 0, priceChanges: 1, stockChanges: 0, inserts: 0, deactivations: 0 })
+    expect(raw.$executeRawUnsafe).not.toHaveBeenCalled()
+    expect(raw.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('blocks corrupted XML', async () => {
+    const { db } = makeDb()
+    const xml = makeXml(baseItems()).slice(0, 5000)
+    const { preflight, summary } = await evaluateFeed(db, xml)
+    expect(preflight.hard.some(h => h.startsWith('invalid XML'))).toBe(true)
+    expect(summary.rows).toBe(0)
+  })
+
+  it('blocks an incomplete export (feed shrank vs the previous full run)', async () => {
+    const { db } = makeDb()
+    const { preflight, summary } = await evaluateFeed(db, makeXml(baseItems().slice(0, 1_000)))
+    expect(preflight.hard.some(h => h.includes('feed shrank'))).toBe(true)
+    expect(summary.linkedMissingFromXml).toBe(500)
+  })
+
+  it('blocks duplicate SKUs', async () => {
+    const items = baseItems()
+    items[1].sku = items[0].sku
+    const { db } = makeDb()
+    const { preflight, summary } = await evaluateFeed(db, makeXml(items))
+    expect(preflight.hard.some(h => h.includes('duplicate externalId/SKU'))).toBe(true)
+    expect(summary.duplicateSkus).toBe(1)
+  })
+
+  it('counts price2=0 as kept price (no change) and warns below the hard limit', async () => {
+    const items = baseItems()
+    for (let i = 0; i < 150; i++) items[i].price2 = '0'
+    const { db } = makeDb()
+    const { preflight, summary } = await evaluateFeed(db, makeXml(items))
+    expect(preflight.hard).toEqual([])
+    expect(summary.priceZero).toBe(150)
+    expect(summary.priceChanges).toBe(0)
+    expect(preflight.warnings.some(w => w.includes('price2=0'))).toBe(true)
+  })
+
+  it('blocks mass price2=0', async () => {
+    const items = baseItems()
+    for (let i = 0; i < 300; i++) items[i].price2 = '0'
+    const { db } = makeDb()
+    const { preflight } = await evaluateFeed(db, makeXml(items))
+    expect(preflight.hard.some(h => h.includes('price2=0'))).toBe(true)
+  })
+
+  it('ignores excluded warehouses (10003/4/6/7 and slot 9) in available stock', async () => {
+    const items = baseItems()
+    items[0].wh = [0, 0, 0, 50, 50, 0, 50, 50, 50]
+    const { db } = makeDb()
+    const { products, summary } = await evaluateFeed(db, makeXml(items))
+    expect(products[0].stock).toBe(0)
+    expect(products[1].stock).toBe(4)
+    expect(summary.stockToZero).toBe(1)
+  })
+
+  it('blocks a mass stock drop to zero', async () => {
+    const items = baseItems()
+    for (let i = 0; i < 500; i++) items[i].wh = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    const { db } = makeDb()
+    const { preflight } = await evaluateFeed(db, makeXml(items))
+    expect(preflight.hard.some(h => h.includes('would drop to stock 0'))).toBe(true)
+  })
+})
+
+// ─── Preview → apply binding ─────────────────────────────────────────────────
+
+describe('consumePendingPreview', () => {
+  it('can be consumed exactly once (no repeated apply of one preview)', async () => {
+    const { db } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const input = { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }
+    expect((await consumePendingPreview(db, input)).ok).toBe(true)
+    expect(await consumePendingPreview(db, input)).toEqual({ ok: false, error: 'preview_not_found' })
+  })
+
+  it('refuses a different SHA or a different user and keeps the preview', async () => {
+    const { db, state } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    expect(await consumePendingPreview(db, { previewId: pending.previewId, sha256: 'f'.repeat(64), actorId: 'admin-1' })).toEqual({ ok: false, error: 'preview_mismatch' })
+    expect(await consumePendingPreview(db, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-2' })).toEqual({ ok: false, error: 'preview_mismatch' })
+    expect(state.kv.size).toBe(1)
+  })
+
+  it('refuses stored content that no longer matches the previewed SHA (tampering)', async () => {
+    const { db, state } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const stored = [...state.kv.values()][0] as { xml: string }
+    stored.xml = stored.xml.replace('<price2>10.00</price2>', '<price2>99.00</price2>')
+    expect(await consumePendingPreview(db, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })).toEqual({ ok: false, error: 'content_mismatch' })
+  })
+
+  it('refuses an expired preview', async () => {
+    const { db } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const later = new Date(Date.now() + 31 * 60 * 1000)
+    expect(await consumePendingPreview(db, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }, later)).toEqual({ ok: false, error: 'preview_expired' })
+  })
+
+  it('a newer upload supersedes the older preview', async () => {
+    const { db } = makeDb()
+    const first = await preview(db, makeXml(baseItems()))
+    await preview(db, makeXml(baseItems().reverse()))
+    expect(await consumePendingPreview(db, { previewId: first.pending.previewId, sha256: first.pending.sha256, actorId: 'admin-1' })).toEqual({ ok: false, error: 'preview_mismatch' })
+  })
+})
+
+// ─── Apply ───────────────────────────────────────────────────────────────────
+
+describe('applyManualImport', () => {
+  beforeEach(() => {
+    // Manual import must not depend on FTPS or the scheduled kill switch.
+    for (const key of Object.keys(process.env)) if (key.startsWith('GRINS_FTPS') || key === 'SYNC_PULL_ENABLED') delete process.env[key]
+  })
+
+  it('applies the exact previewed snapshot through runSync as a manual run, with a backup first (FTPS not configured)', async () => {
+    const items = baseItems()
+    items[7].price2 = '12.34'
+    const { db, state } = makeDb()
+    const { pending } = await preview(db, makeXml(items))
+    const runSync = vi.fn(async () => completed())
+
+    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
+
+    expect(outcome.status).toBe('completed')
+    expect(runSync).toHaveBeenCalledTimes(1)
+    const [adapter, , triggeredBy, options] = runSync.mock.calls[0] as unknown as [{ fetchPage: () => Promise<{ products: Array<{ externalId: string; price: number }> }> }, unknown, string, { diagnostics: Record<string, unknown> }]
+    expect(triggeredBy).toBe('manual')
+    const { products } = await adapter.fetchPage()
+    expect(products).toHaveLength(ROWS)
+    expect(products[7]).toMatchObject({ externalId: 'S7', price: 12.34 })
+    expect(options.diagnostics).toMatchObject({ kind: 'admin-manual-import', xmlSha256: pending.sha256, fileName: 'export.xml', actorId: 'admin-1', changes: { price: 1, stock: 0 } })
+    const backupKeys = [...state.kv.keys()].filter(k => k.startsWith(BACKUP_KEY_PREFIX))
+    expect(backupKeys).toHaveLength(1)
+    expect(options.diagnostics.backupKey).toBe(backupKeys[0])
+  })
+
+  it('repeated apply of the same preview is refused and does not run sync twice', async () => {
+    const { db } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const runSync = vi.fn(async () => completed())
+    const input = { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }
+    await applyManualImport({ db, runSync }, input)
+    expect(await applyManualImport({ db, runSync }, input)).toEqual({ status: 'rejected', error: 'preview_not_found' })
+    expect(runSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('refuses while the scheduled sync holds the lock, without consuming the preview', async () => {
+    const { db, state } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    state.lockHeld = true
+    const runSync = vi.fn(async () => completed())
+    const input = { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }
+    expect(await applyManualImport({ db, runSync }, input)).toEqual({ status: 'rejected', error: 'sync_running' })
+    expect(runSync).not.toHaveBeenCalled()
+    state.lockHeld = false
+    expect((await applyManualImport({ db, runSync }, input)).status).toBe('completed')
+  })
+
+  it('reports skipped when the scheduled sync wins the lock race inside runSync', async () => {
+    const { db } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const runSync = vi.fn(async () => completed({ status: 'skipped', productsSynced: 0, reason: 'already_running' }))
+    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
+    expect(outcome.status).toBe('skipped')
+  })
+
+  it('re-runs the preflight at apply time and blocks if the DB changed since preview', async () => {
+    const { db, raw, state } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    // After the preview, linked stock grew a lot: the file would now cut the stock sum by >30%.
+    for (const p of state.linked.slice(0, 600)) p.stock = 0
+    for (const p of state.linked.slice(600)) p.stock = 50
+    const runSync = vi.fn(async () => completed())
+    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
+    expect(outcome).toMatchObject({ status: 'rejected', error: 'preflight_failed', runId: 'run-1' })
+    expect(runSync).not.toHaveBeenCalled()
+    expect(raw.syncRun.create).toHaveBeenCalledWith({ data: expect.objectContaining({ status: 'failed', triggeredBy: 'manual' }) })
+  })
+
+  it('does not write Products when the backup cannot be stored', async () => {
+    const { db, raw } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    raw.keyValueSetting.create.mockRejectedValueOnce(new Error('disk full'))
+    const runSync = vi.fn(async () => completed())
+    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
+    expect(outcome).toMatchObject({ status: 'rejected', error: 'backup_failed' })
+    expect(runSync).not.toHaveBeenCalled()
+  })
+
+  it('surfaces a failure during apply as failed (never completed) with the backup key for recovery', async () => {
+    const { db } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    const runSync = vi.fn(async () => completed({ status: 'failed', productsSynced: 200, errorCount: 1, fatal: 'connection reset' }))
+    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
+    expect(outcome.status).toBe('failed')
+    if (outcome.status !== 'rejected') expect(outcome.backupKey.startsWith(BACKUP_KEY_PREFIX)).toBe(true)
+  })
+})
+
+// ─── Recovery ────────────────────────────────────────────────────────────────
+
+describe('pre-import backup and restore', () => {
+  it('keeps only the newest backups', async () => {
+    const { db, state } = makeDb()
+    for (let i = 0; i < 7; i++) await createPreImportBackup(db, { previewId: `p${i}`, sha256: 'a'.repeat(64) }, new Date(Date.UTC(2026, 9, 8, 10, i)))
+    const keys = [...state.kv.keys()].filter(k => k.startsWith(BACKUP_KEY_PREFIX)).sort()
+    expect(keys).toHaveLength(5)
+    expect(keys[0]).toContain('10:02:00')
+  })
+
+  it('dry-run reports differing rows without writing', async () => {
+    const { db, raw, state } = makeDb()
+    const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
+    state.linked[0].price = '99.00'
+    state.linked[1].stock = 0
+    const result = await restorePreImportBackup(db, key, { execute: false })
+    expect(result).toMatchObject({ backupRows: ROWS, differing: 2, restored: 0 })
+    expect(raw.$executeRawUnsafe).not.toHaveBeenCalled()
+  })
+
+  it('execute writes the backed-up values for differing rows under the sync lock', async () => {
+    const { db, raw, state } = makeDb()
+    const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
+    state.linked[0].price = '99.00'
+    const result = await restorePreImportBackup(db, key, { execute: true })
+    expect(result).toMatchObject({ differing: 1, restored: 1, runId: 'run-1' })
+    const update = raw.$executeRawUnsafe.mock.calls.find(([sql]) => String(sql).includes('UPDATE "Product"'))
+    expect(update?.slice(1)).toEqual(['S0', '10.00', 4, false, false, null])
+    expect(update?.[0]).toContain('"revision" = p."revision" + 1')
+    expect(raw.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
+  })
+
+  it('execute refuses while another sync holds the lock', async () => {
+    const { db, raw, state } = makeDb()
+    const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
+    state.linked[0].price = '99.00'
+    state.lockHeld = true
+    await expect(restorePreImportBackup(db, key, { execute: true })).rejects.toThrow('lock')
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => String(sql).includes('UPDATE "Product"'))).toBe(false)
+  })
+})

@@ -10,6 +10,7 @@ import { type ImportMode } from './import-config';
 import { ImportExportSection } from './ImportExportSection';
 import { ImportWorkflowSection } from './ImportWorkflowSection';
 import { ImportHints } from './ImportHints';
+import { GrinsImportSection } from './GrinsImportSection';
 
 export default function AdminImportPage(): React.ReactElement {
     const { l } = useAdminLocale();
@@ -60,6 +61,7 @@ export default function AdminImportPage(): React.ReactElement {
                     </div>
                 </div>
 
+                <GrinsImportSection l={l} />
                 <ImportExportSection l={l} />
                 <ImportWorkflowSection state={pageState} l={l} modeLabels={modeLabels} actionLabels={actionLabels} />
                 <ImportHints l={l} />

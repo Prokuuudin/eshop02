@@ -17,6 +17,13 @@ describe('safe linked-product update SQL', () => {
     expect(sql).toContain('product."isDeleted" = false')
   })
 
+  it('invalidates open editors only when ERP-owned fields change', () => {
+    const sql = buildUpsertQuery(1)
+    expect(sql).toContain('"revision" = product."revision" + 1')
+    expect(sql).toContain('product.price IS DISTINCT FROM incoming.price')
+    expect(sql).toContain('product.stock IS DISTINCT FROM incoming.stock')
+  })
+
   it('updates only ERP-owned price, stock and bookkeeping', () => {
     const sql = buildUpsertQuery(1)
     expect(sql).toContain('CASE WHEN incoming.price > 0')

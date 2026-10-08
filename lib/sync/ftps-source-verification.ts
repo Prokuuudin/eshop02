@@ -4,7 +4,7 @@
 // scheduled-sync structural checks so a "PASS" here means the same thing there.
 import { createHash } from 'crypto'
 import type { FtpsConfig, FtpsDownload } from './ftps-client'
-import { GRINS_WAREHOUSE_INDEX_TO_ID } from './grins-warehouse-map'
+import { GRINS_WAREHOUSE_INDEX_TO_ID, grinsWarehouseIdForIndex } from './grins-warehouse-map'
 import { auditGrinsXml, parseGrinsXml, readGrinsXmlItems, type GrinsRawItem, type GrinsXmlAudit } from './grins-xml-parser'
 import { PREFLIGHT_THRESHOLDS, structuralFailures } from './sync-preflight'
 import { HAIRSHOP_STOCK_WAREHOUSE_IDS } from './sync-rules'
@@ -14,7 +14,7 @@ const PRICE_FIELDS = ['price1', 'price2', 'price3', 'price4'] as const
 export const REQUIRED_ITEM_FIELDS = ['sku', ...PRICE_FIELDS, 'quantity', 'warehouses'] as const
 /** XML warehouse indexes ("1".."9") whose stock Hairshop Pro sells from (10000, 10001, 10002, 10005). */
 export const PRO_WAREHOUSE_INDEXES: readonly string[] = GRINS_WAREHOUSE_INDEX_TO_ID
-  .map((id, i) => ((HAIRSHOP_STOCK_WAREHOUSE_IDS as readonly string[]).includes(id) ? String(i + 1) : null))
+  .map((id, i) => (id !== null && (HAIRSHOP_STOCK_WAREHOUSE_IDS as readonly string[]).includes(id) ? String(i + 1) : null))
   .filter((index): index is string => index !== null)
 
 const SAMPLE = 10
@@ -156,6 +156,81 @@ export function verifyExport(xml: string, options: { minRows?: number } = {}): E
   }
 }
 
+// ─── Hairshop Pro exporter manifest (freshness) ──────────────────────────────
+
+/** Default name the Hairshop Pro exporter publishes next to export.xml (tools/grins-pro-exporter). */
+export const EXPORT_MANIFEST_NAME = 'export.manifest.json'
+const MANIFEST_MAX_AGE_HOURS = 36
+const MANIFEST_FUTURE_TOLERANCE_MS = 10 * 60_000
+
+export interface ManifestVerification {
+  verdict: 'PASS' | 'FAIL'
+  failures: string[]
+  generatedAt?: string
+  ageHours?: number
+  productCount?: number
+  xmlSha256?: string
+  exporterVersion?: string
+  warehousePolicy?: string
+}
+
+/** Manifest path next to the export: "dir/export.xml" → "dir/export.manifest.json". */
+export function manifestPathFor(remotePath: string): string {
+  const slash = remotePath.lastIndexOf('/')
+  return slash < 0 ? EXPORT_MANIFEST_NAME : `${remotePath.slice(0, slash + 1)}${EXPORT_MANIFEST_NAME}`
+}
+
+/**
+ * Proves the downloaded export.xml is the one the exporter last published (SHA + size + count)
+ * and that it is fresh (generatedAt within maxAgeHours). A stale or mismatching manifest means
+ * "yesterday's file downloaded again" or "manifest step failed" — never treat that as new data.
+ */
+export function verifyExportManifest(xml: string, manifestText: string, now: Date, options: { maxAgeHours?: number } = {}): ManifestVerification {
+  const maxAgeHours = options.maxAgeHours ?? MANIFEST_MAX_AGE_HOURS
+  const failures: string[] = []
+  let m: Record<string, unknown>
+  try {
+    m = JSON.parse(manifestText) as Record<string, unknown>
+  } catch {
+    return { verdict: 'FAIL', failures: ['manifest is not valid JSON'] }
+  }
+  if (m.schemaVersion !== 1) failures.push(`unsupported manifest schemaVersion ${String(m.schemaVersion)}`)
+  if (m.xmlSha256 !== sha256(xml)) failures.push('manifest xmlSha256 does not match the downloaded export.xml')
+  if (m.xmlSizeBytes !== Buffer.byteLength(xml, 'utf-8')) failures.push('manifest xmlSizeBytes does not match the downloaded export.xml')
+  const items = readGrinsXmlItems(xml).length
+  if (m.productCount !== items) failures.push(`manifest productCount ${String(m.productCount)} != ${items} items in export.xml`)
+  if (m.warehousePolicy !== '10000-10007') failures.push(`unexpected warehousePolicy ${String(m.warehousePolicy)}`)
+  const generatedAt = typeof m.generatedAt === 'string' && /Z$/u.test(m.generatedAt) ? new Date(m.generatedAt) : null
+  let ageHours: number | undefined
+  if (!generatedAt || Number.isNaN(generatedAt.getTime())) failures.push('manifest generatedAt is missing or not a UTC ISO timestamp')
+  else {
+    ageHours = (now.getTime() - generatedAt.getTime()) / 3_600_000
+    if (generatedAt.getTime() - now.getTime() > MANIFEST_FUTURE_TOLERANCE_MS) failures.push('manifest generatedAt is in the future')
+    else if (ageHours > maxAgeHours) failures.push(`export is stale: generated ${ageHours.toFixed(1)} h ago (> ${maxAgeHours} h)`)
+  }
+  return {
+    verdict: failures.length ? 'FAIL' : 'PASS',
+    failures,
+    generatedAt: typeof m.generatedAt === 'string' ? m.generatedAt : undefined,
+    ...(ageHours !== undefined && { ageHours: Math.round(ageHours * 100) / 100 }),
+    productCount: typeof m.productCount === 'number' ? m.productCount : undefined,
+    xmlSha256: typeof m.xmlSha256 === 'string' ? m.xmlSha256 : undefined,
+    exporterVersion: typeof m.exporterVersion === 'string' ? m.exporterVersion : undefined,
+    warehousePolicy: typeof m.warehousePolicy === 'string' ? m.warehousePolicy : undefined,
+  }
+}
+
+/** `--manifest` (download export.manifest.json next to the FTPS export) or `--manifest-file <path>`. */
+export function parseManifestOption(argv: string[]): { kind: 'none' } | { kind: 'remote' } | { kind: 'file'; path: string } {
+  const i = argv.indexOf('--manifest-file')
+  if (i >= 0) {
+    const v = argv[i + 1]
+    if (!v || v.startsWith('--')) throw new Error('--manifest-file requires a value')
+    return { kind: 'file', path: v }
+  }
+  return argv.includes('--manifest') ? { kind: 'remote' } : { kind: 'none' }
+}
+
 // ─── FTPS source check (connection + download + verification) ────────────────
 
 export interface SourceCheckResult {
@@ -288,7 +363,7 @@ export function compareExports(oldXml: string, newXml: string, options: { maxMis
   }
 
   const prices = Object.fromEntries(PRICE_FIELDS.map(field => [field, [] as ValueDiff[]])) as ExportComparison['prices']
-  const proWarehouses: Record<string, ValueDiff[]> = Object.fromEntries(PRO_WAREHOUSE_INDEXES.map(i => [GRINS_WAREHOUSE_INDEX_TO_ID[Number(i) - 1], [] as ValueDiff[]]))
+  const proWarehouses: Record<string, ValueDiff[]> = Object.fromEntries(PRO_WAREHOUSE_INDEXES.map(i => [String(grinsWarehouseIdForIndex(Number(i))), [] as ValueDiff[]]))
   const sellableStock: ValueDiff[] = []
   const formatChanges: FormatChange[] = []
   const kindChanges: Record<string, number> = {}
@@ -329,7 +404,7 @@ export function compareExports(oldXml: string, newXml: string, options: { maxMis
     const oldWh = warehouseMap(oldItem), newWh = warehouseMap(newItem)
     for (const i of new Set([...oldWh.keys(), ...newWh.keys()])) {
       if (!compareField(sku, `warehouse:${i}`, oldWh.get(i), newWh.get(i))) continue
-      if (PRO_WAREHOUSE_INDEXES.includes(i)) proWarehouses[GRINS_WAREHOUSE_INDEX_TO_ID[Number(i) - 1]].push({ sku, old: rawText(oldWh.get(i)), new: rawText(newWh.get(i)) })
+      if (PRO_WAREHOUSE_INDEXES.includes(i)) proWarehouses[String(grinsWarehouseIdForIndex(Number(i)))].push({ sku, old: rawText(oldWh.get(i)), new: rawText(newWh.get(i)) })
       else otherWarehousesChanged++
     }
     const before = oldStock.get(sku), after = newStock.get(sku)

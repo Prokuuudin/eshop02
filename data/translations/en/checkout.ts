@@ -1,4 +1,5 @@
 const enCheckout: Record<string, string> = {
+  'checkout.errors.maintenance': 'Checkout is temporarily unavailable. Your cart is saved. Please try again later.',
   "checkout.delivery.omnivaCourier": "Courier",
   "checkout.delivery.venipakCourier": "Venipak courier",
   "checkout.delivery.unisend": "Unisend parcel locker",

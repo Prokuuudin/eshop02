@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 
+vi.mock('@/lib/prisma', () => ({
+  prisma: { $queryRawUnsafe: vi.fn().mockRejectedValue(new Error('Unexpected DB access in orders API unit test')) },
+}))
+
 vi.mock('@/lib/shipping-settings-server', async () => {
   const { DEFAULT_COMMERCE_SETTINGS } = await import('@/lib/commerce-settings')
   return { getShippingSettings: vi.fn(async () => structuredClone(DEFAULT_COMMERCE_SETTINGS)) }

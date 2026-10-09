@@ -1,4 +1,5 @@
 const lvCheckout: Record<string, string> = {
+  'checkout.errors.maintenance': 'Pasūtījumu noformēšana īslaicīgi nav pieejama. Grozs ir saglabāts. Lūdzu, mēģiniet vēlāk.',
   "checkout.delivery.omnivaCourier": "Kurjers",
   "checkout.delivery.venipakCourier": "Venipak kurjers",
   "checkout.delivery.unisend": "Unisend pakomāts",

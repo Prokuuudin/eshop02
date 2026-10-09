@@ -1,9 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createCheckoutOrder } from './checkout-order-api';
+import { createCheckoutOrder, checkoutOrderFailureMessage } from './checkout-order-api';
+import ru from '@/data/translations/ru/checkout';
+import en from '@/data/translations/en/checkout';
+import lv from '@/data/translations/lv/checkout';
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('createCheckoutOrder', () => {
+    it.each([
+        ['ru', ru, 'Оформление заказов временно недоступно'],
+        ['en', en, 'Checkout is temporarily unavailable'],
+        ['lv', lv, 'Pasūtījumu noformēšana īslaicīgi nav pieejama'],
+    ])('shows a localized maintenance message for 503 in %s', async (_locale, messages, expected) => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503, json: async () => ({ error: 'checkout_maintenance' }) }));
+        const result = await createCheckoutOrder({ createdAt: new Date(), total: 25 }, null);
+        expect(result).toEqual({ ok: false, reason: 'checkout_maintenance' });
+        if (!result.ok) expect(checkoutOrderFailureMessage(result.reason, key => (messages as Record<string, string>)[key])).toContain(expected);
+    });
     it('serializes the creation date and returns the server order id', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,

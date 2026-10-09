@@ -35,7 +35,7 @@ import {
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
-import { createCheckoutOrder } from './checkout-order-api';
+import { createCheckoutOrder, checkoutOrderFailureMessage } from './checkout-order-api';
 import { calculateCheckoutTotals } from './checkout-totals';
 import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
 
@@ -319,15 +319,7 @@ function useCheckoutPageState() {
         // notification) — checkout must stop here rather than fake a success screen.
         const createResult = await createCheckoutOrder(orderData, turnstileToken);
         if (!createResult.ok) {
-            const message = createResult.reason === 'payment_gateway_error'
-                ? t('checkout.errors.paymentGateway')
-                : createResult.reason === 'product_unavailable'
-                ? t('checkout.errors.productUnavailable')
-                : createResult.reason === 'insufficient_stock'
-                ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
-                : createResult.reason === 'network'
-                    ? 'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.'
-                    : 'Не удалось оформить заказ. Попробуйте ещё раз.';
+            const message = checkoutOrderFailureMessage(createResult.reason, t);
             showToast(message, 'error');
             if (createResult.reason !== 'invalid_response') resetTurnstile();
             setIsSubmitting(false);

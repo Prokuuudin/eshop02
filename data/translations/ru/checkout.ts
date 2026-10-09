@@ -1,4 +1,5 @@
 const ruCheckout: Record<string, string> = {
+  'checkout.errors.maintenance': 'Оформление заказов временно недоступно. Корзина сохранена. Попробуйте позже.',
   "checkout.delivery.omnivaCourier": "Курьер",
   "checkout.delivery.venipakCourier": "Venipak курьер",
   "checkout.delivery.unisend": "Unisend пакомат",

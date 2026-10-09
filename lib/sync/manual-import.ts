@@ -1,17 +1,17 @@
 import { createHash, randomUUID } from 'crypto'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
-import type { ErpAdapter, ErpProduct } from './erp-adapter'
+import type { ErpProduct } from './erp-adapter'
 import { getErpExtraData } from './erp-extra-data-store'
-import { auditGrinsXml, parseGrinsXml, type GrinsXmlAudit } from './grins-xml-parser'
-import { acquireSyncLock, isSyncLockHeld, releaseSyncLock } from './sync-lock'
+import { parseGrinsXml, type GrinsXmlAudit } from './grins-xml-parser'
+import { applyAtomic, restoreAtomic } from './manual-import-atomic'
+import { auditManualXml } from './manual-import-validation'
 import { buildSyncDryRunReport } from './sync-dry-run'
 import { evaluatePreflight, loadPreflightState, type PreflightResult } from './sync-preflight'
 import type { runSync as RunSync, SyncRunResult } from './sync-runner'
 
-// Manual (admin-uploaded) GrinS export.xml import. It is the scheduled FULL sync
-// with a different source: same parser, same fail-closed preflight, same
-// update-only runSync and the same lock. Nothing here decides prices or stock.
+// Manual GrinS uses scheduled matching/price/stock rules, but executes its own
+// atomic SQL transaction and stricter input gates under the shared DB lock.
 
 export const MANUAL_IMPORT_MAX_BYTES = 20 * 1024 * 1024
 export const MANUAL_IMPORT_PREVIEW_TTL_MS = 30 * 60 * 1000
@@ -19,10 +19,7 @@ export const MANUAL_IMPORT_KIND = 'admin-manual-import'
 export const MANUAL_IMPORT_RESTORE_KIND = 'admin-manual-import-restore'
 const PENDING_KEY = 'grins-manual-import-pending'
 export const BACKUP_KEY_PREFIX = 'grins-manual-import-backup:'
-const BACKUPS_KEPT = 5
 const SAMPLE_SIZE = 10
-const RESTORE_BATCH_SIZE = 500
-const LOCK_STALE_MS = 30 * 60 * 1000
 
 export const sha256Hex = (content: string | Uint8Array): string =>
   createHash('sha256').update(content).digest('hex')
@@ -88,8 +85,8 @@ export interface FeedEvaluation {
 
 /** Read-only: parse + scheduled preflight + change counts against the current DB. */
 export async function evaluateFeed(db: ExtendedPrismaClient, xml: string): Promise<FeedEvaluation> {
-  const audit = auditGrinsXml(xml)
-  const products = audit.validXml && audit.itemCount > 0 ? parseGrinsXml(xml) : []
+  const audit = auditManualXml(xml)
+  const products = audit.validXml && audit.itemCount > 0 && !audit.invalidPrices.length && !audit.invalidStocks.length ? parseGrinsXml(xml) : []
   const preflight = evaluatePreflight({ audit, products, ...(await loadPreflightState(db)) })
   const report = products.length > 0
     ? buildSyncDryRunReport(products, await db.product.findMany({
@@ -216,36 +213,13 @@ export async function createPreImportBackup(
   const key = `${BACKUP_KEY_PREFIX}${now.toISOString()}:${meta.previewId}`
   const value: BackupValue = { createdAt: now.toISOString(), ...meta, rows }
   await db.keyValueSetting.create({ data: { key, value: value as unknown as Prisma.InputJsonValue } })
-  const backups = await db.keyValueSetting.findMany({
-    where: { key: { startsWith: BACKUP_KEY_PREFIX } },
-    orderBy: { key: 'desc' },
-    select: { key: true },
-  })
-  const stale = backups.slice(BACKUPS_KEPT).map(b => b.key)
-  if (stale.length > 0) await db.keyValueSetting.deleteMany({ where: { key: { in: stale } } })
+  // Recovery snapshots are pinned; retention requires a separate reviewed procedure.
   return { key, rows: rows.length }
 }
 
 export async function listPreImportBackups(db: ExtendedPrismaClient): Promise<string[]> {
   const rows = await db.keyValueSetting.findMany({ where: { key: { startsWith: BACKUP_KEY_PREFIX } }, orderBy: { key: 'desc' }, select: { key: true } })
   return rows.map(r => r.key)
-}
-
-function buildRestoreQuery(rowCount: number): string {
-  const values = Array.from({ length: rowCount }, (_, i) => {
-    const b = i * 6
-    return `($${b + 1}::text,$${b + 2}::numeric,$${b + 3}::integer,$${b + 4}::boolean,$${b + 5}::boolean,$${b + 6}::numeric)`
-  }).join(',')
-  return `
-    UPDATE "Product" AS p
-       SET price = v.price, stock = v.stock, "erpPriceMissing" = v.epm,
-           "manualPriceApproved" = v.mpa, "manualApprovedPrice" = v.map,
-           "revision" = p."revision" + 1, "updatedAt" = now()
-      FROM (VALUES ${values}) AS v("externalId", price, stock, epm, mpa, map)
-     WHERE p."externalId" = v."externalId" AND p."isDeleted" = false
-       AND (p.price IS DISTINCT FROM v.price OR p.stock IS DISTINCT FROM v.stock
-         OR p."erpPriceMissing" IS DISTINCT FROM v.epm OR p."manualPriceApproved" IS DISTINCT FROM v.mpa
-         OR p."manualApprovedPrice" IS DISTINCT FROM v.map)`
 }
 
 export interface RestoreResult {
@@ -256,63 +230,24 @@ export interface RestoreResult {
   runId?: string
 }
 
-/**
- * Puts the sync-owned fields back to the pre-import backup. Dry-run unless
- * execute=true; execute holds the shared sync lock and commits all-or-nothing.
- * ERP extra metadata (price1-4, per-warehouse quantities) is not restored: the
- * next correct import replaces it.
- */
+/** Version-2 recovery refuses any catalog/ERP change since the successful
+ * import. Legacy snapshots permit inspection only. No automatic recovery. */
 export async function restorePreImportBackup(
   db: ExtendedPrismaClient,
   key: string,
   options: { execute: boolean },
 ): Promise<RestoreResult> {
+  if (options.execute) return restoreAtomic(db, key, true)
+  const stored = await db.keyValueSetting.findUnique({ where: { key } })
+  if ((stored?.value as { version?: number } | undefined)?.version === 2) return restoreAtomic(db, key, false)
   if (!key.startsWith(BACKUP_KEY_PREFIX)) throw new Error('Not a manual-import backup key')
-  const row = await db.keyValueSetting.findUnique({ where: { key } })
-  const backup = row?.value as unknown as BackupValue | undefined
-  if (!backup || !Array.isArray(backup.rows)) throw new Error(`Backup not found: ${key}`)
-
-  const current = new Map((await readSyncOwnedState(db)).map(r => [r[0], JSON.stringify(r)]))
-  const differing = backup.rows.filter(r => current.has(r[0]) && current.get(r[0]) !== JSON.stringify(r))
-  const result: RestoreResult = { key, backupRows: backup.rows.length, differing: differing.length, restored: 0 }
-  if (!options.execute || differing.length === 0) return result
-
-  const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'restore' } })
-  result.runId = run.id
-  const diagnostics = { kind: MANUAL_IMPORT_RESTORE_KIND, backupKey: key, sourceSha256: backup.sha256 }
-  if (!await acquireSyncLock(db, run.id, LOCK_STALE_MS)) {
-    await db.syncRun.update({ where: { id: run.id }, data: { status: 'skipped', finishedAt: new Date(), errorSample: { ...diagnostics, reason: 'already_running' } as unknown as never } })
-    throw new Error('Another sync holds the lock; restore not started')
-  }
-  try {
-    const restored = await db.$transaction(async tx => {
-      let count = 0
-      for (let i = 0; i < differing.length; i += RESTORE_BATCH_SIZE) {
-        const batch = differing.slice(i, i + RESTORE_BATCH_SIZE)
-        count += await tx.$executeRawUnsafe(buildRestoreQuery(batch.length), ...batch.flat())
-      }
-      await tx.syncRun.update({
-        where: { id: run.id },
-        data: { status: 'completed', finishedAt: new Date(), productsTotal: backup.rows.length, productsSynced: count, errorSample: diagnostics as unknown as never },
-      })
-      return count
-    }, { timeout: 180_000, maxWait: 30_000 })
-    result.restored = restored
-    return result
-  } catch (err) {
-    await db.syncRun.update({
-      where: { id: run.id },
-      data: { status: 'failed', finishedAt: new Date(), errorCount: 1, errorSample: { ...diagnostics, fatal: err instanceof Error ? err.message : String(err) } as unknown as never },
-    }).catch(() => {})
-    throw err
-  } finally {
-    await releaseSyncLock(db, run.id).catch(() => {})
-  }
+  const backup = stored?.value as unknown as BackupValue | undefined
+  if (!backup || !Array.isArray(backup.rows)) throw new Error('Backup not found')
+  const current = new Map((await readSyncOwnedState(db)).map(row => [row[0], JSON.stringify(row)]))
+  return { key, backupRows: backup.rows.length, differing: backup.rows.filter(row => current.get(row[0]) !== JSON.stringify(row)).length, restored: 0 }
 }
 
-// ─── Apply ───────────────────────────────────────────────────────────────────
-
-export type ApplyRejection = ConsumeError | 'sync_running' | 'preflight_failed' | 'backup_failed'
+export type ApplyRejection = ConsumeError | 'sync_running' | 'preflight_failed' | 'backup_failed' | 'already_applied'
 
 export type ManualApplyOutcome =
   | { status: 'rejected'; error: ApplyRejection; hard?: string[]; runId?: string }
@@ -320,7 +255,8 @@ export type ManualApplyOutcome =
 
 export interface ManualApplyDeps {
   db: ExtendedPrismaClient
-  runSync: typeof RunSync
+  /** Compatibility with existing callers; the batch runner is never called. */
+  runSync?: typeof RunSync
   now?: () => Date
 }
 
@@ -328,54 +264,5 @@ export async function applyManualImport(
   deps: ManualApplyDeps,
   input: { previewId: string; sha256: string; actorId: string },
 ): Promise<ManualApplyOutcome> {
-  const { db } = deps
-  const now = deps.now ?? (() => new Date())
-
-  // Checked before consuming, so a busy lock does not burn the preview.
-  if (await isSyncLockHeld(db)) return { status: 'rejected', error: 'sync_running' }
-
-  const consumed = await consumePendingPreview(db, input, now())
-  if (!consumed.ok) return { status: 'rejected', error: consumed.error }
-  const { preview } = consumed
-  const base = { kind: MANUAL_IMPORT_KIND, xmlSha256: preview.sha256, fileName: preview.fileName, sizeBytes: preview.sizeBytes, actorId: input.actorId, previewId: preview.previewId }
-
-  const recordFailure = async (stage: string, fatal: string, extra: Record<string, unknown> = {}): Promise<string | undefined> => {
-    try {
-      const run = await db.syncRun.create({
-        data: { status: 'failed', triggeredBy: 'manual', finishedAt: now(), errorCount: 1, errorSample: { ...base, stage, fatal, ...extra } as unknown as never },
-      })
-      return run.id
-    } catch {
-      return undefined
-    }
-  }
-
-  // The DB may have changed since the preview: re-run the same gates on the stored snapshot.
-  const evaluation = await evaluateFeed(db, preview.xml)
-  const { preflight } = evaluation
-  if (preflight.hard.length > 0) {
-    const runId = await recordFailure('preflight', `preflight HARD checks failed (${preflight.hard.length})`, {
-      hardFailures: preflight.hard, warnings: preflight.warnings, metrics: preflight.metrics,
-    })
-    return { status: 'rejected', error: 'preflight_failed', hard: preflight.hard, runId }
-  }
-
-  let backup: { key: string; rows: number }
-  try {
-    backup = await createPreImportBackup(db, { previewId: preview.previewId, sha256: preview.sha256 }, now())
-  } catch (err) {
-    const runId = await recordFailure('backup', `pre-import backup failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500))
-    return { status: 'rejected', error: 'backup_failed', runId }
-  }
-
-  const products = evaluation.products
-  const adapter: ErpAdapter = { name: 'grins-xml-admin-upload', fetchPage: async () => ({ products, hasMore: false }) }
-  const result = await deps.runSync(adapter, db, 'manual', {
-    diagnostics: {
-      ...base, backupKey: backup.key, warnings: preflight.warnings, metrics: preflight.metrics,
-      // productsSynced counts processed rows; these are the actual field changes at apply time.
-      changes: { price: evaluation.summary.priceChanges, stock: evaluation.summary.stockChanges },
-    },
-  })
-  return { status: result.status, result, backupKey: backup.key, fileName: preview.fileName, sha256: preview.sha256 }
+  return applyAtomic(deps, input)
 }

@@ -142,4 +142,18 @@ describe('POST /api/admin/grins-import/apply', () => {
     expect(await res.json()).toMatchObject({ status: 'completed', runId: 'run-1', productsSynced: 15754 })
     expect(applyManualImport).toHaveBeenCalledWith(expect.anything(), { ...validApply, actorId: 'admin-1' })
   })
+  it('returns original operation on successful SHA replay', async () => {
+    allow()
+    vi.mocked(applyManualImport).mockResolvedValue({ status: 'rejected', error: 'already_applied', runId: 'original-run' })
+    const response = await applyPOST(applyRequest(validApply))
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'already_applied', runId: 'original-run' })
+  })
+  it('uses failed audit action for failed catalog transaction', async () => {
+    allow()
+    vi.mocked(applyManualImport).mockResolvedValue({ status: 'failed', result: { runId: 'failed-run', status: 'failed', productsSynced: 0, deactivated: 0, errorCount: 1 }, backupKey: '', fileName: 'synthetic.xml', sha256: validApply.sha256 })
+    await applyPOST(applyRequest(validApply))
+    expect(appendServerAudit).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.objectContaining({ action: 'catalog.grins_import_failed' }))
+  })
+
 })

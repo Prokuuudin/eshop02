@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { logOperationalEvent } from '@/lib/observability'
 import { applyManualImport, type ApplyRejection } from '@/lib/sync/manual-import'
-import { runSync } from '@/lib/sync/sync-runner'
 import { requireGrinsImportActor } from '../auth'
 
 export const runtime = 'nodejs'
@@ -18,6 +17,7 @@ const REJECTION_STATUS: Record<ApplyRejection, number> = {
   sync_running: 409,
   preflight_failed: 422,
   backup_failed: 500,
+  already_applied: 409,
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -36,16 +36,16 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   try {
-    const outcome = await applyManualImport({ db: prisma, runSync }, { previewId, sha256, actorId: actor.id })
+    const outcome = await applyManualImport({ db: prisma }, { previewId, sha256, actorId: actor.id })
 
     await prisma.$transaction(async tx => appendServerAudit(tx, request, actor, {
-      action: outcome.status === 'rejected' ? 'catalog.grins_import_rejected' : 'catalog.grins_import_applied',
+      action: outcome.status === 'rejected' ? 'catalog.grins_import_rejected' : outcome.status === 'completed' ? 'catalog.grins_import_applied' : 'catalog.grins_import_failed',
       entityType: 'grins_import',
       entityId: previewId,
       after: outcome.status === 'rejected'
         ? { sha256, error: outcome.error, runId: outcome.runId ?? null }
         : { sha256, fileName: outcome.fileName, status: outcome.status, runId: outcome.result.runId, productsSynced: outcome.result.productsSynced, errorCount: outcome.result.errorCount, backupKey: outcome.backupKey },
-    })).catch(error => logOperationalEvent({ event: 'grins_import_audit_failed', level: 'error' }, error))
+    })).catch(() => logOperationalEvent({ event: 'grins_import_audit_failed', level: 'error' }, new Error('audit_write_failed')))
 
     if (outcome.status === 'rejected') {
       return NextResponse.json({ error: outcome.error, hard: outcome.hard ?? [], runId: outcome.runId ?? null }, { status: REJECTION_STATUS[outcome.error] })
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest): Promise<Response> {
       reason: result.reason ?? null,
       backupKey: outcome.backupKey,
     }, { status: result.status === 'completed' ? 200 : result.status === 'skipped' ? 409 : 500 })
-  } catch (error) {
-    logOperationalEvent({ event: 'grins_manual_import_failed', level: 'error', alert: true }, error)
+  } catch {
+    logOperationalEvent({ event: 'grins_manual_import_failed', level: 'error', alert: true }, new Error('manual_import_operation_failed'))
     return NextResponse.json({ error: 'apply_failed' }, { status: 500 })
   }
 }

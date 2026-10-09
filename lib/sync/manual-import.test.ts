@@ -1,11 +1,10 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MAX_BYTES, applyManualImport, consumePendingPreview, createPreImportBackup,
   decodeUpload, evaluateFeed, restorePreImportBackup, savePendingPreview, sha256Hex,
 } from './manual-import'
 import { PREFLIGHT_THRESHOLDS } from './sync-preflight'
-import type { SyncRunResult } from './sync-runner'
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -47,6 +46,10 @@ function makeDb(overrides: Partial<DbState> = {}) {
   let runSeq = 0
   const db = {
     $queryRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => {
+      if (sql.includes('AS owned')) return [{ owned: true }]
+      if (sql.includes('AS fingerprint')) return [{ fingerprint: 'catalog-v1' }]
+      if (sql.includes('AS hash')) return [{ hash: 'extra-v1' }]
+      if (sql.includes('SELECT key')) return [{ key: 'sync-run-lock' }]
       if (sql.includes('AS held')) return [{ held: state.lockHeld }]
       if (sql.includes('INSERT INTO "KeyValueSetting"')) return state.lockHeld ? [] : [{ key: 'sync-run-lock' }]
       if (sql.startsWith('DELETE FROM "KeyValueSetting"')) {
@@ -68,11 +71,13 @@ function makeDb(overrides: Partial<DbState> = {}) {
         if (state.kv.has(data.key)) throw new Error('unique violation')
         state.kv.set(data.key, structuredClone(data.value))
       }),
+      update: vi.fn(async ({ where, data }: { where: { key: string }; data: { value: unknown } }) => { state.kv.set(where.key, structuredClone(data.value)) }),
       findMany: vi.fn(async ({ where }: { where: { key: { startsWith: string } } }) =>
         [...state.kv.keys()].filter(k => k.startsWith(where.key.startsWith)).sort().reverse().map(key => ({ key }))),
       deleteMany: vi.fn(async ({ where }: { where: { key: { in: string[] } } }) => { for (const k of where.key.in) state.kv.delete(k) }),
     },
     syncRun: {
+      findUniqueOrThrow: vi.fn(async () => ({ status: 'running', productsSynced: 0, errorSample: {} })),
       findFirst: vi.fn(async () => (state.previousProductsTotal === null ? null : { productsTotal: state.previousProductsTotal })),
       create: vi.fn(async () => ({ id: `run-${++runSeq}` })),
       update: vi.fn(async () => ({})),
@@ -84,8 +89,6 @@ function makeDb(overrides: Partial<DbState> = {}) {
   ;(db as typeof db & { $transaction: unknown }).$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(db))
   return { db: db as unknown as ExtendedPrismaClient, raw: db, state }
 }
-
-const completed = (overrides: Partial<SyncRunResult> = {}): SyncRunResult => ({ runId: 'sync-1', status: 'completed', productsSynced: ROWS, deactivated: 0, errorCount: 0, ...overrides })
 
 async function preview(db: ExtendedPrismaClient, xml: string, actorId = 'admin-1') {
   const decoded = decodeUpload(new TextEncoder().encode(xml), 'export.xml')
@@ -201,6 +204,18 @@ describe('evaluateFeed', () => {
 
 // ─── Preview → apply binding ─────────────────────────────────────────────────
 
+describe('manual numeric preflight regression', () => {
+  it.each(['0x10', '-1', 'Infinity', '1e2'])('blocks price2=%s before interpreting products', async value => {
+    const { db } = makeDb()
+    const items = baseItems()
+    items[0].price2 = value
+    const evaluation = await evaluateFeed(db, makeXml(items))
+    expect(evaluation.preflight.hard.some(message => message.includes('invalid price'))).toBe(true)
+    expect(evaluation.products).toEqual([])
+    expect(evaluation.summary.invalidValues).toBe(1)
+  })
+})
+
 describe('consumePendingPreview', () => {
   it('can be consumed exactly once (no repeated apply of one preview)', async () => {
     const { db } = makeDb()
@@ -243,136 +258,67 @@ describe('consumePendingPreview', () => {
 
 // ─── Apply ───────────────────────────────────────────────────────────────────
 
-describe('applyManualImport', () => {
-  beforeEach(() => {
-    // Manual import must not depend on FTPS or the scheduled kill switch.
-    for (const key of Object.keys(process.env)) if (key.startsWith('GRINS_FTPS') || key === 'SYNC_PULL_ENABLED') delete process.env[key]
-  })
-
-  it('applies the exact previewed snapshot through runSync as a manual run, with a backup first (FTPS not configured)', async () => {
-    const items = baseItems()
-    items[7].price2 = '12.34'
-    const { db, state } = makeDb()
-    const { pending } = await preview(db, makeXml(items))
-    const runSync = vi.fn(async () => completed())
-
-    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
-
-    expect(outcome.status).toBe('completed')
-    expect(runSync).toHaveBeenCalledTimes(1)
-    const [adapter, , triggeredBy, options] = runSync.mock.calls[0] as unknown as [{ fetchPage: () => Promise<{ products: Array<{ externalId: string; price: number }> }> }, unknown, string, { diagnostics: Record<string, unknown> }]
-    expect(triggeredBy).toBe('manual')
-    const { products } = await adapter.fetchPage()
-    expect(products).toHaveLength(ROWS)
-    expect(products[7]).toMatchObject({ externalId: 'S7', price: 12.34 })
-    expect(options.diagnostics).toMatchObject({ kind: 'admin-manual-import', xmlSha256: pending.sha256, fileName: 'export.xml', actorId: 'admin-1', changes: { price: 1, stock: 0 } })
-    const backupKeys = [...state.kv.keys()].filter(k => k.startsWith(BACKUP_KEY_PREFIX))
-    expect(backupKeys).toHaveLength(1)
-    expect(options.diagnostics.backupKey).toBe(backupKeys[0])
-  })
-
-  it('repeated apply of the same preview is refused and does not run sync twice', async () => {
-    const { db } = makeDb()
-    const { pending } = await preview(db, makeXml(baseItems()))
-    const runSync = vi.fn(async () => completed())
-    const input = { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }
-    await applyManualImport({ db, runSync }, input)
-    expect(await applyManualImport({ db, runSync }, input)).toEqual({ status: 'rejected', error: 'preview_not_found' })
-    expect(runSync).toHaveBeenCalledTimes(1)
-  })
-
-  it('refuses while the scheduled sync holds the lock, without consuming the preview', async () => {
-    const { db, state } = makeDb()
-    const { pending } = await preview(db, makeXml(baseItems()))
-    state.lockHeld = true
-    const runSync = vi.fn(async () => completed())
-    const input = { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' }
-    expect(await applyManualImport({ db, runSync }, input)).toEqual({ status: 'rejected', error: 'sync_running' })
-    expect(runSync).not.toHaveBeenCalled()
-    state.lockHeld = false
-    expect((await applyManualImport({ db, runSync }, input)).status).toBe('completed')
-  })
-
-  it('reports skipped when the scheduled sync wins the lock race inside runSync', async () => {
-    const { db } = makeDb()
-    const { pending } = await preview(db, makeXml(baseItems()))
-    const runSync = vi.fn(async () => completed({ status: 'skipped', productsSynced: 0, reason: 'already_running' }))
-    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
-    expect(outcome.status).toBe('skipped')
-  })
-
-  it('re-runs the preflight at apply time and blocks if the DB changed since preview', async () => {
+describe('applyManualImport orchestration (SQL guarantees verified separately)', () => {
+  it('uses the atomic transaction rather than the batch runner', async () => {
     const { db, raw, state } = makeDb()
     const { pending } = await preview(db, makeXml(baseItems()))
-    // After the preview, linked stock grew a lot: the file would now cut the stock sum by >30%.
-    for (const p of state.linked.slice(0, 600)) p.stock = 0
-    for (const p of state.linked.slice(600)) p.stock = 50
-    const runSync = vi.fn(async () => completed())
-    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
-    expect(outcome).toMatchObject({ status: 'rejected', error: 'preflight_failed', runId: 'run-1' })
+    const runSync = vi.fn()
+    const outcome = await applyManualImport({ db, runSync }, { ...pending, actorId: 'admin-1' })
+    expect(outcome.status).toBe('completed')
     expect(runSync).not.toHaveBeenCalled()
-    expect(raw.syncRun.create).toHaveBeenCalledWith({ data: expect.objectContaining({ status: 'failed', triggeredBy: 'manual' }) })
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('LOCK TABLE "Product"'))).toBe(true)
+    expect(state.kv.has('grins-manual-import-applied:' + pending.sha256)).toBe(true)
+    expect(raw.syncRun.create).toHaveBeenCalledWith({ data: expect.objectContaining({ status: 'running', errorSample: expect.objectContaining({ actorId: 'admin-1', xmlSha256: pending.sha256 }) }) })
   })
-
-  it('does not write Products when the backup cannot be stored', async () => {
+  it('rejects repeated XML even with a new preview and returns original run id', async () => {
+    const { db } = makeDb()
+    const runSync = vi.fn()
+    const first = await preview(db, makeXml(baseItems()))
+    await applyManualImport({ db, runSync }, { ...first.pending, actorId: 'admin-1' })
+    const second = await preview(db, makeXml(baseItems()))
+    expect(await applyManualImport({ db, runSync }, { ...second.pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'already_applied', runId: 'run-1' })
+  })
+  it('does not consume a preview or write catalog under a competing lease', async () => {
+    const { db, state, raw } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    state.lockHeld = true
+    expect(await applyManualImport({ db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'sync_running' })
+    expect(state.kv.has('grins-manual-import-pending')).toBe(true)
+    expect(raw.$executeRawUnsafe).not.toHaveBeenCalled()
+  })
+  it('recomputes preflight after locking and refuses without product writes', async () => {
+    const { db, state, raw } = makeDb()
+    const { pending } = await preview(db, makeXml(baseItems()))
+    for (const row of state.linked) row.stock = 50
+    expect(await applyManualImport({ db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'preflight_failed' })
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
+  })
+  it('backup error stops before product SQL and journals a stable error code', async () => {
     const { db, raw } = makeDb()
     const { pending } = await preview(db, makeXml(baseItems()))
-    raw.keyValueSetting.create.mockRejectedValueOnce(new Error('disk full'))
-    const runSync = vi.fn(async () => completed())
-    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
-    expect(outcome).toMatchObject({ status: 'rejected', error: 'backup_failed' })
-    expect(runSync).not.toHaveBeenCalled()
-  })
-
-  it('surfaces a failure during apply as failed (never completed) with the backup key for recovery', async () => {
-    const { db } = makeDb()
-    const { pending } = await preview(db, makeXml(baseItems()))
-    const runSync = vi.fn(async () => completed({ status: 'failed', productsSynced: 200, errorCount: 1, fatal: 'connection reset' }))
-    const outcome = await applyManualImport({ db, runSync }, { previewId: pending.previewId, sha256: pending.sha256, actorId: 'admin-1' })
-    expect(outcome.status).toBe('failed')
-    if (outcome.status !== 'rejected') expect(outcome.backupKey.startsWith(BACKUP_KEY_PREFIX)).toBe(true)
+    raw.keyValueSetting.create.mockRejectedValueOnce(new Error('postgresql://secret-canary:password@host/db'))
+    expect(await applyManualImport({ db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'backup_failed' })
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
+    expect(JSON.stringify(raw.syncRun.update.mock.calls)).not.toContain('secret-canary')
   })
 })
 
-// ─── Recovery ────────────────────────────────────────────────────────────────
-
-describe('pre-import backup and restore', () => {
-  it('keeps only the newest backups', async () => {
+describe('legacy backup inspection', () => {
+  it('pins backups instead of deleting recovery evidence on subsequent attempts', async () => {
     const { db, state } = makeDb()
     for (let i = 0; i < 7; i++) await createPreImportBackup(db, { previewId: `p${i}`, sha256: 'a'.repeat(64) }, new Date(Date.UTC(2026, 9, 8, 10, i)))
-    const keys = [...state.kv.keys()].filter(k => k.startsWith(BACKUP_KEY_PREFIX)).sort()
-    expect(keys).toHaveLength(5)
-    expect(keys[0]).toContain('10:02:00')
+    expect([...state.kv.keys()].filter(k => k.startsWith(BACKUP_KEY_PREFIX))).toHaveLength(7)
   })
-
-  it('dry-run reports differing rows without writing', async () => {
-    const { db, raw, state } = makeDb()
+  it('permits read-only comparison of legacy snapshots', async () => {
+    const { db, state } = makeDb()
     const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
-    state.linked[0].price = '99.00'
-    state.linked[1].stock = 0
-    const result = await restorePreImportBackup(db, key, { execute: false })
-    expect(result).toMatchObject({ backupRows: ROWS, differing: 2, restored: 0 })
-    expect(raw.$executeRawUnsafe).not.toHaveBeenCalled()
+    state.linked[0].stock = 1
+    expect(await restorePreImportBackup(db, key, { execute: false })).toMatchObject({ differing: 1, restored: 0 })
   })
-
-  it('execute writes the backed-up values for differing rows under the sync lock', async () => {
-    const { db, raw, state } = makeDb()
+  it('refuses legacy snapshot execution because it cannot detect intervening sales', async () => {
+    const { db, raw } = makeDb()
     const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
-    state.linked[0].price = '99.00'
-    const result = await restorePreImportBackup(db, key, { execute: true })
-    expect(result).toMatchObject({ differing: 1, restored: 1, runId: 'run-1' })
-    const update = raw.$executeRawUnsafe.mock.calls.find(([sql]) => String(sql).includes('UPDATE "Product"'))
-    expect(update?.slice(1)).toEqual(['S0', '10.00', 4, false, false, null])
-    expect(update?.[0]).toContain('"revision" = p."revision" + 1')
-    expect(raw.syncRun.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: 'completed' }) }))
-  })
-
-  it('execute refuses while another sync holds the lock', async () => {
-    const { db, raw, state } = makeDb()
-    const { key } = await createPreImportBackup(db, { previewId: 'p', sha256: 'a'.repeat(64) })
-    state.linked[0].price = '99.00'
-    state.lockHeld = true
-    await expect(restorePreImportBackup(db, key, { execute: true })).rejects.toThrow('lock')
-    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => String(sql).includes('UPDATE "Product"'))).toBe(false)
+    await expect(restorePreImportBackup(db, key, { execute: true })).rejects.toThrow('Legacy backup')
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
   })
 })

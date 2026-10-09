@@ -10,14 +10,15 @@ async function main(): Promise<void> {
   if (!file) throw new Error('environment_registry_invalid')
   const expected = resolveGrinsEnvironment(JSON.parse(readFileSync(file, 'utf8')), option('--target'), process.env.DATABASE_URL, option('--confirm-production'))
   const action = option('--action')
-  if (!['check', 'close', 'open', 'preview', 'apply', 'result', 'checkpoint'].includes(action ?? '')) throw new Error('operator_confirmation_required')
+  if (!['check', 'close', 'open', 'abort-window', 'preview', 'apply', 'result', 'checkpoint'].includes(action ?? '')) throw new Error('operator_confirmation_required')
   const wanted = option('--expect-state')
   if (wanted && (!['open', 'closed'].includes(wanted) || (action === 'open' && wanted !== 'open') || (action === 'close' && wanted !== 'closed'))) throw new Error('checkout_state_unexpected_release_blocked')
-  if (['close', 'open', 'preview', 'apply'].includes(action!) && option('--confirm-operation') !== expected.instanceId) throw new Error('operator_confirmation_required')
+  if (['close', 'open', 'abort-window', 'preview', 'apply'].includes(action!) && option('--confirm-operation') !== expected.instanceId) throw new Error('operator_confirmation_required')
   const { prisma: db } = await import('@/lib/prisma')
   try {
-    if (['check', 'close', 'open'].includes(action!)) {
-      const result = await withGrinsEnvironment(db, expected, tx => controlGrinsCheckout(tx, action as 'check' | 'close' | 'open', option('--completed-run')))
+    if (['check', 'close', 'open', 'abort-window'].includes(action!)) {
+      if (action === 'abort-window' && (!option('--window') || option('--confirm-no-commit') !== option('--window') || (wanted && wanted !== 'open'))) throw new Error('operator_confirmation_required')
+      const result = await withGrinsEnvironment(db, expected, tx => controlGrinsCheckout(tx, action as 'check' | 'close' | 'open' | 'abort-window', option('--completed-run'), { window: option('--window') ?? '', confirmedRollback: option('--confirm-no-commit') ?? '' }))
       console.log(JSON.stringify({ target: expected.target, instanceId: expected.instanceId, action, ...result }))
       if (wanted && result.checkoutClosed !== (wanted === 'closed')) throw new Error('checkout_state_unexpected_release_blocked')
       return

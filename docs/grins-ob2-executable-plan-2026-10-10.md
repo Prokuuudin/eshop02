@@ -1,5 +1,21 @@
 # OB2: исполнимые испытания, 10 октября 2026
 
+## Дополнительные обязательные серии последнего ревью
+
+Все действия ниже — только отдельно разрешённый изолированный PostgreSQL/Neon test instance с verified registry/marker; никогда production. Исходные A/B/C и numeric gates ниже сохраняются. Измерять monotonic client wall time и DB activity с шагом100ms. Эти серии **не выполнены** локальной PGlite проверкой.
+
+| Серия и исполнимые действия | Заранее заданный GO | NO-GO |
+|---|---|---|
+| Preview: 3 отдельных свежих XML по15000 SKU/1000 changed; guarded CLI preview, зафиксировать start/end/RSS и pending diff | Каждый≤60s, RSS≤min(1GiB,60% host budget),0 Product/Order/stock writes; pending preview единственный актуальный | Любой timeout, write вне pending/approved audit либо exceed |
+| Neon compute pause: approved operator при synthetic window closed suspend isolated compute; выполнить check/preview, затем resume и10 checks | Все ошибки bounded≤45s,0 writes wrong environment/partial state; после подтверждённого resume первый check≤30s, затем10 reads p95≤2s и≤2×baseline | Automatic open, unbounded wait, credential fallback, partial state или exceed; API pause недоступен — серия OPEN |
+| Connection ceiling: DBA фиксирует actual pool/server limits; synthetic holder clients постепенно занимают100% доступного test budget, оставляя только отдельный monitor; выполнить check и Apply; затем release holders | Ceiling действительно достигнут/зафиксирован; каждый failed admission≤45s;0 partial writes; checkout closed; после освобождения все blocked/idle-in-txn≤5s и10 reads p95≤2s/≤2×baseline | Не достигнут потолок, зависший backend, open, partial writes или persistent exhausted Prisma pool |
+| Canceled webhook under Apply: seed1 reserved synthetic Order; удержать Apply Product lock8s существующим delay fixture; отправить валидный подписанный canceled через actual IIS webhook в момент lock; снять задержку, дождаться outcome и повторить точный payload2раза | Firstresponse≤15s; допускается500/P2028 или200 послеwait, но DB outcome установлен. После успешной повторной доставки reservation released ровно1раз, stock +quantity ровно1раз,0 extra debit; Apply prices полностью committed либо полностью rolledback; gateclosed до reconciliation | Неизвестный outcome, double release, partial state, автоматическоеopen или предположение providerretry |
+| Prisma after P2028: pause existing order prepare callback8s (default txn5s) и отдельно fault Apply с контролируемым превышением actualtimeout; повторить3раза для каждого transport. Тот же Prisma instance после ошибки делает10 reads и1 synthetic order | Реальный P2028 в targetedcase;0partial writes; rollback/closed gate; DB backend accounted≤5s после finaloutcome;10reads p95≤2s/≤2×baseline, controlorder≤5s иexact1stockdebit | Mock-only P2028, orphan tx, новая Prisma instance вместо доказательства same-pool recovery, repeatederrors или exceed |
+
+Для connection ceiling использовать DBA-reviewed bounded holder workload с явным числом `actualLimit`, private monitor endpoint и cleanup после измерения, а не неограниченный spawn. Connection/statement/application timeout задаются **до** серии: connect≤30s, admission≤45s. PgBouncer transaction ceiling и Neon websocket Pool ceiling измеряются отдельно; configuration unknown — OPEN, не PASS. Compute pause/resume требует фактических разрешённых Neon controls; scripted provider action здесь не выполняется.
+
+Canceled test использует локальный harness как образец signing, но actual HTTP IIS transport и≥2workers обязательны; manual harness replay не доказывает Paysera automatic retry. До live Apply двойной payment reconciliation до/после close и фактическая session lifetime обязательны.
+
 **Не выполнены на настоящем PostgreSQL в этой задаче.** Ни один fault не запускать на production или существующей staging. Нужен отдельно разрешённый синтетический PG/Windows stand, та же PG major и package lock/client/node, что будущая цель. До production все строки matrix ниже должны иметь evidence и GO; право на staging authorization не равно OB2 PASS.
 
 ## Stand и обязательные транспорты

@@ -1,6 +1,6 @@
 # GrinS: защищённая staging-процедура, 10 октября 2026
 
-Основание: d0fff4931921c8fc9cde272ec7eafc2d016b6bc5 и staging review Claude от 09.10. Новый candidate SHA — commit, содержащий этот документ; получить из итогового сообщения и git rev-parse HEAD. Это **готовая процедура для запроса разрешения**, не выполненный deploy/Neon backup/import. Не было push/merge/deploy/миграций/реальных DB connections. Prices-only SQL и stock arithmetic сохранены; добавлены защитные operator-команды и диагностический UUID окна.
+Основание: `30d97a7cf43c10945df870cf13694630994ce8f2` и последние замечания независимого ревью M1/M2/L2, переданные владельцем. Новый candidate SHA — commit, содержащий этот документ; получить из итогового сообщения и git rev-parse HEAD. Это **готовая процедура для независимого review и будущего запроса разрешения**, не выполненный deploy/Neon backup/import. Не было push/merge/deploy/миграций/реальных DB connections. Prices-only SQL и stock arithmetic сохранены; усилены защитные operator-команды и жизненный цикл UUID окна.
 
 ## D1: две независимые проверки среды
 
@@ -35,7 +35,21 @@ Test-Path -LiteralPath '.\generated\prisma\client.ts'
 
 tsx используется **локальный** через `node_modules/tsx/dist/cli.mjs`, не глобальный и не npx. Prisma Client сгенерирован из exact candidate schema. CLI не читает dotenv: hosting operator задаёт именно staging DATABASE_URL в отдельном приватном process environment, сверяет independent registry/marker, не печатает secrets. Worker env отдельно сверяется с тем же instance: CLI env не доказывает IIS worker env. PORT/named pipe назначает iisnode, не задавать 3000 и не переносить CLI env в app вслепую.
 
-До первой новой startup: приватный полный rollback artifact (source/.next/BUILD_ID/node_modules/generated/public managed assets/env/IIS/ACL/uploads); остановить **все** staging workers/автозапуск и закрыть внешний доступ без раскрытия исходников. Disable Node.js не считается доказательством безопасного maintenance. Публикация exact approved SHA только после отдельного push/deploy разрешения. Сборка (после авторизации): `npm.cmd ci --ignore-scripts --include=dev`; `& $grinsNode .\node_modules\prisma\build\index.js generate`; `& $grinsNode .\scripts\build-canonical-cwd.mjs`. Ни package build, ни migrate deploy/db push/seed не запускать. Проверить native sharp/Next, весь artifact/layout/source SHA/BUILD_ID, staging-only build/runtime env. Разрушительное cleanup запрещено; сохранить old artifact для rollback без rebuild.
+До первой новой startup: приватный полный rollback artifact (source/.next/BUILD_ID/node_modules/generated/public managed assets/env/IIS/ACL/uploads); остановить **все** staging workers/автозапуск и закрыть внешний доступ без раскрытия исходников. Disable Node.js не считается доказательством безопасного maintenance. Публикация exact approved SHA только после отдельного push/deploy разрешения. Сборка (после авторизации): `npm.cmd ci --ignore-scripts --include=dev`; generate по отдельному безопасному блоку ниже; затем `& $grinsNode .\scripts\build-canonical-cwd.mjs` с verified staging build env. Ни package build, ни migrate deploy/db push/seed не запускать. Проверить native sharp/Next, весь artifact/layout/source SHA/BUILD_ID. Разрушительное cleanup запрещено; сохранить old artifact для rollback без rebuild.
+
+До build оператор проверяет все `.env*` в root и inherited process sources приватно. Чужой/developer/production `.env.local` — STOP: изолировать приватно после backup и заменить только утверждённым staging источником, не печатая secrets. Prisma config сам загружает `.env.local`; явно заданный process DATABASE_URL имеет приоритет, но прочие env тоже требуют проверки. Generate не нуждается в реальной БД:
+
+```powershell
+$grinsSavedDatabaseUrl = $env:DATABASE_URL
+try {
+  $env:DATABASE_URL = 'postgresql://synthetic:synthetic@127.0.0.1:1/grins_generate_only?sslmode=disable'
+  & $grinsNode .\node_modules\prisma\build\index.js generate
+  if ($LASTEXITCODE -ne 0) { throw 'Generate failed: STOP' }
+} finally { $env:DATABASE_URL = $grinsSavedDatabaseUrl }
+# Затем separately verified staging env для Next build; generate не connectivity/schema test.
+```
+
+IIS/iisnode startup/layout не менять. Проверенный в этом Git candidate механизм — корневой custom `server.js`, named-pipe PORT и обычная полная `.next`; `next.config.js` не содержит `output: standalone`. Generated standalone server нельзя подставлять вместо custom server. Если hosting использует отдельно проверенный standalone packaging, сохранить его startup/rewrite/assets/trace механизм и provenance после подтверждения оператора; эта локальная задача не подтверждает существование такого механизма и не переустраивает runtime.
 
 До включения новых workers — verified prep check, при missing отдельно разрешённый init false только при доказанно безопасном initial open:
 
@@ -110,6 +124,41 @@ TOC/hash не доказывают восстановление. Создать 
 
 Close создаёт maintenanceWindowId только при false→true. Apply записывает этот UUID в диагностику до Product work и при завершении; opener принимает только completed/errorCount0/prices-only этого окна и отсутствие failed/running в нём. Сравнение часов/SQL timestamp не используется: локальный integration обнаружил timezone discrepancy между adapter и PG. Старый completed-run или legacy closed без window UUID не открывают checkout. Существующее true не «перезакрывается» с новым UUID. Для этой guarded procedure использовать operator Apply; UI оставить для smoke/read-only inspection, UI Apply без window context opener не примет. Все операции privileged/admin-bound, не публичный endpoint, actor permissions проверяются. CLI не пишет отдельный HTTP AuditLog; SyncRun сохраняет actor/SHA/window, operator logs хранят приватно.
 
+После успешного open UUID удаляется из active gate в той же транзакции: receipt потреблён. **Старые SQL-команды close запрещены**; использовать только guarded close. Аварийный SQL не является штатной процедурой и здесь не предоставляется. Если DBA отдельно разрешено emergency close, reviewed transaction обязана проверять registry/marker, сериализоваться с import и создавать новый уникальный UUID; простое `checkoutClosed=true` недопустимо. Оно оставит gate без UUID после open, поэтому старый run всё равно не откроет checkout.
+
+### M2: abort-window только после доказанного отсутствия commit
+
+Не менять gate вручную. Сначала DBA определяет final transaction outcome, подтверждает отсутствие активных backend transactions, price diff/ledger/backup writes, свободный lease. Неизвестный COMMIT, running, partial diff либо committed run — STOP и аварийная recovery процедура. Для безопасных failed/skipped команда требует matched window, finishedAt, productsSynced=0, prices-only diagnostics, известный pre-write rejection либо durable rolled_back и отсутствие write receipts. Duplicate/skipped с неизвестным результатом не допускается. Пустое окно допустимо только при отдельно подтверждённом отсутствии запущенных операций.
+
+```powershell
+& $grinsNode .\node_modules\tsx\dist\cli.mjs .\scripts\operate-grins-staging.ts --environment-profile $grinsProfile --target staging --action abort-window --confirm-operation $grinsId --window '<current-window-UUID>' --confirm-no-commit '<same-current-window-UUID>' --expect-state open
+if ($LASTEXITCODE -ne 0) { throw 'Abort refused: keep checkout closed' }
+& $grinsNode .\node_modules\tsx\dist\cli.mjs .\scripts\operate-grins-staging.ts --environment-profile $grinsProfile --target staging --action check --expect-state open
+```
+
+`--confirm-no-commit` — явное подтверждение проверенных DBA доказательств, не замена durable checks. Успешный abort атомарно открывает и удаляет UUID; конкурентный close получает новый UUID. Никакого автоматического abort в catch/finally.
+
+UUID текущего окна читать из JSON ответа verified `close`/`check` (`maintenanceWindowId`), не менять его SQL вручную. После open/abort поле отсутствует. Перед abort повторно выполнить check closed и сопоставить UUID с DBA evidence; concurrent changes будут отвергнуты внутри атомарной команды.
+
+Close фиксирует `maintenanceBaselineRunIds` — исходные SyncRun IDs. Abort требует этот baseline и отказывает при любом новом run без matched window UUID, включая restore/legacy import. Он также отказывает при любом global running/unknown status. Legacy window без baseline не отменять через ручное добавление поля; отдельный recovery review. Open/abort удаляют UUID и baseline вместе. Историю runs не удалять/не переписывать во время окна: сохранность durable evidence — обязательное условие отмены.
+
+### M3: обязательный платёжный drain после закрытия
+
+Порядок окна: (1) первая сверка Paysera portal/локальных pending и reserved orders, callback backlog; (2) guarded close; (3) check + фактический отказ новой eligible order; (4) **повторная сверка Paysera после close**, включая запросы, начавшиеся до close; (5) дождаться final outcome или отдельно безопасно разрешить каждую сессию; (6) только после нулевого active/unknown backlog — checkpoint, DB backup/rehearsal, Preview/Apply. Reservation expiry не доказывает expiry платёжной сессии. Время ожидания задаётся фактической merchant/session конфигурацией и portal evidence; неизвестный lifetime — NO-GO, не произвольное ожидание N минут.
+
+Canceled webhook при Apply может ждать Product lock, получить P2028/timeout и 500. Это нарушение clean-window gate: checkout остаётся закрытым. Сохранить signed payload/private delivery ID и order/reservation outcome, проверить отсутствие частичного release/двойного возврата; после final Apply outcome выполнить отдельно разрешённую точную повторную доставку и сверить released ровно один раз. Если COMMIT acknowledgment неизвестен — сначала определить durable state. Автоматический retry провайдера без подтверждённой merchant конфигурации не предполагается; документация Modern не доказывает доставку вашему merchant. Не отключать webhook и не открывать продажи до reconciliation всех таких событий.
+
+### L2: restore с общей защитой среды
+
+Все list/dry-run/execute требуют приватного registry, marker и `--confirm-operation`; production дополнительно `--confirm-production <production-UUID>`. `.env.local` не загружается. Execute сохраняет прежние catalog/ERP fingerprints, shared import lock и атомарность. Восстанавливаются только v3 prices, не stock/Order/reservations; поздние несовместимые изменения приводят к отказу.
+
+```powershell
+& $grinsNode .\node_modules\tsx\dist\cli.mjs .\scripts\restore-grins-manual-import.ts --environment-profile $grinsProfile --target staging --confirm-operation $grinsId --list
+& $grinsNode .\node_modules\tsx\dist\cli.mjs .\scripts\restore-grins-manual-import.ts --environment-profile $grinsProfile --target staging --confirm-operation $grinsId --backup '<verified-key>'
+# Execute только после отдельного recovery разрешения и dry-run evidence:
+& $grinsNode .\node_modules\tsx\dist\cli.mjs .\scripts\restore-grins-manual-import.ts --environment-profile $grinsProfile --target staging --confirm-operation $grinsId --backup '<verified-key>' --execute
+```
+
 После открытия — отдельно разрешённый synthetic контрольный заказ: новая authoritative цена, один Order/debit/reservation, прежние snapshots не переписаны. Проверить восстановление writers, обработку безопасного backlog и pool health. Если ошибся open/check/control order — вновь закрыть при первой возможности и выяснить состояние, не продолжать новый import.
 
 ## Аварийное восстановление без потери последующих заказов
@@ -123,9 +172,9 @@ Close создаёт maintenanceWindowId только при false→true. Apply
 ## Разрешения, которые нужны отдельно
 
 * Publish/push approved commit и staging deploy/install/generate/build/stop/start; hosting console/env/ACL/IIS changes если потребуются.
-* Provision independent environment marker и approved private registry; staging gate init/close/open.
+* Provision independent environment marker и approved private registry; staging gate init/close/open; abort-window только после отдельно подтверждённого no-commit outcome.
 * Staging snapshot/branch/logical dump, restore rehearsal/new recovery instance; каждое live restore/switch/selective repair — отдельное разрешение.
 * Fresh XML preview/apply (DB writes), synthetic HTTP probes/control orders/auth sessions, payment test/resend, pause/drain/resume writers и проверка callback backlog.
 * OB2 local services/fixtures или отдельный disposable Neon project/pooled endpoint и multi-iisnode stand; не production и не существующая staging БД для fault injection.
 
-OB2 исполнимые сценарии и numerical acceptance — [отдельный план](grins-ob2-executable-plan-2026-10-10.md). Новый код передать Claude. READY FOR STAGING AUTHORIZATION означает готовность обсуждать эти конкретные действия, не отсутствие runtime gates и не production GO.
+OB2 исполнимые сценарии и numerical acceptance — [отдельный план](grins-ob2-executable-plan-2026-10-10.md). Новый код передать Claude с приоритетом M1/M2/L2. Текущий candidate — READY FOR INDEPENDENT REVIEW после финальных локальных проверок; authorization и GO для внешних операций потребуют независимого review и закрытия runtime gates. Production GO здесь не выдаётся.

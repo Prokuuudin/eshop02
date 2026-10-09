@@ -1,11 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resolveGrinsEnvironment, verifyGrinsEnvironment, withGrinsEnvironment, type GrinsEnvironmentRegistry } from './grins-operation-environment'
+import { resolveGrinsEnvironment, verifyGrinsEnvironment, withGrinsEnvironment, guardGrinsTransactions, type GrinsEnvironmentRegistry } from './grins-operation-environment'
 
 export const testRegistry: GrinsEnvironmentRegistry = { version: 1, environments: {
   staging: { instanceId: '11111111-1111-4111-8111-111111111111', hosts: ['127.0.0.1'], database: 'postgres', schema: 'public' },
   production: { instanceId: '22222222-2222-4222-8222-222222222222', hosts: ['prod.example.invalid'], database: 'production', schema: 'public' },
 } }
 describe('independent environment identity', () => {
+  it('sets lock timeout before marker verification in guarded transactions', async () => {
+    const expected = resolveGrinsEnvironment(testRegistry, 'staging', 'postgresql://synthetic@127.0.0.1/postgres')
+    const calls: string[] = []
+    const tx = { $executeRawUnsafe: vi.fn(async () => { calls.push('timeout') }), $queryRawUnsafe: vi.fn(async (sql: string) => { calls.push('identity'); return sql.includes('current_database') ? [{ database: 'postgres', schema: 'public' }] : [] }) }
+    const db = { $transaction: vi.fn(fn => fn(tx)) }
+    const action = vi.fn()
+    await expect(guardGrinsTransactions(db as never, expected).$transaction(action)).rejects.toThrow('database_environment_mismatch')
+    expect(calls).toEqual(['timeout', 'identity', 'identity'])
+    expect(action).not.toHaveBeenCalled()
+  })
   it('rejects a production URL labelled staging before connecting', () => {
     expect(() => resolveGrinsEnvironment(testRegistry, 'staging', 'postgresql://synthetic@prod.example.invalid/production')).toThrow('database_identity_not_confirmed')
   })

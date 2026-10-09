@@ -50,6 +50,7 @@ export function guardGrinsTransactions(db: ExtendedPrismaClient, expected: Grins
   const transaction = db.$transaction.bind(db)
   return new Proxy(db, { get(client, property) {
     if (property === '$transaction') return (fn: (tx: ExtendedTransactionClient) => Promise<unknown>, options?: unknown) => Reflect.apply(transaction, client, [async (tx: ExtendedTransactionClient) => {
+      await tx.$executeRawUnsafe("SELECT set_config('lock_timeout','10000',true)")
       await verifyGrinsEnvironment(tx, expected)
       return fn(tx)
     }, options])

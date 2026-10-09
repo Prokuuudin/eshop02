@@ -25,7 +25,8 @@ async function main() {
     child.stdout.on('data', data => { stdout += data.toString() }); child.stderr.on('data', data => { stderr += data.toString() })
     const code = await new Promise<number>(resolve => child.once('exit', status => resolve(status ?? 1)))
     const lines = stdout.trim().split(/\r?\n/u)
-    const data = stdout.trim() ? JSON.parse(lines[lines.length - 1]) : undefined
+    let data
+    if (stdout.trim()) { try { data = JSON.parse(stdout.trim()) } catch { data = JSON.parse(lines[lines.length - 1]) } }
     return { code, data, stderr }
   }
   const operate = (args: string[]) => run('scripts/operate-grins-staging.ts', ['--confirm-operation', id, ...args])
@@ -42,11 +43,13 @@ async function main() {
     const closed = await operate(['--action', 'close', '--expect-state', 'closed'])
     if (closed.code !== 0) throw new Error(`synthetic close failed: ${closed.stderr}`)
     check('verified close commits and read-back is closed', closed.code === 0 && closed.data.checkoutClosed === true)
+    check('verified close exposes current UUID for explicit abort', typeof closed.data.maintenanceWindowId === 'string' && (await operate(['--action', 'check'])).data.maintenanceWindowId === closed.data.maintenanceWindowId)
     const point = await operate(['--action', 'checkpoint'])
     check('verified checkpoint records time LSN and counts but is not a backup', point.code === 0 && point.data.result.products === 15000 && point.data.result.note === 'metadata_only_not_a_database_backup')
     const premature = await operate(['--action', 'open', '--completed-run', 'baseline'])
     check('open cannot use a successful run from before this closure', premature.code === 1 && premature.stderr.includes('completion_not_verified'))
     const preview = await operate(['--action', 'preview', '--actor', 'operator-admin', '--xml', xmlFile])
+    if (preview.code !== 0) throw new Error(`synthetic preview failed: ${preview.stderr}`)
     check('local-tsx CLI creates a verified prices-only preview', preview.code === 0 && preview.data.result.canApply)
     const applied = await operate(['--action', 'apply', '--actor', 'operator-admin', '--preview', preview.data.result.previewId, '--sha256', preview.data.result.sha256, '--acknowledge-price-warnings'])
     check('verified CLI Apply completes without changing any stock', applied.code === 0 && applied.data.result.status === 'completed' && (await pg.query('SELECT id FROM "Product" WHERE stock<>4')).rows.length === 0)
@@ -63,6 +66,81 @@ async function main() {
     check('explicit open requires current-window success and commits', opened.code === 0 && opened.data.checkoutClosed === false)
     const readback = await operate(['--action', 'check', '--expect-state', 'open'])
     check('verified read-only check confirms open', readback.code === 0 && readback.data.checkoutClosed === false)
+    check('open consumes active window UUID', !(await pg.query<{ value: Record<string, unknown> }>("SELECT value FROM \"KeyValueSetting\" WHERE key='grins-prices-only-maintenance'")).rows[0].value.maintenanceWindowId)
+    await pg.exec("UPDATE \"KeyValueSetting\" SET value=jsonb_set(value,'{checkoutClosed}','true') WHERE key='grins-prices-only-maintenance'")
+    const replay = await operate(['--action', 'open', '--completed-run', runId])
+    check('open SQL-close old-run replay rejected and remains closed', replay.code === 1 && (await operate(['--action', 'check', '--expect-state', 'closed'])).code === 0)
+    await pg.query(`UPDATE "KeyValueSetting" SET value=$1::jsonb WHERE key='grins-prices-only-maintenance'`, [JSON.stringify({ checkoutClosed: true, maintenanceWindowId: gateWindow })])
+    await Promise.all([operate(['--action', 'open', '--completed-run', runId]), operate(['--action', 'close'])])
+    const afterRace = (await pg.query<{ value: { checkoutClosed: boolean; maintenanceWindowId?: string } }>("SELECT value FROM \"KeyValueSetting\" WHERE key='grins-prices-only-maintenance'")).rows[0].value
+    check('concurrent close/open consumes receipt or creates fresh window', afterRace.checkoutClosed ? !!afterRace.maintenanceWindowId && afterRace.maintenanceWindowId !== gateWindow : !afterRace.maintenanceWindowId)
+    const abortWindow = '33333333-3333-4333-8333-333333333333'
+    const resetAbort = async () => {
+      await pg.exec("DELETE FROM \"SyncRun\" WHERE id='abort-test'; DELETE FROM \"KeyValueSetting\" WHERE key IN ('sync-run-lock','synthetic-ledger')")
+      const prior = (await pg.query<{ id: string }>('SELECT id FROM "SyncRun"')).rows.map(run => run.id)
+      await pg.query(`UPDATE "KeyValueSetting" SET value=$1::jsonb WHERE key='grins-prices-only-maintenance'`, [JSON.stringify({ checkoutClosed: true, maintenanceWindowId: abortWindow, maintenanceBaselineRunIds: prior })])
+    }
+    const abortArgs = ['--action', 'abort-window', '--window', abortWindow, '--confirm-no-commit', abortWindow]
+    const seedRun = async (status: string, detail: Record<string, unknown>, synced = 0, finished = true) => pg.query(`INSERT INTO "SyncRun"(id,status,"triggeredBy","productsSynced","finishedAt","errorSample") VALUES ('abort-test',$1,'manual',$2,$3,$4::jsonb)`, [status, synced, finished ? new Date() : null, JSON.stringify({ mode: 'prices-only', maintenanceWindowId: abortWindow, ...detail })])
+    for (const status of ['completed', 'running', 'unknown']) {
+      await resetAbort(); await seedRun(status, { stage: 'rolled_back' })
+      check(`abort rejects ${status} and keeps closed`, (await operate(abortArgs)).code === 1 && (await operate(['--action', 'check', '--expect-state', 'closed'])).code === 0)
+    }
+    for (const [label, status, detail, synced, finished] of [
+      ['unknown outcome', 'failed', { stage: 'transaction_in_progress' }, 0, true],
+      ['committed stage', 'failed', { stage: 'committed' }, 0, true],
+      ['backup receipt', 'failed', { stage: 'rolled_back', backupKey: 'receipt' }, 0, true],
+      ['changed count', 'failed', { stage: 'rolled_back' }, 1, true],
+      ['unfinished failure', 'failed', { stage: 'rolled_back' }, 0, false],
+      ['ambiguous skipped', 'skipped', { stage: 'duplicate' }, 0, true],
+    ] as const) {
+      await resetAbort(); await seedRun(status, detail, synced, finished)
+      check(`abort rejects ${label} and keeps closed`, (await operate(abortArgs)).code === 1 && (await operate(['--action', 'check', '--expect-state', 'closed'])).code === 0)
+    }
+    await resetAbort(); await seedRun('failed', { stage: 'rolled_back' })
+    await pg.exec(`INSERT INTO "KeyValueSetting"(key,value,"updatedAt") VALUES ('synthetic-ledger','{"runId":"abort-test"}',now())`)
+    check('abort rejects durable write receipt', (await operate(abortArgs)).code === 1)
+    await resetAbort(); await pg.exec(`INSERT INTO "KeyValueSetting"(key,value,"updatedAt") VALUES ('sync-run-lock','{"lockedUntil":"2099-01-01T00:00:00Z"}',now())`)
+    check('abort rejects held lease', (await operate(abortArgs)).code === 1)
+    await resetAbort()
+    await pg.exec(`INSERT INTO "KeyValueSetting"(key,value,"updatedAt") VALUES ('sync-run-lock','{}',now())`)
+    check('abort rejects unknown lease state and keeps closed', (await operate(abortArgs)).code === 1 && (await operate(['--action', 'check', '--expect-state', 'closed'])).code === 0)
+    await resetAbort()
+    await pg.exec(`INSERT INTO "SyncRun"(id,status,"triggeredBy") VALUES ('foreign-unknown','unknown','manual')`)
+    check('abort rejects unknown outcome even without current-window diagnostics', (await operate(abortArgs)).code === 1)
+    await pg.exec("DELETE FROM \"SyncRun\" WHERE id='foreign-unknown'")
+    check('abort rejects wrong window', (await operate(abortArgs.map(item => item === abortWindow ? gateWindow : item))).code === 1)
+    await pg.exec("UPDATE \"KeyValueSetting\" SET value=value-'maintenanceBaselineRunIds' WHERE key='grins-prices-only-maintenance'")
+    check('abort rejects legacy window without operation baseline', (await operate(abortArgs)).code === 1)
+    await resetAbort()
+    check('abort rejects missing rollback confirmation', (await operate(['--action', 'abort-window', '--window', abortWindow])).code === 1)
+    check('abort rejects missing operation confirmation', (await run('scripts/operate-grins-staging.ts', abortArgs)).code === 1)
+    await resetAbort(); await seedRun('completed', { maintenanceWindowId: undefined, stage: 'committed' })
+    check('abort rejects new completed run without window metadata', (await operate(abortArgs)).code === 1)
+    await resetAbort()
+    await seedRun('failed', { stage: 'rolled_back' })
+    check('confirmed durable rollback abort opens and consumes window', (await operate(abortArgs)).code === 0 && (await operate(['--action', 'check', '--expect-state', 'open'])).code === 0)
+    check('abort consumes UUID and cannot be replayed', !(await operate(['--action', 'check'])).data.maintenanceWindowId && (await operate(abortArgs)).code === 1)
+    await resetAbort(); await seedRun('skipped', { stage: 'rejected' })
+    check('confirmed pre-write skipped abort opens', (await operate(abortArgs)).code === 0)
+    await resetAbort(); await seedRun('failed', { stage: 'rolled_back' })
+    await Promise.all([operate(abortArgs), operate(['--action', 'close'])])
+    const abortRace = (await pg.query<{ value: { checkoutClosed: boolean; maintenanceWindowId?: string } }>("SELECT value FROM \"KeyValueSetting\" WHERE key='grins-prices-only-maintenance'")).rows[0].value
+    check('concurrent abort/close consumes or rotates UUID', abortRace.checkoutClosed ? !!abortRace.maintenanceWindowId && abortRace.maintenanceWindowId !== abortWindow : !abortRace.maintenanceWindowId)
+    const restoreGood = await run('scripts/restore-grins-manual-import.ts', ['--list', '--confirm-operation', id])
+    check('restore list accepts verified marker and explicit confirmation', restoreGood.code === 0)
+    const backupKey = applied.data.result.backupKey
+    const dryRestore = await run('scripts/restore-grins-manual-import.ts', ['--backup', backupKey, '--confirm-operation', id])
+    check('guarded restore dry-run preserves prices and fingerprints', dryRestore.code === 0 && dryRestore.data.restored === 0 && (await pg.query('SELECT id FROM "Product" WHERE price=11.50')).rows.length === 1000)
+    await operate(['--action', 'close'])
+    const restoreExecute = await run('scripts/restore-grins-manual-import.ts', ['--backup', backupKey, '--confirm-operation', id, '--execute'])
+    check('guarded restore execute restores prices but never stock', restoreExecute.code === 0 && restoreExecute.data.restored === 1000 && (await pg.query('SELECT id FROM "Product" WHERE price<>10 OR stock<>4')).rows.length === 0)
+    const restoredWindow = (await operate(['--action', 'check'])).data.maintenanceWindowId
+    check('abort refuses committed restore without matching window diagnostics', (await operate(['--action', 'abort-window', '--window', restoredWindow, '--confirm-no-commit', restoredWindow])).code === 1)
+    await pg.query(`UPDATE "KeyValueSetting" SET value=$1::jsonb WHERE key='grins-deployment-environment'`, [JSON.stringify({ environment: 'production', instanceId: prod })])
+    check('restore rejects wrong DB marker', (await run('scripts/restore-grins-manual-import.ts', ['--list', '--confirm-operation', id])).code === 1)
+    await pg.query(`UPDATE "KeyValueSetting" SET value=$1::jsonb WHERE key='grins-deployment-environment'`, [JSON.stringify({ environment: 'staging', instanceId: id })])
+    check('restore rejects missing operation confirmation', (await run('scripts/restore-grins-manual-import.ts', ['--list'])).code === 1)
     await operate(['--action', 'close'])
     await pg.exec(`INSERT INTO "SyncRun"(id,status,"triggeredBy","errorCount","errorSample") VALUES ('synthetic-failed','failed','manual',1,'{"mode":"prices-only"}');`)
     const failedOpen = await operate(['--action', 'open', '--completed-run', 'synthetic-failed'])

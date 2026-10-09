@@ -47,7 +47,8 @@ function makeDb(overrides: Partial<DbState> = {}) {
   const db = {
     $queryRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => {
       if (sql.includes('AS owned')) return [{ owned: true }]
-      if (sql.includes('AS fingerprint')) return [{ fingerprint: 'catalog-v1' }]
+      if (sql.includes('AS closed')) return [{ closed: true }]
+      if (sql.includes('AS fingerprint')) return [{ fingerprint: sha256Hex(JSON.stringify(sql.includes('FROM (SELECT') ? state.linked.map(row => [row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice]) : state.linked)) }]
       if (sql.includes('AS hash')) return [{ hash: 'extra-v1' }]
       if (sql.includes('SELECT key')) return [{ key: 'sync-run-lock' }]
       if (sql.includes('AS held')) return [{ held: state.lockHeld }]
@@ -129,6 +130,17 @@ describe('decodeUpload', () => {
 // ─── Preview (read-only evaluation) ──────────────────────────────────────────
 
 describe('evaluateFeed', () => {
+  it('always selects price2 even when scheduled sync environment selects price1', async () => {
+    vi.stubEnv('SYNC_PRIMARY_PRICE_TIER', 'price1')
+    try {
+      const items = baseItems()
+      items[0].price2 = '11.00'
+      const { db } = makeDb()
+      const result = await evaluateFeed(db, makeXml(items))
+      expect(result.products[0].price).toBe(11)
+      expect(result.summary.stockChanges).toBe(0)
+    } finally { vi.unstubAllEnvs() }
+  })
   it('passes a correct full export and reports matched rows with no inserts or deactivations', async () => {
     const items = baseItems()
     items[0].price2 = '11.00'
@@ -190,22 +202,22 @@ describe('evaluateFeed', () => {
     const { products, summary } = await evaluateFeed(db, makeXml(items))
     expect(products[0].stock).toBe(0)
     expect(products[1].stock).toBe(4)
-    expect(summary.stockToZero).toBe(1)
+    expect(summary.stockToZero).toBe(0)
   })
 
-  it('blocks a mass stock drop to zero', async () => {
+  it('ignores XML stock business changes in prices-only preflight', async () => {
     const items = baseItems()
     for (let i = 0; i < 500; i++) items[i].wh = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     const { db } = makeDb()
     const { preflight } = await evaluateFeed(db, makeXml(items))
-    expect(preflight.hard.some(h => h.includes('would drop to stock 0'))).toBe(true)
+    expect(preflight.hard).toEqual([])
   })
 })
 
 // ─── Preview → apply binding ─────────────────────────────────────────────────
 
 describe('manual numeric preflight regression', () => {
-  it.each(['0x10', '-1', 'Infinity', '1e2'])('blocks price2=%s before interpreting products', async value => {
+  it.each(['0x10', '-1', 'Infinity', '1e2', '0.004', '0.0049', '0.0000001'])('blocks price2=%s before interpreting products', async value => {
     const { db } = makeDb()
     const items = baseItems()
     items[0].price2 = value
@@ -267,7 +279,7 @@ describe('applyManualImport orchestration (SQL guarantees verified separately)',
     expect(outcome.status).toBe('completed')
     expect(runSync).not.toHaveBeenCalled()
     expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('LOCK TABLE "Product"'))).toBe(true)
-    expect(state.kv.has('grins-manual-import-applied:' + pending.sha256)).toBe(true)
+    expect(state.kv.has('grins-manual-import-applied:prices-only:' + pending.sha256)).toBe(true)
     expect(raw.syncRun.create).toHaveBeenCalledWith({ data: expect.objectContaining({ status: 'running', errorSample: expect.objectContaining({ actorId: 'admin-1', xmlSha256: pending.sha256 }) }) })
   })
   it('rejects repeated XML even with a new preview and returns original run id', async () => {
@@ -289,7 +301,7 @@ describe('applyManualImport orchestration (SQL guarantees verified separately)',
   it('recomputes preflight after locking and refuses without product writes', async () => {
     const { db, state, raw } = makeDb()
     const { pending } = await preview(db, makeXml(baseItems()))
-    for (const row of state.linked) row.stock = 50
+    for (const row of state.linked) row.price = '50.00'
     expect(await applyManualImport({ db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'preflight_failed' })
     expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
   })

@@ -1,3 +1,4 @@
+import { grinsMaintenanceClosed } from '@/lib/grins-import-maintenance'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
@@ -11,6 +12,8 @@ import { requireGrinsImportActor } from '../auth'
 export const runtime = 'nodejs'
 
 export type GrinsPreviewResponse = {
+  mode: 'prices-only'
+  maintenanceReady: boolean
   previewId: string | null
   canApply: boolean
   sha256: string
@@ -55,21 +58,24 @@ export async function POST(request: NextRequest): Promise<Response> {
     const evaluation = await evaluateFeed(prisma, decoded.xml)
     const { preflight } = evaluation
     const syncRunning = await isSyncLockHeld(prisma)
+    const maintenanceReady = await grinsMaintenanceClosed(prisma)
     const sizeBytes = file.size
     const pending = preflight.hard.length === 0
-      ? await savePendingPreview(prisma, { sha256: decoded.sha256, fileName, sizeBytes, actorId: actor.id, xml: decoded.xml })
+      ? await savePendingPreview(prisma, { sha256: decoded.sha256, fileName, sizeBytes, actorId: actor.id, xml: decoded.xml, catalogFingerprint: evaluation.catalogFingerprint })
       : null
 
     await prisma.$transaction(async tx => appendServerAudit(tx, request, actor, {
       action: 'catalog.grins_import_previewed',
       entityType: 'grins_import',
       entityId: pending?.previewId ?? decoded.sha256,
-      after: { fileName, sizeBytes, sha256: decoded.sha256, canApply: pending !== null, hardFailures: preflight.hard.length, summary: evaluation.summary },
+      after: { mode: 'prices-only', fileName, sizeBytes, sha256: decoded.sha256, canApply: pending !== null && maintenanceReady && !syncRunning, hardFailures: preflight.hard.length, summary: evaluation.summary },
     }))
 
     const body: GrinsPreviewResponse = {
+      mode: 'prices-only',
+      maintenanceReady,
       previewId: pending?.previewId ?? null,
-      canApply: pending !== null,
+      canApply: pending !== null && maintenanceReady && !syncRunning,
       sha256: decoded.sha256,
       fileName,
       sizeBytes,

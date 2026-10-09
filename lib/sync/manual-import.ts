@@ -2,24 +2,22 @@ import { createHash, randomUUID } from 'crypto'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
 import type { ErpProduct } from './erp-adapter'
-import { getErpExtraData } from './erp-extra-data-store'
-import { parseGrinsXml, type GrinsXmlAudit } from './grins-xml-parser'
+import type { GrinsXmlAudit } from './grins-xml-parser'
 import { applyAtomic, restoreAtomic } from './manual-import-atomic'
-import { auditManualXml } from './manual-import-validation'
-import { buildSyncDryRunReport } from './sync-dry-run'
-import { evaluatePreflight, loadPreflightState, type PreflightResult } from './sync-preflight'
+import { evaluatePriceFeed, priceCatalogFingerprint } from './manual-price-preflight'
+import type { PreflightResult } from './sync-preflight'
 import type { runSync as RunSync, SyncRunResult } from './sync-runner'
 
-// Manual GrinS uses scheduled matching/price/stock rules, but executes its own
-// atomic SQL transaction and stricter input gates under the shared DB lock.
+// Manual GrinS allows only price2 updates, with exact cents, dedicated price
+// gates and an atomic transaction. XML stock is never a write input.
 
 export const MANUAL_IMPORT_MAX_BYTES = 20 * 1024 * 1024
 export const MANUAL_IMPORT_PREVIEW_TTL_MS = 30 * 60 * 1000
+export const MANUAL_IMPORT_MODE = 'prices-only' as const
 export const MANUAL_IMPORT_KIND = 'admin-manual-import'
 export const MANUAL_IMPORT_RESTORE_KIND = 'admin-manual-import-restore'
 const PENDING_KEY = 'grins-manual-import-pending'
 export const BACKUP_KEY_PREFIX = 'grins-manual-import-backup:'
-const SAMPLE_SIZE = 10
 
 export const sha256Hex = (content: string | Uint8Array): string =>
   createHash('sha256').update(content).digest('hex')
@@ -76,6 +74,7 @@ export interface ManualImportSamples {
 }
 
 export interface FeedEvaluation {
+  catalogFingerprint: string
   audit: GrinsXmlAudit
   products: ErpProduct[]
   preflight: PreflightResult
@@ -85,50 +84,14 @@ export interface FeedEvaluation {
 
 /** Read-only: parse + scheduled preflight + change counts against the current DB. */
 export async function evaluateFeed(db: ExtendedPrismaClient, xml: string): Promise<FeedEvaluation> {
-  const audit = auditManualXml(xml)
-  const products = audit.validXml && audit.itemCount > 0 && !audit.invalidPrices.length && !audit.invalidStocks.length ? parseGrinsXml(xml) : []
-  const preflight = evaluatePreflight({ audit, products, ...(await loadPreflightState(db)) })
-  const report = products.length > 0
-    ? buildSyncDryRunReport(products, await db.product.findMany({
-      select: { id: true, externalId: true, sku: true, price: true, stock: true, isActive: true, isDeleted: true },
-    }), await getErpExtraData(db))
-    : null
-  const m = preflight.metrics
-  return {
-    audit,
-    products,
-    preflight,
-    summary: {
-      rows: audit.itemCount,
-      matched: m.linked,
-      unlinked: m.unlinked,
-      softDeletedSkipped: m.softDeletedSkipped,
-      priceChanges: m.priceChanged,
-      largePriceChanges: m.largePriceChanges,
-      priceZero: m.priceZero,
-      stockChanges: report?.changes.stock.count ?? 0,
-      stockToZero: report?.stockAnalysis.positiveToZero ?? 0,
-      duplicateSkus: audit.duplicateExternalIds.length,
-      conflicts: report?.conflicts ?? 0,
-      invalidValues: audit.invalidPrices.length + audit.invalidStocks.length,
-      negativeValues: audit.negativePrices.length + audit.negativeStocks.length,
-      linkedMissingFromXml: m.linkedMissingFromXml,
-      inserts: 0,
-      deactivations: 0,
-    },
-    samples: {
-      unlinked: report?.unlinkedXmlSample.slice(0, SAMPLE_SIZE) ?? [],
-      duplicates: audit.duplicateExternalIds.slice(0, SAMPLE_SIZE),
-      invalidValues: [...audit.invalidPrices, ...audit.invalidStocks].slice(0, SAMPLE_SIZE),
-      priceChanges: (report?.changes.price.samples ?? []).slice(0, SAMPLE_SIZE).map(({ externalId, before, after }) => ({ externalId, before, after })),
-      stockChanges: (report?.changes.stock.samples ?? []).slice(0, SAMPLE_SIZE).map(({ externalId, before, after }) => ({ externalId, before, after })),
-    },
-  }
+  return evaluatePriceFeed(db, xml)
 }
 
 // ─── Pending preview: the exact uploaded snapshot, bound to its SHA-256 ──────
 
 export interface PendingPreview {
+  mode: typeof MANUAL_IMPORT_MODE
+  catalogFingerprint: string
   previewId: string
   sha256: string
   fileName: string
@@ -142,11 +105,13 @@ export interface PendingPreview {
 /** Stores the previewed file. A newer preview replaces an older one (single slot). */
 export async function savePendingPreview(
   db: ExtendedPrismaClient,
-  input: Omit<PendingPreview, 'previewId' | 'createdAt' | 'expiresAt'>,
+  input: Omit<PendingPreview, 'previewId' | 'createdAt' | 'expiresAt' | 'mode' | 'catalogFingerprint'> & { catalogFingerprint?: string },
   now: Date = new Date(),
 ): Promise<PendingPreview> {
   const preview: PendingPreview = {
     ...input,
+    mode: MANUAL_IMPORT_MODE,
+    catalogFingerprint: input.catalogFingerprint ?? await priceCatalogFingerprint(db),
     previewId: randomUUID(),
     createdAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + MANUAL_IMPORT_PREVIEW_TTL_MS).toISOString(),
@@ -156,7 +121,7 @@ export async function savePendingPreview(
   return preview
 }
 
-export type ConsumeError = 'preview_not_found' | 'preview_mismatch' | 'preview_expired' | 'content_mismatch'
+export type ConsumeError = 'preview_not_found' | 'preview_mismatch' | 'preview_expired' | 'content_mismatch' | 'preview_mode_mismatch'
 
 /**
  * Atomically takes the pending preview out of storage. Only the uploader, with
@@ -178,6 +143,7 @@ export async function consumePendingPreview(
     const existing = await db.keyValueSetting.findUnique({ where: { key: PENDING_KEY }, select: { key: true } })
     return { ok: false, error: existing ? 'preview_mismatch' : 'preview_not_found' }
   }
+  if (preview.mode !== MANUAL_IMPORT_MODE || typeof preview.catalogFingerprint !== 'string') return { ok: false, error: 'preview_mode_mismatch' }
   if (Date.parse(preview.expiresAt) < now.getTime()) return { ok: false, error: 'preview_expired' }
   if (typeof preview.xml !== 'string' || sha256Hex(preview.xml) !== input.sha256) return { ok: false, error: 'content_mismatch' }
   return { ok: true, preview }
@@ -239,7 +205,7 @@ export async function restorePreImportBackup(
 ): Promise<RestoreResult> {
   if (options.execute) return restoreAtomic(db, key, true)
   const stored = await db.keyValueSetting.findUnique({ where: { key } })
-  if ((stored?.value as { version?: number } | undefined)?.version === 2) return restoreAtomic(db, key, false)
+  if ((stored?.value as { version?: number } | undefined)?.version === 3) return restoreAtomic(db, key, false)
   if (!key.startsWith(BACKUP_KEY_PREFIX)) throw new Error('Not a manual-import backup key')
   const backup = stored?.value as unknown as BackupValue | undefined
   if (!backup || !Array.isArray(backup.rows)) throw new Error('Backup not found')
@@ -247,7 +213,7 @@ export async function restorePreImportBackup(
   return { key, backupRows: backup.rows.length, differing: backup.rows.filter(row => current.get(row[0]) !== JSON.stringify(row)).length, restored: 0 }
 }
 
-export type ApplyRejection = ConsumeError | 'sync_running' | 'preflight_failed' | 'backup_failed' | 'already_applied'
+export type ApplyRejection = ConsumeError | 'sync_running' | 'preflight_failed' | 'backup_failed' | 'already_applied' | 'maintenance_required'
 
 export type ManualApplyOutcome =
   | { status: 'rejected'; error: ApplyRejection; hard?: string[]; runId?: string }

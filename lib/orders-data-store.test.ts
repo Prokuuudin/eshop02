@@ -7,6 +7,7 @@ const { queryRawMock, transactionMock, orderFindUniqueMock } = vi.hoisted(() => 
 }))
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/grins-import-maintenance', () => ({ assertGrinsCheckoutOpen: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: queryRawMock,

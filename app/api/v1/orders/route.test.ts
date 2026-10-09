@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
+import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 
 const { authenticateMock, pricingMock, persistMock, productFindMock, orderFindMock, orderCountMock } = vi.hoisted(() => ({
   authenticateMock: vi.fn(), pricingMock: vi.fn(), persistMock: vi.fn(),
@@ -99,6 +100,12 @@ describe('/api/v1/orders', () => {
     const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], address: {} }))
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'Products not available for sale: p1' })
+  })
+  it('returns 503 when shared order creation is closed for price import', async () => {
+    persistMock.mockRejectedValueOnce(new CheckoutMaintenanceError())
+    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], address: {} }))
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'checkout_maintenance' })
   })
 
   it('returns an existing tenant order for a repeated idempotency key', async () => {

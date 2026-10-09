@@ -14,6 +14,7 @@ export type GrinsImportHistoryRow = {
   productsSynced: number
   errorCount: number
   kind: string | null
+  mode: string | null
   stage: string | null
   fileName: string | null
   sha256: string | null
@@ -55,6 +56,7 @@ export async function GET(): Promise<Response> {
       productsSynced: run.productsSynced,
       errorCount: run.errorCount,
       kind: text(s.kind),
+      mode: text(s.mode),
       stage: text(s.stage),
       fileName: text(s.fileName),
       sha256: text(s.xmlSha256, 64),

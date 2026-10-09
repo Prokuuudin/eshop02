@@ -1,3 +1,4 @@
+import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 import { NextRequest } from 'next/server'
 import { createHash } from 'node:crypto'
 import { logApiError } from '@/lib/observability'
@@ -206,6 +207,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       201
     )
   } catch (error) {
+    if (error instanceof CheckoutMaintenanceError) return errorResponse('checkout_maintenance', 503)
     if (error instanceof ExistingCheckoutOrderError) {
       return successResponse({
         orderId: error.order.id, status: error.order.paymentStatus,

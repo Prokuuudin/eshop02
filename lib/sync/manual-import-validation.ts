@@ -9,8 +9,11 @@ export function manualDecimal(value: unknown, stock = false): number | null {
   if (!Number.isFinite(number) || number > (stock ? 2_147_483_647 : 9_999_999_999.99)) return null
   if (stock && (!Number.isInteger(number) || (text.includes('.') && !/^0+$/u.test(text.split('.')[1])))) return null
   if (!stock && ((number === 0 && /[1-9]/u.test(text)) || !Number.isSafeInteger(Math.trunc(number * 100)))) return null
-  // Prices may have vendor precision beyond cents; normal price rounding remains.
-  return number
+  if (stock) return number
+  const [whole, fraction = ''] = text.split('.')
+  const cents = BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2)) + (Number(fraction[2] ?? '0') >= 5 ? 1n : 0n)
+  if (cents > 999_999_999_999n || (cents === 0n && /[1-9]/u.test(text))) return null
+  return Number(cents) / 100
 }
 
 /** Manual-only fail-closed gates; scheduled Hairshop.lv behavior is unchanged. */

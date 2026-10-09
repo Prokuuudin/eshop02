@@ -1,3 +1,4 @@
+import { assertGrinsCheckoutOpen } from './grins-import-maintenance'
 import { Prisma } from '@/generated/prisma/client'
 import { requiresDeliveryLocation, resolveDeliveryLocation } from './delivery-locations'
 import { isDeliveryAvailable, calcDeliveryFee } from './delivery'
@@ -43,7 +44,9 @@ export type CreateOrderOptions = {
 
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
 const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder, options: CreateOrderOptions = {}): Promise<PrismaOrder> => {
+  await assertGrinsCheckoutOpen(prisma)
   return prisma.$transaction(async (tx) => {
+    await assertGrinsCheckoutOpen(tx, true)
     if (initialOrder.userId) await expireBonusPoints(tx, initialOrder.userId)
     const currentUser = initialOrder.userId
       ? await tx.user.findUnique({ where: { id: initialOrder.userId }, select: { bonusPoints: true } })

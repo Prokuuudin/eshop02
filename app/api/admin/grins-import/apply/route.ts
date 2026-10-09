@@ -18,17 +18,22 @@ const REJECTION_STATUS: Record<ApplyRejection, number> = {
   preflight_failed: 422,
   backup_failed: 500,
   already_applied: 409,
+  maintenance_required: 503,
+  preview_mode_mismatch: 409,
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
   const actor = await requireGrinsImportActor()
   if (actor instanceof NextResponse) return actor
 
-  let body: { previewId?: unknown; sha256?: unknown }
+  let body: { previewId?: unknown; sha256?: unknown; mode?: unknown }
   try {
     body = (await request.json()) as typeof body
   } catch {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
+  }
+  if (!body || typeof body !== 'object' || Object.keys(body).some(key => !['previewId', 'sha256', 'mode'].includes(key)) || (body.mode !== undefined && body.mode !== 'prices-only')) {
+    return NextResponse.json({ error: 'unsupported_import_mode' }, { status: 400 })
   }
   const { previewId, sha256 } = body
   if (typeof previewId !== 'string' || !/^[0-9a-f-]{36}$/u.test(previewId) || typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/u.test(sha256)) {
@@ -55,6 +60,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
     const { result } = outcome
     return NextResponse.json({
+      mode: 'prices-only',
       status: result.status,
       runId: result.runId,
       productsSynced: result.productsSynced,

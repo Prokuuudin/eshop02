@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
+vi.mock('@/lib/grins-import-maintenance', () => ({ grinsMaintenanceClosed: vi.fn().mockResolvedValue(true) }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb({})),
@@ -148,6 +149,13 @@ describe('POST /api/admin/grins-import/apply', () => {
     const response = await applyPOST(applyRequest(validApply))
     expect(response.status).toBe(409)
     expect(await response.json()).toMatchObject({ error: 'already_applied', runId: 'original-run' })
+  })
+  it.each([{ mode: 'full' }, { mode: 'prices-and-stock' }, { includeStock: true }, { stock: true }])('rejects mode/stock request tampering %j before Apply', async extra => {
+    allow()
+    const response = await applyPOST(applyRequest({ ...validApply, ...extra }))
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ error: 'unsupported_import_mode' })
+    expect(applyManualImport).not.toHaveBeenCalled()
   })
   it('uses failed audit action for failed catalog transaction', async () => {
     allow()

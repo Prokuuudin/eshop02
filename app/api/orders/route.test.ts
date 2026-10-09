@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 
 vi.mock('@/lib/shipping-settings-server', async () => {
   const { DEFAULT_COMMERCE_SETTINGS } = await import('@/lib/commerce-settings')
@@ -649,6 +650,15 @@ describe('POST /api/orders — admin notification', () => {
     expect(res.status).toBe(200)
     expect(await persistedOrder()).toMatchObject({ paymentMethod: 'cash', paymentProvider: 'manual', paymentStatus: 'unpaid', pickupStoreId: 'riga-office' })
   })
+  it('returns 503 before reservation cleanup, order creation or payment in maintenance', async () => {
+    vi.mocked(assertGrinsCheckoutOpen).mockRejectedValueOnce(new CheckoutMaintenanceError())
+    const response = await POST(makeRequest())
+    expect(response.status).toBe(503)
+    expect(await response.json()).toEqual({ error: 'checkout_maintenance' })
+    expect(releaseExpiredStockReservations).not.toHaveBeenCalled()
+    expect(createServerOrder).not.toHaveBeenCalled()
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
 
   it('passes bonus spend and promo code to authoritative pricing and persists only the applied promo', async () => {
     vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'ivan@example.com' } as never)
@@ -661,3 +671,7 @@ describe('POST /api/orders — admin notification', () => {
     expect(await persistedOrder()).toMatchObject({ promoCode: 'SALE10', discount: 5, bonusSpent: 100, bonusEarned: 20, total: 49, userId: 'u1' })
   })
 })
+vi.mock('@/lib/grins-import-maintenance', async importOriginal => ({
+  ...await importOriginal<typeof import('@/lib/grins-import-maintenance')>(),
+  assertGrinsCheckoutOpen: vi.fn().mockResolvedValue(undefined),
+}))

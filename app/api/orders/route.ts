@@ -1,3 +1,5 @@
+import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { prisma } from '@/lib/prisma'
 import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
 import { checkoutDeliveryMethodIds, type DeliveryCountry } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
@@ -383,6 +385,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    await assertGrinsCheckoutOpen(prisma)
     await releaseExpiredStockReservations()
 
     // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
@@ -534,6 +537,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ success: true, orderId: created.id, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
+    if (error instanceof CheckoutMaintenanceError) return NextResponse.json({ error: 'checkout_maintenance' }, { status: 503 })
     if (error instanceof ExistingCheckoutOrderError) {
       const existing = error.order
       // A resubmit (double-click / network retry before the client got the first response)

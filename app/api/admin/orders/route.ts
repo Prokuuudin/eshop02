@@ -1,3 +1,4 @@
+import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
 import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
@@ -208,6 +209,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ order: created, ...(metaWarning ? { warning: metaWarning } : {}) }, { status: 201 })
   } catch (error) {
+    if (error instanceof CheckoutMaintenanceError) return NextResponse.json({ error: 'checkout_maintenance' }, { status: 503 })
     if (error instanceof InsufficientStockError) {
       return NextResponse.json({ error: 'insufficient_stock', items: error.items }, { status: 409 })
     }

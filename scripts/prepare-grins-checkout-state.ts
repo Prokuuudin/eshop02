@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolveGrinsEnvironment, safeGrinsOperationError, withGrinsEnvironment } from '@/lib/grins-operation-environment'
 // Explicit future operator action. No dotenv, migrations, automatic runtime
 // initialization or resetting a closed gate. Default mode is read-only check.
 import { initializeGrinsCheckoutState, readGrinsCheckoutState } from '@/lib/grins-checkout-preparation'
@@ -9,30 +11,29 @@ function option(name: string): string | undefined {
 
 async function main(): Promise<void> {
   const target = option('--target')
-  const expectedHost = option('--expected-host')
-  const expectedDatabase = option('--expected-database')
   const expectedState = option('--expect-state')
   const initialize = process.argv.includes('--initialize')
-  if (!['staging', 'production'].includes(target ?? '') || !expectedHost || !expectedDatabase || !['open', 'closed'].includes(expectedState ?? '')) throw new Error('explicit_target_database_and_state_required')
+  if (!['staging', 'production'].includes(target ?? '') || !['open', 'closed'].includes(expectedState ?? '')) throw new Error('explicit_target_database_and_state_required')
   if (initialize && (option('--confirm-initial-state') !== 'open' || expectedState !== 'open')) throw new Error('initial_open_state_confirmation_required')
-  const connection = process.env.DATABASE_URL
-  if (!connection) throw new Error('database_identity_not_confirmed')
-  const identity = new URL(connection)
-  if (!['postgres:', 'postgresql:'].includes(identity.protocol) || identity.hostname.toLowerCase() !== expectedHost.toLowerCase() || decodeURIComponent(identity.pathname.slice(1)) !== expectedDatabase) throw new Error('database_identity_not_confirmed')
-  // Import only after arguments and the process-provided URL are validated.
+  const profile = option('--environment-profile')
+  if (!profile) throw new Error('environment_registry_invalid')
+  const expected = resolveGrinsEnvironment(JSON.parse(readFileSync(profile, 'utf8')), target, process.env.DATABASE_URL, option('--confirm-production'))
+  if ((option('--expected-host') && !expected.hosts.includes(option('--expected-host')!)) || (option('--expected-database') && option('--expected-database') !== expected.database)) throw new Error('database_identity_not_confirmed')
   const { prisma } = await import('@/lib/prisma')
   try {
-    const result = initialize ? await initializeGrinsCheckoutState(prisma) : { created: false, checkoutClosed: await readGrinsCheckoutState(prisma) }
-    if (result.checkoutClosed === 'missing') throw new Error('checkout_state_missing_release_blocked')
-    console.log(JSON.stringify({ event: 'grins_checkout_preparation', target, action: initialize ? 'initialize-if-missing' : 'check', ...result }))
-    if (result.checkoutClosed !== (expectedState === 'closed')) throw new Error('checkout_state_unexpected_release_blocked')
+    const result = await withGrinsEnvironment(prisma, expected, async tx => {
+      const state = initialize ? await initializeGrinsCheckoutState(tx) : { created: false, checkoutClosed: await readGrinsCheckoutState(tx) }
+      if (state.checkoutClosed === 'missing') throw new Error('checkout_state_missing_release_blocked')
+      if (state.checkoutClosed !== (expectedState === 'closed')) throw new Error('checkout_state_unexpected_release_blocked')
+      return state
+    })
+    console.log(JSON.stringify({ event: 'grins_checkout_preparation', target, instanceId: expected.instanceId, action: initialize ? 'initialize-if-missing' : 'check', ...result }))
   } finally { await prisma.$disconnect() }
 }
 
 main().catch(error => {
   // Driver exceptions may contain connection strings; never print them.
-  const safeReasons = ['explicit_target_database_and_state_required', 'initial_open_state_confirmation_required', 'database_identity_not_confirmed', 'checkout_state_missing_release_blocked', 'checkout_state_unexpected_release_blocked', 'invalid_checkout_state', 'checkout_state_initialization_unverified']
-  const reason = error instanceof Error && safeReasons.includes(error.message) ? error.message : 'preparation_not_verified'
+  const reason = safeGrinsOperationError(error)
   console.error(JSON.stringify({ event: 'grins_checkout_preparation_failed', reason, release: 'blocked' }))
   process.exitCode = 1
 })

@@ -86,7 +86,7 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
-  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, xmlSha256: input.sha256, stage: 'acquiring' }
+  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
   const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'manual', errorSample: json(base) } })
   const runId = run.id
   let owned = false

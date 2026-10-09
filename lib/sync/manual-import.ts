@@ -221,6 +221,8 @@ export type ManualApplyOutcome =
 
 export interface ManualApplyDeps {
   db: ExtendedPrismaClient
+  /** Privileged operator context; never read from HTTP body. Diagnostics only. */
+  operationContext?: { maintenanceWindowId: string }
   /** Compatibility with existing callers; the batch runner is never called. */
   runSync?: typeof RunSync
   now?: () => Date

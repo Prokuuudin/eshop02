@@ -1,5 +1,7 @@
 # GrinS prices-only: подготовка staging/production и обслуживание, 9 октября 2026
 
+**Историческая версия.** Operator-команды и среды теперь защищены registry+DB-marker; актуальная процедура: [operational authorization 10.10](grins-staging-operational-authorization-2026-10-10.md). Старые CLI commands без --environment-profile намеренно отказывают; старые raw SQL close/open не использовать как обход новой защиты.
+
 Это **процедура будущего выполнения**, не отчёт о live-действиях. Текущая задача разрешает локальный код/тесты/документы/commit. Push/merge/deploy, подключения к Neon, изменение staging/production и реальные контрольные заказы здесь не выполнялись. Для каждой среды и каждого окна требуется отдельное разрешение владельца. Миграции не нужны.
 
 Кандидат: локальный commit в release/grins-manual-import, содержащий этот документ; полный SHA взять из final/handoff и git rev-parse HEAD, перед выпуском сверить trusted источник. Чужой MFA/WIP checkout не использовать. Checkout-state хранится в общей БД, KVS key `grins-prices-only-maintenance`, value с **JSON boolean** checkoutClosed.

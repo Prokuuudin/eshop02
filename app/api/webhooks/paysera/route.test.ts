@@ -69,7 +69,7 @@ describe('POST /api/webhooks/paysera', () => {
     expect(updateServerOrderPayment).not.toHaveBeenCalled()
   })
 
-  it('returns 500 (retryable) when the signature check itself throws, e.g. missing config', async () => {
+  it('returns 500 when the signature check throws; no provider delivery is simulated', async () => {
     vi.mocked(verifyPayseraWebhookSignature).mockImplementation(() => {
       throw new Error('PAYSERA_CLIENT_SECRET must be configured')
     })
@@ -79,12 +79,20 @@ describe('POST /api/webhooks/paysera', () => {
     expect(res.status).toBe(500)
   })
 
-  it('returns 500 (retryable) when the DB update throws', async () => {
+  it('returns 500 when the DB update throws', async () => {
     vi.mocked(verifyPayseraWebhookSignature).mockReturnValue(true)
     vi.mocked(updateServerOrderPayment).mockRejectedValue(new Error('db down'))
 
     const res = await POST(makeRequest(ORDER_EVENT('paid')))
 
     expect(res.status).toBe(500)
+  })
+  it('accepts an explicitly redelivered identical notification after one local DB failure', async () => {
+    vi.mocked(verifyPayseraWebhookSignature).mockReturnValue(true)
+    vi.mocked(updateServerOrderPayment).mockRejectedValueOnce(new Error('synthetic DB failure')).mockResolvedValueOnce(null)
+    const body = ORDER_EVENT('paid')
+    expect((await POST(makeRequest(body))).status).toBe(500)
+    expect((await POST(makeRequest(body))).status).toBe(200)
+    expect(updateServerOrderPayment).toHaveBeenCalledTimes(2)
   })
 })

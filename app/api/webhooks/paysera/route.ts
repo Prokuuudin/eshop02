@@ -55,7 +55,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   } catch (error) {
     logOperationalEvent({ event: 'paysera_webhook_update_failed', level: 'error', alert: true, orderId }, error)
-    // 5xx — a transient DB error should be retried by Paysera.
+    // Checkout Modern documentation describes retries after 5xx, but this code
+    // neither queues delivery nor proves the merchant's retry configuration.
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 

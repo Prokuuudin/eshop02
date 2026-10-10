@@ -2,6 +2,7 @@ import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
 import { releaseSyncLock } from './sync-lock'
 import { buildManualPriceQuery } from './manual-price-query'
+import { hasValidB2BPrice } from '@/lib/product-sellability'
 import { grinsMaintenanceClosed } from '@/lib/grins-import-maintenance'
 import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND,
@@ -86,7 +87,7 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
-  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
+  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
   const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'manual', errorSample: json(base) } })
   const runId = run.id
   let owned = false
@@ -144,6 +145,15 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
       const identities = new Set(before.rows.map(row => row.externalId))
       if (identities.size !== before.rows.length) throw new Error('duplicate_claimants')
       const valid = products.filter(product => identities.has(product.externalId))
+      const previousPrices = new Map(before.rows.map(row => [row.externalId, row]))
+      if (valid.some(product => {
+        const previous = previousPrices.get(product.externalId)!
+        return product.price > 0 && hasValidB2BPrice(previous) !== hasValidB2BPrice({ ...previous, price: product.price })
+      })) {
+        const hard = ['price_change_would_alter_sellability']
+        await tx.syncRun.update({ where: { id: runId }, data: { status: 'failed', finishedAt: new Date(), errorCount: 1, errorSample: json({ ...base, stage: 'preflight_rejected', hardFailures: hard }) } })
+        return { status: 'rejected', error: 'preflight_failed', hard, runId } as ManualApplyOutcome
+      }
       backupKey = `${BACKUP_KEY_PREFIX}${now.toISOString()}:${input.previewId}`
       Object.assign(base, { backupKey, stage: 'applying', warnings: preflight.warnings, metrics: preflight.metrics, changes: { price: evaluation.summary.priceChanges, stock: evaluation.summary.stockChanges } })
       const backup: SafeBackup = { version: 3, mode: MANUAL_IMPORT_MODE, runId, sha256: input.sha256, rows: before.rows, afterFingerprint: '', afterExtraHash: '' }

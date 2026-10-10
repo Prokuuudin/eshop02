@@ -30,6 +30,7 @@ function baseline(): PreflightInput {
   const products = Array.from({ length: ROWS }, (_, index) => product(index))
   const linkedProducts: LinkedProductState[] = products.slice(0, LINKED).map((row, index) => ({
     externalId: row.externalId, price: '10.00', stock: row.stock, isActive: index % 10 === 0, isDeleted: false,
+    erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null,
   }))
   return { audit: cleanAudit(), products, linkedProducts, previousProductsTotal: ROWS }
 }
@@ -152,7 +153,7 @@ describe('evaluatePreflight', () => {
 
   it('emits warnings without blocking', () => {
     const input = baseline()
-    input.linkedProducts.push({ externalId: 'gone', price: '5.00', stock: 3, isActive: true, isDeleted: false })
+    input.linkedProducts.push({ externalId: 'gone', price: '5.00', stock: 3, isActive: true, isDeleted: false, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null })
     input.products[1] = { ...input.products[1], price: 2500 }
     input.products[2] = { ...input.products[2], price: 30 }
     const result = evaluatePreflight({ ...input, previousProductsTotal: 16_500 })

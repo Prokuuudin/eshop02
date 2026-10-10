@@ -60,8 +60,9 @@ function makeDb(overrides: Partial<DbState> = {}) {
         state.kv.delete(key)
         return [{ value }]
       }
-      if (sql.includes('"manualPriceApproved"')) return state.linked.filter(p => !p.isDeleted)
+      if (sql.includes('WHERE "externalId" IS NOT NULL AND NOT "isDeleted"')) return state.linked.filter(p => !p.isDeleted)
       if (sql.includes('"isActive", "isDeleted"')) return state.linked
+      if (sql.includes('"manualPriceApproved"')) return state.linked.filter(p => !p.isDeleted)
       throw new Error(`unexpected SQL: ${sql.slice(0, 80)}`)
     }),
     $executeRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => (sql.includes('UPDATE "Product"') ? params.length / 6 : 1)),
@@ -130,6 +131,16 @@ describe('decodeUpload', () => {
 // ─── Preview (read-only evaluation) ──────────────────────────────────────────
 
 describe('evaluateFeed', () => {
+  it.each(['available_to_unavailable', 'unavailable_to_available'])('Preview and Apply both block %s', async direction => {
+    const { db, state, raw } = makeDb()
+    Object.assign(state.linked[0], { erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: direction === 'available_to_unavailable' ? '10.00' : '11.00' })
+    const items = baseItems(); items[0].price2 = '11.00'
+    const { evaluation, pending } = await preview(db, makeXml(items))
+    expect(evaluation.preflight.hard).toContain('price_change_would_alter_sellability')
+    const result = await applyManualImport({ db }, { previewId: pending.previewId, sha256: pending.sha256, actorId: pending.actorId })
+    expect(result).toMatchObject({ status: 'rejected', error: 'preflight_failed', hard: expect.arrayContaining(['price_change_would_alter_sellability']) })
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
+  })
   it('always selects price2 even when scheduled sync environment selects price1', async () => {
     vi.stubEnv('SYNC_PRIMARY_PRICE_TIER', 'price1')
     try {

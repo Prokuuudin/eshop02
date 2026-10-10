@@ -3,6 +3,7 @@ import { auditManualXml, manualDecimal } from './manual-import-validation'
 import { parseGrinsXml, readGrinsXmlItems } from './grins-xml-parser'
 import { loadPreflightState, PREFLIGHT_THRESHOLDS as T, structuralFailures, toCents, type PreflightMetrics } from './sync-preflight'
 import type { FeedEvaluation } from './manual-import'
+import { hasValidB2BPrice } from '@/lib/product-sellability'
 
 export async function priceCatalogFingerprint(db: ExtendedPrismaClient): Promise<string> {
   const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(
@@ -46,6 +47,9 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
     if (!current) { metrics.unlinked++; unlinked.push(product.externalId); continue }
     if (current.isDeleted) { metrics.softDeletedSkipped++; continue }
     metrics.linked++
+    if (product.price > 0 && hasValidB2BPrice(current) !== hasValidB2BPrice({ ...current, price: product.price }) && !hard.includes('price_change_would_alter_sellability')) {
+      hard.push('price_change_would_alter_sellability')
+    }
     const before = toCents(current.price)
     if (cents > 0 && cents !== before) {
       metrics.priceChanged++

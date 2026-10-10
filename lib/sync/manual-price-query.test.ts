@@ -7,6 +7,8 @@ describe('prices-only SQL and decimal cents', () => {
     const query = buildManualPriceQuery(2)
     expect(query).not.toMatch(/stock|warehouse|reservation|INSERT/iu)
     expect(query.split('FROM')[0]).not.toMatch(/isActive|isDeleted/iu)
+    expect(query.split('FROM')[0]).not.toMatch(/erpPriceMissing|manualPriceApproved|manualApprovedPrice/iu)
+    expect(query).toContain('AND v.price>0 AND p.price IS DISTINCT FROM v.price')
     expect(query).toContain('round($2::numeric,2)')
   })
   it.each(['0.004', '0.0049', '0.0000001', '0x10', '1e2', '10000000000', '-1', 'NaN'])('rejects unsafe price %s', price => {

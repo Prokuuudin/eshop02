@@ -228,14 +228,37 @@ describe('evaluateFeed', () => {
 // ─── Preview → apply binding ─────────────────────────────────────────────────
 
 describe('manual numeric preflight regression', () => {
+  it.each(['0.000105', '0.001', 'bad', '-1', 'Infinity', ''])('ignores unused prices=%s in preview and atomic apply', async value => {
+    const { db, raw } = makeDb()
+    const items = baseItems()
+    items[0].price2 = '12.34'
+    const xml = makeXml(items).replace(/<price[134]>[^<]*<\/price[134]>/gu, tag => tag.replace(/>[^<]*</u, `>${value}<`))
+    const { evaluation, pending } = await preview(db, xml)
+    expect(evaluation.preflight.hard).toEqual([])
+    expect(evaluation.summary).toMatchObject({ matched: ROWS, unlinked: 0, linkedMissingFromXml: 0, invalidValues: 0, negativeValues: 0, priceChanges: 1, stockChanges: 0 })
+    expect(evaluation.products[0].price).toBe(12.34)
+    expect((await applyManualImport({ db }, { ...pending, actorId: 'admin-1' })).status).toBe('completed')
+    const updates = raw.$executeRawUnsafe.mock.calls.filter(([sql]) => sql.includes('UPDATE "Product"'))
+    expect(updates.length).toBeGreaterThan(0)
+    for (const [sql] of updates) {
+      expect(sql.split('FROM')[0]).not.toMatch(/stock|reserve|order|erpPriceMissing|manualPriceApproved|manualApprovedPrice/iu)
+    }
+    const values = updates.flatMap(call => call.slice(1))
+    expect(values.slice(0, 2)).toEqual(['S0', '12.34'])
+    expect(values).toHaveLength(ROWS * 2)
+  })
+
   it.each(['0x10', '-1', 'Infinity', '1e2', '0.004', '0.0049', '0.0000001'])('blocks price2=%s before interpreting products', async value => {
-    const { db } = makeDb()
+    const { db, raw } = makeDb()
     const items = baseItems()
     items[0].price2 = value
     const evaluation = await evaluateFeed(db, makeXml(items))
     expect(evaluation.preflight.hard.some(message => message.includes('invalid price'))).toBe(true)
     expect(evaluation.products).toEqual([])
     expect(evaluation.summary.invalidValues).toBe(1)
+    const pending = await savePendingPreview(db, { xml: makeXml(items), sha256: sha256Hex(makeXml(items)), fileName: 'export.xml', sizeBytes: makeXml(items).length, actorId: 'admin-1' })
+    expect(await applyManualImport({ db }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'preflight_failed' })
+    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
   })
 })
 

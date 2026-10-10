@@ -21,10 +21,13 @@ export function auditManualXml(xml: string): GrinsXmlAudit {
   const audit = auditGrinsXml(xml)
   if (!audit.validXml) return audit
   audit.invalidPrices = []
+  // Prices-only consumes price2; unused tiers must not block either preview
+  // or the identical preflight repeated inside atomic apply.
+  audit.negativePrices = audit.negativePrices.filter(({ field }) => field === 'price2')
   audit.invalidStocks = []
   for (const item of readGrinsXmlItems(xml)) {
     const sku = String(item.sku ?? '').trim()
-    for (const field of ['price1', 'price2', 'price3', 'price4'] as const) {
+    for (const field of ['price2'] as const) {
       if (manualDecimal(item[field]) === null) audit.invalidPrices.push({ sku, field, value: String(item[field] ?? '') })
     }
     if (manualDecimal(item.quantity, true) === null) audit.invalidStocks.push({ sku, field: 'quantity', value: String(item.quantity ?? '') })

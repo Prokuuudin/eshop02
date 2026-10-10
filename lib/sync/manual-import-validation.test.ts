@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { auditManualXml, manualDecimal } from './manual-import-validation'
+import { auditGrinsXml } from './grins-xml-parser'
 
 describe('manual decimal contract', () => {
   it.each(['0x10', '1e2', '-1', '+1', 'NaN', 'Infinity', '1,00', '1 000', '', ' ', '1x', '.5', '1.', '10000000000'])('refuses ambiguous/invalid price %s', value => {
@@ -23,6 +24,14 @@ describe('manual decimal contract', () => {
     expect(audit.invalidPrices).toEqual([])
     expect(audit.invalidStocks).toEqual([])
     expect(audit.leadingZeroSkus).toEqual(['001'])
+  })
+  it('ignores missing unused tiers without weakening the general sync audit', () => {
+    const xml = `<root>${item('10').replace(/<price[134]>[^<]*<\/price[134]>/gu, '')}</root>`
+    expect(auditManualXml(xml).invalidPrices).toEqual([])
+    expect(auditGrinsXml(xml).invalidPrices.map(({ field }) => field)).toEqual(['price1', 'price3', 'price4'])
+  })
+  it.each(['0.000105', '0.001', '', '-1', 'NaN', '10000000000'])('still rejects invalid price2=%s', value => {
+    expect(auditManualXml(`<root>${item(value)}</root>`).invalidPrices).toEqual([{ sku: '001', field: 'price2', value }])
   })
   it('catches a missing slot on each item even if other rows have that slot', () => {
     const audit = auditManualXml(`<root>${item()}${item('1', '<warehouse id="1">1</warehouse>')}</root>`)

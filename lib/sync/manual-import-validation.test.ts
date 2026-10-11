@@ -33,6 +33,10 @@ describe('manual decimal contract', () => {
   it.each(['0.000105', '0.001', '', '-1', 'NaN', '10000000000'])('still rejects invalid price2=%s', value => {
     expect(auditManualXml(`<root>${item(value)}</root>`).invalidPrices).toEqual([{ sku: '001', field: 'price2', value }])
   })
+  it('rejects a missing price2 element', () => {
+    const xml = `<root>${item('10').replace(/<price2>[^<]*<\/price2>/u, '')}</root>`
+    expect(auditManualXml(xml).invalidPrices).toEqual([{ sku: '001', field: 'price2', value: '' }])
+  })
   it('catches a missing slot on each item even if other rows have that slot', () => {
     const audit = auditManualXml(`<root>${item()}${item('1', '<warehouse id="1">1</warehouse>')}</root>`)
     expect(audit.invalidStocks.filter(value => value.value === 'missing')).toHaveLength(8)

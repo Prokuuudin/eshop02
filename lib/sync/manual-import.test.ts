@@ -65,7 +65,7 @@ function makeDb(overrides: Partial<DbState> = {}) {
       if (sql.includes('"manualPriceApproved"')) return state.linked.filter(p => !p.isDeleted)
       throw new Error(`unexpected SQL: ${sql.slice(0, 80)}`)
     }),
-    $executeRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => (sql.includes('UPDATE "Product"') ? params.length / 6 : 1)),
+    $executeRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => (sql.includes('UPDATE "Product"') ? params.length / 2 : 1)),
     keyValueSetting: {
       findUnique: vi.fn(async ({ where }: { where: { key: string } }) => (state.kv.has(where.key) ? { key: where.key, value: state.kv.get(where.key) } : null)),
       upsert: vi.fn(async ({ where, create }: { where: { key: string }; create: { value: unknown } }) => { state.kv.set(where.key, structuredClone(create.value)) }),
@@ -131,15 +131,30 @@ describe('decodeUpload', () => {
 // ─── Preview (read-only evaluation) ──────────────────────────────────────────
 
 describe('evaluateFeed', () => {
-  it.each(['available_to_unavailable', 'unavailable_to_available'])('Preview and Apply both block %s', async direction => {
+  it('Preview and Apply both restore ERP price state for positive price2', async () => {
     const { db, state, raw } = makeDb()
-    Object.assign(state.linked[0], { erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: direction === 'available_to_unavailable' ? '10.00' : '11.00' })
+    Object.assign(state.linked[0], { erpPriceMissing: true, manualPriceApproved: false, manualApprovedPrice: null, isActive: false, stock: 7 })
     const items = baseItems(); items[0].price2 = '11.00'
     const { evaluation, pending } = await preview(db, makeXml(items))
-    expect(evaluation.preflight.hard).toContain('price_change_would_alter_sellability')
+    expect(evaluation.preflight.hard).toEqual([])
+    expect(evaluation.summary).toMatchObject({ erpPriceRestored: 1, erpPriceMarkedMissing: 0, stockChanges: 0 })
     const result = await applyManualImport({ db }, { previewId: pending.previewId, sha256: pending.sha256, actorId: pending.actorId })
-    expect(result).toMatchObject({ status: 'rejected', error: 'preflight_failed', hard: expect.arrayContaining(['price_change_would_alter_sellability']) })
-    expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
+    expect(result.status).toBe('completed')
+    const productSql = raw.$executeRawUnsafe.mock.calls.find(([sql]) => sql.includes('UPDATE "Product"'))?.[0] as string
+    expect(productSql).toContain('"erpPriceMissing"=NOT (v.price>0)')
+    expect(productSql.split('FROM')[0]).not.toMatch(/stock|isActive|description|category/iu)
+  })
+
+  it('Preview and Apply both mark a zero price2 as missing without changing stock', async () => {
+    const { db, raw } = makeDb()
+    const items = baseItems(); items[0].price2 = '0'
+    const { evaluation, pending } = await preview(db, makeXml(items))
+    expect(evaluation.preflight.hard).toEqual([])
+    expect(evaluation.summary).toMatchObject({ priceZero: 1, erpPriceRestored: 0, erpPriceMarkedMissing: 1, priceChanges: 0, stockChanges: 0 })
+    expect((await applyManualImport({ db }, { previewId: pending.previewId, sha256: pending.sha256, actorId: pending.actorId })).status).toBe('completed')
+    const productSql = raw.$executeRawUnsafe.mock.calls.find(([sql]) => sql.includes('UPDATE "Product"'))?.[0] as string
+    expect(productSql).toContain('price=CASE WHEN v.price>0 THEN v.price ELSE p.price END')
+    expect(productSql.split('FROM')[0]).not.toMatch(/stock|isActive|description|category/iu)
   })
   it('always selects price2 even when scheduled sync environment selects price1', async () => {
     vi.stubEnv('SYNC_PRIMARY_PRICE_TIER', 'price1')
@@ -241,7 +256,8 @@ describe('manual numeric preflight regression', () => {
     const updates = raw.$executeRawUnsafe.mock.calls.filter(([sql]) => sql.includes('UPDATE "Product"'))
     expect(updates.length).toBeGreaterThan(0)
     for (const [sql] of updates) {
-      expect(sql.split('FROM')[0]).not.toMatch(/stock|reserve|order|erpPriceMissing|manualPriceApproved|manualApprovedPrice/iu)
+      expect(sql.split('FROM')[0]).not.toMatch(/stock|reserve|order|isActive|isDeleted|description|category/iu)
+      expect(sql.split('FROM')[0]).toMatch(/erpPriceMissing|manualPriceApproved|manualApprovedPrice/gu)
     }
     const values = updates.flatMap(call => call.slice(1))
     expect(values.slice(0, 2)).toEqual(['S0', '12.34'])

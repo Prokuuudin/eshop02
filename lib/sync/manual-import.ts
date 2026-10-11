@@ -54,6 +54,8 @@ export interface ManualImportSummary {
   priceChanges: number
   largePriceChanges: number
   priceZero: number
+  erpPriceRestored: number
+  erpPriceMarkedMissing: number
   stockChanges: number
   stockToZero: number
   duplicateSkus: number

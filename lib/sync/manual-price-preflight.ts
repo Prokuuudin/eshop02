@@ -3,7 +3,6 @@ import { auditManualXml, manualDecimal } from './manual-import-validation'
 import { parseGrinsXml, readGrinsXmlItems } from './grins-xml-parser'
 import { loadPreflightState, PREFLIGHT_THRESHOLDS as T, structuralFailures, toCents, type PreflightMetrics } from './sync-preflight'
 import type { FeedEvaluation } from './manual-import'
-import { hasValidB2BPrice } from '@/lib/product-sellability'
 
 export async function priceCatalogFingerprint(db: ExtendedPrismaClient): Promise<string> {
   const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(
@@ -39,6 +38,8 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
   const priceChanges: FeedEvaluation['samples']['priceChanges'] = []
   const xmlIds = new Set(products.map(product => product.externalId))
   const unlinked: string[] = []
+  let erpPriceRestored = 0
+  let erpPriceMarkedMissing = 0
   for (const product of products) {
     const cents = toCents(product.price)
     if (!cents) metrics.priceZero++
@@ -47,8 +48,10 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
     if (!current) { metrics.unlinked++; unlinked.push(product.externalId); continue }
     if (current.isDeleted) { metrics.softDeletedSkipped++; continue }
     metrics.linked++
-    if (product.price > 0 && hasValidB2BPrice(current) !== hasValidB2BPrice({ ...current, price: product.price }) && !hard.includes('price_change_would_alter_sellability')) {
-      hard.push('price_change_would_alter_sellability')
+    const nextErpPriceMissing = !(product.price > 0)
+    if (current.erpPriceMissing !== nextErpPriceMissing) {
+      if (nextErpPriceMissing) erpPriceMarkedMissing++
+      else erpPriceRestored++
     }
     const before = toCents(current.price)
     if (cents > 0 && cents !== before) {
@@ -85,6 +88,7 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
     catalogFingerprint, audit, products, preflight: { hard, warnings, metrics },
     summary: { rows: audit.itemCount, matched: metrics.linked, unlinked: metrics.unlinked, softDeletedSkipped: metrics.softDeletedSkipped,
       priceChanges: metrics.priceChanged, largePriceChanges: metrics.largePriceChanges, priceZero: metrics.priceZero,
+      erpPriceRestored, erpPriceMarkedMissing,
       stockChanges: 0, stockToZero: 0, duplicateSkus: audit.duplicateExternalIds.length, conflicts,
       invalidValues: audit.invalidPrices.length + audit.invalidStocks.length, negativeValues: audit.negativePrices.length + audit.negativeStocks.length,
       linkedMissingFromXml: metrics.linkedMissingFromXml, inserts: 0, deactivations: 0 },

@@ -167,6 +167,8 @@ export function GrinsImportSection({ l }: { l: Localize }): React.ReactElement {
                         {stat(l('Сопоставлено', 'Matched', 'Sasaistīti'), s.matched)}
                         {stat(l('Не сопоставлено (пропуск)', 'Unmatched (skipped)', 'Nesasaistīti (izlaisti)'), s.unlinked, 'warn')}
                         {stat(l('Изменится цен', 'Price changes', 'Cenu izmaiņas'), s.priceChanges, 'warn')}
+                        {stat(l('ERP-цена появилась', 'ERP price restored', 'ERP cena atjaunota'), s.erpPriceRestored, 'warn')}
+                        {stat(l('ERP-цена отсутствует', 'ERP price missing', 'ERP cenas nav'), s.erpPriceMarkedMissing, 'warn')}
                         {stat(l('Цена price2 = 0 (цена сохранится)', 'price2 = 0 (price kept)', 'price2 = 0 (cena saglabāsies)'), s.priceZero, 'warn')}
                         {stat(l('Изменение цены > 50%', 'Price change > 50%', 'Cenas izmaiņa > 50%'), s.largePriceChanges, 'warn')}
                         {stat(l('Дубликаты SKU', 'Duplicate SKUs', 'SKU dublikāti'), s.duplicateSkus, 'bad')}
@@ -174,7 +176,7 @@ export function GrinsImportSection({ l }: { l: Localize }): React.ReactElement {
                         {stat(l('Некорректные значения', 'Invalid values', 'Nederīgas vērtības'), s.invalidValues, 'bad')}
                         {stat(l('Деактиваций', 'Deactivations', 'Deaktivizācijas'), s.deactivations)}
                     </div>
-                    <p className="text-sm font-medium">{l('Импорт обновляет только цену и не меняет ценовые флаги. Нулевая price2 оставляет товар без изменений. Доступность не восстанавливается автоматически; изменения продаваемости блокируются.', 'Import updates only the price and preserves pricing flags. Zero price2 leaves the product unchanged. Availability is not restored automatically; sellability changes are blocked.', 'Imports atjaunina tikai cenu un saglabā cenu pazīmes. Nulles price2 produktu nemaina. Pieejamība netiek atjaunota automātiski; pārdošanas iespējas izmaiņas tiek bloķētas.')}</p>
+                    <p className="text-sm font-medium">{l('Положительная price2 обновляет цену и подтверждает наличие ERP-цены. Нулевая price2 сохраняет текущую цену и отмечает отсутствие ERP-цены. Ручное отключение товара, остатки и другие ограничения не изменяются.', 'A positive price2 updates the price and confirms that an ERP price exists. A zero price2 keeps the current price and marks the ERP price as missing. Manual product disabling, stock and other restrictions stay unchanged.', 'Pozitīva price2 atjaunina cenu un apstiprina ERP cenas esamību. Nulles price2 saglabā pašreizējo cenu un atzīmē ERP cenu kā trūkstošu. Manuāla preces deaktivizēšana, atlikumi un citi ierobežojumi nemainās.')}</p>
                     {!preview.maintenanceReady && <p role="alert" className="text-sm text-amber-700">{errorMessage('maintenance_required', l)}</p>}
                     <p className="text-xs text-muted-foreground">
                         {l('Связанных товаров нет в файле (не изменятся): ', 'Linked products missing from file (left unchanged): ', 'Saistītie produkti, kuru nav failā (netiks mainīti): ')}{s.linkedMissingFromXml}

@@ -15,21 +15,22 @@ Vercel-конфигурация в репозитории пока не удал
     **VERIFY ON SERVER**.
 -   **Entry point**: `server.js` (custom HTTP-сервер, программно поднимает Next.js).
 -   **Старт**: `npm start` → `node server.js`.
--   **Сборка**: `npm run build` → `prisma migrate deploy && prisma generate && next build --webpack`.
-    Это значит, что `npm run build` **накатывает миграции на БД, указанную в
-    `DATABASE_URL`**, при каждом деплое. Для прод-БД это должно быть осознанно
-    (см. `CLAUDE.md` → Database), а не побочный эффект.
+-   **Сборка**: `npm run build` → `prisma generate && next build --webpack`.
+    Сборка не применяет миграции. Если релиз содержит заранее проверенные миграции,
+    оператор запускает их отдельно и явно: `npm run db:migrate:deploy`.
 
 ## 2) Deploy flow
 
 1. `git pull` (или иной способ доставки кода на сервер, без `.git` в
    рантайм-директории — см. существующие git hooks, они уже не мешают такому деплою).
 2. `npm ci` — детерминированная установка по `package-lock.json`.
-3. `npm run build` — прогоняет миграции, генерирует Prisma client, собирает Next.js.
-4. Запуск/restart Node-приложения через Plesk (Node.js extension → Restart App).
+3. Если релиз содержит утверждённые миграции: отдельно выполнить `npm run db:migrate:deploy`
+   против заранее проверенной целевой БД. Для релиза без миграций этот шаг пропустить.
+4. `npm run build` — генерирует Prisma Client и собирает Next.js без изменения схемы БД.
+5. Запуск/restart Node-приложения через Plesk (Node.js extension → Restart App).
    **VERIFY ON SERVER**: какой именно способ рестарта использует конкретная
    версия Plesk (кнопка в UI, `touch` файла для iisnode, или app pool recycle в IIS).
-5. Smoke test — см. чеклист в разделе 10.
+6. Smoke test — см. чеклист в разделе 10.
 
 ## 3) Переменные окружения
 
@@ -41,7 +42,7 @@ Vercel-конфигурация в репозитории пока не удал
 
 | Переменная | Зачем |
 |---|---|
-| `DATABASE_URL` | Neon Postgres, через `adapter-neon`/WebSocket (443) — используется и Prisma CLI (`migrate deploy` в `npm run build`), и рантаймом |
+| `DATABASE_URL` | Neon Postgres: используется рантаймом и явной операторской командой `npm run db:migrate:deploy`; обычная сборка миграции не запускает |
 | `NEXT_PUBLIC_SITE_URL` | canonical/OG/JSON-LD/robots/sitemap; без него в production `lib/site-url.ts` **бросает исключение** |
 | `NODE_ENV=production` | переключает secure-cookie флаг, CSP (`upgrade-insecure-requests`, HSTS), режим Next.js |
 
@@ -169,11 +170,12 @@ write-доступ к своей log-директории — **VERIFY ON SERVER
 не зависит от исходящего TCP 5432, который на некоторых сетях/VPN блокируется
 (см. память `project_neon_connectivity`). Для Plesk-сервера это значит: нужен
 исходящий HTTPS (443) до Neon-хоста, TCP 5432 не требуется рантайму.
-Присма CLI (`prisma migrate deploy` в `npm run build`) **тоже** сейчас идёт
-через тот же `DATABASE_URL`/adapter — отдельного прямого TCP-подключения CLI
-к 5432 в `npm run build` не задействовано (миграции гоняются через тот же
-Prisma Client путь). **VERIFY ON SERVER**: исходящий 443 до Neon с самого
-Plesk-сервера не заблокирован файрволом/прокси хостинга.
+Обычный `npm run build` миграции не выполняет и отдельного migration-соединения не
+открывает. Явная команда `npm run db:migrate:deploy` использует `DATABASE_URL` через
+`prisma.config.ts`, который для Neon заменяет pooler-host на direct-host. Если миграции
+запускаются непосредственно на Plesk, отдельно **VERIFY ON SERVER** доступ к direct
+PostgreSQL endpoint (обычно TCP 5432). Для runtime по-прежнему нужен исходящий HTTPS
+(443) до Neon и он не должен блокироваться файрволом/прокси хостинга.
 
 ## 9) ERP hourly FULL sync — Plesk Scheduled Task (включается вручную)
 
@@ -260,7 +262,8 @@ Task **может не наследовать** — поэтому на серв
 
 Базовое:
 -   [ ] Node.js Support запущен, `npm ci` прошёл без ошибок на самом сервере
--   [ ] `npm run build` прошёл на сервере (включая `prisma migrate deploy`)
+-   [ ] Если релиз содержит миграции, `npm run db:migrate:deploy` выполнен отдельным подтверждённым шагом против правильной БД
+-   [ ] `npm run build` прошёл на сервере без запуска миграций
 -   [ ] Приложение стартует (`npm start` / iisnode), в логе — `Next.js is listening on ...`
 -   [ ] `/` отвечает 200
 -   [ ] Статика `/_next/static/*` отдаётся (не 404, верный `Content-Type`)

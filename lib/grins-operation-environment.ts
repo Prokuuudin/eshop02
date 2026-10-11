@@ -27,7 +27,7 @@ export function resolveGrinsEnvironment(registry: unknown, target: string | unde
 }
 
 export async function verifyGrinsEnvironment(db: Pick<ExtendedPrismaClient | ExtendedTransactionClient, '$queryRawUnsafe'>, expected: GrinsEnvironment): Promise<void> {
-  const context = await db.$queryRawUnsafe<Array<{ database: string; schema: string }>>('SELECT current_database() AS database,current_schema() AS schema')
+  const context = await db.$queryRawUnsafe<Array<{ database: string; schema: string }>>('SELECT current_database()::text AS database,current_schema()::text AS schema')
   if (context[0]?.database !== expected.database || context[0]?.schema !== expected.schema) throw new Error('database_context_mismatch')
   const rows = await db.$queryRawUnsafe<Array<{ value: unknown }>>('SELECT value FROM "KeyValueSetting" WHERE key=$1 FOR SHARE', GRINS_ENVIRONMENT_KEY)
   const marker = rows[0]?.value as { environment?: unknown; instanceId?: unknown } | undefined

@@ -28,6 +28,15 @@ describe('independent environment identity', () => {
     copied.environments.staging.instanceId = copied.environments.production.instanceId
     expect(() => resolveGrinsEnvironment(copied, 'staging', 'postgresql://synthetic@127.0.0.1/postgres')).toThrow('environment_registry_not_isolated')
   })
+  it('casts PostgreSQL name identity values to text before Prisma raw deserialization', async () => {
+    const expected = resolveGrinsEnvironment(testRegistry, 'staging', 'postgresql://synthetic@127.0.0.1/postgres')
+    const query = vi.fn()
+      .mockResolvedValueOnce([{ database: 'postgres', schema: 'public' }])
+      .mockResolvedValueOnce([{ value: { environment: 'staging', instanceId: testRegistry.environments.staging.instanceId } }])
+    await expect(verifyGrinsEnvironment({ $queryRawUnsafe: query } as never, expected)).resolves.toBeUndefined()
+    expect(query).toHaveBeenNthCalledWith(1, 'SELECT current_database()::text AS database,current_schema()::text AS schema')
+    expect(query).toHaveBeenNthCalledWith(2, 'SELECT value FROM "KeyValueSetting" WHERE key=$1 FOR SHARE', 'grins-deployment-environment')
+  })
   it('rejects a production marker even if host and database appear correct', async () => {
     const expected = resolveGrinsEnvironment(testRegistry, 'staging', 'postgresql://synthetic@127.0.0.1/postgres')
     const tx = { $queryRawUnsafe: vi.fn().mockResolvedValueOnce([{ database: 'postgres', schema: 'public' }]).mockResolvedValueOnce([{ value: { environment: 'production', instanceId: testRegistry.environments.production.instanceId } }]) }

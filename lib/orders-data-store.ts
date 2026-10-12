@@ -23,7 +23,9 @@ import {
   holdOrderStock,
   releaseOrderStock,
   StockLedgerError,
+  tryHoldOrderStock,
 } from '@/lib/stock-ledger'
+import { logOperationalEvent } from '@/lib/observability'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
 export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -245,7 +247,8 @@ export async function applyOrderReservationPaymentState(
   tx: ReservationTx,
   orderId: string,
   paymentStatus: ServerPaymentStatus,
-): Promise<void> {
+): Promise<{ latePaymentStockUnavailable: boolean; productIds: string[] }> {
+  const unchanged = { latePaymentStockUnavailable: false, productIds: [] as string[] }
   if (paymentStatus === 'paid') {
     const committed = await tx.order.updateMany({
       where: { id: orderId, stockReservationStatus: 'reserved' },
@@ -253,33 +256,35 @@ export async function applyOrderReservationPaymentState(
     })
     if (committed.count === 1) {
       await commitOrderAllocations(tx, orderId)
-      return
+      return unchanged
     }
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: { id: true, items: true, stockReservationStatus: true },
     })
-    if (!order || order.stockReservationStatus === 'committed') return
+    if (!order || order.stockReservationStatus === 'committed') return unchanged
     if (order.stockReservationStatus === 'released') {
-      const reacquired = await tx.order.updateMany({
-        where: { id: orderId, stockReservationStatus: 'released' },
-        data: { stockReservationStatus: 'committed', stockReservedUntil: null, stockReleasedAt: null },
-      })
-      if (reacquired.count !== 1) return
-      await holdOrderStock(tx, {
+      const hold = await tryHoldOrderStock(tx, {
         orderId,
         items: order.items as ServerOrderItem[],
         status: 'committed',
         eventPrefix: `order:${orderId}:late-payment`,
       })
-      return
+      if (!hold.held) return { latePaymentStockUnavailable: true, productIds: hold.insufficientProductIds }
+      const reacquired = await tx.order.updateMany({
+        where: { id: orderId, stockReservationStatus: 'released' },
+        data: { stockReservationStatus: 'committed', stockReservedUntil: null, stockReleasedAt: null },
+      })
+      if (reacquired.count !== 1) throw new Error('late_payment_order_state_changed')
+      return unchanged
     }
-    return
+    return unchanged
   }
   if (paymentStatus === 'failed') {
     const order = await tx.order.findUnique({ where: { id: orderId }, select: { id: true, items: true } })
     if (order) await releaseReservation(tx, order)
   }
+  return unchanged
 }
 
 /** Opportunistic cleanup; the conditional transition makes concurrent cleaners idempotent. */
@@ -302,17 +307,22 @@ export const updateServerOrderPayment = async (
   orderId: string,
   updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>
 ): Promise<ServerOrder | null> => {
-  const row = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
     const existing = await tx.order.findUnique({ where: { id: orderId } })
-    if (!existing) return null
+    if (!existing) return { row: null, latePaymentStockUnavailable: false, productIds: [] as string[] }
+    if (existing.paymentStatus === 'paid' && updates.paymentStatus === 'paid') {
+      return { row: existing, latePaymentStockUnavailable: false, productIds: [] as string[] }
+    }
+    let reservation = { latePaymentStockUnavailable: false, productIds: [] as string[] }
     if (updates.paymentStatus) {
-      await applyOrderReservationPaymentState(tx, orderId, updates.paymentStatus)
+      reservation = await applyOrderReservationPaymentState(tx, orderId, updates.paymentStatus)
     }
     // `paid` is terminal. A delayed verify/expiry request must never downgrade it.
     if (existing.paymentStatus === 'paid' && updates.paymentStatus && updates.paymentStatus !== 'paid') {
-      return existing
+      return { row: existing, latePaymentStockUnavailable: false, productIds: [] as string[] }
     }
-    return tx.order.update({
+    const row = await tx.order.update({
       where: { id: orderId },
       data: {
         paymentStatus: updates.paymentStatus ?? undefined,
@@ -320,9 +330,36 @@ export const updateServerOrderPayment = async (
         paymentSessionId: updates.paymentSessionId ?? undefined,
       },
     })
+    if (reservation.latePaymentStockUnavailable) {
+      await tx.orderOperationalException.upsert({
+        where: { orderId_code: { orderId, code: 'late_payment_stock_unavailable' } },
+        create: {
+          orderId,
+          code: 'late_payment_stock_unavailable',
+          productIds: reservation.productIds,
+          paymentProvider: updates.paymentProvider ?? existing.paymentProvider,
+        },
+        update: {
+          lastSeenAt: new Date(),
+          occurrences: { increment: 1 },
+          productIds: reservation.productIds,
+          paymentProvider: updates.paymentProvider ?? existing.paymentProvider,
+        },
+      })
+    }
+    return { row, ...reservation }
   })
 
-  return row ? mapDbToServerOrder(row) : null
+  if (result.latePaymentStockUnavailable) {
+    logOperationalEvent({
+      event: 'late_payment_stock_unavailable',
+      level: 'error',
+      alert: true,
+      orderId,
+      productIds: result.productIds,
+    })
+  }
+  return result.row ? mapDbToServerOrder(result.row) : null
 }
 
 /**

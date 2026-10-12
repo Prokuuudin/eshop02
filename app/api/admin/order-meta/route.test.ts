@@ -35,7 +35,10 @@ function cancellationTx(paymentStatus = 'unpaid') {
       upsert: vi.fn(),
     },
     orderNote: { findUnique: vi.fn(), upsert: vi.fn() },
-    product: { updateMany: vi.fn() },
+    product: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'p1', stock: 10, externalId: null, grinsStock: null }]),
+      updateMany: vi.fn(),
+    },
   }
 }
 

@@ -32,4 +32,13 @@ describe('stock reconciliation manifest', () => {
     expect(verifyStockReconciliationManifest(`${xml} `, JSON.stringify(base), new Date('2026-10-12T11:00:00Z')).failures)
       .toContain('manifest xmlSha256 does not match the downloaded export.xml')
   })
+
+  it('fails closed once the configured three-hour freshness window expires', () => {
+    expect(verifyStockReconciliationManifest(
+      xml,
+      JSON.stringify(base),
+      new Date('2026-10-12T13:01:00.001Z'),
+      { maxAgeHours: 3 },
+    ).failures).toContain('export is stale: generated 3.0 h ago (> 3 h)')
+  })
 })

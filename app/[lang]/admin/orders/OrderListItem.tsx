@@ -121,6 +121,11 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 {DELIVERY_LABELS[order.deliveryMethod] ??
                                                     order.deliveryMethod}
                                             </span>
+                                            {order.operationalExceptions?.some((exception) => exception.code === 'late_payment_stock_unavailable') && (
+                                                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-950 dark:text-red-200">
+                                                    {l('Оплата получена — товара недостаточно', 'Payment received — stock unavailable', 'Maksājums saņemts — prece nav pieejama')}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                                             <span className="text-sm font-medium text-foreground">

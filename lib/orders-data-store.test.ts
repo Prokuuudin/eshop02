@@ -42,10 +42,14 @@ const ORDER: Omit<ServerOrder, 'id'> = {
 
 function makeTx() {
   return {
+    $queryRaw: vi.fn().mockResolvedValue([]),
     order: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
     },
-    product: { updateMany: vi.fn(async () => ({ count: 1 })) },
+    product: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'p1', stock: 10, externalId: null, grinsStock: null }]),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
     promoCode: {
       fields: { maxUses: Symbol('maxUses') },
       updateMany: vi.fn(async () => ({ count: 1 })),

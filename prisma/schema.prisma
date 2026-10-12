@@ -486,6 +486,7 @@ model Order {
   companyId        String?
   checkoutKey      String?  @unique
   stockAllocations StockAllocation[]
+  operationalExceptions OrderOperationalException[]
 
   @@index([email])
   @@index([createdAt])
@@ -493,6 +494,25 @@ model Order {
   @@index([stockReservationStatus, stockReservedUntil])
   @@index([userId])
   @@index([companyId])
+}
+
+model OrderOperationalException {
+  id              String   @id @default(cuid())
+  orderId         String
+  code            String
+  status          String   @default("open")
+  productIds      Json
+  paymentProvider String?
+  occurrences     Int      @default(1)
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+  resolvedAt      DateTime?
+  resolvedBy      String?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, code])
+  @@index([status, firstSeenAt])
 }
 
 model StockAllocation {

@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { runScheduledStockSync } from './scheduled-stock-sync'
+import { runScheduledStockSync, stockSourceIdentity } from './scheduled-stock-sync'
 import { MANUAL_IMPORT_MAX_BYTES } from './manual-import'
 
 describe('scheduled stock sync feature gates', () => {
+  it('treats a later legacy A snapshot as new after A to B to A', () => {
+    const shaA = 'a'.repeat(64)
+    const firstA = stockSourceIdentity({ manifestVerified: false, transportModifiedAt: new Date('2026-10-12T10:00:00Z'), sha256: shaA })
+    const b = stockSourceIdentity({ manifestVerified: false, transportModifiedAt: new Date('2026-10-12T11:00:00Z'), sha256: 'b'.repeat(64) })
+    const secondA = stockSourceIdentity({ manifestVerified: false, transportModifiedAt: new Date('2026-10-12T12:00:00Z'), sha256: shaA })
+    expect(new Set([firstA, b, secondA]).size).toBe(3)
+  })
   it('touches neither DB nor FTPS while disabled', async () => {
     const getDb = vi.fn()
     const downloadXml = vi.fn()

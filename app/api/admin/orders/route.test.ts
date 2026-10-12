@@ -31,6 +31,7 @@ vi.mock('@/lib/prisma', () => ({
     order: { findMany: vi.fn(), count: vi.fn() },
     orderStatusRecord: { findMany: vi.fn() },
     orderNote: { findMany: vi.fn() },
+    orderOperationalException: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     user: { findFirst: vi.fn() },
     $queryRaw: vi.fn(),
@@ -74,6 +75,7 @@ function makeRequest(body: Record<string, unknown> = VALID_BODY): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.orderOperationalException.findMany).mockResolvedValue([] as never)
   txMock.mockImplementation(async (cb: (tx: unknown) => unknown) => cb({
     orderStatusRecord: { create: vi.fn() },
     orderNote: { create: vi.fn() },
@@ -93,6 +95,10 @@ describe('GET /api/admin/orders', () => {
     vi.mocked(prisma.orderNote.findMany).mockResolvedValue([
       { orderId: 'order-1', note: 'Done' },
     ] as never)
+    vi.mocked(prisma.orderOperationalException.findMany).mockResolvedValue([{
+      orderId: 'order-1', code: 'late_payment_stock_unavailable', productIds: ['p1'],
+      firstSeenAt: new Date('2026-08-01T10:05:00Z'), occurrences: 1,
+    }] as never)
 
     const response = await GET(new NextRequest('http://localhost/api/admin/orders?take=50'))
     const body = await response.json()
@@ -100,6 +106,9 @@ describe('GET /api/admin/orders', () => {
     expect(response.status).toBe(200)
     expect(body.statuses).toEqual({ 'order-1': 'delivered' })
     expect(body.notes).toEqual({ 'order-1': 'Done' })
+    expect(body.orders[0].operationalExceptions).toEqual([expect.objectContaining({
+      code: 'late_payment_stock_unavailable', productIds: ['p1'], occurrences: 1,
+    })])
   })
 
   it('resolves a status filter to an id set before querying orders', async () => {

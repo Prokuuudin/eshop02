@@ -9,8 +9,15 @@ describe('stock ledger feature flags', () => {
       manifestEnabled: false,
       reconciliationEnabled: false,
       clockSkewMarginMs: 300_000,
+      manifestMaxAgeHours: 3,
       rollbackRunsToKeep: 24,
     })
+  })
+
+  it('bounds the configurable manifest age and defaults to three hours', () => {
+    expect(stockLedgerFlags({ GRINS_STOCK_MANIFEST_MAX_AGE_HOURS: '2.5' }).manifestMaxAgeHours).toBe(2.5)
+    expect(stockLedgerFlags({ GRINS_STOCK_MANIFEST_MAX_AGE_HOURS: '0' }).manifestMaxAgeHours).toBe(3)
+    expect(stockLedgerFlags({ GRINS_STOCK_MANIFEST_MAX_AGE_HOURS: '25' }).manifestMaxAgeHours).toBe(3)
   })
 
   it('requires the ledger before scheduled stock writes', () => {

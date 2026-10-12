@@ -80,29 +80,43 @@ export interface HoldOrderStockInput {
   customerSellability?: boolean
 }
 
-/** Atomically holds availability. Local-only/uninitialised products keep the legacy decrement. */
-export async function holdOrderStock(tx: Tx, input: HoldOrderStockInput): Promise<void> {
+export interface TryHoldOrderStockResult {
+  held: boolean
+  insufficientProductIds: string[]
+}
+
+/**
+ * Checks every line while the products are locked, then writes the whole hold.
+ * A false result is therefore safe to commit: no product or allocation was changed.
+ */
+export async function tryHoldOrderStock(tx: Tx, input: HoldOrderStockInput): Promise<TryHoldOrderStockResult> {
   const quantities = quantitiesByProduct(input.items)
   const ids = [...quantities.keys()].sort()
   const flags = stockLedgerFlags()
+  await lockProducts(tx, ids)
   if (flags.ledgerEnabled) await enterStockLedgerWriteContext(tx)
-  const modes = flags.ledgerEnabled ? await productModes(tx, ids) : new Map<string, boolean>()
-  const insufficient: string[] = []
+  const sellability = input.customerSellability === false
+    ? { isDeleted: false }
+    : PURCHASABLE_PRODUCT_WHERE
+  const available = await tx.product.findMany({
+    where: { id: { in: ids }, ...sellability },
+    select: { id: true, stock: true, externalId: true, grinsStock: true },
+  })
+  const byId = new Map(available.map((row) => [row.id, row]))
+  const insufficient = ids.filter((id) => (byId.get(id)?.stock ?? -1) < quantities.get(id)!)
+  if (insufficient.length > 0) return { held: false, insufficientProductIds: insufficient }
 
   for (const productId of ids) {
     const quantity = quantities.get(productId)!
-    const sellability = input.customerSellability === false
-      ? { isDeleted: false }
-      : PURCHASABLE_PRODUCT_WHERE
     const changed = await tx.product.updateMany({
       where: { id: productId, ...sellability, stock: { gte: quantity } },
       data: { stock: { decrement: quantity } },
     })
     if (changed.count !== 1) {
-      insufficient.push(productId)
-      continue
+      throw new StockLedgerError('insufficient_stock', [productId])
     }
-    if (modes.get(productId)) {
+    const row = byId.get(productId)!
+    if (flags.ledgerEnabled && row.externalId && row.grinsStock !== null) {
       await tx.stockAllocation.create({
         data: {
           orderId: input.orderId,
@@ -114,7 +128,13 @@ export async function holdOrderStock(tx: Tx, input: HoldOrderStockInput): Promis
       })
     }
   }
-  if (insufficient.length > 0) throw new StockLedgerError('insufficient_stock', insufficient)
+  return { held: true, insufficientProductIds: [] }
+}
+
+/** Atomically holds availability. Local-only/uninitialised products keep the legacy decrement. */
+export async function holdOrderStock(tx: Tx, input: HoldOrderStockInput): Promise<void> {
+  const result = await tryHoldOrderStock(tx, input)
+  if (!result.held) throw new StockLedgerError('insufficient_stock', result.insufficientProductIds)
 }
 
 export async function commitOrderAllocations(tx: Tx, orderId: string): Promise<number> {

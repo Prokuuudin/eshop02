@@ -75,14 +75,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       prisma.order.count({ where }),
     ])
     const orderIds = orders.map((order) => order.id)
-    const [statusRows, noteRows] = orderIds.length > 0
+    const [statusRows, noteRows, operationalExceptions] = orderIds.length > 0
       ? await Promise.all([
           prisma.orderStatusRecord.findMany({ where: { orderId: { in: orderIds } } }),
           prisma.orderNote.findMany({ where: { orderId: { in: orderIds } } }),
+          prisma.orderOperationalException.findMany({
+            where: { orderId: { in: orderIds }, status: 'open' },
+            select: { orderId: true, code: true, productIds: true, firstSeenAt: true, occurrences: true },
+          }),
         ])
-      : [[], []]
+      : [[], [], []]
     const statuses = Object.fromEntries(statusRows.map((row) => [row.orderId, row.status]))
     const notes = Object.fromEntries(noteRows.map((row) => [row.orderId, row.note]))
+    const exceptionsByOrder = operationalExceptions.reduce<Record<string, typeof operationalExceptions>>((groups, row) => {
+      ;(groups[row.orderId] ??= []).push(row)
+      return groups
+    }, {})
 
     const damagedProductIds = productIdsForDamagedOrderItems(orders.map((row) => row.items))
     const titleRows = damagedProductIds.length > 0
@@ -97,6 +105,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ...row,
       items: repairOrderItemTitles(row.items, catalogTitles),
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+      operationalExceptions: (exceptionsByOrder[row.id] ?? []).map((exception) => ({
+        ...exception,
+        firstSeenAt: exception.firstSeenAt.toISOString(),
+      })),
     }))
 
     return NextResponse.json({ orders: mapped, total, statuses, notes })

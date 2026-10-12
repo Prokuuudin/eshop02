@@ -35,6 +35,20 @@ const date = (value: string | undefined): Date | undefined => {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed
 }
 
+export function stockSourceIdentity(input: {
+  manifestVerified: boolean
+  runStartedAt?: Date
+  transportModifiedAt?: Date
+  sha256: string
+}): string {
+  if (input.manifestVerified) {
+    if (!input.runStartedAt) throw new Error('verified_manifest_missing_run_started_at')
+    return `manifest:${input.runStartedAt.toISOString()}:${input.sha256}`
+  }
+  if (!input.transportModifiedAt) throw new Error('legacy_stock_source_missing_mdtm')
+  return `legacy:${input.transportModifiedAt.toISOString()}:${input.sha256}`
+}
+
 export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promise<ScheduledStockSyncOutcome> {
   const flags = stockLedgerFlags(deps.env)
   if (!flags.scheduledStocksEnabled) return { status: 'disabled', exitCode: 0 }
@@ -98,7 +112,9 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
     } catch (error) {
       return fail(`FTPS manifest download failed: ${errorMessage(error)}`, { sha256 })
     }
-    const verification = verifyStockReconciliationManifest(downloaded.content, manifest.content, now())
+    const verification = verifyStockReconciliationManifest(downloaded.content, manifest.content, now(), {
+      maxAgeHours: flags.manifestMaxAgeHours,
+    })
     if (verification.verdict !== 'PASS') return fail('stock manifest verification failed', { sha256, hard: verification.failures })
     runStartedAt = date(verification.runStartedAt)
     generatedAt = date(verification.generatedAt)
@@ -128,9 +144,7 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   )
   if (preflight.hard.length) return fail('stock preflight HARD checks failed', { sha256, hard: preflight.hard, warnings: preflight.warnings, metrics: preflight.metrics })
 
-  const sourceIdentity = manifestVerified
-    ? `manifest:${runStartedAt!.toISOString()}:${sha256}`
-    : `legacy-sha256:${sha256}`
+  const sourceIdentity = stockSourceIdentity({ manifestVerified, runStartedAt, transportModifiedAt, sha256 })
   const result = await applyStockSnapshot(db, products, {
     identity: sourceIdentity,
     sha256,

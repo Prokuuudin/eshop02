@@ -293,10 +293,16 @@ async function main() {
       && (await db.product.findUniqueOrThrow({ where: { id: 'p2' } })).stock === stableP2)
     await pg.exec('DROP TRIGGER stock_boom ON "Product"; DROP FUNCTION stock_boom();')
 
+    await db.keyValueSetting.update({
+      where: { key: 'grins-prices-only-maintenance' },
+      data: { value: { checkoutClosed: true } },
+    })
     const rollback = await rollbackLatestStockSnapshot(db, applied.runId, 'synthetic-operator')
     const rolledBack = await db.product.findUniqueOrThrow({ where: { id: 'p1' } })
-    check('compensating rollback restores physical stock and preserves current holds', rollback.restored === 2
-      && rolledBack.grinsStock === 9 && rolledBack.stock === 9)
+    const rolledBackAllocation = await db.stockAllocation.findFirstOrThrow({ where: { orderId: order.id } })
+    check('compensating rollback restores physical stock and reactivates reconciled holds', rollback.restored === 1
+      && rolledBack.grinsStock === 9 && rolledBack.stock === 7
+      && rolledBackAllocation.status === 'awaiting_grins_sync')
 
     let directBlocked = false
     try { await db.product.update({ where: { id: 'p1' }, data: { stock: 100 } }) } catch (error) { directBlocked = String(error).includes('erp_stock_write_requires_ledger') }

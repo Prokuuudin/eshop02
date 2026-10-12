@@ -46,6 +46,7 @@ All default to false. Safe dependency checks reject invalid combinations.
 4. `GRINS_STOCK_RECONCILIATION_ENABLED` (requires ledger + manifest)
 5. `GRINS_MANIFEST_CLOCK_SKEW_SECONDS=300`
 6. `GRINS_STOCK_ROLLBACK_RUNS=24` (allowed range 2–168)
+7. `GRINS_STOCK_MANIFEST_MAX_AGE_HOURS=3` (allowed range above 0 through 24)
 
 When ledger mode is enabled, legacy FULL sync is fail-closed with `full_sync_blocked_by_stock_ledger_use_stocks_only`. Prices-only Preview/Apply does not use FULL and does not touch stock fields.
 
@@ -66,12 +67,30 @@ Cutover is blocked if any candidate existing order is not classified, any stock 
 
 - Scheduled entry: `npm run sync:stocks:scheduled` (`scripts/sync-products.ts --stocks-only-scheduled`).
 - Read-only health: `npm run check:stock-ledger`.
+- Read-only hold/exception report: `npm run report:stock-ledger-holds`.
 - Read-only cutover inventory: `npm run audit:stock-ledger-cutover`.
 - Each run records mode, SHA, source times, counts, warnings, reconciliation count and awaiting count in `SyncRun`; no credentials are logged.
-- Replay by source identity is skipped. Older manifest snapshots and non-increasing legacy MDTM are rejected.
+- Replay by source identity is skipped. Legacy identity binds FTPS MDTM and SHA, so a valid later A→B→A sequence is accepted; older/non-increasing MDTM is rejected.
 - XML validation, matching, physical update, reconciliation, derived availability, rollback journal and completion marker are atomic. Mid-Apply failure leaves the previous Product/allocation state intact.
 
-Rollback is never automatic. Only the latest completed stocks-only run can be compensated, checkout must be closed, and the existing private environment profile/instance marker is required by `scripts/operate-grins-stock-rollback.ts`. A rollback creates its own `SyncRun`; it does not rewind orders or allocations. Whole-database restore over newer orders is prohibited.
+Rollback is never automatic. Only the latest completed stocks-only run can be compensated, checkout must be closed, and the existing private environment profile/instance marker is required by `scripts/operate-grins-stock-rollback.ts`. The protected operation takes the normal sync lock and locks the checkout gate row. It restores physical values and changes allocations reconciled by that exact snapshot back to `awaiting_grins_sync` in the same transaction. Initialization (`previousGrinsStock IS NULL`), repeat rollback and known dependent allocation changes are rejected. Whole-database restore over newer orders is prohibited.
+
+## Independent-audit corrections
+
+- A paid callback after reservation expiry now always persists `paymentStatus=paid`. If the full order cannot be re-held, availability and allocations stay unchanged and one idempotent `late_payment_stock_unavailable` operational exception is stored. The admin order list displays a red warning; the structured operational log uses `alert: true`.
+- Holding a multi-line order now locks and validates every product before the first decrement. A handled insufficient-stock result therefore cannot commit a partial hold.
+- Snapshot Apply journals and updates only physical changes and reconciliation candidates. Unchanged products are not locked, do not receive journal rows and keep `Product.updatedAt` unchanged. Serializable/deadlock/P2028 failures have a maximum of three attempts.
+- A manifest is three hours fresh by default (configurable through the bounded flag above). Transport MDTM is used only for legacy ordering/identity, never to release acknowledged holds.
+- `npm run test:stock-ledger:postgres` is a destructive synthetic runner with a fail-closed URL guard: host must be loopback and database must be exactly `hairshop_ledger_test`. It covers real PostgreSQL concurrency and 15,700 products. It must be run only after creating a disposable schema; it never reads the private environment profile.
+
+Emergency mode C remains deliberately conservative: manifest and reconciliation stay disabled, while scheduled snapshots may update physical `grinsStock`. Acknowledged allocations continue reducing availability and accumulate. Run `npm run report:stock-ledger-holds` daily and review old holds plus products whose availability is materially lower than physical stock.
+
+No mutating manual-compensation command is supplied. A safe future command would require exact order/allocation IDs, seller evidence that the specific quantity was posted in GrinS, closed checkout, verified backup/restore, two-person confirmation, and a unique immutable compensation key. The current data model cannot prove that evidence automatically, so releasing a hold from a total GrinS decrease remains prohibited.
+
+## Verification notes from the independent-audit pass
+
+- Node 22 local PostgreSQL 17 runner: 15/15 checks passed, including real `40001`, `40P01`, duplicate callbacks and rollback atomicity. At 15,700 products, a fully changing snapshot took about 5.6 s and the following no-op snapshot about 0.26 s; the no-op locked zero products, wrote zero journal rows and preserved `updatedAt`. A deliberately held product row produced a measured 284 ms wait and then completed with the invariant intact.
+- Clean historical `prisma migrate deploy` is currently blocked before the ledger migration: `20260824190000_add_contact_message_answered` references an absent `ContactMessage` relation (`42P01`). The ledger tests used a disposable `prisma db push` schema plus `scripts/stock-ledger-postgres-contract.sql`; this is not evidence that the full historical migration chain is healthy. Do not edit or resolve production migration history without a separate reviewed repair.
 
 ## Files and review focus
 

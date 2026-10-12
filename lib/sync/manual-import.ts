@@ -71,8 +71,21 @@ export interface ManualImportSamples {
   unlinked: string[]
   duplicates: string[]
   invalidValues: Array<{ sku: string; field: string; value: string }>
-  priceChanges: Array<{ externalId: string; before: unknown; after: unknown }>
+  priceChanges: ManualPriceChange[]
   stockChanges: Array<{ externalId: string; before: unknown; after: unknown }>
+}
+
+export interface ManualPriceChange {
+  /** SKU from the GrinS export. */
+  externalId: string
+  /** Product.sku from the local catalog; null when it is not set. */
+  localSku: string | null
+  before: string
+  after: string
+  /** Signed percentage; null when the previous price is zero. */
+  percentageChange: number | null
+  /** Uses the same strict integer-cents >50% rule as the Preview counter. */
+  largeChange: boolean
 }
 
 export interface FeedEvaluation {
@@ -82,6 +95,8 @@ export interface FeedEvaluation {
   preflight: PreflightResult
   summary: ManualImportSummary
   samples: ManualImportSamples
+  /** Complete price-change list from this evaluation; samples keeps the first 10. */
+  priceChanges: ManualPriceChange[]
 }
 
 /** Read-only: parse + scheduled preflight + change counts against the current DB. */

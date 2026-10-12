@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import type { GrinsPreviewResponse } from '@/app/api/admin/grins-import/preview/route';
 import type { GrinsImportHistoryRow } from '@/app/api/admin/grins-import/history/route';
 import type { Localize } from './import-config';
+import { GrinsPriceChanges } from './GrinsPriceChanges';
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
@@ -204,7 +205,7 @@ export function GrinsImportSection({ l }: { l: Localize }): React.ReactElement {
                             <SampleList title={l('Не сопоставлены', 'Unmatched', 'Nesasaistīti')} items={preview.samples.unlinked} />
                             <SampleList title={l('Дубликаты SKU', 'Duplicate SKUs', 'SKU dublikāti')} items={preview.samples.duplicates} />
                             <SampleList title={l('Некорректные значения', 'Invalid values', 'Nederīgas vērtības')} items={preview.samples.invalidValues.map(v => `${v.sku} ${v.field}="${v.value}"`)} />
-                            <SampleList title={l('Изменения цен', 'Price changes', 'Cenu izmaiņas')} items={preview.samples.priceChanges.map(c => `${c.externalId}: ${String(c.before)} → ${String(c.after)}`)} />
+                            <GrinsPriceChanges changes={preview.priceChanges} l={l} />
                             <SampleList title={l('Изменения остатков', 'Stock changes', 'Atlikumu izmaiņas')} items={preview.samples.stockChanges.map(c => `${c.externalId}: ${String(c.before)} → ${String(c.after)}`)} />
                         </div>
                     </details>

@@ -61,6 +61,7 @@ export function toCents(value: string | number): number {
 
 export interface LinkedProductState {
   externalId: string
+  sku: string | null
   /** Decimal as text (price::text). */
   price: string
   stock: number
@@ -243,7 +244,7 @@ export async function loadPreflightState(db: ExtendedPrismaClient): Promise<{
 }> {
   const [linkedProducts, previous] = await Promise.all([
     db.$queryRawUnsafe<LinkedProductState[]>(
-      `SELECT "externalId", price::text AS price, stock, "isActive", "isDeleted",
+      `SELECT "externalId", sku, price::text AS price, stock, "isActive", "isDeleted",
          "erpPriceMissing", "manualPriceApproved", "manualApprovedPrice"::text AS "manualApprovedPrice"
          FROM "Product" WHERE "externalId" IS NOT NULL`,
     ),

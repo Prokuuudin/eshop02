@@ -93,11 +93,14 @@ describe('POST /api/admin/grins-import/preview', () => {
   })
 
   it('stores the snapshot and returns previewId + SHA when checks pass', async () => {
-    vi.mocked(evaluateFeed).mockResolvedValue({ preflight: { hard: [], warnings: ['w'], metrics: {} }, summary: { rows: 1 }, samples: {} } as never)
+    const priceChanges = [{ externalId: 'G-1', localSku: 'LOCAL-1', before: '10.00', after: '16.00', percentageChange: 60, largeChange: true }]
+    vi.mocked(evaluateFeed).mockResolvedValue({ preflight: { hard: [], warnings: ['w'], metrics: {} }, summary: { rows: 1 }, samples: {}, priceChanges } as never)
     vi.mocked(savePendingPreview).mockResolvedValue({ previewId: 'pv-1', expiresAt: '2026-10-08T12:30:00.000Z' } as never)
     const res = await previewPOST(uploadRequest('export.xml', '<root/>'))
     const body = await res.json()
     expect(body).toMatchObject({ canApply: true, previewId: 'pv-1', warnings: ['w'] })
+    expect(body.priceChanges).toEqual(priceChanges)
+    expect(Object.keys(body.priceChanges[0]).sort()).toEqual(['after', 'before', 'externalId', 'largeChange', 'localSku', 'percentageChange'])
     expect(body.sha256).toMatch(/^[0-9a-f]{64}$/u)
     expect(savePendingPreview).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ actorId: 'admin-1', sha256: body.sha256 }))
   })

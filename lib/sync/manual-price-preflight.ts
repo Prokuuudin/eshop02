@@ -35,7 +35,7 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
     priceZero: 0, priceZeroRatio: 0, priceChanged: 0, priceChangedRatio: 0, largePriceChanges: 0, priceAboveWarnLimit: 0,
     includedWarehouseNonZeroRows: {},
   }
-  const priceChanges: FeedEvaluation['samples']['priceChanges'] = []
+  const priceChanges: FeedEvaluation['priceChanges'] = []
   const xmlIds = new Set(products.map(product => product.externalId))
   const unlinked: string[] = []
   let erpPriceRestored = 0
@@ -56,8 +56,16 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
     const before = toCents(current.price)
     if (cents > 0 && cents !== before) {
       metrics.priceChanged++
-      if (before > 0 && Math.abs(cents - before) * 2 > before) metrics.largePriceChanges++
-      if (priceChanges.length < 10) priceChanges.push({ externalId: product.externalId, before: current.price, after: product.price.toFixed(2) })
+      const largeChange = before > 0 && Math.abs(cents - before) * 2 > before
+      if (largeChange) metrics.largePriceChanges++
+      priceChanges.push({
+        externalId: product.externalId,
+        localSku: current.sku ?? null,
+        before: (before / 100).toFixed(2),
+        after: (cents / 100).toFixed(2),
+        percentageChange: before > 0 ? ((cents - before) / before) * 100 : null,
+        largeChange,
+      })
     }
   }
   metrics.linkedMissingFromXml = state.linkedProducts.filter(row => !row.isDeleted && !xmlIds.has(row.externalId)).length
@@ -93,6 +101,7 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
       invalidValues: audit.invalidPrices.length + audit.invalidStocks.length, negativeValues: audit.negativePrices.length + audit.negativeStocks.length,
       linkedMissingFromXml: metrics.linkedMissingFromXml, inserts: 0, deactivations: 0 },
     samples: { unlinked: unlinked.slice(0, 10), duplicates: audit.duplicateExternalIds.slice(0, 10),
-      invalidValues: [...audit.invalidPrices, ...audit.invalidStocks].slice(0, 10), priceChanges, stockChanges: [] },
+      invalidValues: [...audit.invalidPrices, ...audit.invalidStocks].slice(0, 10), priceChanges: priceChanges.slice(0, 10), stockChanges: [] },
+    priceChanges,
   }
 }

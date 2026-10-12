@@ -5,7 +5,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { isSyncLockHeld } from '@/lib/sync/sync-lock'
 import {
   MANUAL_IMPORT_MAX_BYTES, decodeUpload, evaluateFeed, savePendingPreview,
-  type ManualImportSamples, type ManualImportSummary,
+  type ManualImportSamples, type ManualImportSummary, type ManualPriceChange,
 } from '@/lib/sync/manual-import'
 import { requireGrinsImportActor } from '../auth'
 
@@ -25,6 +25,7 @@ export type GrinsPreviewResponse = {
   warnings: string[]
   summary: ManualImportSummary
   samples: ManualImportSamples
+  priceChanges: ManualPriceChange[]
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       warnings: preflight.warnings,
       summary: evaluation.summary,
       samples: evaluation.samples,
+      priceChanges: evaluation.priceChanges,
     }
     return NextResponse.json(body)
   } catch {

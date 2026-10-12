@@ -32,7 +32,7 @@ interface DbState {
   kv: Map<string, unknown>
   lockHeld: boolean
   previousProductsTotal: number | null
-  linked: Array<{ externalId: string; price: string; stock: number; isActive: boolean; isDeleted: boolean; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }>
+  linked: Array<{ externalId: string; sku: string | null; price: string; stock: number; isActive: boolean; isDeleted: boolean; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }>
 }
 
 function makeDb(overrides: Partial<DbState> = {}) {
@@ -40,7 +40,7 @@ function makeDb(overrides: Partial<DbState> = {}) {
     kv: new Map(),
     lockHeld: false,
     previousProductsTotal: ROWS,
-    linked: Array.from({ length: ROWS }, (_, i) => ({ externalId: `S${i}`, price: '10.00', stock: 4, isActive: true, isDeleted: false, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null })),
+    linked: Array.from({ length: ROWS }, (_, i) => ({ externalId: `S${i}`, sku: `S${i}`, price: '10.00', stock: 4, isActive: true, isDeleted: false, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null })),
     ...overrides,
   }
   let runSeq = 0
@@ -85,7 +85,7 @@ function makeDb(overrides: Partial<DbState> = {}) {
       update: vi.fn(async () => ({})),
     },
     product: {
-      findMany: vi.fn(async () => state.linked.map((p, i) => ({ id: `p${i}`, sku: p.externalId, ...p }))),
+      findMany: vi.fn(async () => state.linked.map((p, i) => ({ id: `p${i}`, ...p }))),
     },
   }
   ;(db as typeof db & { $transaction: unknown }).$transaction = vi.fn(async (fn: (tx: unknown) => unknown) => fn(db))
@@ -176,6 +176,27 @@ describe('evaluateFeed', () => {
     expect(summary).toMatchObject({ rows: ROWS, matched: ROWS, unlinked: 0, priceChanges: 1, stockChanges: 0, inserts: 0, deactivations: 0 })
     expect(raw.$executeRawUnsafe).not.toHaveBeenCalled()
     expect(raw.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('returns every price change while keeping ten samples and marks only strict changes over 50%', async () => {
+    const items = baseItems()
+    for (let i = 0; i < 12; i++) items[i].price2 = '11.00'
+    items[0].price2 = '15.00'
+    items[1].price2 = '15.01'
+    const { db, state } = makeDb()
+    state.linked[1].sku = 'LOCAL-SKU-1'
+
+    const evaluation = await evaluateFeed(db, makeXml(items))
+
+    expect(evaluation.summary).toMatchObject({ priceChanges: 12, largePriceChanges: 1 })
+    expect(evaluation.samples.priceChanges).toHaveLength(10)
+    expect(evaluation.priceChanges).toHaveLength(12)
+    expect(evaluation.priceChanges[0]).toMatchObject({
+      externalId: 'S0', localSku: 'S0', before: '10.00', after: '15.00', percentageChange: 50, largeChange: false,
+    })
+    expect(evaluation.priceChanges[1]).toMatchObject({
+      externalId: 'S1', localSku: 'LOCAL-SKU-1', before: '10.00', after: '15.01', percentageChange: 50.1, largeChange: true,
+    })
   })
 
   it('blocks corrupted XML', async () => {

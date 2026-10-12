@@ -9,6 +9,8 @@
     "prepare": "node scripts/setup-git-hooks.mjs",
     "dev": "next dev --webpack",
     "build": "prisma generate && node scripts/build-canonical-cwd.mjs",
+    "prisma:generate": "prisma generate",
+    "build:plesk": "node scripts/build-canonical-cwd.mjs",
     "db:migrate:deploy": "prisma migrate deploy",
     "start": "node server.js",
     "lint": "eslint .",

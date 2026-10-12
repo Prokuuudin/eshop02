@@ -75,6 +75,20 @@ Cutover is blocked if any candidate existing order is not classified, any stock 
 
 Rollback is never automatic. Only the latest completed stocks-only run can be compensated, checkout must be closed, and the existing private environment profile/instance marker is required by `scripts/operate-grins-stock-rollback.ts`. The protected operation takes the normal sync lock and locks the checkout gate row. It restores physical values and changes allocations reconciled by that exact snapshot back to `awaiting_grins_sync` in the same transaction. Initialization (`previousGrinsStock IS NULL`), repeat rollback and known dependent allocation changes are rejected. Whole-database restore over newer orders is prohibited.
 
+## Deinitialize (return to legacy mode)
+
+Turning `GRINS_STOCK_LEDGER_ENABLED` off while `Product.grinsStock` is populated is **not** a rollback: the DB trigger then rejects every legacy `stock` write (`erp_stock_write_requires_ledger`), breaking checkout, cancel, returns and admin stock edits. `scripts/operate-grins-stock-deinitialize.ts` (`lib/sync/stock-ledger-deinitialize.ts`) is the protected manual return path. It clears only `grinsStock`, `grinsStockRunId`, `grinsStockUpdatedAt`; `stock` (availability), prices, orders, payments, allocations and the snapshot journal are unchanged and verified unchanged in the same Serializable transaction (`StockAllocation` exclusively locked, initialized products `FOR UPDATE`, shared sync lock held). It refuses unless checkout is closed, `GRINS_STOCK_SYNC_ENABLED` is not `true`, no other run holds the sync lock, no allocation is `reserved`/`committed`/`awaiting_grins_sync`, and availability matches the ledger formula. A second run is a recorded no-op. Every run is a `SyncRun` with `mode='stock-ledger-deinitialize'`.
+
+Procedure (operator console in the app root; Plesk "Run script" cannot pass the arguments):
+
+1. Disable the `sync:stocks:scheduled` task; set `GRINS_STOCK_SYNC_ENABLED=false` (keep `GRINS_STOCK_LEDGER_ENABLED=true`).
+2. Close checkout: `scripts/operate-grins-staging.ts --action close …`. Drain payments; resolve every active/awaiting hold through the normal order paths (an awaiting hold needs a reconciling manifest snapshot — there is no forced release).
+3. `npx tsx scripts/operate-grins-stock-deinitialize.ts --environment-profile <registry> --target <staging|production> --confirm-operation <instanceId> --dry-run` → exit 0 and `blockers: []` (exit 2 = blockers listed).
+4. `… --execute --confirm-deinitialize <instanceId> --actor <admin user id>` (production also needs `--confirm-production <instanceId>`) → `status: completed`, `clearedProducts` = initialized count.
+5. Set `GRINS_STOCK_LEDGER_ENABLED=false` (manifest/reconciliation false) → restart the web process → smoke test → open checkout.
+
+Re-enabling later is a new cutover (fresh audit, fresh first snapshot). Isolated proof: `node --conditions=react-server --import tsx scripts/verify-grins-stock-deinitialize-pglite.ts <schema.sql>` (in-memory PGlite on loopback; schema from `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`).
+
 ## Independent-audit corrections
 
 - A paid callback after reservation expiry now always persists `paymentStatus=paid`. If the full order cannot be re-held, availability and allocations stay unchanged and one idempotent `late_payment_stock_unavailable` operational exception is stored. The admin order list displays a red warning; the structured operational log uses `alert: true`.

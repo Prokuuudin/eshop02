@@ -92,6 +92,16 @@ No mutating manual-compensation command is supplied. A safe future command would
 - Node 22 local PostgreSQL 17 runner: 15/15 checks passed, including real `40001`, `40P01`, duplicate callbacks and rollback atomicity. At 15,700 products, a fully changing snapshot took about 5.6 s and the following no-op snapshot about 0.26 s; the no-op locked zero products, wrote zero journal rows and preserved `updatedAt`. A deliberately held product row produced a measured 284 ms wait and then completed with the invariant intact.
 - Clean historical `prisma migrate deploy` is currently blocked before the ledger migration: `20260824190000_add_contact_message_answered` references an absent `ContactMessage` relation (`42P01`). The ledger tests used a disposable `prisma db push` schema plus `scripts/stock-ledger-postgres-contract.sql`; this is not evidence that the full historical migration chain is healthy. Do not edit or resolve production migration history without a separate reviewed repair.
 
+## Migration alignment with staging (MFA column)
+
+Staging Neon already has `20261007120000_session_mfa_verified` applied (it came from `feat/mandatory-admin-mfa`, commit `2bc14c47`). This branch now carries that migration byte-identical to `2bc14c47` and the matching schema field `Session.mfaVerified Boolean @default(false)`. Only the column is aligned: no MFA login, API, UI or session enforcement from `feat/mandatory-admin-mfa` is included, and nothing here enables MFA. No other `feat/mandatory-admin-mfa` migration is missing from this branch.
+
+Local verification (disposable loopback PostgreSQL 17, removed afterwards): the full 61-migration chain applies in order (`…session_mfa_verified` before both ledger migrations) once the out-of-band tables below exist; `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma` is empty; `Session.mfaVerified` is `boolean NOT NULL DEFAULT false`. Both ledger migrations are unchanged from `9bc0532c`.
+
+Fresh-database deploy is still blocked by the old `ContactMessage` issue: `ContactMessage`, `CompanyApiKey`, `CompanyActivityLog` and `MediaAsset` were created out-of-band on 2026-08-15 by `scripts/apply-*-table.ts`, so `20260824190000_add_contact_message_answered` fails with `42P01` on an empty database. A proposed non-rewriting repair is a new idempotent migration `20260815000000_create_out_of_band_tables` containing the exact `CREATE ... IF NOT EXISTS` SQL from those scripts; it was proven only in a scratch copy and is not part of this branch. Existing staging/production databases already contain the tables.
+
+Before any staging migration, run `prisma migrate status` against a restored Neon child branch (direct endpoint, verified not to be staging or production): only `20261012170000_split_grins_stock_ledger` and `20261012210000_add_order_operational_exceptions` may be pending, with no failed rows. Deploy order on Plesk: `prisma migrate deploy` before restarting the app, because the admin order list reads `OrderOperationalException` even with every ledger flag false.
+
 ## Files and review focus
 
 - Schema/migration: `prisma/schema.prisma`, `prisma/migrations/20261012170000_split_grins_stock_ledger/`.

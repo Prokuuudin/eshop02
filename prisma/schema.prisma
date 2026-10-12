@@ -123,6 +123,7 @@ model Session {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+  mfaVerified Boolean @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([tokenHash])

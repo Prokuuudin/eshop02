@@ -6,6 +6,7 @@ import { getSyncRules } from './sync-rules'
 import { withRetry } from './retry'
 import { SyncLogger, type SyncError } from './logger'
 import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
+import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 
 const BATCH_SIZE = 200
 const STALE_THRESHOLD_MS = 30 * 60 * 1000
@@ -52,6 +53,7 @@ export async function runSync(
   triggeredBy: 'cron' | 'manual' | 'webhook' = 'cron',
   options: RunSyncOptions = {},
 ): Promise<SyncRunResult> {
+  if (stockLedgerFlags().ledgerEnabled) throw new Error('full_sync_blocked_by_stock_ledger_use_stocks_only')
   const logger = new SyncLogger()
 
   const syncRun = await db.syncRun.create({ data: { status: 'running', triggeredBy } })

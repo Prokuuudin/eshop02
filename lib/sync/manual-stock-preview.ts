@@ -51,7 +51,7 @@ export interface ManualStockPreviewEvaluation {
   }
 }
 
-function stockAudit(xml: string): GrinsXmlAudit {
+export function auditStockXml(xml: string): GrinsXmlAudit {
   const audit = auditGrinsXml(xml)
   if (!audit.validXml) return audit
 
@@ -98,7 +98,7 @@ function stockAudit(xml: string): GrinsXmlAudit {
   return audit
 }
 
-function stockStructuralFailures(audit: GrinsXmlAudit): string[] {
+export function stockStructuralFailures(audit: GrinsXmlAudit): string[] {
   const hard: string[] = []
   if (!audit.validXml) hard.push(`invalid XML: ${audit.validationError ?? 'unknown validation error'}`)
   if (audit.itemCount === 0) hard.push('XML contains no products')
@@ -116,7 +116,7 @@ function stockStructuralFailures(audit: GrinsXmlAudit): string[] {
  * never persists a pending preview, audit row, SyncRun or catalog mutation.
  */
 export async function evaluateStockPreview(db: ExtendedPrismaClient, xml: string): Promise<ManualStockPreviewEvaluation> {
-  const audit = stockAudit(xml)
+  const audit = auditStockXml(xml)
   const hard = stockStructuralFailures(audit)
   const rows = await db.product.findMany({
     where: { externalId: { not: null } },

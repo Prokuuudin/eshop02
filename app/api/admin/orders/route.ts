@@ -19,6 +19,7 @@ import { adminOrderCreateSchema, adminOrderUpdateSchema } from '@/lib/api-schema
 import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
+import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -259,11 +260,12 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       if (!order) return 'not_found' as const
       const status = await tx.orderStatusRecord.findUnique({ where: { orderId }, select: { status: true } })
       if (status?.status !== 'cancelled') return 'not_cancelled' as const
-      const [invoices, returns] = await Promise.all([
+      const [invoices, returns, allocations] = await Promise.all([
         tx.invoice.count({ where: { orderId } }),
         tx.returnRequest.count({ where: { orderId } }),
+        stockLedgerFlags().ledgerEnabled ? tx.stockAllocation.count({ where: { orderId } }) : Promise.resolve(0),
       ])
-      if (invoices > 0 || returns > 0) return 'related_records' as const
+      if (invoices > 0 || returns > 0 || allocations > 0) return 'related_records' as const
       await appendServerAudit(tx, req, user, {
         action: 'order.deleted', entityType: 'order', entityId: orderId,
         entityTitle: `${order.firstName} ${order.lastName}`.trim(), before: { status: 'cancelled' },

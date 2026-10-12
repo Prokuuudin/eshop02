@@ -16,7 +16,14 @@ import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
 import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder } from '@/lib/orders-data-mapping'
-import { PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
+import {
+  adjustOrderStock,
+  assertNoAwaitingAllocation,
+  commitOrderAllocations,
+  holdOrderStock,
+  releaseOrderStock,
+  StockLedgerError,
+} from '@/lib/stock-ledger'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
 export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -86,19 +93,19 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
     // it matches 0 rows the product is missing, deleted, inactive, has no valid B2B price
     // (customer orders) or doesn't have enough stock. That must fail the whole order,
     // not silently create it with unaccounted-for items.
-    const sellableWhere = options.staffPricedSale ? { isDeleted: false } : PURCHASABLE_PRODUCT_WHERE
-    const outOfStockIds: string[] = []
-    for (const item of order.items) {
-      if (item.id && typeof item.quantity === 'number' && item.quantity > 0) {
-        const result = await tx.product.updateMany({
-          where: { id: item.id, ...sellableWhere, stock: { gte: item.quantity } },
-          data: { stock: { decrement: item.quantity } },
-        })
-        if (result.count === 0) outOfStockIds.push(item.id)
+    try {
+      await holdOrderStock(tx, {
+        orderId: created.id,
+        items: order.items,
+        status: order.stockReservationStatus === 'reserved' ? 'reserved' : 'committed',
+        eventPrefix: `order:${created.id}:created`,
+        customerSellability: !options.staffPricedSale,
+      })
+    } catch (error) {
+      if (error instanceof StockLedgerError && error.code === 'insufficient_stock') {
+        throw new InsufficientStockError(error.productIds)
       }
-    }
-    if (outOfStockIds.length > 0) {
-      throw new InsufficientStockError(outOfStockIds)
+      throw error
     }
 
     // Atomically reserve a promo use. The pricing lookup happens in this same
@@ -225,14 +232,12 @@ async function releaseReservation(
   })
   if (released.count !== 1) return false
 
-  for (const item of order.items as ServerOrderItem[]) {
-    if (item.id && Number.isInteger(item.quantity) && item.quantity > 0) {
-      await tx.product.updateMany({
-        where: { id: item.id, isDeleted: false },
-        data: { stock: { increment: item.quantity } },
-      })
-    }
-  }
+  await releaseOrderStock(tx, {
+    orderId: order.id,
+    items: order.items as ServerOrderItem[],
+    reason: extraWhere.stockReservedUntil ? 'expired' : 'failed',
+    reservedOnly: true,
+  })
   return true
 }
 
@@ -242,10 +247,33 @@ export async function applyOrderReservationPaymentState(
   paymentStatus: ServerPaymentStatus,
 ): Promise<void> {
   if (paymentStatus === 'paid') {
-    await tx.order.updateMany({
+    const committed = await tx.order.updateMany({
       where: { id: orderId, stockReservationStatus: 'reserved' },
       data: { stockReservationStatus: 'committed', stockReservedUntil: null },
     })
+    if (committed.count === 1) {
+      await commitOrderAllocations(tx, orderId)
+      return
+    }
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: { id: true, items: true, stockReservationStatus: true },
+    })
+    if (!order || order.stockReservationStatus === 'committed') return
+    if (order.stockReservationStatus === 'released') {
+      const reacquired = await tx.order.updateMany({
+        where: { id: orderId, stockReservationStatus: 'released' },
+        data: { stockReservationStatus: 'committed', stockReservedUntil: null, stockReleasedAt: null },
+      })
+      if (reacquired.count !== 1) return
+      await holdOrderStock(tx, {
+        orderId,
+        items: order.items as ServerOrderItem[],
+        status: 'committed',
+        eventPrefix: `order:${orderId}:late-payment`,
+      })
+      return
+    }
     return
   }
   if (paymentStatus === 'failed') {
@@ -297,12 +325,6 @@ export const updateServerOrderPayment = async (
   return row ? mapDbToServerOrder(row) : null
 }
 
-function quantitiesByProduct(items: Array<{ id: string; quantity: number }>): Map<string, number> {
-  const result = new Map<string, number>()
-  for (const item of items) result.set(item.id, (result.get(item.id) ?? 0) + item.quantity)
-  return result
-}
-
 /**
  * Admin order editing is a single database transaction: lock the order, rebuild item
  * snapshots from authoritative catalog prices, apply the stock delta, update totals and
@@ -324,6 +346,14 @@ export async function updateServerOrderByAdmin(
     if (current.stockReservationStatus === 'released') {
       throw new AdminOrderUpdateError('Released stock reservation cannot be edited', 'released_stock')
     }
+    try {
+      await assertNoAwaitingAllocation(tx, orderId)
+    } catch (error) {
+      if (error instanceof StockLedgerError && error.code === 'awaiting_grins_sync') {
+        throw new AdminOrderUpdateError('Order has stock awaiting a fresh GrinS snapshot', 'awaiting_grins_sync')
+      }
+      throw error
+    }
 
     const requestedIds = [...new Set(input.items.map((item) => item.id))]
     const products = await tx.product.findMany({
@@ -335,25 +365,19 @@ export async function updateServerOrderByAdmin(
     }
 
     const currentItems = current.items as ServerOrderItem[]
-    const oldQty = quantitiesByProduct(currentItems)
-    const newQty = quantitiesByProduct(input.items)
-
-    for (const productId of new Set([...oldQty.keys(), ...newQty.keys()])) {
-      const delta = (newQty.get(productId) ?? 0) - (oldQty.get(productId) ?? 0)
-      if (delta > 0) {
-        const changed = await tx.product.updateMany({
-          where: { id: productId, isDeleted: false, isActive: true, stock: { gte: delta } },
-          data: { stock: { decrement: delta } },
-        })
-        if (changed.count !== 1) {
-          throw new AdminOrderUpdateError(`Insufficient stock for ${productId}`, 'insufficient_stock')
-        }
-      } else if (delta < 0) {
-        await tx.product.updateMany({
-          where: { id: productId, isDeleted: false },
-          data: { stock: { increment: -delta } },
-        })
+    try {
+      await adjustOrderStock(tx, {
+        orderId,
+        oldItems: currentItems,
+        newItems: input.items,
+        allocationStatus: current.stockReservationStatus === 'reserved' ? 'reserved' : 'committed',
+        customerSellability: false,
+      })
+    } catch (error) {
+      if (error instanceof StockLedgerError && error.code === 'insufficient_stock') {
+        throw new AdminOrderUpdateError(`Insufficient stock for ${error.productIds.join(', ')}`, 'insufficient_stock')
       }
+      throw error
     }
 
     const items: ServerOrderItem[] = input.items.map((item) => {

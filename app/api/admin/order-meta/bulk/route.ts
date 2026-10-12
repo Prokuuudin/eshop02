@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
+import { releaseOrderStock } from '@/lib/stock-ledger'
 
 const statusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type Status = z.infer<typeof statusSchema>
@@ -59,14 +60,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         const current = statusSchema.parse(currentById.get(order.id) ?? 'pending')
         if (current === parsed.data.status) continue
         if (parsed.data.status === 'cancelled' && order.stockReservationStatus !== 'released') {
-          for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
-            if (item.id && Number.isInteger(item.quantity) && Number(item.quantity) > 0) {
-              await tx.product.updateMany({
-                where: { id: item.id, isDeleted: false },
-                data: { stock: { increment: Number(item.quantity) } },
-              })
-            }
-          }
+          await releaseOrderStock(tx, {
+            orderId: order.id,
+            items: order.items as Array<{ id: string; quantity: number }>,
+            reason: 'cancelled',
+          })
           await tx.order.update({
             where: { id: order.id },
             data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },

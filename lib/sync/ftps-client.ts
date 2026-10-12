@@ -88,7 +88,8 @@ function readTlsInfo(client: Client): FtpsTlsInfo | undefined {
   }
 }
 
-export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<FtpsDownload> {
+export async function downloadFtpsFileWithMetadata(config: FtpsConfig, maxBytes?: number): Promise<FtpsDownload> {
+  if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)) throw new Error('invalid_ftps_max_bytes')
   // basic-ftp has no timeout by default; a hung socket could otherwise stall a sync run
   // indefinitely (compounding with sync-runner's own retry loop — see xml-snapshot-store.ts).
   const client = new Client(FTP_TIMEOUT_MS)
@@ -102,9 +103,16 @@ export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<
     })
 
     const chunks: Buffer[] = []
+    let downloadedBytes = 0
     const sink = new Writable({
       write(chunk, _encoding, callback) {
-        chunks.push(Buffer.from(chunk))
+        const bytes = Buffer.from(chunk)
+        downloadedBytes += bytes.byteLength
+        if (maxBytes !== undefined && downloadedBytes > maxBytes) {
+          callback(new Error('ftps_file_too_large'))
+          return
+        }
+        chunks.push(bytes)
         callback()
       },
     })
@@ -120,6 +128,9 @@ export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<
       remoteSizeBytes = await client.size(config.remotePath)
     } catch {
       // SIZE is optional too.
+    }
+    if (maxBytes !== undefined && remoteSizeBytes !== undefined && remoteSizeBytes > maxBytes) {
+      throw new Error('ftps_file_too_large')
     }
     let tls: FtpsTlsInfo | undefined
     try {

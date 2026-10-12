@@ -172,6 +172,8 @@ export interface ManifestVerification {
   xmlSha256?: string
   exporterVersion?: string
   warehousePolicy?: string
+  /** Source-side time captured before the GrinS query begins. */
+  runStartedAt?: string
 }
 
 /** Manifest path next to the export: "dir/export.xml" → "dir/export.manifest.json". */
@@ -201,12 +203,17 @@ export function verifyExportManifest(xml: string, manifestText: string, now: Dat
   if (m.productCount !== items) failures.push(`manifest productCount ${String(m.productCount)} != ${items} items in export.xml`)
   if (m.warehousePolicy !== '10000-10007') failures.push(`unexpected warehousePolicy ${String(m.warehousePolicy)}`)
   const generatedAt = typeof m.generatedAt === 'string' && /Z$/u.test(m.generatedAt) ? new Date(m.generatedAt) : null
+  const runStartedAt = typeof m.runStartedAt === 'string' && /Z$/u.test(m.runStartedAt) ? new Date(m.runStartedAt) : null
   let ageHours: number | undefined
   if (!generatedAt || Number.isNaN(generatedAt.getTime())) failures.push('manifest generatedAt is missing or not a UTC ISO timestamp')
   else {
     ageHours = (now.getTime() - generatedAt.getTime()) / 3_600_000
     if (generatedAt.getTime() - now.getTime() > MANIFEST_FUTURE_TOLERANCE_MS) failures.push('manifest generatedAt is in the future')
     else if (ageHours > maxAgeHours) failures.push(`export is stale: generated ${ageHours.toFixed(1)} h ago (> ${maxAgeHours} h)`)
+  }
+  if (m.runStartedAt !== undefined) {
+    if (!runStartedAt || Number.isNaN(runStartedAt.getTime())) failures.push('manifest runStartedAt is not a UTC ISO timestamp')
+    else if (generatedAt && runStartedAt.getTime() > generatedAt.getTime()) failures.push('manifest runStartedAt is after generatedAt')
   }
   return {
     verdict: failures.length ? 'FAIL' : 'PASS',
@@ -217,7 +224,21 @@ export function verifyExportManifest(xml: string, manifestText: string, now: Dat
     xmlSha256: typeof m.xmlSha256 === 'string' ? m.xmlSha256 : undefined,
     exporterVersion: typeof m.exporterVersion === 'string' ? m.exporterVersion : undefined,
     warehousePolicy: typeof m.warehousePolicy === 'string' ? m.warehousePolicy : undefined,
+    runStartedAt: typeof m.runStartedAt === 'string' ? m.runStartedAt : undefined,
   }
+}
+
+/** Stronger contract required before an acknowledgment can be reconciled. */
+export function verifyStockReconciliationManifest(
+  xml: string,
+  manifestText: string,
+  now: Date,
+  options: { maxAgeHours?: number } = {},
+): ManifestVerification {
+  const result = verifyExportManifest(xml, manifestText, now, options)
+  const failures = [...result.failures]
+  if (!result.runStartedAt) failures.push('manifest runStartedAt is required for stock reconciliation')
+  return { ...result, verdict: failures.length ? 'FAIL' : 'PASS', failures }
 }
 
 /** `--manifest` (download export.manifest.json next to the FTPS export) or `--manifest-file <path>`. */

@@ -31,8 +31,11 @@ import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv } from '@/lib/sync/f
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
 import { evaluatePreflight, loadPreflightState, structuralFailures } from '@/lib/sync/sync-preflight'
+import { MANUAL_IMPORT_MAX_BYTES } from '@/lib/sync/manual-import'
 
 config({ path: '.env.local' })
+
+const STOCK_MANIFEST_MAX_BYTES = 1024 * 1024
 
 function argValue(name: string): string | undefined {
   const index = process.argv.indexOf(name)
@@ -133,7 +136,35 @@ async function runScheduled(): Promise<number> {
   }
 }
 
+async function runScheduledStocks(): Promise<number> {
+  const { runScheduledStockSync } = await import('@/lib/sync/scheduled-stock-sync')
+  const { sendSyncFailureAlert } = await import('@/lib/sync/sync-alert')
+  let db: import('@/lib/prisma').ExtendedPrismaClient | undefined
+  let config: ReturnType<typeof getFtpsConfigFromEnv> | undefined
+  const stockFtpsConfig = () => (config ??= getFtpsConfigFromEnv())
+  try {
+    const outcome = await runScheduledStockSync({
+      env: process.env,
+      getDb: async () => (db = (await import('@/lib/prisma')).prisma),
+      downloadXml: () => downloadFtpsFileWithMetadata(stockFtpsConfig(), MANUAL_IMPORT_MAX_BYTES),
+      downloadManifest: (remotePath) => downloadFtpsFileWithMetadata({ ...stockFtpsConfig(), remotePath }, STOCK_MANIFEST_MAX_BYTES),
+      sendAlert: sendSyncFailureAlert,
+    })
+    console.log(JSON.stringify({ event: 'stock_sync_complete', ...outcome }))
+    return outcome.exitCode
+  } finally {
+    await db?.$disconnect()
+  }
+}
+
 async function main() {
+  if (process.argv.includes('--stocks-only-scheduled')) {
+    if (process.argv.some(arg => ['--scheduled', '--execute', '--dry-run', '--file'].includes(arg))) {
+      throw new Error('--stocks-only-scheduled cannot be combined with another mode')
+    }
+    process.exitCode = await runScheduledStocks()
+    return
+  }
   if (process.argv.includes('--scheduled')) {
     if (process.argv.includes('--execute') || process.argv.includes('--dry-run') || process.argv.includes('--file')) {
       throw new Error('--scheduled cannot be combined with --execute, --dry-run or --file')

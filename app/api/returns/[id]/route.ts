@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
+import { releaseOrderStock, StockLedgerError } from '@/lib/stock-ledger'
 
 export const runtime = 'nodejs'
 
@@ -91,15 +92,20 @@ export async function PATCH(
         } else {
           type ReturnItem = { productId: string; quantity: number }
           const returnItems = ret.items as ReturnItem[]
-          for (const item of returnItems) {
-            if (item.productId && typeof item.quantity === 'number' && item.quantity > 0) {
-              const restored = await tx.product.updateMany({
-                // Archived products still own stock and may later be restored.
-                where: { id: item.productId },
-                data: { stock: { increment: item.quantity } },
-              })
-              if (restored.count !== 1) throw new ReturnStockRestoreError(item.productId)
+          const items = returnItems.map((item) => ({ id: item.productId, quantity: item.quantity }))
+          try {
+            await releaseOrderStock(tx, {
+              orderId: ret.orderId,
+              items,
+              reason: 'returned',
+              includeDeletedLocal: true,
+              requireLocalProduct: true,
+            })
+          } catch (error) {
+            if (error instanceof StockLedgerError && error.code === 'local_product_not_found') {
+              throw new ReturnStockRestoreError(error.productIds[0] ?? 'unknown')
             }
+            throw error
           }
           after = await tx.returnRequest.findUniqueOrThrow({ where: { id } })
         }

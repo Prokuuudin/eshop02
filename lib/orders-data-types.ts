@@ -114,7 +114,7 @@ export class ExistingCheckoutOrderError extends Error {
 export class AdminOrderUpdateError extends Error {
   constructor(
     message: string,
-    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock'
+    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock' | 'awaiting_grins_sync'
   ) {
     super(message)
     this.name = 'AdminOrderUpdateError'

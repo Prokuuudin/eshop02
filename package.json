@@ -41,7 +41,10 @@
     "import:client-types": "tsx scripts/import-client-types.ts",
     "test:search-plan": "tsx scripts/check-search-plan.ts",
     "sync:products": "tsx scripts/sync-products.ts --dry-run",
-    "sync:products:scheduled": "tsx scripts/sync-products.ts --scheduled"
+    "sync:products:scheduled": "tsx scripts/sync-products.ts --scheduled",
+    "sync:stocks:scheduled": "tsx scripts/sync-products.ts --stocks-only-scheduled",
+    "audit:stock-ledger-cutover": "tsx scripts/audit-stock-ledger-cutover.ts",
+    "check:stock-ledger": "tsx scripts/check-stock-ledger-invariants.ts --strict"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

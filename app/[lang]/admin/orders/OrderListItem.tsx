@@ -21,6 +21,7 @@ import { localizeVariantLabel } from '@/lib/variant-group-label';
 import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
 import { useToast } from '@/lib/toast-context';
+import { StockAcknowledgment } from './StockAcknowledgment';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
@@ -144,6 +145,8 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                             {isExpanded && (
                                 <div className="border-t border-border px-4 py-4 space-y-3">
                                     <OrderQuickActions order={order} state={state} status={status} />
+
+                                    <StockAcknowledgment orderId={order.id} />
 
                                     <OrderEditForm order={order} state={state} />
 

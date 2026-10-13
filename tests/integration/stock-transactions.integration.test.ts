@@ -3,12 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type State = {
   stock: Record<string, number>
   orders: string[]
+  checkoutOpen: boolean
+  lockedProducts: string[][]
 }
 
-const state: State = { stock: {}, orders: [] }
+const state: State = { stock: {}, orders: [], checkoutOpen: true, lockedProducts: [] }
+
+// The GrinS maintenance gate reads KeyValueSetting through $queryRawUnsafe (outside and
+// FOR SHARE inside the transaction); the harness answers it from `state.checkoutOpen`.
+const gate = (draft: Pick<State, 'checkoutOpen'>) => async () => [{ open: draft.checkoutOpen }]
 
 const prismaMock = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
+  $queryRawUnsafe: vi.fn(),
   $transaction: vi.fn(),
   order: { findUnique: vi.fn(), update: vi.fn() },
 }))
@@ -16,6 +23,7 @@ const prismaMock = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }))
 
+import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 import {
   createServerOrder,
   InsufficientStockError,
@@ -45,6 +53,14 @@ const baseOrder: Omit<ServerOrder, 'id'> = {
 
 function transactionClient(draft: State) {
   return {
+    $queryRawUnsafe: vi.fn(gate(draft)),
+    // Product row locks (SELECT ... ORDER BY id FOR UPDATE) arrive as tagged-template calls.
+    $queryRaw: vi.fn(async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      const ids = values.flatMap((value) => (value && typeof value === 'object' && 'values' in value ? (value as { values: unknown[] }).values : []))
+      if (ids.length > 0) draft.lockedProducts.push(ids.map(String))
+      return []
+    }),
+    $executeRaw: vi.fn(async () => 0),
     order: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
         draft.orders.push(String(data.id))
@@ -52,6 +68,9 @@ function transactionClient(draft: State) {
       }),
     },
     product: {
+      findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
+        where.id.in.filter((id) => draft.stock[id] !== undefined)
+          .map((id) => ({ id, stock: draft.stock[id], externalId: null, grinsStock: null }))),
       updateMany: vi.fn(async ({ where, data }: {
         where: { id: string; stock: { gte: number } }
         data: { stock: { decrement: number } }
@@ -70,24 +89,38 @@ function transactionClient(draft: State) {
 beforeEach(() => {
   state.stock = { p1: 5, p2: 3 }
   state.orders = []
+  state.checkoutOpen = true
+  state.lockedProducts = []
   vi.clearAllMocks()
   prismaMock.$queryRaw.mockResolvedValue([{ max: 1000n }])
+  prismaMock.$queryRawUnsafe.mockImplementation(gate(state))
   prismaMock.$transaction.mockImplementation(async (operation: (tx: ReturnType<typeof transactionClient>) => unknown) => {
     const draft = structuredClone(state)
     const result = await operation(transactionClient(draft))
     state.stock = draft.stock
     state.orders = draft.orders
+    state.lockedProducts = draft.lockedProducts
     return result
   })
 })
 
 describe('order stock transaction integration', () => {
+  it('refuses checkout without touching order or stock while the GrinS gate is closed', async () => {
+    state.checkoutOpen = false
+
+    await expect(createServerOrder(baseOrder)).rejects.toBeInstanceOf(CheckoutMaintenanceError)
+    expect(prismaMock.$transaction).not.toHaveBeenCalled()
+    expect(state.orders).toEqual([])
+    expect(state.stock).toEqual({ p1: 5, p2: 3 })
+  })
+
   it('commits the order and all stock decrements together', async () => {
     const created = await createServerOrder(baseOrder)
 
     expect(created.id).toBe('1001')
     expect(state.orders).toEqual(['1001'])
     expect(state.stock).toEqual({ p1: 3, p2: 2 })
+    expect(state.lockedProducts).toEqual([['p1', 'p2']])
   })
 
   it('rolls back the order and earlier decrements when any item is unavailable', async () => {

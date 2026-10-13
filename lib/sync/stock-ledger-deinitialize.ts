@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 import { GRINS_CHECKOUT_GATE_KEY } from '@/lib/grins-import-maintenance'
 import { ACTIVE_ALLOCATION_STATUSES, enterStockLedgerWriteContext, stockLedgerInvariantViolations } from '@/lib/stock-ledger'
@@ -27,6 +28,28 @@ export interface StockLedgerDeinitializeState {
 
 export interface StockLedgerDeinitializeReport extends StockLedgerDeinitializeState {
   blockers: string[]
+  /** Data the operation would act on; binds an execute to a reviewed dry-run. */
+  stateFingerprint: string
+}
+
+export interface StockLedgerDeinitializeOptions {
+  /** Unique SyncRun.sourceIdentity written before any change: a replayed request fails on the unique index. */
+  sourceIdentity?: string
+  /** stateFingerprint from the reviewed dry-run; compared after every lock is held. */
+  expectedStateFingerprint?: string
+}
+
+/** Preconditions (checkout, flags, lock) are checked separately and deliberately excluded. */
+export function stockLedgerDeinitializeStateFingerprint(state: StockLedgerDeinitializeState): string {
+  const allocations = Object.fromEntries(Object.entries(state.allocationsByStatus).sort(([a], [b]) => a.localeCompare(b)))
+  return createHash('sha256').update(JSON.stringify({
+    productCount: state.productCount,
+    stockSum: state.stockSum,
+    stockFingerprint: state.stockFingerprint,
+    initializedProducts: state.initializedProducts,
+    ledgerFieldProducts: state.ledgerFieldProducts,
+    allocations,
+  })).digest('hex')
 }
 
 export type StockLedgerDeinitializeResult =
@@ -89,7 +112,7 @@ async function readState(
     stockSum: products.stockSum,
     stockFingerprint: products.fingerprint,
   }
-  return { ...state, blockers: stockLedgerDeinitializeBlockers(state) }
+  return { ...state, blockers: stockLedgerDeinitializeBlockers(state), stateFingerprint: stockLedgerDeinitializeStateFingerprint(state) }
 }
 
 /** Dry-run: reads only, takes no lock and writes no SyncRun. */
@@ -112,11 +135,20 @@ export async function deinitializeStockLedger(
   db: ExtendedPrismaClient,
   actor: string,
   env: Record<string, string | undefined> = process.env,
+  options: StockLedgerDeinitializeOptions = {},
 ): Promise<StockLedgerDeinitializeResult> {
   if (stockLedgerFlags(env).scheduledStocksEnabled) throw new Error('stock_sync_must_be_disabled')
-  const run = await db.syncRun.create({
-    data: { status: 'running', mode: 'stock-ledger-deinitialize', triggeredBy: actor },
-  })
+  let run: { id: string }
+  try {
+    run = await db.syncRun.create({
+      data: { status: 'running', mode: 'stock-ledger-deinitialize', triggeredBy: actor, sourceIdentity: options.sourceIdentity },
+    })
+  } catch (error) {
+    if (options.sourceIdentity && typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
+      throw new Error('operation_request_already_used')
+    }
+    throw error
+  }
   if (!await acquireSyncLock(db, run.id, LOCK_TTL_MS)) {
     await db.syncRun.update({ where: { id: run.id }, data: { status: 'skipped', finishedAt: new Date(), errorSample: { reason: 'already_running' } as never } })
     throw new Error('stock_ledger_deinitialize_sync_lock_unavailable')
@@ -133,6 +165,9 @@ export async function deinitializeStockLedger(
       `
       const before = await readState(tx, { lockGate: true, ownRunId: run.id, env })
       if (before.blockers.length) throw new Error(before.blockers[0])
+      if (options.expectedStateFingerprint !== undefined && options.expectedStateFingerprint !== before.stateFingerprint) {
+        throw new Error('stock_ledger_deinitialize_state_changed')
+      }
 
       if (before.ledgerFieldProducts === 0) {
         await tx.syncRun.update({
@@ -160,7 +195,7 @@ export async function deinitializeStockLedger(
       await tx.syncRun.update({
         where: { id: run.id },
         data: {
-          status: 'completed', finishedAt: new Date(), sourceIdentity: `deinitialize:${run.id}`,
+          status: 'completed', finishedAt: new Date(), sourceIdentity: options.sourceIdentity ?? `deinitialize:${run.id}`,
           productsTotal: before.ledgerFieldProducts, productsSynced: cleared, errorCount: 0,
           errorSample: { before, after } as never,
         },

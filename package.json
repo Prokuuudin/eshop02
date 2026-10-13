@@ -48,6 +48,10 @@
     "audit:stock-ledger-cutover": "tsx scripts/audit-stock-ledger-cutover.ts",
     "check:stock-ledger": "tsx scripts/check-stock-ledger-invariants.ts --strict",
     "report:stock-ledger-holds": "tsx scripts/report-stock-ledger-holds.ts",
+    "ops:stock-deinitialize:dry-run": "tsx scripts/operate-grins-stock-deinitialize-request.ts dry-run",
+    "ops:stock-deinitialize:execute": "tsx scripts/operate-grins-stock-deinitialize-request.ts execute",
+    "ops:checkout:close": "tsx scripts/operate-grins-checkout-request.ts close",
+    "ops:checkout:open": "tsx scripts/operate-grins-checkout-request.ts open",
     "test:stock-ledger:postgres": "node --conditions=react-server --import tsx scripts/verify-grins-stock-ledger-postgres.ts"
   },
   "dependencies": {

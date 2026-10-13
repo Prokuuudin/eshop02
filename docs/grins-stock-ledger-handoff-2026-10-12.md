@@ -87,6 +87,42 @@ Procedure (operator console in the app root; Plesk "Run script" cannot pass the 
 4. `… --execute --confirm-deinitialize <instanceId> --actor <admin user id>` (production also needs `--confirm-production <instanceId>`) → `status: completed`, `clearedProducts` = initialized count.
 5. Set `GRINS_STOCK_LEDGER_ENABLED=false` (manifest/reconciliation false) → restart the web process → smoke test → open checkout.
 
+### Plesk-only operation (no console): one-time request file
+
+`npm run ops:stock-deinitialize:dry-run` and `npm run ops:stock-deinitialize:execute` (Plesk → Node.js → Run script, no arguments) read `stock-deinitialize.request.json` from `GRINS_OPERATIONS_DIR`. All guards above still apply; additionally the request expires (`notAfter`, at most 2 h ahead), is consumed before the first write (renamed to `stock-deinitialize.<requestId>.consumed.json`; the unique `SyncRun.sourceIdentity = deinitialize-request:<requestId>` blocks a replay even if the file is restored) and execute requires the `dryRunFingerprint` of a reviewed dry-run, re-checked after all locks are held.
+
+One-time setup (Plesk File Manager):
+
+1. Create a folder **next to** the document roots, never inside `httpdocs`/`staging-httpdocs`, e.g. `<subscription root>\grins-ops\`. The code refuses any directory inside the app root or with a `*httpdocs`/`public`/`wwwroot` path segment.
+2. Put the approved environment registry there (`grins-environments.json`, format in `grins-staging-operational-authorization-2026-10-10.md`). If File Manager offers *Change Permissions*, make the registry read-only for the site's worker account.
+3. `.env.local` of the app: `GRINS_OPERATIONS_DIR=<absolute path of that folder>`. Keep `GRINS_STOCK_SYNC_ENABLED=false` during the operation.
+
+Each operation:
+
+1. Create `stock-deinitialize.request.json` (new `requestId` UUID every time, e.g. `[guid]::NewGuid()` in PowerShell on any PC; a UUID is not a secret):
+   ```json
+   { "requestId": "<new UUID>", "target": "staging", "environmentProfile": "<absolute path>\\grins-environments.json",
+     "confirmOperation": "<staging instanceId>", "actor": "<admin user id>", "notAfter": "<UTC time ≤ 2 h ahead, e.g. 2026-10-14T15:30:00Z>" }
+   ```
+   Production additionally `"confirmProduction": "<production instanceId>"`.
+2. Run script `ops:stock-deinitialize:dry-run`. Output (and `stock-deinitialize.<requestId>.dry-run.result.json`): `ok: true`, `report.blockers: []`, copy `dryRunFingerprint`. Exit 2 = blockers listed; fix them, repeat.
+3. Edit the same request: add `"confirmDeinitialize": "<instanceId>"` and `"dryRunFingerprint": "<from step 2>"`. Run `ops:stock-deinitialize:execute`. Result `ok: true`, `result.status: completed` (or `noop`). Any refusal leaves the database unchanged; a refusal after consumption needs a new `requestId` and a new dry-run.
+4. Continue with step 5 of the procedure above.
+
+### Plesk-only checkout close/open
+
+Same request mechanism (`lib/grins-operation-request.ts`), same folder, same base fields (`requestId`, `target`, `environmentProfile`, `confirmOperation`, `actor`, `notAfter`, production `confirmProduction`). Gate change and the DB replay marker (`KeyValueSetting` key `grins-operation-request:<requestId>`) commit in one transaction; refusals before consumption keep the request file for a retry.
+
+- **Close:** `checkout-close.request.json` with the base fields → Run script `ops:checkout:close`. Idempotent (`alreadyClosed: true` keeps the window). Copy `maintenanceWindowId` from the result — the open must quote it.
+- **Open:** `checkout-open.request.json` = base fields + `"maintenanceWindowId": "<from close>"` + `"openReason"`:
+  - `"no-change"` — nothing ran since close (existing abort-window rules);
+  - `"prices-import"` + `"completedRunId"` — existing prices-only completion rules (actor also needs `prices.update`);
+  - `"stock-ledger"` — every run since close is a terminal `stocks-only` / `stock-rollback` / `stock-ledger-deinitialize` run.
+  → Run script `ops:checkout:open`.
+- Every open refuses while a run is `running` or the sync lease is held, and unless the stock model is coherent: fully legacy (no ledger field, no active hold) or fully initialized (all linked products initialized, availability = ledger formula, `GRINS_STOCK_LEDGER_ENABLED=true` in `.env.local`). The web process must already have been restarted with the same flag — the request cannot see the worker's environment.
+
+Isolated proof: `scripts/verify-grins-checkout-request-pglite.ts <schema.sql>` and `scripts/verify-grins-stock-deinitialize-request-pglite.ts <schema.sql>`.
+
 Re-enabling later is a new cutover (fresh audit, fresh first snapshot). Isolated proof: `node --conditions=react-server --import tsx scripts/verify-grins-stock-deinitialize-pglite.ts <schema.sql>` (in-memory PGlite on loopback; schema from `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`).
 
 ## Independent-audit corrections

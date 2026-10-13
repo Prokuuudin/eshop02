@@ -158,6 +158,12 @@ beforeAll(async () => {
   expect(rows[0].port).toBe(Number(target.port || 5432))
   expect(rows[0].isolation).toBe('read committed')
   evidence.push({ postgres: rows[0], adapter: 'PrismaPg', mode: 'real PostgreSQL; synthetic signed payment events; no provider calls' })
+  // The GrinS maintenance gate is fail-closed; open checkout in this isolated database only.
+  await prisma.keyValueSetting.upsert({
+    where: { key: 'grins-prices-only-maintenance' },
+    create: { key: 'grins-prices-only-maintenance', value: { checkoutClosed: false } },
+    update: { value: { checkoutClosed: false } },
+  })
   vi.stubEnv('PAYSERA_CLIENT_ID', randomUUID()); vi.stubEnv('PAYSERA_PROJECT_ID', randomUUID())
   vi.stubEnv('PAYSERA_CLIENT_SECRET', randomBytes(32).toString('hex'))
 })
@@ -216,14 +222,33 @@ describe('stock release on real PostgreSQL', () => {
     }
     evidence.push({ scenario: 'C/increase + cleanup', iterations, conserved: true })
   })
-  it('D: expired callback and concurrent cleaners cannot produce paid/released or duplicate stock', async () => {
+  // Approved release semantics: a verified callback after expiry is recorded as paid. Either
+  // the still-held stock is committed or the released stock is re-held exactly once.
+  it('D: expired verified callback and concurrent cleaners end paid/committed without duplicate stock', async () => {
     for (let i = 0; i < iterations; i++) {
       await fixture(); const order = await reserve()
       const [response] = await Promise.all([signed(order), releaseExpiredStockReservations(), releaseExpiredStockReservations()])
-      expect(response.status).toBe(500)
-      expect(await conservation(3)).toMatchObject({ available: 3, committed: 0, reserved: 0 })
+      expect(response.status).toBe(200)
+      expect(await conservation(3)).toMatchObject({ available: 1, committed: 2, reserved: 0 })
+      expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).paymentStatus).toBe('paid')
+      expect(await prisma.orderOperationalException.count()).toBe(0)
     }
-    evidence.push({ scenario: 'D/cleanup + expired callback', iterations, conserved: true })
+    evidence.push({ scenario: 'D/cleanup + expired verified callback', iterations, conserved: true })
+  })
+  it('D2: late verified callback after the units were sold stays paid, raises one exception and keeps stock', async () => {
+    await fixture(2); const late = await reserve(2)
+    await releaseExpiredStockReservations()
+    const other = await reserve(2, false)
+    expect(other.stockReservationStatus).toBe('reserved')
+    const responses = await Promise.all([signed(late), signed(late)])
+    expect(responses.map(response => response.status)).toEqual([200, 200])
+    const row = await prisma.order.findUniqueOrThrow({ where: { id: late.id } })
+    expect(row).toMatchObject({ paymentStatus: 'paid', stockReservationStatus: 'released' })
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: 'p1' } })).stock).toBe(0)
+    const exceptions = await prisma.orderOperationalException.findMany({ where: { orderId: late.id } })
+    expect(exceptions).toHaveLength(1)
+    expect(exceptions[0]).toMatchObject({ code: 'late_payment_stock_unavailable', occurrences: 1 })
+    evidence.push({ scenario: 'D2/late verified callback without stock', conserved: true })
   })
   it('E: edit and current callback serialize; an edited order needs a new current session', async () => {
     let paymentWins = 0, editWins = 0

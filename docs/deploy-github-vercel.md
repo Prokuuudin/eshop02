@@ -54,6 +54,7 @@ git push
 3. Проверьте настройки сборки:
     - Framework: `Next.js`
     - Build Command: `npm run build`
+    - Не добавляйте `prisma migrate deploy` в Build Command. Миграции запускаются только отдельным явным действием оператора: `npm run db:migrate:deploy`.
     - Install Command: `npm install`
     - Output Directory: оставить по умолчанию (`.next`)
 4. Нажмите **Deploy**.

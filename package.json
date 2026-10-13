@@ -8,7 +8,8 @@
   "scripts": {
     "prepare": "node scripts/setup-git-hooks.mjs",
     "dev": "next dev --webpack",
-    "build": "prisma migrate deploy && prisma generate && node scripts/build-canonical-cwd.mjs",
+    "build": "prisma generate && node scripts/build-canonical-cwd.mjs",
+    "db:migrate:deploy": "prisma migrate deploy",
     "start": "node server.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

@@ -36,7 +36,8 @@ npm run dev
 | Script | What it does |
 | --- | --- |
 | `npm run dev` | Start the dev server (webpack, not Turbopack) |
-| `npm run build` | `prisma migrate deploy && prisma generate && next build` |
+| `npm run build` | Generate Prisma Client and build Next.js; does not apply migrations |
+| `npm run db:migrate:deploy` | Explicitly apply pending migrations to the configured database |
 | `npm run start` | Start the production server (after `build`) |
 | `npm run lint` | ESLint via `eslint .` (`next lint` was removed in Next 16) |
 | `npm run typecheck` | `tsc --noEmit` |

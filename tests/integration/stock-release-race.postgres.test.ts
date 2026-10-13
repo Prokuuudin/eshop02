@@ -26,6 +26,7 @@ import { POST as callback } from '@/app/api/webhooks/paysera/route'
 import { POST as cancel } from '@/app/api/admin/order-meta/route'
 import { POST as bulkCancel } from '@/app/api/admin/order-meta/bulk/route'
 import { POST as retry } from '@/app/api/orders/[id]/pay/route'
+import { POST as resolveLatePayment } from '@/app/api/admin/orders/late-payment-exception/route'
 
 const actor: ServerUser = {
   id: 'stock-test-actor', email: 'stock-test@example.test', platformRole: 'admin',
@@ -249,6 +250,107 @@ describe('stock release on real PostgreSQL', () => {
     expect(exceptions).toHaveLength(1)
     expect(exceptions[0]).toMatchObject({ code: 'late_payment_stock_unavailable', occurrences: 1 })
     evidence.push({ scenario: 'D2/late verified callback without stock', conserved: true })
+  })
+  // Late-payment shipment guard and its only resolution path (re-hold through the ledger).
+  const LATE_REASON = 'Competing order cancelled; the units are back on hand'
+  const setStatus = (orderId: string, status: string) => cancel(request({ orderId, status }))
+  const resolve = (orderId: string) => resolveLatePayment(new NextRequest('https://example.test/api/admin/orders/late-payment-exception', {
+    method: 'POST', body: JSON.stringify({ orderId, reason: LATE_REASON }), headers: { origin: 'https://example.test' },
+  }))
+  async function lateOrderWithoutStock(): Promise<{ late: ServerOrder; other: ServerOrder }> {
+    await fixture(2); const late = await reserve(2)
+    await releaseExpiredStockReservations()
+    const other = await reserve(2, false)
+    expect((await setStatus(late.id, 'confirmed')).status).toBe(200)
+    return { late, other }
+  }
+  const statusOf = async (orderId: string) => (await prisma.orderStatusRecord.findUnique({ where: { orderId } }))?.status
+  it('D3: open late-payment exception blocks single and bulk shipping until stock is re-held with an audited reason', async () => {
+    const { late, other } = await lateOrderWithoutStock()
+    expect((await signed(late)).status).toBe(200)
+
+    const single = await setStatus(late.id, 'shipped')
+    expect(single.status).toBe(409)
+    expect(await single.json()).toMatchObject({ error: 'late_payment_stock_unavailable' })
+    const bulk = await bulkCancel(request({ orderIds: [late.id], status: 'shipped' }))
+    expect(bulk.status).toBe(409)
+    expect(await bulk.json()).toEqual({ error: `late_payment_stock_unavailable:${late.id}` })
+    expect(await statusOf(late.id)).toBe('confirmed')
+
+    const short = await resolve(late.id)
+    expect(short.status).toBe(409)
+    expect(await short.json()).toMatchObject({ error: 'insufficient_stock', productIds: ['p1'] })
+    expect(await prisma.orderOperationalException.findFirstOrThrow({ where: { orderId: late.id } })).toMatchObject({ status: 'open', resolvedBy: null })
+
+    // Stock comes back through a normal audited path, never through a manual adjustment here.
+    expect((await setStatus(other.id, 'cancelled')).status).toBe(200)
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: 'p1' } })).stock).toBe(2)
+
+    const resolved = await resolve(late.id)
+    expect(resolved.status).toBe(200)
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: late.id } })).toMatchObject({ paymentStatus: 'paid', stockReservationStatus: 'committed', stockReleasedAt: null })
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: 'p1' } })).stock).toBe(0)
+    const exception = await prisma.orderOperationalException.findFirstOrThrow({ where: { orderId: late.id } })
+    expect(exception).toMatchObject({ status: 'resolved', resolvedBy: actor.id })
+    expect(exception.resolvedAt).toBeInstanceOf(Date)
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'order.late_payment_exception_resolved', entityId: late.id } })
+    expect(audit).toMatchObject({ actorUserId: actor.id, reason: LATE_REASON })
+    expect((await resolve(late.id)).status).toBe(409)
+
+    expect([200, 202]).toContain((await setStatus(late.id, 'shipped')).status)
+    expect(await statusOf(late.id)).toBe('shipped')
+    await conservation(2)
+    evidence.push({ scenario: 'D3/late-payment shipment guard + audited re-hold resolution', conserved: true })
+  })
+  // Real row-lock queue: a blocker holds the Order row, both requests queue behind it in a
+  // chosen order, then the blocker commits. Alternates which side reaches the lock first.
+  async function queuedOnOrder<A, B>(orderId: string, first: () => Promise<A>, second: () => Promise<B>): Promise<[A, B]> {
+    const acquired = gate(), unblock = gate()
+    const blocker = prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
+      acquired.resolve(); await unblock.promise
+    }, { timeout: 20_000 })
+    await acquired.promise
+    const waitsOnOrder = async (count: number) => {
+      const deadline = Date.now() + 2500
+      while (Date.now() < deadline) {
+        const rows = await prisma.$queryRaw<Array<{ query: string }>>`SELECT query FROM pg_stat_activity WHERE wait_event_type = 'Lock' AND pid <> pg_backend_pid()`
+        if (rows.filter(row => row.query.includes('"Order"') && row.query.includes('FOR UPDATE')).length >= count) return
+        await new Promise(done => setTimeout(done, 5))
+      }
+      throw new Error(`Expected ${count} real Order lock waits`)
+    }
+    let a: Promise<A> | undefined, b: Promise<B> | undefined
+    try {
+      a = first(); await waitsOnOrder(1)
+      b = second(); await waitsOnOrder(2)
+    } finally { unblock.resolve() }
+    const results = await Promise.all([a!, b!])
+    await blocker
+    return results
+  }
+  it('D4: late callback and shipping serialize on the real Order lock in both orders', async () => {
+    let shipFirst = 0, callbackFirst = 0
+    for (let i = 0; i < iterations; i++) {
+      const { late } = await lateOrderWithoutStock()
+      const [payment, shipping] = i % 2 === 0
+        ? await queuedOnOrder(late.id, () => signed(late), () => setStatus(late.id, 'shipped'))
+        : await queuedOnOrder(late.id, () => setStatus(late.id, 'shipped'), () => signed(late)).then(([ship, pay]) => [pay, ship] as const)
+      expect(payment.status).toBe(200)
+      expect(await prisma.orderOperationalException.count({ where: { orderId: late.id, status: 'open' } })).toBe(1)
+      if (i % 2 === 0) {
+        // Callback committed first: the exception exists before the status change is checked.
+        callbackFirst++
+        expect(shipping.status).toBe(409)
+        expect(await statusOf(late.id)).toBe('confirmed')
+      } else {
+        // Shipping committed before any payment existed; the late payment still alerts staff.
+        shipFirst++
+        expect([200, 202]).toContain(shipping.status)
+        expect(await statusOf(late.id)).toBe('shipped')
+      }
+    }
+    evidence.push({ scenario: 'D4/late callback + ship (forced lock order)', iterations, shipFirst, callbackFirst })
   })
   it('E: edit and current callback serialize; an edited order needs a new current session', async () => {
     let paymentWins = 0, editWins = 0

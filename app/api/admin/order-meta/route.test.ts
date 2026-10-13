@@ -97,3 +97,53 @@ describe('POST /api/admin/order-meta cancellation', () => {
     })
   })
 })
+
+describe('POST /api/admin/order-meta shipment guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionMock.mockResolvedValue({ id: 'admin', email: 'admin@test.com' })
+  })
+
+  function shipmentTx(openException: boolean) {
+    const tx = {
+      ...cancellationTx('paid'),
+      orderOperationalException: {
+        findMany: vi.fn().mockResolvedValue(openException ? [{ orderId: 'o1' }] : []),
+      },
+    }
+    tx.order.findUnique.mockResolvedValue({
+      id: 'o1', firstName: 'A', lastName: 'B', items: [{ id: 'p1', quantity: 2 }],
+      paymentStatus: 'paid', stockReservationStatus: openException ? 'released' : 'committed',
+    })
+    return tx
+  }
+
+  it('refuses shipped while late_payment_stock_unavailable is open, after locking the order', async () => {
+    const tx = shipmentTx(true)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'late_payment_stock_unavailable', current: 'confirmed' })
+    expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.orderOperationalException.findMany)
+    expect(tx.orderOperationalException.findMany).toHaveBeenCalledWith({
+      where: { orderId: { in: ['o1'] }, code: 'late_payment_stock_unavailable', status: 'open' },
+      select: { orderId: true },
+    })
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it('ships once no exception is open', async () => {
+    const tx = shipmentTx(false)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect([200, 202]).toContain(response.status)
+    expect(tx.orderStatusRecord.upsert).toHaveBeenCalledWith({
+      where: { orderId: 'o1' }, create: { orderId: 'o1', status: 'shipped' }, update: { status: 'shipped' },
+    })
+  })
+})

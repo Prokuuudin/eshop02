@@ -66,3 +66,49 @@ describe('POST /api/admin/order-meta/bulk', () => {
     expect(await response.json()).toMatchObject({ ok: true, updated: 1 })
   })
 })
+
+describe('POST /api/admin/order-meta/bulk shipment guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionMock.mockResolvedValue({ id: 'admin', email: 'admin@test.com' })
+  })
+
+  function shipmentTx(blockedIds: string[]) {
+    const orders = ['o1', 'o2'].map((id) => ({ id, firstName: 'A', lastName: 'B', items: [], paymentStatus: 'paid', stockReservationStatus: 'committed' }))
+    return {
+      $executeRaw: vi.fn(), $queryRaw: vi.fn(),
+      order: { findMany: vi.fn().mockResolvedValue(orders), update: vi.fn() },
+      orderStatusRecord: {
+        findMany: vi.fn().mockResolvedValue(orders.map((order) => ({ orderId: order.id, status: 'confirmed' }))),
+        upsert: vi.fn(),
+      },
+      orderOperationalException: { findMany: vi.fn().mockResolvedValue(blockedIds.map((orderId) => ({ orderId }))) },
+      product: { updateMany: vi.fn() },
+    }
+  }
+
+  it('rejects the whole batch when any order has an open late-payment exception', async () => {
+    const tx = shipmentTx(['o2'])
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderIds: ['o1', 'o2'], status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'late_payment_stock_unavailable:o2' })
+    expect(tx.orderOperationalException.findMany).toHaveBeenCalledWith({
+      where: { orderId: { in: ['o1', 'o2'] }, code: 'late_payment_stock_unavailable', status: 'open' },
+      select: { orderId: true },
+    })
+    expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.orderOperationalException.findMany)
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it('ships the batch when no exception is open', async () => {
+    const tx = shipmentTx([])
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    expect((await post({ orderIds: ['o1', 'o2'], status: 'shipped' })).status).toBe(200)
+    expect(tx.orderStatusRecord.upsert).toHaveBeenCalledTimes(2)
+  })
+})

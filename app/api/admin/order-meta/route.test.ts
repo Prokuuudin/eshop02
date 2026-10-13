@@ -104,7 +104,7 @@ describe('POST /api/admin/order-meta shipment guard', () => {
     permissionMock.mockResolvedValue({ id: 'admin', email: 'admin@test.com' })
   })
 
-  function shipmentTx(openException: boolean) {
+  function shipmentTx(openException: boolean, stockReservationStatus = openException ? 'released' : 'committed') {
     const tx = {
       ...cancellationTx('paid'),
       orderOperationalException: {
@@ -113,7 +113,7 @@ describe('POST /api/admin/order-meta shipment guard', () => {
     }
     tx.order.findUnique.mockResolvedValue({
       id: 'o1', firstName: 'A', lastName: 'B', items: [{ id: 'p1', quantity: 2 }],
-      paymentStatus: 'paid', stockReservationStatus: openException ? 'released' : 'committed',
+      paymentStatus: 'paid', stockReservationStatus,
     })
     return tx
   }
@@ -135,7 +135,20 @@ describe('POST /api/admin/order-meta shipment guard', () => {
     expect(auditMock).not.toHaveBeenCalled()
   })
 
-  it('ships once no exception is open', async () => {
+  it.each(['released', 'reserved'])('refuses shipped for %s stock even without an exception', async (stockReservationStatus) => {
+    const tx = shipmentTx(false, stockReservationStatus)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'order_stock_not_committed', current: 'confirmed', stockReservationStatus })
+    expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.order.findUnique)
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it('ships once no exception is open and the stock is committed', async () => {
     const tx = shipmentTx(false)
     transactionMock.mockImplementation(async (fn) => fn(tx))
 

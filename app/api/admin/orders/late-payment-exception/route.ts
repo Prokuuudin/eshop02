@@ -13,7 +13,8 @@ const inputSchema = z.object({
 }).strict()
 
 // POST /api/admin/orders/late-payment-exception — closes an open
-// late_payment_stock_unavailable exception once the stock is back. The order is re-held as
+// late_payment_stock_unavailable exception (or re-holds a paid order left released before
+// exceptions were recorded) once the stock is back. The order is re-held as
 // committed through the Stock Ledger in the same transaction; if any line is still short,
 // nothing changes. Admin-only (orders.refund), reason required, audited with actor and time.
 export async function POST(req: NextRequest): Promise<Response> {
@@ -36,9 +37,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         entityType: 'order',
         entityId: orderId,
         entityTitle: `${outcome.order.firstName} ${outcome.order.lastName}`.trim(),
-        before: { exception: 'open', stockReservationStatus: 'released' },
+        before: { exception: outcome.exceptionId ? 'open' : 'none', stockReservationStatus: 'released' },
         after: {
-          exception: 'resolved',
+          exception: outcome.exceptionId ? 'resolved' : 'none',
           exceptionId: outcome.exceptionId,
           resolution: 'stock_reheld',
           stockReservationStatus: 'committed',

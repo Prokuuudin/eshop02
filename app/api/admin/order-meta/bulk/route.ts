@@ -5,7 +5,12 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { releaseOrderStock } from '@/lib/stock-ledger'
-import { findOrdersBlockedForShipment, LATE_PAYMENT_STOCK_UNAVAILABLE } from '@/lib/order-operational-exceptions'
+import {
+  findOrdersBlockedForShipment,
+  isStockSecuredForShipment,
+  LATE_PAYMENT_STOCK_UNAVAILABLE,
+  ORDER_STOCK_NOT_COMMITTED,
+} from '@/lib/order-operational-exceptions'
 
 const statusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type Status = z.infer<typeof statusSchema>
@@ -57,11 +62,15 @@ export async function POST(req: NextRequest): Promise<Response> {
           throw new Error(`paid_order_requires_refund:${order.id}`)
         }
       }
-      // All Order rows are locked above, so no late-payment exception can open in between.
+      // All Order rows are locked above, so neither a late-payment exception nor a
+      // reservation release can happen in between. Any unsafe order aborts the batch.
       if (parsed.data.status === 'shipped') {
-        const changing = orders.filter((order) => currentById.get(order.id) !== 'shipped').map((order) => order.id)
-        const [blocked] = await findOrdersBlockedForShipment(tx, changing)
+        const changing = orders.filter((order) => currentById.get(order.id) !== 'shipped')
+        const [blocked] = await findOrdersBlockedForShipment(tx, changing.map((order) => order.id))
         if (blocked) throw new Error(`${LATE_PAYMENT_STOCK_UNAVAILABLE}:${blocked}`)
+        const [unsecured] = changing.filter((order) => !isStockSecuredForShipment(order.stockReservationStatus))
+          .map((order) => order.id).sort()
+        if (unsecured) throw new Error(`${ORDER_STOCK_NOT_COMMITTED}:${unsecured}`)
       }
       // Acquire all affected Product locks before applying any batch mutations or
       // taking the audit lock, using the same SKU order as reserve/edit/release.
@@ -105,7 +114,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const status = message === 'order_not_found'
       ? 404
       : message.startsWith('invalid_') || message.startsWith('paid_order_requires_refund:')
-        || message.startsWith(`${LATE_PAYMENT_STOCK_UNAVAILABLE}:`)
+        || message.startsWith(`${LATE_PAYMENT_STOCK_UNAVAILABLE}:`) || message.startsWith(`${ORDER_STOCK_NOT_COMMITTED}:`)
         ? 409
         : 500
     if (status === 500) logApiError("[admin/order-meta/bulk]", error)

@@ -9,7 +9,12 @@ import { getTemplates } from '@/lib/email-templates-server-store'
 import { appendServerAudit } from '@/lib/server-audit'
 import { z } from 'zod'
 import { assertNoAwaitingAllocation, holdOrderStock, releaseOrderStock, StockLedgerError } from '@/lib/stock-ledger'
-import { findOrdersBlockedForShipment, LATE_PAYMENT_STOCK_UNAVAILABLE } from '@/lib/order-operational-exceptions'
+import {
+  findOrdersBlockedForShipment,
+  isStockSecuredForShipment,
+  LATE_PAYMENT_STOCK_UNAVAILABLE,
+  ORDER_STOCK_NOT_COMMITTED,
+} from '@/lib/order-operational-exceptions'
 
 const orderStatusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type OrderStatus = z.infer<typeof orderStatusSchema>
@@ -152,10 +157,16 @@ export async function POST(req: NextRequest): Promise<Response> {
           return { error: 'invalid_status_transition' as const, current }
         }
         if (current === status) return { current }
-        // Checked under the Order lock above; the late-payment callback opens the
-        // exception under the same lock, so the two cannot interleave.
-        if (status === 'shipped' && (await findOrdersBlockedForShipment(tx, [orderId])).length > 0) {
-          return { error: LATE_PAYMENT_STOCK_UNAVAILABLE, current }
+        // Checked under the Order lock above. Only committed stock is safe to ship: expiry
+        // cleanup, payment callbacks and cancellation never release a committed order,
+        // while a reserved hold can still expire and a released order holds nothing.
+        if (status === 'shipped') {
+          if ((await findOrdersBlockedForShipment(tx, [orderId])).length > 0) {
+            return { error: LATE_PAYMENT_STOCK_UNAVAILABLE, current }
+          }
+          if (!isStockSecuredForShipment(order.stockReservationStatus)) {
+            return { error: ORDER_STOCK_NOT_COMMITTED, current, stockReservationStatus: order.stockReservationStatus }
+          }
         }
         if (status === 'cancelled') {
           if (order.paymentStatus === 'paid') return { error: 'paid_order_requires_refund' as const, current }

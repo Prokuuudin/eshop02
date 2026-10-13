@@ -110,6 +110,28 @@ describe.each([['ON', 'true'], ['OFF', 'false']])('POST /api/admin/orders/late-p
     }))
   })
 
+  it('re-holds a paid order left released before exceptions existed, without inventing an exception', async () => {
+    use({ exception: null })
+    const response = await post({ orderId: 'o1', reason: REASON })
+
+    expect(response.status).toBe(200)
+    expect(row).toMatchObject({ stockReservationStatus: 'committed' })
+    expect(tx.product.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { stock: { decrement: 2 } } }))
+    expect(tx.orderOperationalException.updateMany).not.toHaveBeenCalled()
+    expect(auditMock).toHaveBeenCalledWith(tx, expect.anything(), expect.anything(), expect.objectContaining({
+      reason: REASON, before: expect.objectContaining({ exception: 'none' }), after: expect.objectContaining({ exceptionId: null, resolution: 'stock_reheld' }),
+    }))
+  })
+
+  it('refuses an unpaid released order without an exception', async () => {
+    use({ exception: null, order: { paymentStatus: 'unpaid' } })
+    const response = await post({ orderId: 'o1', reason: REASON })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'order_not_paid' })
+    expect(tx.product.findMany).not.toHaveBeenCalled()
+  })
+
   it('changes nothing while the stock is still short', async () => {
     use({ stock: 1 })
     const response = await post({ orderId: 'o1', reason: REASON })
@@ -125,7 +147,6 @@ describe.each([['ON', 'true'], ['OFF', 'false']])('POST /api/admin/orders/late-p
 
   it.each([
     ['missing order', { order: null }, 404, 'order_not_found'],
-    ['no exception', { exception: null }, 409, 'no_open_exception'],
     ['already resolved', { exception: 'resolved' as const }, 409, 'no_open_exception'],
     ['unpaid order', { order: { paymentStatus: 'unpaid' } }, 409, 'order_not_paid'],
     ['stock already held', { order: { stockReservationStatus: 'committed' } }, 409, 'order_stock_not_released'],

@@ -3,6 +3,17 @@ import type { ServerOrderItem } from '@/lib/orders-data-types'
 import { tryHoldOrderStock } from '@/lib/stock-ledger'
 
 export const LATE_PAYMENT_STOCK_UNAVAILABLE = 'late_payment_stock_unavailable'
+export const ORDER_STOCK_NOT_COMMITTED = 'order_stock_not_committed'
+
+/**
+ * Shipping consumes goods, so it requires stock that nothing can release afterwards.
+ * `committed` is never touched by expiry cleanup, payment callbacks or a cancellation
+ * from shipped. `reserved` can still expire; `released` holds nothing. Orders created
+ * before reservations existed default to `committed` and stay shippable.
+ */
+export function isStockSecuredForShipment(stockReservationStatus: string): boolean {
+  return stockReservationStatus === 'committed'
+}
 
 /**
  * Orders among `orderIds` that must not be shipped: a verified late payment could not
@@ -23,12 +34,13 @@ export async function findOrdersBlockedForShipment(
 }
 
 export type LatePaymentResolutionResult =
-  | { resolved: true; order: { id: string; firstName: string; lastName: string; items: ServerOrderItem[] }; exceptionId: string; resolvedAt: Date }
+  | { resolved: true; order: { id: string; firstName: string; lastName: string; items: ServerOrderItem[] }; exceptionId: string | null; resolvedAt: Date }
   | { resolved: false; error: 'order_not_found' | 'no_open_exception' | 'order_not_paid' | 'order_stock_not_released' }
   | { resolved: false; error: 'insufficient_stock'; productIds: string[] }
 
 /**
- * Resolves an open late_payment_stock_unavailable exception only by proving that the
+ * Resolves an open late_payment_stock_unavailable exception (or a paid order left released
+ * before exceptions were recorded) only by proving that the
  * stock now exists: the whole order is re-held as committed through the Stock Ledger in
  * the same transaction (Order lock first, then sorted Product locks, as the late-payment
  * path does). Nothing is written when any line is still unavailable. There is no
@@ -49,9 +61,11 @@ export async function resolveLatePaymentByReholdingStock(
     where: { orderId_code: { orderId, code: LATE_PAYMENT_STOCK_UNAVAILABLE } },
     select: { id: true, status: true },
   })
-  if (!exception || exception.status !== 'open') return { resolved: false, error: 'no_open_exception' }
+  if (exception && exception.status !== 'open') return { resolved: false, error: 'no_open_exception' }
   if (order.paymentStatus !== 'paid') return { resolved: false, error: 'order_not_paid' }
   if (order.stockReservationStatus !== 'released') return { resolved: false, error: 'order_stock_not_released' }
+  // No exception: a paid order left released by code before this release (no exception
+  // was recorded then). It gets the same and only path to shipping: a real re-hold.
 
   const items = order.items as ServerOrderItem[]
   const hold = await tryHoldOrderStock(tx, {
@@ -69,10 +83,12 @@ export async function resolveLatePaymentByReholdingStock(
   })
   if (reacquired.count !== 1) throw new Error('late_payment_resolution_order_changed')
   const resolvedAt = new Date()
-  const closed = await tx.orderOperationalException.updateMany({
-    where: { id: exception.id, status: 'open' },
-    data: { status: 'resolved', resolvedAt, resolvedBy: adminId },
-  })
-  if (closed.count !== 1) throw new Error('late_payment_resolution_exception_changed')
-  return { resolved: true, order: { id: order.id, firstName: order.firstName, lastName: order.lastName, items }, exceptionId: exception.id, resolvedAt }
+  if (exception) {
+    const closed = await tx.orderOperationalException.updateMany({
+      where: { id: exception.id, status: 'open' },
+      data: { status: 'resolved', resolvedAt, resolvedBy: adminId },
+    })
+    if (closed.count !== 1) throw new Error('late_payment_resolution_exception_changed')
+  }
+  return { resolved: true, order: { id: order.id, firstName: order.firstName, lastName: order.lastName, items }, exceptionId: exception?.id ?? null, resolvedAt }
 }

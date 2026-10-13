@@ -73,8 +73,8 @@ describe('POST /api/admin/order-meta/bulk shipment guard', () => {
     permissionMock.mockResolvedValue({ id: 'admin', email: 'admin@test.com' })
   })
 
-  function shipmentTx(blockedIds: string[]) {
-    const orders = ['o1', 'o2'].map((id) => ({ id, firstName: 'A', lastName: 'B', items: [], paymentStatus: 'paid', stockReservationStatus: 'committed' }))
+  function shipmentTx(blockedIds: string[], reservation: Record<string, string> = {}) {
+    const orders = ['o1', 'o2'].map((id) => ({ id, firstName: 'A', lastName: 'B', items: [], paymentStatus: 'paid', stockReservationStatus: reservation[id] ?? 'committed' }))
     return {
       $executeRaw: vi.fn(), $queryRaw: vi.fn(),
       order: { findMany: vi.fn().mockResolvedValue(orders), update: vi.fn() },
@@ -104,7 +104,19 @@ describe('POST /api/admin/order-meta/bulk shipment guard', () => {
     expect(auditMock).not.toHaveBeenCalled()
   })
 
-  it('ships the batch when no exception is open', async () => {
+  it.each(['released', 'reserved'])('rejects the whole batch when one order has %s stock', async (state) => {
+    const tx = shipmentTx([], { o2: state })
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderIds: ['o1', 'o2'], status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'order_stock_not_committed:o2' })
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it('ships the batch when no exception is open and all stock is committed', async () => {
     const tx = shipmentTx([])
     transactionMock.mockImplementation(async (fn) => fn(tx))
 

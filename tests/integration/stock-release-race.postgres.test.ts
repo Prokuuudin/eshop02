@@ -329,7 +329,7 @@ describe('stock release on real PostgreSQL', () => {
     await blocker
     return results
   }
-  it('D4: late callback and shipping serialize on the real Order lock in both orders', async () => {
+  it('D4: late callback and shipping on a released order never end shipped, in either lock order', async () => {
     let shipFirst = 0, callbackFirst = 0
     for (let i = 0; i < iterations; i++) {
       const { late } = await lateOrderWithoutStock()
@@ -337,20 +337,49 @@ describe('stock release on real PostgreSQL', () => {
         ? await queuedOnOrder(late.id, () => signed(late), () => setStatus(late.id, 'shipped'))
         : await queuedOnOrder(late.id, () => setStatus(late.id, 'shipped'), () => signed(late)).then(([ship, pay]) => [pay, ship] as const)
       expect(payment.status).toBe(200)
-      expect(await prisma.orderOperationalException.count({ where: { orderId: late.id, status: 'open' } })).toBe(1)
+      expect(shipping.status).toBe(409)
       if (i % 2 === 0) {
-        // Callback committed first: the exception exists before the status change is checked.
         callbackFirst++
-        expect(shipping.status).toBe(409)
-        expect(await statusOf(late.id)).toBe('confirmed')
+        expect(await shipping.json()).toMatchObject({ error: 'late_payment_stock_unavailable' })
       } else {
-        // Shipping committed before any payment existed; the late payment still alerts staff.
+        // Shipping reached the lock first: the reservation was already released, so it is refused.
         shipFirst++
-        expect([200, 202]).toContain(shipping.status)
-        expect(await statusOf(late.id)).toBe('shipped')
+        expect(await shipping.json()).toMatchObject({ error: 'order_stock_not_committed', stockReservationStatus: 'released' })
       }
+      expect(await statusOf(late.id)).toBe('confirmed')
+      expect(await prisma.order.findUniqueOrThrow({ where: { id: late.id } })).toMatchObject({ paymentStatus: 'paid', stockReservationStatus: 'released' })
+      expect(await prisma.orderOperationalException.count({ where: { orderId: late.id, status: 'open' } })).toBe(1)
     }
-    evidence.push({ scenario: 'D4/late callback + ship (forced lock order)', iterations, shipFirst, callbackFirst })
+    // The forbidden end state must not exist anywhere.
+    const [forbidden] = await prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int AS count FROM "OrderStatusRecord" s
+      JOIN "Order" o ON o.id = s."orderId"
+      WHERE s.status = 'shipped' AND (o."stockReservationStatus" <> 'committed' OR EXISTS (
+        SELECT 1 FROM "OrderOperationalException" e WHERE e."orderId" = o.id AND e.status = 'open'))`
+    expect(forbidden.count).toBe(0)
+    evidence.push({ scenario: 'D4/late callback + ship on released order (forced lock order)', iterations, shipFirst, callbackFirst })
+  })
+  it('D5: reserved stock cannot ship; a paid order left released by older code ships only after an audited re-hold', async () => {
+    await fixture(2); const pending = await reserve(2, false)
+    expect((await setStatus(pending.id, 'confirmed')).status).toBe(200)
+    const reserved = await setStatus(pending.id, 'shipped')
+    expect(reserved.status).toBe(409)
+    expect(await reserved.json()).toMatchObject({ error: 'order_stock_not_committed', stockReservationStatus: 'reserved' })
+
+    // Historical state written by pre-release code: paid + released, no exception row.
+    await prisma.order.update({ where: { id: pending.id }, data: { stockReservedUntil: new Date(Date.now() - 1000) } })
+    await releaseExpiredStockReservations()
+    await prisma.order.update({ where: { id: pending.id }, data: { paymentStatus: 'paid' } })
+    expect((await setStatus(pending.id, 'shipped')).status).toBe(409)
+    expect(await prisma.orderOperationalException.count({ where: { orderId: pending.id } })).toBe(0)
+
+    expect((await resolve(pending.id)).status).toBe(200)
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: pending.id } })).toMatchObject({ stockReservationStatus: 'committed' })
+    expect(await prisma.auditLog.count({ where: { action: 'order.late_payment_exception_resolved', entityId: pending.id, reason: LATE_REASON } })).toBe(1)
+    expect([200, 202]).toContain((await setStatus(pending.id, 'shipped')).status)
+    expect(await statusOf(pending.id)).toBe('shipped')
+    await conservation(2)
+    evidence.push({ scenario: 'D5/reserved refused + legacy paid released re-hold then ship', conserved: true })
   })
   it('E: edit and current callback serialize; an edited order needs a new current session', async () => {
     let paymentWins = 0, editWins = 0

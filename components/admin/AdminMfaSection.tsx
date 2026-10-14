@@ -10,6 +10,37 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 type Status = { enabled: boolean; enrolledAt: string | null; backupCodesRemaining: number };
 type View = 'idle' | 'enrolling' | 'showing-backup-codes' | 'disabling' | 'regenerating';
 
+type Translate = (ru: string, en: string, lv: string) => string;
+
+// Plain-language staff guide. Setup itself happens in the mandatory sign-in step
+// (LoginForm); this only explains it and the recovery options offered below.
+function MfaInstructions({ l, defaultOpen }: { l: Translate; defaultOpen: boolean }): React.ReactElement {
+    const steps = [
+        l('Установите на телефон приложение-аутентификатор, например Google Authenticator или Microsoft Authenticator.', 'Install an authenticator app on your phone, for example Google Authenticator or Microsoft Authenticator.', 'Instalējiet tālrunī autentifikatora lietotni, piemēram, Google Authenticator vai Microsoft Authenticator.'),
+        l('При первом входе после пароля откроется экран настройки защиты (если здесь защита отмечена как не настроенная, нажмите «Настроить защиту»). Отсканируйте QR-код телефоном.', 'At your first sign-in, a protection setup screen opens after the password (if protection is shown here as not set up, press “Set up protection”). Scan the QR code with your phone.', 'Pirmajā pieslēgšanās reizē pēc paroles atvērsies aizsardzības iestatīšanas ekrāns (ja šeit aizsardzība norādīta kā neiestatīta, nospiediet «Iestatīt aizsardzību»). Noskenējiet QR kodu ar tālruni.'),
+        l('Введите шестизначный код из приложения.', 'Enter the six-digit code from the app.', 'Ievadiet sešu ciparu kodu no lietotnes.'),
+        l('Сохраните резервные коды в безопасном месте. Они понадобятся, если телефон будет потерян.', 'Keep the backup codes in a safe place. You will need them if you lose your phone.', 'Saglabājiet rezerves kodus drošā vietā. Tie būs nepieciešami, ja tālrunis tiks pazaudēts.'),
+        l('При следующих входах вводите код из приложения после пароля.', 'At later sign-ins, enter the code from the app after your password.', 'Turpmāk pēc paroles ievadiet kodu no lietotnes.'),
+    ];
+    const notes = [
+        l('Код в приложении меняется автоматически каждые 30 секунд — вводите тот, что виден сейчас.', 'The code in the app changes automatically every 30 seconds — enter the one shown now.', 'Kods lietotnē mainās automātiski ik pēc 30 sekundēm — ievadiet to, kas redzams pašlaik.'),
+        l('Каждый резервный код срабатывает только один раз. Когда они заканчиваются, создайте новые кнопкой «Новые резервные коды».', 'Each backup code works only once. When they run low, create new ones with “New backup codes”.', 'Katrs rezerves kods darbojas tikai vienu reizi. Kad tie beidzas, izveidojiet jaunus ar pogu «Jauni rezerves kodi».'),
+        l('Новый телефон: пока старый ещё работает, нажмите «Сменить устройство» и при следующем входе настройте защиту заново.', 'New phone: while the old one still works, press “Change device” and set up protection again at the next sign-in.', 'Jauns tālrunis: kamēr vecais vēl darbojas, nospiediet «Mainīt ierīci» un nākamajā pieslēgšanās reizē iestatiet aizsardzību no jauna.'),
+        l('Потеряли и телефон, и резервные коды? Обратитесь к другому администратору — он сбросит защиту, и при следующем входе вы настроите её заново.', 'Lost both your phone and your backup codes? Contact another administrator — they will reset the protection, and you will set it up again at the next sign-in.', 'Pazaudējāt gan tālruni, gan rezerves kodus? Sazinieties ar citu administratoru — viņš atiestatīs aizsardzību, un nākamajā pieslēgšanās reizē jūs to iestatīsiet no jauna.'),
+    ];
+    return (
+        <details open={defaultOpen} className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+            <summary className="cursor-pointer font-medium text-foreground">{l('Как это работает', 'How it works', 'Kā tas darbojas')}</summary>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-muted-foreground">
+                {steps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
+                {notes.map((note) => <li key={note}>{note}</li>)}
+            </ul>
+        </details>
+    );
+}
+
 export default function AdminMfaSection(): React.ReactElement {
     const { l, locale } = useAdminLocale();
     const [status, setStatus] = useState<Status | null>(null);
@@ -103,6 +134,7 @@ export default function AdminMfaSection(): React.ReactElement {
             }
             // MFA is mandatory: the server revoked every session, so the next login
             // walks through enrollment with the new device.
+            // Same staff sign-in entry the admin layout uses for admins and managers.
             window.location.assign('/auth/login?admin=1&redirect=/account');
         } catch {
             setError(l('Ошибка сервера. Попробуйте позже.', 'Server error. Try again later.', 'Servera kļūda. Mēģiniet vēlāk.'));
@@ -165,17 +197,27 @@ export default function AdminMfaSection(): React.ReactElement {
                 ) : (
                     <ShieldOff className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 )}
-                <h2 className="text-sm font-semibold text-foreground">{l('Двухфакторная аутентификация', 'Two-factor authentication', 'Divfaktoru autentifikācija')}</h2>
+                <h2 className="text-sm font-semibold text-foreground">{l('Двухфакторная защита входа', 'Two-factor sign-in protection', 'Divfaktoru pieslēgšanās aizsardzība')}</h2>
+                <span
+                    className={`ml-auto rounded-full px-2 py-0.5 text-xs font-medium ${status!.enabled
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}
+                >
+                    {status!.enabled ? l('Включена', 'Enabled', 'Ieslēgta') : l('Не настроена', 'Not set up', 'Nav iestatīta')}
+                </span>
             </div>
+            <p className="mb-3 text-sm text-muted-foreground">
+                {l('Для защиты административной панели нужна дополнительная проверка входа: после пароля вы вводите код из приложения на телефоне. Даже если кто-то узнает ваш пароль, без телефона он не войдёт.', 'The administration panel requires an extra sign-in check: after your password you enter a code from an app on your phone. Even if someone learns your password, they cannot sign in without your phone.', 'Administrācijas paneļa aizsardzībai nepieciešama papildu pieslēgšanās pārbaude: pēc paroles jāievada kods no tālruņa lietotnes. Pat ja kāds uzzinās jūsu paroli, bez tālruņa viņš nevarēs pieslēgties.')}
+            </p>
 
             {view === 'idle' && !status!.enabled && (
                 <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                        {l('Не включена. Рекомендуем включить, чтобы пароль был не единственной защитой доступа к админке.', 'Disabled. Enable it so the password is not the only protection for admin access.', 'Nav ieslēgta. Ieslēdziet to, lai parole nebūtu vienīgā administrācijas piekļuves aizsardzība.')}
+                        {l('Не настроена. Для сотрудников защита обязательна — настройте её сейчас.', 'Not set up. Protection is required for staff — set it up now.', 'Nav iestatīta. Darbiniekiem aizsardzība ir obligāta — iestatiet to tūlīt.')}
                     </p>
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <Button size="sm" onClick={() => void startEnroll()} disabled={busy}>
-                        {l('Включить', 'Enable', 'Ieslēgt')}
+                        {l('Настроить защиту', 'Set up protection', 'Iestatīt aizsardzību')}
                     </Button>
                 </div>
             )}
@@ -283,6 +325,8 @@ export default function AdminMfaSection(): React.ReactElement {
                     </div>
                 </div>
             )}
+
+            {view === 'idle' && <MfaInstructions l={l} defaultOpen={!status!.enabled} />}
         </div>
     );
 }

@@ -158,6 +158,12 @@ export default function AccountPage(): React.ReactElement {
     return (
         <main className="w-full px-4 py-12">
             <div className="mx-auto max-w-7xl">
+                {/* Staff managers also need sign-in protection; they use the customer layout. */}
+                {user.teamRole === 'manager' && (
+                    <div className="mb-5">
+                        <AdminMfaSection />
+                    </div>
+                )}
                 <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
                     <aside className="xl:col-span-4">
                         <AccountProfileSummary

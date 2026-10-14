@@ -59,9 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       : await prisma.user.findFirst({
           where: { cardNumber: { equals: lookupValue, mode: 'insensitive' } },
         })
-    // Email is an administrator-only login identifier. Customer accounts must
-    // authenticate with their assigned card number even when they have an email.
-    const eligible = !!user && !!user.passwordHash && !(isEmail && user.platformRole !== 'admin')
+    // Email is a staff-only login identifier (platform admins and staff managers, who
+    // always continue to the MFA step below). Customer accounts, including B2B company
+    // owners, must authenticate with their assigned card number even when they have an email.
+    const eligible = !!user && !!user.passwordHash && !(isEmail && !requiresAdminMfa(user))
     // Always run a bcrypt compare, even when no matching account exists (against a
     // fixed dummy hash) - otherwise the "account exists" path costs ~50-100ms more
     // than "account not found", letting an attacker enumerate valid card numbers/emails

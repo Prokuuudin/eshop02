@@ -11,7 +11,9 @@ Continue with Claude Code or Codex from this document; no further investigation 
 - Changed files:
   - `components/admin/AdminMfaSection.tsx`
   - `app/[lang]/account/page.tsx`
+  - `app/api/auth/login/route.ts`, `app/api/auth/login/route.test.ts` (second commit, staff email login)
   - this document
+- Commits: `4769feb4` (MFA UI), then the staff email login fix on top. Integrate both together.
 - `node_modules` and `generated` in this working copy are **junctions** to
   `%TEMP%\hairshop-final-review-b6e6375f\{node_modules,generated}` (same SHA, nothing installed).
   Before removing the working copy, delete the junctions first so the targets are not touched:
@@ -58,12 +60,21 @@ confirm,disable,backup-codes/regenerate}`) requires `getServerUser()` (401) and 
 `platformRole === 'admin'` or `teamRole === 'manager'`. Managers get no new permission: `AdminStaffMfaReset`
 (and `/api/admin/users/[id]/mfa-reset`, `users.manage`) stays platform-admin only.
 
-Pre-existing, not changed (separate decision): on `/auth/login?admin=1` the identifier field is labelled "Email",
-but `/api/auth/login` accepts email only for `platformRole === 'admin'`; managers must type their **card number**
-into that field. This applies equally to the existing `/admin` → login redirect. A label such as
-"Email или номер карты" in `LoginForm` would fix it (UI-only), not done here.
+3. Staff email login (second commit, owner rule: "managers sign in exactly like admins: email + password + MFA").
+   `b6e6375f` `app/api/auth/login/route.ts` accepted an email identifier only for `platformRole === 'admin'`, so a
+   manager on the staff form (`/auth/login?admin=1`, field "Email") was rejected with 401.
+   Fix: `!(isEmail && user.platformRole !== 'admin')` → `!(isEmail && !requiresAdminMfa(user))`.
+   - Admins and managers may now use email; both always get the MFA challenge (no session, no cookie before MFA).
+   - Customers and B2B company owners (`teamRole === 'admin'`) are still rejected for email (timing-safe dummy bcrypt
+     compare unchanged) and keep card-number login. Card login is unchanged for everyone, including managers who
+     have a card (still MFA-gated). Disabling card login for managers would be a separate decision.
+   - Permissions are unchanged: `getPermissionAccessLevel` decides access; the identifier type does not.
+   - Tests added in `app/api/auth/login/route.test.ts`: manager by email → MFA challenge, no session/cookie;
+     B2B owner by email → 401 with dummy hash.
+   - Data precondition for launch: each manager's `User.email` must be a real address they know (read-only check
+     by the owner; no data was queried here).
 
-Untouched: MFA backend, API routes, crypto, Prisma, migrations, `LoginForm`, `AdminStaffMfaReset`, `data/translations`.
+Untouched: MFA backend, crypto, Prisma, migrations, `LoginForm`, `AdminStaffMfaReset`, `data/translations`.
 Step 2 of the owner's draft ("Нажмите «Настроить защиту»") was adapted: the setup screen opens automatically at the
 first sign-in after the password; the button is mentioned only for the not-set-up state.
 
@@ -74,6 +85,8 @@ first sign-in after the password; the button is mentioned only for the not-set-u
 - `node scripts/check-admin-i18n.mjs`: pass; the "1 potentially hardcoded Cyrillic string" notice is identical on `b6e6375f`.
 - `node scripts/check-public-text-encoding.mjs`: pass.
 - No component/UI tests exist for these files (vitest includes `lib|data|app|scripts/**/*.test.ts` only).
+- Staff email login fix: `vitest run app/api/auth/login/route.test.ts` 12/12 pass (10 existing + 2 new);
+  `tsc` exit 0; eslint on both files 0 problems.
 - Not done: visual check in a browser (needs a running app with a DB). Do it on Vercel Preview after integration:
   platform admin `/lv/account` and `/ru/account`; manager `/lv/account`; guide text, collapse, "Change device" redirect.
 
@@ -82,11 +95,12 @@ first sign-in after the password; the button is mentioned only for the not-set-u
 Adding this to `release/2026-10-20` changes the reviewed release SHA → needs a short re-review and a Preview redeploy.
 
 1. Owner approves the text (RU/LV) and the manager placement.
-2. In this working copy: commit the two UI files (and optionally this document) on `ui/admin-mfa-instructions`.
-3. Review the single commit (`git show`), then either
+2. Both commits already exist on `ui/admin-mfa-instructions` (base `b6e6375f`).
+3. Review them (`git log -p b6e6375f..ui/admin-mfa-instructions`), then either
    - open a PR `ui/admin-mfa-instructions` → `release/2026-10-20`, or
-   - in the clean release working copy: `git cherry-pick -x <sha>` (fast, conflict-free: base is `b6e6375f`).
-4. Re-run only: `tsc --noEmit`, eslint on the two files, `check:admin-i18n`; push the release branch only with
+   - in the clean release working copy: `git cherry-pick -x b6e6375f..ui/admin-mfa-instructions` (conflict-free).
+4. Re-run only: `tsc --noEmit`, eslint on the changed files, `check:admin-i18n`,
+   `vitest run app/api/auth/login/route.test.ts`; push the release branch only with
    the owner's approval; Vercel Preview redeploys `release/2026-10-20` (build does not run migrations).
 5. Visual check on Preview (above). Production/Plesk only through the normal release process.
 

@@ -109,6 +109,36 @@ describe('POST /api/auth/login', () => {
     expect(createSession).not.toHaveBeenCalled()
   })
 
+  it('lets a staff manager log in by email, but only through the MFA step', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'm2', email: 'manager@test.com', passwordHash: 'hash', platformRole: 'customer', teamRole: 'manager', mfaEnabled: true,
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest('manager@test.com'))
+    const json = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(verifyPassword).toHaveBeenCalledWith('Password123!', 'hash')
+    expect(json.mfaRequired).toBe(true)
+    expect(json.enrollmentRequired).toBe(false)
+    expect(createSession).not.toHaveBeenCalled()
+    expect(res.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('rejects a B2B company owner (teamRole admin) logging in by email', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: 'owner1', email: 'owner@test.com', passwordHash: 'hash', platformRole: 'customer', teamRole: 'admin',
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+
+    const res = await POST(makeRequest('owner@test.com'))
+
+    expect(res.status).toBe(401)
+    expect(verifyPassword).toHaveBeenCalledWith('Password123!', expect.not.stringMatching(/^hash$/))
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
   it('rejects customer login by email, but still runs a dummy bcrypt compare (timing-safe) instead of short-circuiting', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: 'customer1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer',

@@ -462,7 +462,7 @@ export const loginUserAuto = async (
 export const verifyMfaAndLogin = async (
     challengeToken: string,
     code: string
-): Promise<{ success: boolean; error?: string; reason?: 'invalid_code' | 'expired' | 'rate_limited' | 'network' }> => {
+): Promise<{ success: boolean; error?: string; reason?: 'invalid_code' | 'expired' | 'rate_limited' | 'network' | 'server' }> => {
     let res: Response;
     try {
         res = await fetch('/api/auth/mfa/verify', {
@@ -488,7 +488,11 @@ export const verifyMfaAndLogin = async (
         if (body.error === 'invalid_challenge') {
             return { success: false, error: 'Время входа истекло. Войдите заново.', reason: 'expired' };
         }
-        return { success: false, error: 'Неверный код', reason: 'invalid_code' };
+        if (res.status === 401) {
+            return { success: false, error: 'Неверный код', reason: 'invalid_code' };
+        }
+        // 5xx / timeout / unexpected: never report a server failure as a wrong code.
+        return { success: false, error: 'Ошибка сервера. Попробуйте позже.', reason: 'server' };
     }
 
     const payload = (await res.json().catch(() => ({}))) as { user?: Partial<User> & { id: string; email: string } };

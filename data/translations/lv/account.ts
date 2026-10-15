@@ -108,6 +108,7 @@ const lvAccount: Record<string, string> = {
   'auth.mfaInvalidCode': 'Nederīgs vai novecojis kods. Pārbaudiet laiku tālrunī un mēģiniet vēlreiz.',
   'auth.mfaExpired': 'Pieslēgšanās laiks ir beidzies. Pieslēdzieties vēlreiz.',
   'auth.mfaRateLimited': 'Pārāk daudz mēģinājumu. Uzgaidiet 15 minūtes.',
+  'auth.mfaServerError': 'Servera kļūda koda pārbaudē. Mēģiniet vēlreiz nedaudz vēlāk.',
   'auth.mfaNotConfigured': 'Divfaktoru autentifikācija serverī nav konfigurēta. Sazinieties ar administratoru.',
   'auth.mfaSetupTitle': 'Divfaktoru autentifikācijas iestatīšana',
   'auth.mfaSetupIntro': 'Pieslēgšanās veikala vadības panelim prasa papildu pārbaudi: pēc paroles jāievada kods no tālruņa lietotnes. Pat ja kāds uzzinās jūsu paroli, bez tālruņa viņš nevarēs pieslēgties.',

@@ -15,6 +15,7 @@ const MFA_KEYS = [
   'auth.mfaInvalidCode',
   'auth.mfaExpired',
   'auth.mfaRateLimited',
+  'auth.mfaServerError',
   'auth.mfaSetupTitle',
   'auth.mfaSetupIntro',
   'auth.mfaSetupHowTitle',

@@ -108,6 +108,7 @@ const enAccount: Record<string, string> = {
   'auth.mfaInvalidCode': 'Invalid or expired code. Check the time on your phone and try again.',
   'auth.mfaExpired': 'Your sign-in has expired. Please sign in again.',
   'auth.mfaRateLimited': 'Too many attempts. Please wait 15 minutes.',
+  'auth.mfaServerError': 'Server error while checking the code. Please try again a little later.',
   'auth.mfaNotConfigured': 'Two-factor authentication is not configured on the server. Contact the administrator.',
   'auth.mfaSetupTitle': 'Set up two-factor authentication',
   'auth.mfaSetupIntro': 'Signing in to the shop control panel needs an extra check: after your password you enter a code from an app on your phone. Even if someone learns your password, they cannot sign in without your phone.',

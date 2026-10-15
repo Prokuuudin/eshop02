@@ -214,6 +214,20 @@ describe('verifyMfaAndLogin — second step of an MFA-gated login', () => {
     expect(getCurrentUser()).toBeNull()
   })
 
+  it.each([
+    ['500 with an error body', { ok: false, status: 500, json: async () => ({ error: 'server_error' }) }],
+    ['504 timeout without JSON', { ok: false, status: 504, json: async () => { throw new SyntaxError('Unexpected token <') } }],
+  ])('never reports a server failure (%s) as a wrong code', async (_label, response) => {
+    vi.mocked(fetch).mockResolvedValue(response as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(false)
+    expect(res.reason).toBe('server')
+    expect(res.error).not.toMatch(/Неверный код/)
+    expect(getCurrentUser()).toBeNull()
+  })
+
   it('reports an expired sign-in step separately from a wrong code', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: false,

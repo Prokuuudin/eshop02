@@ -125,6 +125,7 @@ export default function LoginForm({
                 return setError(t(mfaMode === 'recovery' ? 'auth.mfaRecoveryInvalid' : 'auth.mfaInvalidCode'));
             }
             if (res.reason === 'rate_limited') return setError(t('auth.mfaRateLimited'));
+            if (res.reason === 'server') return setError(t('auth.mfaServerError'));
             return setError(res.error || t('form.error'));
         }
         finishLogin();

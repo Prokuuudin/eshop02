@@ -136,6 +136,15 @@ describe('backup codes', () => {
     expect(reuse.ok).toBe(false)
   }, 20000)
 
+  it('accepts a code pasted from notes with a list bullet and a space', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+
+    const result = await consumeBackupCode(hashes, `• ${code}`)
+    expect(result.ok).toBe(true)
+    expect(result.remaining).toEqual([])
+  }, 20000)
+
   it('rejects input that cannot be a backup code (e.g. a 6-digit app code) without any bcrypt work', async () => {
     const [code] = generateBackupCodes()
     const hashes = await hashBackupCodes([code])

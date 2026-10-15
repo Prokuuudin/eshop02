@@ -8,6 +8,20 @@ describe('normalizeRecoveryCode', () => {
     expect(normalizeRecoveryCode('a1b2c-3d4e5')).toBe('a1b2c3d4e5')
   })
 
+  it('ignores a list bullet and a space pasted from notes (owner Preview case)', () => {
+    expect(normalizeRecoveryCode('• a1b2c3d4e5')).toBe('a1b2c3d4e5')
+    expect(normalizeRecoveryCode('• A1B2C3D4E5\n')).toBe('a1b2c3d4e5')
+    expect(normalizeRecoveryCode('* a1b2c3d4e5')).toBe('a1b2c3d4e5')
+    expect(sanitizeMfaCodeInput('recovery', '• a1b2c3d4e5')).toBe('a1b2c3d4e5')
+    expect(isMfaCodeComplete('recovery', sanitizeMfaCodeInput('recovery', '• a1b2c3d4e5'))).toBe(true)
+  })
+
+  it('keeps the format strict after cleaning: numbered entries and wrong lengths are rejected', () => {
+    expect(normalizeRecoveryCode('1. a1b2c3d4e5')).toBeNull()
+    expect(normalizeRecoveryCode('• a1b2c3d4')).toBeNull()
+    expect(normalizeRecoveryCode('• a1b2c3d4e5 b')).toBeNull()
+  })
+
   it('rejects anything that cannot be an issued code', () => {
     for (const input of ['123456', '', 'a1b2c3d4e', 'a1b2c3d4e5f', 'g1b2c3d4e5', 'a1b2c3d4e5'.padEnd(80, ' x')]) {
       expect(normalizeRecoveryCode(input)).toBeNull()

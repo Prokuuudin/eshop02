@@ -68,7 +68,8 @@ export async function hashBackupCodes(codes: string[]): Promise<string[]> {
 
 /**
  * Single-use: on match, returns the hash list with that entry removed. Input is normalized
- * (case, spaces, hyphens) to the issued lowercase form; anything that cannot be a backup
+ * (case; spaces, hyphens, list bullets and other non-alphanumerics dropped) to the issued
+ * lowercase form and must then be exactly 10 hex characters; anything that cannot be a backup
  * code — e.g. a 6-digit app code — is rejected without spending bcrypt work.
  */
 export async function consumeBackupCode(

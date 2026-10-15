@@ -2,6 +2,7 @@ import 'server-only'
 import bcrypt from 'bcryptjs'
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
 import { generateSecret, verify, generateURI } from 'otplib'
+import { normalizeRecoveryCode } from './mfa-code-input'
 
 const ISSUER = 'hairshoppro.lv'
 const BACKUP_CODE_COUNT = 8
@@ -65,13 +66,19 @@ export async function hashBackupCodes(codes: string[]): Promise<string[]> {
   return Promise.all(codes.map((code) => bcrypt.hash(code, BACKUP_CODE_BCRYPT_COST)))
 }
 
-/** Single-use: on match, returns the hash list with that entry removed. */
+/**
+ * Single-use: on match, returns the hash list with that entry removed. Input is normalized
+ * (case, spaces, hyphens) to the issued lowercase form; anything that cannot be a backup
+ * code — e.g. a 6-digit app code — is rejected without spending bcrypt work.
+ */
 export async function consumeBackupCode(
   hashes: string[],
   code: string
 ): Promise<{ ok: boolean; remaining: string[] }> {
+  const normalized = normalizeRecoveryCode(code)
+  if (!normalized) return { ok: false, remaining: hashes }
   for (let i = 0; i < hashes.length; i++) {
-    if (await bcrypt.compare(code, hashes[i])) {
+    if (await bcrypt.compare(normalized, hashes[i])) {
       return { ok: true, remaining: [...hashes.slice(0, i), ...hashes.slice(i + 1)] }
     }
   }

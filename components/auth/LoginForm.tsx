@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
+import { isMfaCodeComplete, sanitizeMfaCodeInput, type MfaCodeMode } from '@/lib/mfa-code-input';
 
 export default function LoginForm({
     onSuccess,
@@ -37,6 +38,8 @@ export default function LoginForm({
     const [submitting, setSubmitting] = useState(false);
     const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
     const [mfaCode, setMfaCode] = useState('');
+    // Sign-in MFA step: authenticator app code (default) or one of the saved backup codes.
+    const [mfaMode, setMfaMode] = useState<MfaCodeMode>('app');
     const [enrollmentRequired, setEnrollmentRequired] = useState(false);
     const [enrollment, setEnrollment] = useState<{ qrCodeDataUrl: string; secret?: string } | null>(null);
     const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
@@ -44,7 +47,7 @@ export default function LoginForm({
 
     useEffect(() => {
         if (mfaChallengeToken) mfaCodeInputRef.current?.focus();
-    }, [mfaChallengeToken, enrollment]);
+    }, [mfaChallengeToken, enrollment, mfaMode]);
 
     const mfaErrorText = (code?: string): string => {
         switch (code) {
@@ -61,6 +64,13 @@ export default function LoginForm({
         setEnrollmentRequired(false);
         setEnrollment(null);
         setBackupCodes(null);
+        setMfaCode('');
+        setMfaMode('app');
+        setError('');
+    };
+
+    const switchMfaMode = (next: MfaCodeMode) => {
+        setMfaMode(next);
         setMfaCode('');
         setError('');
     };
@@ -106,7 +116,17 @@ export default function LoginForm({
         setError('');
         const res = await verifyMfaAndLogin(mfaChallengeToken, mfaCode.trim());
         setSubmitting(false);
-        if (!res.success) return setError(res.error || t('form.error'));
+        if (!res.success) {
+            if (res.reason === 'expired') {
+                resetMfa();
+                return setError(t('auth.mfaExpired'));
+            }
+            if (res.reason === 'invalid_code') {
+                return setError(t(mfaMode === 'recovery' ? 'auth.mfaRecoveryInvalid' : 'auth.mfaInvalidCode'));
+            }
+            if (res.reason === 'rate_limited') return setError(t('auth.mfaRateLimited'));
+            return setError(res.error || t('form.error'));
+        }
         finishLogin();
     };
 
@@ -142,6 +162,16 @@ export default function LoginForm({
             <form onSubmit={handleEnrollmentSubmit} className="space-y-3 bg-card p-3 rounded-lg">
                 <h2 className="text-base font-semibold text-foreground">{t('auth.mfaSetupTitle')}</h2>
                 <p className="text-sm text-muted-foreground">{t('auth.mfaSetupIntro')}</p>
+                <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+                    <p className="font-medium text-foreground">{t('auth.mfaSetupHowTitle')}</p>
+                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+                        <li>{t('auth.mfaSetupStep1')}</li>
+                        <li>{t('auth.mfaSetupStep2')}</li>
+                        <li>{t('auth.mfaSetupStep3')}</li>
+                        <li>{t('auth.mfaSetupStep4')}</li>
+                    </ol>
+                    <p className="mt-2 text-amber-700 dark:text-amber-400">{t('auth.mfaSetupSaveCodes')}</p>
+                </div>
                 {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
                 {enrollment ? (
                     <>
@@ -171,7 +201,7 @@ export default function LoginForm({
                                 autoComplete="one-time-code"
                                 className="bg-card text-foreground border-border"
                                 value={mfaCode}
-                                onChange={(e) => setMfaCode(e.target.value)}
+                                onChange={(e) => setMfaCode(sanitizeMfaCodeInput('app', e.target.value))}
                                 maxLength={6}
                                 required
                             />
@@ -189,7 +219,7 @@ export default function LoginForm({
                     </Button>
                 )}
                 <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={!enrollment || submitting || mfaCode.trim().length !== 6}>
+                    <Button type="submit" className="flex-1" disabled={!enrollment || submitting || !isMfaCodeComplete('app', mfaCode)}>
                         {t('auth.mfaSetupConfirm')}
                     </Button>
                     <Button type="button" variant="outline" onClick={resetMfa}>
@@ -206,24 +236,38 @@ export default function LoginForm({
                 {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
                 <div>
                     <label htmlFor="login-mfa-code" className="block mb-1 text-sm text-foreground">
-                        {t('auth.mfaCode', 'Код из приложения-аутентификатора')}
+                        {mfaMode === 'app' ? t('auth.mfaCode', 'Код из приложения-аутентификатора') : t('auth.mfaRecoveryLabel')}
                     </label>
+                    {/* Backup codes contain letters a–f, so the recovery mode must not use a numeric keypad. */}
                     <Input
+                        key={mfaMode}
                         id="login-mfa-code"
                         ref={mfaCodeInputRef}
                         type="text"
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        className="bg-card text-foreground border-border"
+                        inputMode={mfaMode === 'app' ? 'numeric' : 'text'}
+                        autoComplete={mfaMode === 'app' ? 'one-time-code' : 'off'}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        className="bg-card text-foreground border-border font-mono"
                         value={mfaCode}
-                        onChange={(e) => setMfaCode(e.target.value)}
-                        maxLength={10}
+                        onChange={(e) => setMfaCode(sanitizeMfaCodeInput(mfaMode, e.target.value))}
+                        placeholder={mfaMode === 'app' ? '123456' : undefined}
                         required
                     />
-                    <p className="mt-1 text-xs text-muted-foreground">{t('auth.mfaCodeHint')}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {mfaMode === 'app' ? t('auth.mfaCodeHint') : t('auth.mfaRecoveryHint')}
+                    </p>
+                    <button
+                        type="button"
+                        className="mt-2 text-sm text-primary hover:underline"
+                        onClick={() => switchMfaMode(mfaMode === 'app' ? 'recovery' : 'app')}
+                    >
+                        {mfaMode === 'app' ? t('auth.mfaUseRecovery') : t('auth.mfaUseApp')}
+                    </button>
                 </div>
                 <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={submitting || mfaCode.trim().length < 6}>
+                    <Button type="submit" className="flex-1" disabled={submitting || !isMfaCodeComplete(mfaMode, mfaCode)}>
                         {t('auth.login')}
                     </Button>
                     <Button type="button" variant="outline" onClick={resetMfa}>

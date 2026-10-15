@@ -462,7 +462,7 @@ export const loginUserAuto = async (
 export const verifyMfaAndLogin = async (
     challengeToken: string,
     code: string
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; error?: string; reason?: 'invalid_code' | 'expired' | 'rate_limited' | 'network' }> => {
     let res: Response;
     try {
         res = await fetch('/api/auth/mfa/verify', {
@@ -471,14 +471,24 @@ export const verifyMfaAndLogin = async (
             body: JSON.stringify({ challengeToken, code }),
         });
     } catch {
-        return { success: false, error: 'Сервер недоступен. Попробуйте позже.' };
+        return { success: false, error: 'Сервер недоступен. Попробуйте позже.', reason: 'network' };
     }
 
     if (res.status === 429) {
-        return { success: false, error: 'Слишком много попыток. Попробуйте позже.' };
+        return { success: false, error: 'Слишком много попыток. Попробуйте позже.', reason: 'rate_limited' };
     }
     if (!res.ok) {
-        return { success: false, error: 'Неверный код' };
+        // An expired/used sign-in step is not a wrong code: the person has to start over.
+        let body: { error?: string } = {};
+        try {
+            body = (await res.json()) as { error?: string };
+        } catch {
+            // Non-JSON error body: treat as a wrong code.
+        }
+        if (body.error === 'invalid_challenge') {
+            return { success: false, error: 'Время входа истекло. Войдите заново.', reason: 'expired' };
+        }
+        return { success: false, error: 'Неверный код', reason: 'invalid_code' };
     }
 
     const payload = (await res.json().catch(() => ({}))) as { user?: Partial<User> & { id: string; email: string } };

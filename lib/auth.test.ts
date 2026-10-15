@@ -209,9 +209,39 @@ describe('verifyMfaAndLogin — second step of an MFA-gated login', () => {
 
     const res = await verifyMfaAndLogin('challenge-token', '000000')
 
-    expect(res).toEqual({ success: false, error: expect.any(String) })
+    expect(res).toEqual({ success: false, error: expect.any(String), reason: 'invalid_code' })
     expect(res.error).toMatch(/Неверный код/)
     expect(getCurrentUser()).toBeNull()
+  })
+
+  it('reports an expired sign-in step separately from a wrong code', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'invalid_challenge' }),
+    } as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(false)
+    expect(res.reason).toBe('expired')
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('sends a backup code through the same field and endpoint as an app code', async () => {
+    const fetchMock = vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: { id: 'admin1', email: 'admin@example.com' } }),
+    } as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(true)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/mfa/verify',
+      expect.objectContaining({ body: JSON.stringify({ challengeToken: 'challenge-token', code: 'a1b2c3d4e5' }) })
+    )
   })
 
   it('surfaces rate limiting distinctly from a wrong code', async () => {

@@ -10,6 +10,7 @@ import {
   consumeBackupCode,
 } from './mfa'
 import { generate } from 'otplib'
+import bcrypt from 'bcryptjs'
 
 vi.mock('server-only', () => ({}))
 
@@ -116,5 +117,36 @@ describe('backup codes', () => {
     const hashes = await hashBackupCodes(codes)
     const { ok } = await consumeBackupCode(hashes, 'not-a-real-code')
     expect(ok).toBe(false)
+  }, 20000)
+
+  it('issues codes in the documented format: 10 lowercase hex characters', () => {
+    for (const code of generateBackupCodes()) expect(code).toMatch(/^[0-9a-f]{10}$/)
+  })
+
+  it('accepts a code typed with capitals, spaces or a hyphen, still only once', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+    const typed = ` ${code.slice(0, 5).toUpperCase()} - ${code.slice(5).toUpperCase()} `
+
+    const first = await consumeBackupCode(hashes, typed)
+    expect(first.ok).toBe(true)
+    expect(first.remaining).toEqual([])
+
+    const reuse = await consumeBackupCode(first.remaining, code)
+    expect(reuse.ok).toBe(false)
+  }, 20000)
+
+  it('rejects input that cannot be a backup code (e.g. a 6-digit app code) without any bcrypt work', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+    const compare = vi.spyOn(bcrypt, 'compare')
+    try {
+      for (const input of ['123456', '', 'zzzzzzzzzz', `${code}0`, 'x'.repeat(100)]) {
+        expect(await consumeBackupCode(hashes, input)).toEqual({ ok: false, remaining: hashes })
+      }
+      expect(compare).not.toHaveBeenCalled()
+    } finally {
+      compare.mockRestore()
+    }
   }, 20000)
 })

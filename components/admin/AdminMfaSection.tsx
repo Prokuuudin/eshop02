@@ -13,30 +13,60 @@ type View = 'idle' | 'enrolling' | 'showing-backup-codes' | 'disabling' | 'regen
 type Translate = (ru: string, en: string, lv: string) => string;
 
 // Plain-language staff guide. Setup itself happens in the mandatory sign-in step
-// (LoginForm); this only explains it and the recovery options offered below.
+// (LoginForm); this only explains it and the recovery options that exist in the app:
+// backup-code sign-in, "Change device", "New backup codes" and a reset by a shop administrator.
 function MfaInstructions({ l, defaultOpen }: { l: Translate; defaultOpen: boolean }): React.ReactElement {
-    const steps = [
-        l('Установите на телефон приложение-аутентификатор, например Google Authenticator или Microsoft Authenticator.', 'Install an authenticator app on your phone, for example Google Authenticator or Microsoft Authenticator.', 'Instalējiet tālrunī autentifikatora lietotni, piemēram, Google Authenticator vai Microsoft Authenticator.'),
-        l('При первом входе после пароля откроется экран настройки защиты (если здесь защита отмечена как не настроенная, нажмите «Настроить защиту»). Отсканируйте QR-код телефоном.', 'At your first sign-in, a protection setup screen opens after the password (if protection is shown here as not set up, press “Set up protection”). Scan the QR code with your phone.', 'Pirmajā pieslēgšanās reizē pēc paroles atvērsies aizsardzības iestatīšanas ekrāns (ja šeit aizsardzība norādīta kā neiestatīta, nospiediet «Iestatīt aizsardzību»). Noskenējiet QR kodu ar tālruni.'),
-        l('Введите шестизначный код из приложения.', 'Enter the six-digit code from the app.', 'Ievadiet sešu ciparu kodu no lietotnes.'),
-        l('Сохраните резервные коды в безопасном месте. Они понадобятся, если телефон будет потерян.', 'Keep the backup codes in a safe place. You will need them if you lose your phone.', 'Saglabājiet rezerves kodus drošā vietā. Tie būs nepieciešami, ja tālrunis tiks pazaudēts.'),
-        l('При следующих входах вводите код из приложения после пароля.', 'At later sign-ins, enter the code from the app after your password.', 'Turpmāk pēc paroles ievadiet kodu no lietotnes.'),
-    ];
-    const notes = [
-        l('Код в приложении меняется автоматически каждые 30 секунд — вводите тот, что виден сейчас.', 'The code in the app changes automatically every 30 seconds — enter the one shown now.', 'Kods lietotnē mainās automātiski ik pēc 30 sekundēm — ievadiet to, kas redzams pašlaik.'),
-        l('Каждый резервный код срабатывает только один раз. Когда они заканчиваются, создайте новые кнопкой «Новые резервные коды».', 'Each backup code works only once. When they run low, create new ones with “New backup codes”.', 'Katrs rezerves kods darbojas tikai vienu reizi. Kad tie beidzas, izveidojiet jaunus ar pogu «Jauni rezerves kodi».'),
-        l('Новый телефон: пока старый ещё работает, нажмите «Сменить устройство» и при следующем входе настройте защиту заново.', 'New phone: while the old one still works, press “Change device” and set up protection again at the next sign-in.', 'Jauns tālrunis: kamēr vecais vēl darbojas, nospiediet «Mainīt ierīci» un nākamajā pieslēgšanās reizē iestatiet aizsardzību no jauna.'),
-        l('Потеряли и телефон, и резервные коды? Обратитесь к другому администратору — он сбросит защиту, и при следующем входе вы настроите её заново.', 'Lost both your phone and your backup codes? Contact another administrator — they will reset the protection, and you will set it up again at the next sign-in.', 'Pazaudējāt gan tālruni, gan rezerves kodus? Sazinieties ar citu administratoru — viņš atiestatīs aizsardzību, un nākamajā pieslēgšanās reizē jūs to iestatīsiet no jauna.'),
+    const topics: Array<{ q: string; a: string }> = [
+        {
+            q: l('Как проходит обычный вход', 'How a normal sign-in works', 'Kā notiek parasta pieslēgšanās'),
+            a: l('Введите email и пароль, затем откройте приложение-аутентификатор на телефоне и введите текущий шестизначный код. Код меняется автоматически каждые 30 секунд — вводите тот, что виден сейчас.', 'Enter your email and password, then open the authenticator app on your phone and enter the current six-digit code. The code changes automatically every 30 seconds — enter the one shown now.', 'Ievadiet e-pastu un paroli, tad atveriet tālrunī autentifikatora lietotni un ievadiet pašreizējo sešu ciparu kodu. Kods mainās automātiski ik pēc 30 sekundēm — ievadiet to, kas redzams pašlaik.'),
+        },
+        {
+            q: l('Зачем нужны резервные коды', 'Why you need backup codes', 'Kāpēc vajadzīgi rezerves kodi'),
+            a: l('Они позволяют войти, когда телефона с приложением нет под рукой: он потерян, сломан или разряжен. При настройке выдаются 8 кодов, сколько осталось — видно выше.', 'They let you sign in when the phone with the app is not available: lost, broken or out of battery. You get 8 codes at setup; how many are left is shown above.', 'Tie ļauj pieslēgties, ja tālrunis ar lietotni nav pieejams: pazaudēts, salūzis vai izlādējies. Iestatot tiek izsniegti 8 kodi; cik palicis, redzams augstāk.'),
+        },
+        {
+            q: l('Как войти по резервному коду', 'How to sign in with a backup code', 'Kā pieslēgties ar rezerves kodu'),
+            a: l('На экране входа после пароля нажмите «Использовать резервный код» и введите один из сохранённых кодов (10 символов: цифры и латинские буквы a–f). Вернуться к коду из приложения можно кнопкой «Ввести код из приложения».', 'On the sign-in screen, after your password, press “Use a backup code” and enter one of your saved codes (10 characters: digits and letters a–f). To go back to the app code, press “Enter the code from the app”.', 'Pieslēgšanās ekrānā pēc paroles nospiediet «Izmantot rezerves kodu» un ievadiet vienu no saglabātajiem kodiem (10 rakstzīmes: cipari un latīņu burti a–f). Lai atgrieztos pie lietotnes koda, nospiediet «Ievadīt kodu no lietotnes».'),
+        },
+        {
+            q: l('Почему каждый код одноразовый', 'Why each code works only once', 'Kāpēc katrs kods darbojas tikai vienu reizi'),
+            a: l('Использованный код сразу перестаёт действовать. Даже если кто-то увидит его, повторно войти с ним не получится.', 'A used code stops working immediately. Even if someone sees it, it cannot be used to sign in again.', 'Izmantots kods uzreiz vairs nedarbojas. Pat ja kāds to redzēs, ar to vairs nevarēs pieslēgties.'),
+        },
+        {
+            q: l('Как хранить резервные коды', 'How to keep backup codes safe', 'Kā droši glabāt rezerves kodus'),
+            a: l('Запишите их на бумаге и храните в надёжном месте или сохраните в менеджере паролей. Не храните их на том же телефоне, что и приложение, не отправляйте по почте или в мессенджерах и никому не сообщайте.', 'Write them on paper and keep them somewhere safe, or store them in a password manager. Do not keep them on the same phone as the app, do not send them by email or messenger, and never share them.', 'Pierakstiet tos uz papīra un glabājiet drošā vietā vai saglabājiet paroļu pārvaldniekā. Neglabājiet tos tajā pašā tālrunī, kurā ir lietotne, nesūtiet pa e-pastu vai ziņapmaiņas lietotnēm un nevienam neizpaudiet.'),
+        },
+        {
+            q: l('Меняю телефон', 'I am changing my phone', 'Mainu tālruni'),
+            a: l('Пока старый телефон ещё работает, нажмите выше «Сменить устройство» и подтвердите паролем и кодом из приложения. Все сеансы завершатся, а при следующем входе вы отсканируете новый QR-код новым телефоном.', 'While the old phone still works, press “Change device” above and confirm with your password and the app code. All sessions end, and at the next sign-in you scan a new QR code with the new phone.', 'Kamēr vecais tālrunis vēl darbojas, nospiediet augstāk «Mainīt ierīci» un apstipriniet ar paroli un lietotnes kodu. Visas sesijas beigsies, un nākamajā pieslēgšanās reizē jūs noskenēsiet jaunu QR kodu ar jauno tālruni.'),
+        },
+        {
+            q: l('Потерял телефон', 'I lost my phone', 'Pazaudēju tālruni'),
+            a: l('Войдите по резервному коду. Затем нажмите «Сменить устройство» и подтвердите паролем и ещё одним резервным кодом. При следующем входе настройте защиту на новом телефоне.', 'Sign in with a backup code. Then press “Change device” and confirm with your password and another backup code. At the next sign-in, set up protection on your new phone.', 'Pieslēdzieties ar rezerves kodu. Tad nospiediet «Mainīt ierīci» un apstipriniet ar paroli un vēl vienu rezerves kodu. Nākamajā pieslēgšanās reizē iestatiet aizsardzību jaunajā tālrunī.'),
+        },
+        {
+            q: l('Резервные коды закончились', 'I have run out of backup codes', 'Rezerves kodi ir beigušies'),
+            a: l('Если телефон с приложением при вас, нажмите «Новые резервные коды» и введите код из приложения. Старые коды перестанут действовать, сохраните новые. Если нет ни телефона, ни кодов — смотрите следующий пункт.', 'If you have the phone with the app, press “New backup codes” and enter the app code. The old codes stop working; save the new ones. If you have neither the phone nor any codes, see the next item.', 'Ja tālrunis ar lietotni ir pie jums, nospiediet «Jauni rezerves kodi» un ievadiet lietotnes kodu. Vecie kodi vairs nedarbosies; saglabājiet jaunos. Ja nav ne tālruņa, ne kodu — skatiet nākamo punktu.'),
+        },
+        {
+            q: l('Нет ни телефона, ни резервных кодов', 'I have neither the phone nor backup codes', 'Nav ne tālruņa, ne rezerves kodu'),
+            a: l('Самостоятельно восстановить доступ нельзя: одного email и пароля недостаточно. Обратитесь к другому администратору магазина — он сбросит защиту вашей учётной записи в своём личном кабинете. При следующем входе вы настроите её заново.', 'You cannot restore access on your own: an email and password are not enough. Contact another shop administrator — they will reset the protection of your account from their own account page. At the next sign-in you set it up again.', 'Patstāvīgi atjaunot piekļuvi nevar: ar e-pastu un paroli nepietiek. Sazinieties ar citu veikala administratoru — viņš atiestatīs jūsu konta aizsardzību savā kontā. Nākamajā pieslēgšanās reizē jūs to iestatīsiet no jauna.'),
+        },
     ];
     return (
         <details open={defaultOpen} className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-            <summary className="cursor-pointer font-medium text-foreground">{l('Как это работает', 'How it works', 'Kā tas darbojas')}</summary>
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-muted-foreground">
-                {steps.map((step) => <li key={step}>{step}</li>)}
-            </ol>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-muted-foreground">
-                {notes.map((note) => <li key={note}>{note}</li>)}
-            </ul>
+            <summary className="cursor-pointer font-medium text-foreground">
+                {l('Как работает двухфакторная аутентификация', 'How two-factor authentication works', 'Kā darbojas divfaktoru autentifikācija')}
+            </summary>
+            <div className="mt-3 divide-y divide-border">
+                {topics.map((topic) => (
+                    <details key={topic.q} className="py-2">
+                        <summary className="cursor-pointer text-foreground">{topic.q}</summary>
+                        <p className="mt-1.5 text-muted-foreground">{topic.a}</p>
+                    </details>
+                ))}
+            </div>
         </details>
     );
 }
@@ -287,11 +317,15 @@ export default function AdminMfaSection(): React.ReactElement {
                         placeholder={l('Текущий пароль', 'Current password', 'Pašreizējā parole')}
                         autoComplete="current-password"
                     />
+                    {/* The server accepts the app code or an unused backup code here (lost-phone case). */}
                     <Input
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
-                        placeholder={l('Код из приложения', 'Code from the app', 'Kods no lietotnes')}
-                        maxLength={10}
+                        placeholder={l('Код из приложения или резервный код', 'App code or a backup code', 'Lietotnes kods vai rezerves kods')}
+                        maxLength={16}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
                     />
                     {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                     <div className="flex gap-2">

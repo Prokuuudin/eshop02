@@ -33,6 +33,18 @@ describe('scheduled stock sync feature gates', () => {
     expect(result).toMatchObject({ status: 'failed', exitCode: 1, reason: 'stock_sync_requires_ledger' })
   })
 
+  it('performs no diagnostic write when an operator adapter rejects the target', async () => {
+    const db = { syncRun: { create: vi.fn() } }
+    const result = await runScheduledStockSync({
+      env: { GRINS_STOCK_LEDGER_ENABLED: 'true', GRINS_STOCK_SYNC_ENABLED: 'true' },
+      getDb: vi.fn().mockResolvedValue(db),
+      verifyTarget: vi.fn().mockRejectedValue(new Error('wrong rehearsal branch')),
+      downloadXml: vi.fn(), downloadManifest: vi.fn(), sendAlert: vi.fn(),
+    } as never)
+    expect(result).toMatchObject({ status: 'failed', exitCode: 1, reason: 'target verification failed: wrong rehearsal branch' })
+    expect(db.syncRun.create).not.toHaveBeenCalled()
+  })
+
   it('rejects an oversized FTPS XML before parsing or applying it', async () => {
     const sendAlert = vi.fn()
     const db = {

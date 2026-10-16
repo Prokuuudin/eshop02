@@ -19,6 +19,11 @@ export interface ScheduledStockSyncDeps {
   downloadManifest: (remotePath: string) => Promise<FtpsDownload>
   sendAlert: typeof SendAlert
   now?: () => Date
+  /** Optional fail-closed target assertion for operator-only adapters. It runs
+   * before every read or write performed by this orchestration. */
+  verifyTarget?: (db: ExtendedPrismaClient) => Promise<void>
+  sourceLabel?: string
+  triggeredBy?: 'cron' | 'manual'
 }
 
 export interface ScheduledStockSyncOutcome {
@@ -61,12 +66,22 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   const now = deps.now ?? (() => new Date())
   const startedAt = now()
   const db = await deps.getDb()
+  const triggeredBy = deps.triggeredBy ?? 'cron'
+  const sourceLabel = deps.sourceLabel ?? 'FTPS'
+  if (deps.verifyTarget) {
+    try {
+      await deps.verifyTarget(db)
+    } catch (error) {
+      // A target-identity failure must not attempt even a diagnostic SyncRun.
+      return { status: 'failed', exitCode: 1, reason: `target verification failed: ${errorMessage(error)}` }
+    }
+  }
   const fail = async (reason: string, details: Record<string, unknown> = {}): Promise<ScheduledStockSyncOutcome> => {
     let runId: string | undefined
     try {
       const run = await db.syncRun.create({
         data: {
-          status: 'failed', mode: 'stocks-only', triggeredBy: 'cron', startedAt, finishedAt: now(), errorCount: 1,
+          status: 'failed', mode: 'stocks-only', triggeredBy, startedAt, finishedAt: now(), errorCount: 1,
           errorSample: { kind: 'scheduled-stocks-only', fatal: reason, ...details } as never,
         },
       })
@@ -80,7 +95,7 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   try {
     if (await isSyncLockHeld(db)) {
       const run = await db.syncRun.create({
-        data: { status: 'skipped', mode: 'stocks-only', triggeredBy: 'cron', startedAt, finishedAt: now(), errorSample: { reason: 'already_running' } as never },
+        data: { status: 'skipped', mode: 'stocks-only', triggeredBy, startedAt, finishedAt: now(), errorSample: { reason: 'already_running' } as never },
       })
       return { status: 'skipped', runId: run.id, exitCode: 0, reason: 'already_running' }
     }
@@ -92,12 +107,12 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   try {
     downloaded = await deps.downloadXml()
   } catch (error) {
-    return fail(`FTPS XML download failed: ${errorMessage(error)}`)
+    return fail(`${sourceLabel} XML read failed: ${errorMessage(error)}`)
   }
   const downloadedBytes = Buffer.byteLength(downloaded.content, 'utf-8')
   if ((downloaded.remoteSizeBytes !== undefined && downloaded.remoteSizeBytes > MANUAL_IMPORT_MAX_BYTES)
     || downloadedBytes > MANUAL_IMPORT_MAX_BYTES) {
-    return fail('FTPS XML exceeds the configured import size limit')
+    return fail(`${sourceLabel} XML exceeds the configured import size limit`)
   }
   const sha256 = createHash('sha256').update(downloaded.content, 'utf-8').digest('hex')
   const transportModifiedAt = date(downloaded.modifiedAt)
@@ -110,7 +125,7 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
     try {
       manifest = await deps.downloadManifest(manifestPathFor(deps.env.GRINS_FTPS_REMOTE_PATH || 'export.xml'))
     } catch (error) {
-      return fail(`FTPS manifest download failed: ${errorMessage(error)}`, { sha256 })
+      return fail(`${sourceLabel} manifest read failed: ${errorMessage(error)}`, { sha256 })
     }
     const verification = verifyStockReconciliationManifest(downloaded.content, manifest.content, now(), {
       maxAgeHours: flags.manifestMaxAgeHours,
@@ -152,7 +167,7 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
     runStartedAt,
     generatedAt,
     manifestVerified,
-  }, preflight, 'cron', deps.env)
+  }, preflight, triggeredBy, deps.env)
   if (result.status === 'completed') {
     logOperationalEvent({ event: 'grins_stock_sync_completed', runId: result.runId, matched: result.matched, reconciled: result.reconciled, awaiting: result.awaiting })
     return { status: 'completed', runId: result.runId, exitCode: 0 }

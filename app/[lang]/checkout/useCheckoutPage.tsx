@@ -107,9 +107,10 @@ function useCheckoutPageState() {
     }, [currentUser?.id, currentUser?.email]);
     const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
+        if (method === 'courier') return 'courier_latvia';
         return (checkoutDeliveryMethodIds as readonly (string | null)[]).includes(method)
             ? method as DeliveryMethod
-            : 'courier';
+            : 'courier_latvia';
     });
     const [deliveryLocationId, setDeliveryLocationId] = useState('');
     const setDeliveryMethod = (method: DeliveryMethod): void => {
@@ -233,7 +234,7 @@ function useCheckoutPageState() {
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
-        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings)) {
+        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings, { city: formData.city })) {
             showToast(t('checkout.deliveryUnavailable', 'Delivery is unavailable. Select another method.'), 'error');
             return;
         }

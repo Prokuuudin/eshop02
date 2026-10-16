@@ -51,6 +51,20 @@ describe('production delivery invariants shared by every order boundary', () => 
     const disabled = structuredClone(settings); disabled.delivery.courier_latvia.enabled = false
     expect(() => validateOrderDelivery(courier, disabled)).toThrow()
   })
+  it('rejects courier_riga outside its configured service area at the server boundary', () => {
+    const configured = structuredClone(settings)
+    configured.delivery.courier_riga.enabled = true
+    configured.delivery.courier_riga.status = 'ready'
+    configured.delivery.courier_riga.serviceAreaCities = ['Rīga']
+    const rigaCourier = { ...courier, deliveryMethod: 'courier_riga' }
+    expect(validateOrderDelivery({ ...rigaCourier, city: ' RĪGA ' }, configured).deliveryMethod).toBe('courier_riga')
+    expect(() => validateOrderDelivery({ ...rigaCourier, city: 'Jelgava' }, configured)).toThrow('delivery_unavailable')
+    expect(() => validateOrderDelivery({ ...rigaCourier, city: ' ' }, configured)).toThrow('delivery_unavailable')
+  })
+  it('accepts the separate Latvia courier and preserves the legacy courier alias', () => {
+    expect(validateOrderDelivery({ ...courier, deliveryMethod: 'courier_latvia', city: 'Jelgava' }, settings).deliveryMethod).toBe('courier_latvia')
+    expect(validateOrderDelivery({ ...courier, city: 'Jelgava' }, settings).deliveryMethod).toBe('courier')
+  })
   it('requires a valid pickup and derives its address, clearing stale locker fields', () => {
     for (const pickupStoreId of [undefined, 'fake']) expect(() => validateOrderDelivery({ deliveryMethod: 'pickup', pickupStoreId }, settings)).toThrow()
     const a = validateOrderDelivery({ deliveryMethod: 'pickup', pickupStoreId: 'riga-office', deliveryLocationId: '9192', address: 'forged' }, settings)

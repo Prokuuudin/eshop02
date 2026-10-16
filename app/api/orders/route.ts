@@ -16,6 +16,7 @@ import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { formatDateWithPattern } from '@/lib/date-format'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
+import { isCourierDeliveryMethod } from '@/lib/delivery'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
 import { ExistingCheckoutOrderError, type ServerOrderLegalDetails } from '@/lib/orders-data-store'
@@ -238,7 +239,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Phone is only required for private customers — the real Hairshop.lv company
     // form doesn't mark it mandatory (companies are reached via the contact email).
-    const requiresHomeAddress = deliveryMethod === 'courier'
+    const requiresHomeAddress = isCourierDeliveryMethod(deliveryMethod)
     const requiredContactFields = isCompanyOrder
       ? [order.firstName, order.lastName, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
       : [order.firstName, order.lastName, order.phone, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]

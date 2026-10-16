@@ -1,6 +1,10 @@
 const enCheckout: Record<string, string> = {
   'checkout.errors.maintenance': 'Checkout is temporarily unavailable. Your cart is saved. Please try again later.',
   "checkout.delivery.omnivaCourier": "Courier",
+  "checkout.delivery.courierRiga": "Courier in Riga and approved suburbs",
+  "checkout.delivery.courierLatvia": "Courier in Latvia",
+  "checkout.delivery.courierRigaArea": "Courier in Riga delivers only to addresses in:",
+  "checkout.delivery.courierRigaChooseOther": "Enter one of these cities or choose another delivery method.",
   "checkout.delivery.venipakCourier": "Venipak courier",
   "checkout.delivery.unisend": "Unisend parcel locker",
   "checkout.delivery.unisendCourier": "Unisend courier",

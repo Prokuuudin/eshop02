@@ -10,6 +10,8 @@ import type { ReturnRequest } from '@/lib/returns-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { fetchCustomerReturns } from './fetchCustomerReturns'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { useTranslation } from '@/lib/use-translation'
+import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/delivery'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -48,6 +50,7 @@ function Kpi({ label, value, sub }: { label: string; value: string; sub?: string
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CustomerProfilePage(): React.ReactElement {
+  const { t } = useTranslation()
   const { locale, l } = useAdminLocale()
   const searchParams = useSearchParams()
   const email = decodeURIComponent(searchParams.get('email') ?? '')
@@ -254,7 +257,7 @@ export default function CustomerProfilePage(): React.ReactElement {
                         {' · '}
                         {order.items.length} {order.items.length === 1 ? l('позиция', 'item', 'pozīcija') : l('позиций', 'items', 'pozīcijas')}
                         {' · '}
-                        {order.deliveryMethod === 'courier' ? l('Курьер', 'Courier', 'Kurjers') : order.deliveryMethod === 'pickup' ? l('Самовывоз', 'Pickup', 'Saņemšana veikalā') : l('Почта', 'Post', 'Pasts')}
+                        {DELIVERY_METHOD_LABEL_KEYS[order.deliveryMethod as CheckoutDeliveryMethod] ? t(DELIVERY_METHOD_LABEL_KEYS[order.deliveryMethod as CheckoutDeliveryMethod]) : order.deliveryMethod}
                       </p>
                       {/* Items preview */}
                       <p className="text-xs text-muted-foreground truncate max-w-xs">

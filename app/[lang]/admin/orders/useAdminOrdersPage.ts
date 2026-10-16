@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { type Order } from '@/lib/orders-store';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
+import { acceptedDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 import { useTranslation } from '@/lib/use-translation';
 import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
@@ -174,7 +174,7 @@ function useAdminOrdersPageState() {
         refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
         failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
     };
-    const DELIVERY_LABELS = Object.fromEntries(checkoutDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
+    const DELIVERY_LABELS = Object.fromEntries(acceptedDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
 
     const searchParams = useSearchParams();
     const [search, setSearch] = useState('');

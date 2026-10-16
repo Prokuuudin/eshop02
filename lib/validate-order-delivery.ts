@@ -1,6 +1,6 @@
 import { stores } from '@/data/stores'
 import { translations } from '@/data/translations'
-import { checkoutDeliveryMethodIds, isDeliveryAvailable, type DeliveryCountry } from './delivery'
+import { acceptedDeliveryMethodIds, isCourierDeliveryMethod, isDeliveryAvailable, type DeliveryCountry } from './delivery'
 import { requiresDeliveryLocation, resolveDeliveryLocation, type DeliveryLocation } from './delivery-locations'
 import type { CommerceSettings } from './commerce-settings'
 
@@ -23,13 +23,13 @@ export function validateOrderDelivery(input: {
 }, settings: CommerceSettings): ValidatedOrderDelivery {
   const text = (value: unknown) => typeof value === 'string' ? value.trim() : ''
   const method = text(input.deliveryMethod)
-  if (!(checkoutDeliveryMethodIds as readonly string[]).includes(method)) throw new OrderDeliveryError('invalid_delivery_method')
-  if (method === 'courier' && input.country === undefined) throw new OrderDeliveryError('invalid_delivery_country')
+  if (!(acceptedDeliveryMethodIds as readonly string[]).includes(method)) throw new OrderDeliveryError('invalid_delivery_method')
+  if (isCourierDeliveryMethod(method) && input.country === undefined) throw new OrderDeliveryError('invalid_delivery_country')
   // Missing country retains the historical LV contract; explicit values never fall back.
   const country = (input.country === undefined ? 'LV' : input.country) as DeliveryCountry
   if (!['LV', 'LT', 'EE'].includes(country)) throw new OrderDeliveryError('invalid_delivery_country')
-  if (!isDeliveryAvailable(method, country, settings)) throw new OrderDeliveryError('delivery_unavailable')
-  if (method === 'courier' && (!text(input.address) || !text(input.city) || !text(input.postalCode))) throw new OrderDeliveryError('missing_delivery_address')
+  if (!isDeliveryAvailable(method, country, settings, { city: text(input.city) })) throw new OrderDeliveryError('delivery_unavailable')
+  if (isCourierDeliveryMethod(method) && (!text(input.address) || !text(input.city) || !text(input.postalCode))) throw new OrderDeliveryError('missing_delivery_address')
   const deliveryLocation = resolveDeliveryLocation(method, country, text(input.deliveryLocationId))
   if (requiresDeliveryLocation(method) && !deliveryLocation) throw new OrderDeliveryError('invalid_delivery_location')
   const store = method === 'pickup' ? stores.find(item => item.id === input.pickupStoreId) : undefined

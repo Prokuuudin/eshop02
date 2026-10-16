@@ -42,6 +42,7 @@ const deliveryMethodSchema = z.object({
   maxDimensionsCm: z.string().trim().max(100),
   eta: z.string().trim().max(100),
   requiresLocation: z.boolean(),
+  serviceAreaCities: z.array(z.string().trim().min(1).max(100)).max(100).default([]),
   notes: z.string().trim().max(500),
 })
 
@@ -97,6 +98,7 @@ const delivery = (
   maxDimensionsCm: '',
   eta: 'от 3 рабочих дней',
   requiresLocation: false,
+  serviceAreaCities: [],
   notes: '',
   ...extra,
 })
@@ -111,7 +113,7 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
   },
   delivery: {
     venipak_courier: delivery('Venipak courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
-    unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, 100, { enabled: true, status: 'ready', requiresLocation: true, notes: 'Terminal lists provided. API registration pending access credentials.' }),
+    unisend: delivery('Unisend lockers', ['LV', 'LT', 'EE'], 2, 100, { enabled: true, status: 'ready', requiresLocation: true, maxWeightKg: 30, notes: 'Terminal lists provided. API registration pending access credentials. Maximum parcel weight: 30 kg.' }),
     unisend_courier: delivery('Unisend courier', ['LV', 'LT', 'EE'], 5, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
     expresspasts: delivery('Expresspasts lockers', ['LV', 'LT', 'EE'], 2.5, null, { requiresLocation: true, notes: 'Tariffs provided; locker directory pending.' }),
     expresspasts_courier: delivery('Expresspasts courier', ['LV', 'LT', 'EE'], 10, null, { enabled: false, notes: 'Disabled 2026-09-21: consolidated to single generic courier option.' }),
@@ -197,6 +199,7 @@ export function getCommerceSettingsIssues(settings: CommerceSettings, language: 
     if (method.enabled && method.price === null) issues.push(l(`Доставка «${method.label}»: не указана цена`, `Delivery “${method.label}”: price is missing`, `Piegāde “${method.label}”: nav norādīta cena`))
     if (method.enabled && method.requiresLocation && !method.maxWeightKg) issues.push(l(`Доставка «${method.label}»: не указан лимит веса`, `Delivery “${method.label}”: weight limit is missing`, `Piegāde “${method.label}”: nav norādīts svara ierobežojums`))
     if ((id === 'dpd' || id === 'venipak') && method.enabled && !method.notes) issues.push(l(`Доставка «${method.label}»: нет условий интеграции`, `Delivery “${method.label}”: integration terms are missing`, `Piegāde “${method.label}”: nav integrācijas nosacījumu`))
+    if (id === 'courier_riga' && method.enabled && method.serviceAreaCities.length === 0) issues.push(l('Курьер по Риге: не настроена зона обслуживания', 'Courier in Riga: service area is not configured', 'Kurjers Rīgā: apkalpošanas zona nav konfigurēta'))
   }
   for (const method of Object.values(settings.payment)) {
     if (method.enabled && method.status !== 'ready') issues.push(l(`Оплата «${method.label}»: не подтверждена готовность`, `Payment “${method.label}”: readiness is not confirmed`, `Maksājums “${method.label}”: gatavība nav apstiprināta`))

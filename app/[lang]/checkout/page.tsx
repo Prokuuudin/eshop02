@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { stores } from '@/data/stores';
 import { DeliveryMethod } from '@/lib/orders-store';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, isDeliveryConfigured, calcDeliveryFee } from '@/lib/delivery';
 import { TURNSTILE_SCRIPT_SRC } from '@/lib/use-turnstile';
 import { CustomerDetailsSection } from './CheckoutFormSections';
 
@@ -133,7 +133,7 @@ export default function CheckoutPage(): React.ReactElement {
                             className="space-y-3"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {DELIVERY_OPTIONS.filter(option => isDeliveryAvailable(option.id, formData.country ?? 'LV', shippingSettings)).map((option) => (
+                                {DELIVERY_OPTIONS.filter(option => isDeliveryConfigured(option.id, formData.country ?? 'LV', shippingSettings)).map((option) => (
                                     <label
                                         key={option.id}
                                         className="flex items-center p-3 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-border"
@@ -165,6 +165,13 @@ export default function CheckoutPage(): React.ReactElement {
                             </div>
                             {requiresDeliveryLocation(deliveryMethod) && <DeliveryLocationPicker key={deliveryMethod + ':' + (formData.country ?? 'LV')} method={deliveryMethod} country={formData.country ?? 'LV'} value={deliveryLocationId} onChange={setDeliveryLocationId} />}
                             {errors.deliveryLocationId && <p role="alert" className="text-sm text-red-600">{errors.deliveryLocationId}</p>}
+                            {deliveryMethod === 'courier_riga'
+                                && isDeliveryConfigured('courier_riga', formData.country ?? 'LV', shippingSettings)
+                                && !isDeliveryAvailable('courier_riga', formData.country ?? 'LV', shippingSettings, { city: formData.city }) && (
+                                <p role="status" className="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-200">
+                                    {t('checkout.delivery.courierRigaArea', 'Courier in Riga delivers only to:')} {shippingSettings.delivery.courier_riga.serviceAreaCities.join(', ')}. {t('checkout.delivery.courierRigaChooseOther', 'Enter one of these cities or choose another delivery method.')}
+                                </p>
+                            )}
                             {deliveryMethod === 'pickup' && (
                                 <div className="checkout__pickup-store">
                                     <label
@@ -335,7 +342,7 @@ export default function CheckoutPage(): React.ReactElement {
                             form="checkout-form"
                             className="flex-1"
                             disabled={
-                                !shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings) ||
+                                !shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings, { city: formData.city }) ||
                                 !wholesaleGuard.isMinimumReached ||
                                 isSubmitting ||
                                 (turnstileEnabled && !turnstileToken)

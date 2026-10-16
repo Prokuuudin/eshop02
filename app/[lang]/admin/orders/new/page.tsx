@@ -2,7 +2,7 @@
 import { stores } from '@/data/stores';
 import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, calcDeliveryFee } from '@/lib/delivery';
 
 
 import AdminGate from '@/components/admin/AdminGate';
@@ -84,7 +84,7 @@ export default function NewOrderPage(): React.ReactElement {
             selectCls,
           } = pageState;
     const { t } = useTranslation();
-    const deliveryOptions: DeliveryOption[] = checkoutDeliveryMethodIds.filter(id => isDeliveryAvailable(id, country, shippingSettings)).map(value => ({ value, label: t(DELIVERY_METHOD_LABEL_KEYS[value]), cost: calcDeliveryFee(value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
+    const deliveryOptions: DeliveryOption[] = checkoutDeliveryMethodIds.filter(id => isDeliveryConfigured(id, country, shippingSettings)).map(value => ({ value, label: t(DELIVERY_METHOD_LABEL_KEYS[value]), cost: calcDeliveryFee(value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
     return (
         <AdminGate access="partial">
             <main className="w-full py-4">

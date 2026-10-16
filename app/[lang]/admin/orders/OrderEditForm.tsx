@@ -6,7 +6,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { Input } from '@/components/ui/input';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { acceptedDeliveryMethodIds, checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, calcDeliveryFee } from '@/lib/delivery';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -26,6 +26,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
         editAddProduct,
     } = state;
     if (editingOrderId !== order.id) return null;
+    const editableDeliveryMethodIds = editDelivery === 'courier' ? acceptedDeliveryMethodIds : checkoutDeliveryMethodIds;
 
     return (
 
@@ -83,7 +84,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                     {l('Способ доставки', 'Delivery method', 'Piegādes veids')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {checkoutDeliveryMethodIds.filter(dm => isDeliveryAvailable(dm, editCountry, shippingSettings)).map(
+                                                    {editableDeliveryMethodIds.filter(dm => isDeliveryConfigured(dm, editCountry, shippingSettings)).map(
                                                         (dm) => (
                                                             <button
                                                                 key={dm}

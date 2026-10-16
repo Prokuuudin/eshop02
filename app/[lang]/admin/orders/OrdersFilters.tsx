@@ -1,6 +1,6 @@
 'use client';
 import { useTranslation } from '@/lib/use-translation';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
+import { acceptedDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
 import React from 'react';
 import { type OrderStatus } from '@/lib/admin-store';
@@ -96,7 +96,7 @@ export default function OrdersFilters({ state }: { state: OrdersState }): React.
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">{l('Все доставки', 'All deliveries', 'Visas piegādes')}</SelectItem>
-                                {checkoutDeliveryMethodIds.map(id => <SelectItem key={id} value={id}>{t(DELIVERY_METHOD_LABEL_KEYS[id])}</SelectItem>)}
+                                {acceptedDeliveryMethodIds.map(id => <SelectItem key={id} value={id}>{t(DELIVERY_METHOD_LABEL_KEYS[id])}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>

@@ -1,7 +1,7 @@
 'use client';
 import { Hint } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
+import { acceptedDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
 import React from 'react';
 import Image from 'next/image';
@@ -40,7 +40,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
         paid: l('Оплачен', 'Paid', 'Apmaksāts'), refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
         failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
     };
-    const DELIVERY_LABELS = Object.fromEntries(checkoutDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
+    const DELIVERY_LABELS = Object.fromEntries(acceptedDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
     const PAYMENT_METHOD_LABELS: Record<string, string> = {
         bank: l('Банковский перевод', 'Bank transfer', 'Bankas pārskaitījums'),
         cash: l('Оплата при получении', 'Cash on delivery', 'Skaidra nauda saņemot'),

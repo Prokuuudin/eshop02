@@ -23,7 +23,14 @@ vi.mock('@/lib/orders-data-store', async () => {
   class ExistingCheckoutOrderError extends Error { constructor(public order: { id: string }) { super('existing') } }
   return { createServerOrder: persistMock, InsufficientStockError, ExistingCheckoutOrderError }
 })
-vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: async () => (await import('@/lib/commerce-settings')).DEFAULT_COMMERCE_SETTINGS }))
+// Test-only Riga service area (real list not approved yet).
+vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: async () => {
+  const settings = structuredClone((await import('@/lib/commerce-settings')).DEFAULT_COMMERCE_SETTINGS)
+  settings.delivery.courier_riga.enabled = true
+  settings.delivery.courier_riga.status = 'ready'
+  settings.delivery.courier_riga.serviceAreaCities = ['Riga']
+  return settings
+} }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   product: { findMany: productFindMock }, order: { findMany: orderFindMock, count: orderCountMock },
 } }))
@@ -48,6 +55,8 @@ describe('/api/v1/orders', () => {
   it.each([
     { deliveryMethod: 'courier', address: { country: 'LV' } },
     { deliveryMethod: 'courier', address: { address: 'Street', city: 'Riga', postalCode: '1001' } },
+    { deliveryMethod: 'courier_latvia', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } },
+    { deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Jelgava', postalCode: 'LV-3001' } },
     { deliveryMethod: 'post', address: { country: 'LV' } },
     { deliveryMethod: 'post', deliveryLocationId: 'fake', address: { country: 'LV' } },
     { deliveryMethod: 'pickup', address: { country: 'LV' } },
@@ -106,13 +115,13 @@ describe('/api/v1/orders', () => {
 
   it('rejects writes from a browser session without API write access', async () => {
     authenticateMock.mockResolvedValue({ authenticated: true, user: { id: 'u1', companyId: 'company-a', apiAccess: false } })
-    expect((await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))).status).toBe(403)
+    expect((await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))).status).toBe(403)
     expect(pricingMock).not.toHaveBeenCalled()
   })
 
   it('requires a company scope for API writes', async () => {
     authenticateMock.mockResolvedValue({ authenticated: true, user: { id: 'api-user', apiAccess: true } })
-    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
+    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
     expect(response.status).toBe(400)
     expect(pricingMock).not.toHaveBeenCalled()
   })
@@ -124,7 +133,7 @@ describe('/api/v1/orders', () => {
     })
     productFindMock.mockResolvedValue([{ id: 'p1', title: 'Trusted title', brand: 'Brand', image: null, category: 'hair', rating: 5, stock: 8 }])
     const response = await POST(request('POST', {
-      items: [{ productId: 'p1', quantity: 2, price: 0.01 }], deliveryMethod: 'courier', address: { firstName: 'A', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001', country: 'LV' }, total: 0.01,
+      items: [{ productId: 'p1', quantity: 2, price: 0.01 }], deliveryMethod: 'courier_riga', address: { firstName: 'A', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001', country: 'LV' }, total: 0.01,
     }))
     expect(response.status).toBe(201)
     expect(pricingMock).toHaveBeenCalledWith(expect.objectContaining({ items: [{ id: 'p1', quantity: 2 }] }), expect.anything())
@@ -134,7 +143,7 @@ describe('/api/v1/orders', () => {
 
   it('maps stock conflicts to 409 without hiding the affected products', async () => {
     pricingMock.mockRejectedValue(new InsufficientStockError(['p1']))
-    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 5 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
+    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 5 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'Insufficient stock for: p1' })
     expect(persistMock).toHaveBeenCalledOnce()
@@ -143,14 +152,14 @@ describe('/api/v1/orders', () => {
   it('rejects products that are not for sale (no ERP B2B price / inactive) with 409', async () => {
     const { ProductUnavailableError } = await import('@/lib/server-pricing')
     pricingMock.mockRejectedValue(new ProductUnavailableError(['p1']))
-    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
+    const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'Products not available for sale: p1' })
   })
   it('returns 503 when shared order creation is closed for price import', async () => {
     persistMock.mockRejectedValueOnce(new CheckoutMaintenanceError())
     const response = await POST(request('POST', {
-      items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' },
+      items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' },
     }))
     expect(response.status).toBe(503)
     expect(await response.json()).toEqual({ error: 'checkout_maintenance' })
@@ -162,7 +171,7 @@ describe('/api/v1/orders', () => {
     } as never))
     productFindMock.mockResolvedValue([])
     const response = await POST(request('POST', {
-      items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' },
+      items: [{ productId: 'p1', quantity: 1 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' },
     }, '', 'integration-request-123'))
     expect(response.status).toBe(200)
     expect((await response.json()).data).toMatchObject({ orderId: '1001', idempotent: true })

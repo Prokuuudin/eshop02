@@ -1,7 +1,7 @@
 const ruCheckout: Record<string, string> = {
   'checkout.errors.maintenance': 'Оформление заказов временно недоступно. Корзина сохранена. Попробуйте позже.',
   "checkout.delivery.omnivaCourier": "Курьер",
-  "checkout.delivery.courierRiga": "Курьер по Риге и утверждённым пригородам",
+  "checkout.delivery.courierRiga": "Курьер по Риге и окрестностям",
   "checkout.delivery.courierLatvia": "Курьер по Латвии",
   "checkout.delivery.courierRigaArea": "Курьер по Риге доставляет только по адресам в:",
   "checkout.delivery.courierRigaChooseOther": "Укажите один из этих городов или выберите другой способ доставки.",

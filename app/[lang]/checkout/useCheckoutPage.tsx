@@ -1,5 +1,5 @@
 'use client';
-import { checkoutDeliveryMethodIds, isDeliveryAvailable } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, isDeliveryAvailable, isDeliveryConfigured } from '@/lib/delivery';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
 
 import React, { useRef, useState } from 'react';
@@ -105,17 +105,31 @@ function useCheckoutPageState() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id, currentUser?.email]);
-    const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
+    const [selectedDeliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
-        if (method === 'courier') return 'courier_latvia';
+        // Old links used the pre-split `courier`; the shop's only own courier is now Riga-only.
+        if (method === 'courier' || method === 'courier_latvia') return 'courier_riga';
         return (checkoutDeliveryMethodIds as readonly (string | null)[]).includes(method)
             ? method as DeliveryMethod
-            : 'courier_latvia';
+            : 'courier_riga';
     });
-    const [deliveryLocationId, setDeliveryLocationId] = useState('');
+    const [selectedDeliveryLocationId, setSelectedDeliveryLocationId] = useState('');
     const setDeliveryMethod = (method: DeliveryMethod): void => {
         setDeliveryMethodState(method);
-        setDeliveryLocationId('');
+        setSelectedDeliveryLocationId('');
+    };
+    // If the selected method is not offered (e.g. Riga courier before its area is approved),
+    // use the first method that is, instead of leaving nothing selected. Derived, not stored,
+    // so a locker chosen for another method never leaks into the fallback.
+    const deliveryCountry = formData.country ?? 'LV';
+    const deliveryMethod: DeliveryMethod = !shippingSettings.shippingReady || isDeliveryConfigured(selectedDeliveryMethod, deliveryCountry, shippingSettings)
+        ? selectedDeliveryMethod
+        : checkoutDeliveryMethodIds.find((id) => isDeliveryConfigured(id, deliveryCountry, shippingSettings)) ?? selectedDeliveryMethod;
+    const deliveryLocationId = deliveryMethod === selectedDeliveryMethod ? selectedDeliveryLocationId : '';
+    // Choosing a locker while the fallback method is shown commits that method as the selection.
+    const setDeliveryLocationId = (id: string): void => {
+        if (deliveryMethod !== selectedDeliveryMethod) setDeliveryMethodState(deliveryMethod);
+        setSelectedDeliveryLocationId(id);
     };
     const [pickupStoreId, setPickupStoreId] = useState('');
     const [cashLockAlert, setCashLockAlert] = useState(false);
@@ -187,7 +201,7 @@ function useCheckoutPageState() {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-        if (e.target.name === 'country') setDeliveryLocationId('');
+        if (e.target.name === 'country') setSelectedDeliveryLocationId('');
         setFormData((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,

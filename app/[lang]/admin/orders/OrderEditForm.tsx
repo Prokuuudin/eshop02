@@ -6,7 +6,7 @@ import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { Input } from '@/components/ui/input';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
-import { acceptedDeliveryMethodIds, checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, isLegacyCourierMethod, calcDeliveryFee, type CheckoutDeliveryMethod } from '@/lib/delivery';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -26,7 +26,9 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
         editAddProduct,
     } = state;
     if (editingOrderId !== order.id) return null;
-    const editableDeliveryMethodIds = editDelivery === 'courier' ? acceptedDeliveryMethodIds : checkoutDeliveryMethodIds;
+    // A historical order may keep its legacy courier method; it is never offered otherwise.
+    const historicalCourier = isLegacyCourierMethod(order.deliveryMethod) ? order.deliveryMethod as CheckoutDeliveryMethod : null;
+    const editableDeliveryMethodIds: readonly CheckoutDeliveryMethod[] = historicalCourier ? [historicalCourier, ...checkoutDeliveryMethodIds] : checkoutDeliveryMethodIds;
 
     return (
 
@@ -84,7 +86,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                     {l('Способ доставки', 'Delivery method', 'Piegādes veids')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {editableDeliveryMethodIds.filter(dm => isDeliveryConfigured(dm, editCountry, shippingSettings)).map(
+                                                    {editableDeliveryMethodIds.filter(dm => dm === historicalCourier || isDeliveryConfigured(dm, editCountry, shippingSettings)).map(
                                                         (dm) => (
                                                             <button
                                                                 key={dm}

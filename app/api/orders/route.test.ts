@@ -10,6 +10,15 @@ vi.mock('@/lib/shipping-settings-server', async () => {
   const { DEFAULT_COMMERCE_SETTINGS } = await import('@/lib/commerce-settings')
   return { getShippingSettings: vi.fn(async () => structuredClone(DEFAULT_COMMERCE_SETTINGS)) }
 })
+// Test-only Riga service area (the real list is not approved yet): the default valid order uses
+// the shop's own courier, which is offered only inside this area.
+function rigaCourierSettings() {
+  const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+  settings.delivery.courier_riga.enabled = true
+  settings.delivery.courier_riga.status = 'ready'
+  settings.delivery.courier_riga.serviceAreaCities = ['Riga']
+  return settings
+}
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
@@ -72,7 +81,7 @@ const VALID_ORDER = {
   city: 'Riga',
   postalCode: '1001',
   legalDetails: { customerType: 'individual' },
-  deliveryMethod: 'courier',
+  deliveryMethod: 'courier_riga',
   paymentMethod: 'bank',
   items: [
     { id: 'p1', title: 'Shampoo Pro', brand: 'Brand', image: '', category: 'hair', price: 25, rating: 5, stock: 10, quantity: 2 },
@@ -126,7 +135,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
   beforeEach(() => {
     vi.clearAllMocks()
     dbProducts.mockImplementation(async () => [DB_PRODUCT_P1])
-    vi.mocked(getShippingSettings).mockResolvedValue(structuredClone(DEFAULT_COMMERCE_SETTINGS))
+    vi.mocked(getShippingSettings).mockResolvedValue(rigaCourierSettings())
     vi.mocked(getServerUser).mockResolvedValue(null)
     // Server assigns the canonical id — echo the payload back under a generated id
     vi.mocked(createServerOrder).mockImplementation(async (order, prepare) => ({
@@ -170,8 +179,26 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'post' }))).status).toBe(400)
     expect(createServerOrder).not.toHaveBeenCalled()
   })
+  it('rejects a Latvia-wide or legacy courier and the Riga courier outside its area — direct API calls cannot bypass it', async () => {
+    for (const order of [
+      { ...VALID_ORDER, deliveryMethod: 'courier_latvia' },
+      { ...VALID_ORDER, deliveryMethod: 'courier' },
+      { ...VALID_ORDER, deliveryMethod: 'courier_riga', city: 'Jelgava' },
+      { ...VALID_ORDER, deliveryMethod: 'courier_riga', country: 'LT' },
+    ]) {
+      const response = await POST(makeRequest(order))
+      expect(response.status).toBe(400)
+      expect(await response.json()).toEqual({ error: 'delivery_unavailable' })
+    }
+    vi.mocked(getShippingSettings).mockResolvedValue(structuredClone(DEFAULT_COMMERCE_SETTINGS))
+    const unapproved = await POST(makeRequest(VALID_ORDER))
+    expect(unapproved.status).toBe(400)
+    expect(await unapproved.json()).toEqual({ error: 'delivery_unavailable' })
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
   it('passes the selected country to authoritative pricing', async () => {
-    expect((await POST(makeRequest({ ...VALID_ORDER, country: 'LT' }))).status).toBe(200)
+    const terminal = getDeliveryLocations('unisend', 'LT')[0]
+    expect((await POST(makeRequest({ ...VALID_ORDER, country: 'LT', deliveryMethod: 'unisend', deliveryLocationId: terminal.id }))).status).toBe(200)
     expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ country: 'LT' }), expect.anything())
   })
 

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { extractVat } from './tax'
 import { getDeliveryLocations } from './delivery-locations'
+import { DEFAULT_COMMERCE_SETTINGS } from './commerce-settings'
 
 const tx = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
@@ -32,6 +33,7 @@ describe('transactional admin delivery and pricing edits', () => {
       stockReservationStatus: 'reserved', country: 'LV', deliveryMethod: 'courier', address: 'Street 1', city: 'Riga',
     }
     tx.order.findUnique.mockImplementation(async () => current)
+    tx.keyValueSetting.findUnique.mockImplementation(async () => null)
     tx.product.findMany.mockResolvedValue([product])
     tx.product.updateMany.mockResolvedValue({ count: 1 })
     tx.order.update.mockImplementation(async ({ data }) => ({ ...current, ...data, deliveryLocation: data.deliveryLocation === Prisma.DbNull ? null : data.deliveryLocation }))
@@ -48,12 +50,36 @@ describe('transactional admin delivery and pricing edits', () => {
     expect(result.discount).toBe(discount)
     expect(result.total).toBe(total)
   })
-  it.each(['courier', 'post'] as const)('clears pickup on pickup → %s', async deliveryMethod => {
+  it('clears pickup on pickup → post', async () => {
     current.deliveryMethod = 'pickup'; current.pickupStoreId = 'riga-office'
-    const result = await edit({ deliveryMethod, deliveryLocationId: deliveryMethod === 'post' ? getDeliveryLocations('post', 'LV')[0].id : undefined })
+    const result = await edit({ deliveryMethod: 'post', deliveryLocationId: getDeliveryLocations('post', 'LV')[0].id })
     expect(result.pickupStoreId).toBeUndefined()
-    if (deliveryMethod === 'post') expect(result.deliveryLocation?.provider).toBe('omniva')
-    else expect(result.deliveryLocation).toBeUndefined()
+    expect(result.deliveryLocation?.provider).toBe('omniva')
+  })
+  it('clears pickup on pickup → courier_riga inside the approved area', async () => {
+    const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    settings.delivery.courier_riga.enabled = true
+    settings.delivery.courier_riga.status = 'ready'
+    settings.delivery.courier_riga.serviceAreaCities = ['Riga'] // test-only area
+    tx.keyValueSetting.findUnique.mockResolvedValue({ value: settings } as never)
+    current.deliveryMethod = 'pickup'; current.pickupStoreId = 'riga-office'
+    const result = await edit({ deliveryMethod: 'courier_riga' })
+    expect(result.pickupStoreId).toBeUndefined()
+    expect(result.deliveryLocation).toBeUndefined()
+    await expect(edit({ deliveryMethod: 'courier_riga', city: 'Jelgava' })).rejects.toThrow('delivery_unavailable')
+  })
+  it('never lets an admin switch an order to the Latvia-wide or legacy courier', async () => {
+    current.deliveryMethod = 'pickup'; current.pickupStoreId = 'riga-office'
+    for (const deliveryMethod of ['courier', 'courier_latvia'] as const) {
+      await expect(edit({ deliveryMethod })).rejects.toThrow('delivery_unavailable')
+    }
+    expect(tx.order.update).not.toHaveBeenCalled()
+  })
+  it.each(['courier', 'courier_latvia'] as const)('keeps a historical %s order editable without changing its method', async deliveryMethod => {
+    current.deliveryMethod = deliveryMethod
+    const result = await edit({ deliveryMethod, city: 'Jelgava' })
+    expect(result.deliveryMethod).toBe(deliveryMethod)
+    expect(result.total).toBe(69)
   })
   it.each(['courier', 'post', 'pickup'] as const)('resolves %s → pickup store B and clears locker/postal fields', async previous => {
     current.deliveryMethod = previous; current.pickupStoreId = previous === 'pickup' ? 'riga-office' : undefined

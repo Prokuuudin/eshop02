@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applySpreadsheetDeliveryTariffs, calcDeliveryFee, DELIVERY_FEES_EUR, FREE_DELIVERY_FROM_EUR, isDeliveryAvailable, isDeliveryConfigured, parseServiceAreaCities, UNISEND_MAX_WEIGHT_KG } from './delivery'
+import { applySpreadsheetDeliveryTariffs, calcDeliveryFee, checkoutDeliveryMethodIds, DELIVERY_FEES_EUR, FREE_DELIVERY_FROM_EUR, isDeliveryAvailable, isDeliveryConfigured, parseServiceAreaCities, UNISEND_MAX_WEIGHT_KG } from './delivery'
 
 describe('calcDeliveryFee', () => {
   it('charges courier €10 below the free-delivery threshold', () => {
@@ -87,23 +87,25 @@ it('overrides saved tariffs and applies the approved Latvian threshold', () => {
   expect(settings.delivery.omniva.price).toBe(99)
 })
 
-it('keeps the two courier methods on independent settings', () => {
+it('offers only the own Riga courier; courier_latvia and the legacy courier are never available', () => {
   const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
   settings.delivery.courier_riga.enabled = true
   settings.delivery.courier_riga.status = 'ready'
   settings.delivery.courier_riga.serviceAreaCities = ['Rīga']
-  settings.delivery.courier_latvia.enabled = false
+  // Even if an old saved setting still enables it, the Latvia-wide courier stays off.
+  settings.delivery.courier_latvia.enabled = true
+  settings.delivery.courier_latvia.status = 'ready'
 
   expect(isDeliveryAvailable('courier_riga', 'LV', settings, { city: '  RĪGA ' })).toBe(true)
   expect(isDeliveryAvailable('courier_riga', 'LV', settings, { city: 'Jelgava' })).toBe(false)
-  expect(isDeliveryAvailable('courier_latvia', 'LV', settings, { city: 'Rīga' })).toBe(false)
-  expect(isDeliveryAvailable('courier', 'LV', settings, { city: 'Rīga' })).toBe(false)
-
-  settings.delivery.courier_latvia.enabled = true
-  settings.delivery.courier_riga.enabled = false
-  expect(isDeliveryAvailable('courier_latvia', 'LV', settings, { city: 'Jelgava' })).toBe(true)
-  expect(isDeliveryAvailable('courier', 'LV', settings, { city: 'Jelgava' })).toBe(true)
-  expect(isDeliveryAvailable('courier_riga', 'LV', settings, { city: 'Rīga' })).toBe(false)
+  for (const method of ['courier_latvia', 'courier']) {
+    expect(isDeliveryConfigured(method, 'LV', settings)).toBe(false)
+    expect(isDeliveryAvailable(method, 'LV', settings, { city: 'Rīga' })).toBe(false)
+    expect(isDeliveryAvailable(method, 'LV', settings, { city: 'Jelgava' })).toBe(false)
+  }
+  expect(checkoutDeliveryMethodIds).not.toContain('courier_latvia')
+  expect(checkoutDeliveryMethodIds).not.toContain('courier')
+  expect(DEFAULT_COMMERCE_SETTINGS.delivery.courier_latvia.enabled).toBe(false)
 })
 
 it('keeps courier_riga unavailable until an approved city is configured', () => {
@@ -156,10 +158,14 @@ const PRODUCTION_LEGACY_SHIPPING = {
 describe('production legacy shipping row after this release', () => {
   const effective = applySpreadsheetDeliveryTariffs(normalizeCommerceSettings(PRODUCTION_LEGACY_SHIPPING))
 
-  it('keeps courier_riga unavailable (legacy draft, no approved area) and courier_latvia available', () => {
+  it('offers no own courier at all until the Riga area is approved (legacy draft, empty area)', () => {
     expect(effective.delivery.courier_riga.serviceAreaCities).toEqual([])
     expect(isDeliveryAvailable('courier_riga', 'LV', effective, { city: 'Rīga' })).toBe(false)
-    expect(isDeliveryAvailable('courier_latvia', 'LV', effective, { city: 'Rīga' })).toBe(true)
+    expect(isDeliveryAvailable('courier_latvia', 'LV', effective, { city: 'Rīga' })).toBe(false)
+    expect(isDeliveryAvailable('courier', 'LV', effective, { city: 'Rīga' })).toBe(false)
+    // Lockers and pickup are unaffected.
+    expect(isDeliveryConfigured('pickup', 'LV', effective)).toBe(true)
+    expect(isDeliveryConfigured('unisend', 'LV', effective)).toBe(true)
   })
 
   it('uses the €100 inclusive threshold for both couriers, not the legacy €50', () => {

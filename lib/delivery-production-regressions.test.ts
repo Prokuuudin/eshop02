@@ -15,8 +15,12 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: (fn: (client: typeof tx) => unknown) => fn(tx) } }))
 import { createOrderPaymentSession, updateServerOrderPayment } from './orders-data-store'
 
-const settings = DEFAULT_COMMERCE_SETTINGS
-const courier = { deliveryMethod: 'courier', country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' }
+// Test-only Riga service area: the real list is not approved yet (see handoff).
+const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+settings.delivery.courier_riga.enabled = true
+settings.delivery.courier_riga.status = 'ready'
+settings.delivery.courier_riga.serviceAreaCities = ['Riga']
+const courier = { deliveryMethod: 'courier_riga', country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' }
 
 describe('production delivery invariants shared by every order boundary', () => {
   it.each(['unknown', 'dpd', 'expresspasts', 'venipak_courier', 'unisend_courier'])('rejects unavailable method %s', deliveryMethod => {
@@ -33,7 +37,11 @@ describe('production delivery invariants shared by every order boundary', () => 
     for (const deliveryLocationId of [undefined, 'forged']) expect(() => validateOrderDelivery({ deliveryMethod, deliveryLocationId }, settings)).toThrow()
   })
   it.each(['LV', 'LT', 'EE'] as const)('validates all production destinations and tariffs in %s', country => {
-    expect(validateOrderDelivery({ ...courier, country }, settings).country).toBe(country)
+    // The own courier serves Riga only; abroad it is never available.
+    if (country === 'LV') expect(validateOrderDelivery({ ...courier, country }, settings).country).toBe('LV')
+    else expect(() => validateOrderDelivery({ ...courier, country }, settings)).toThrow('delivery_unavailable')
+    expect(calcDeliveryFee('courier_riga', 60, 'LV', settings)).toBe(10)
+    // Historical courier orders keep their recalculated tariff.
     expect(calcDeliveryFee('courier', 60, country, settings)).toBe(country === 'LV' ? 10 : 15)
     for (const method of ['post', 'venipak', 'unisend']) {
       const locker = getDeliveryLocations(method, country)[0]
@@ -48,7 +56,7 @@ describe('production delivery invariants shared by every order boundary', () => 
     const locker = getDeliveryLocations('post', 'LT')[0]
     expect(() => validateOrderDelivery({ deliveryMethod: 'post', country: 'LV', deliveryLocationId: locker.id }, settings)).toThrow()
     expect(() => validateOrderDelivery({ deliveryMethod: 'venipak', country: 'LT', deliveryLocationId: locker.id }, settings)).toThrow()
-    const disabled = structuredClone(settings); disabled.delivery.courier_latvia.enabled = false
+    const disabled = structuredClone(settings); disabled.delivery.courier_riga.enabled = false
     expect(() => validateOrderDelivery(courier, disabled)).toThrow()
   })
   it('rejects courier_riga outside its configured service area at the server boundary', () => {
@@ -59,11 +67,23 @@ describe('production delivery invariants shared by every order boundary', () => 
     const rigaCourier = { ...courier, deliveryMethod: 'courier_riga' }
     expect(validateOrderDelivery({ ...rigaCourier, city: ' RĪGA ' }, configured).deliveryMethod).toBe('courier_riga')
     expect(() => validateOrderDelivery({ ...rigaCourier, city: 'Jelgava' }, configured)).toThrow('delivery_unavailable')
-    expect(() => validateOrderDelivery({ ...rigaCourier, city: ' ' }, configured)).toThrow('delivery_unavailable')
+    expect(() => validateOrderDelivery({ ...rigaCourier, city: ' ' }, configured)).toThrow('missing_delivery_address')
   })
-  it('accepts the separate Latvia courier and preserves the legacy courier alias', () => {
-    expect(validateOrderDelivery({ ...courier, deliveryMethod: 'courier_latvia', city: 'Jelgava' }, settings).deliveryMethod).toBe('courier_latvia')
-    expect(validateOrderDelivery({ ...courier, city: 'Jelgava' }, settings).deliveryMethod).toBe('courier')
+  it('never accepts courier_latvia or the legacy courier for a new order, even inside the Riga area', () => {
+    for (const deliveryMethod of ['courier_latvia', 'courier']) {
+      expect(() => validateOrderDelivery({ ...courier, deliveryMethod }, settings)).toThrow('delivery_unavailable')
+      expect(() => validateOrderDelivery({ ...courier, deliveryMethod, city: 'Jelgava' }, settings)).toThrow('delivery_unavailable')
+    }
+  })
+  it('lets an existing historical order keep its legacy courier method, but never switch to one', () => {
+    for (const deliveryMethod of ['courier', 'courier_latvia']) {
+      expect(validateOrderDelivery({ ...courier, deliveryMethod, city: 'Jelgava' }, settings, { existingMethod: deliveryMethod }).deliveryMethod).toBe(deliveryMethod)
+      expect(() => validateOrderDelivery({ ...courier, deliveryMethod }, settings, { existingMethod: 'pickup' })).toThrow('delivery_unavailable')
+      expect(() => validateOrderDelivery({ ...courier, deliveryMethod, address: ' ' }, settings, { existingMethod: deliveryMethod })).toThrow('missing_delivery_address')
+    }
+  })
+  it('keeps the own courier unavailable with the default settings (no approved area)', () => {
+    expect(() => validateOrderDelivery(courier, DEFAULT_COMMERCE_SETTINGS)).toThrow('delivery_unavailable')
   })
   it('requires a valid pickup and derives its address, clearing stale locker fields', () => {
     for (const pickupStoreId of [undefined, 'fake']) expect(() => validateOrderDelivery({ deliveryMethod: 'pickup', pickupStoreId }, settings)).toThrow()

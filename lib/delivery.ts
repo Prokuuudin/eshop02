@@ -3,9 +3,14 @@ import type { CommerceSettings } from './commerce-settings'
 
 export type DeliveryCountry = 'LV' | 'LT' | 'EE'
 /** Source: перевозка.xlsx, Sheet1. All tariffs include VAT. */
-export const checkoutDeliveryMethodIds = ['courier_riga', 'courier_latvia', 'pickup', 'post', 'venipak', 'venipak_courier', 'unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier'] as const
-export const acceptedDeliveryMethodIds = ['courier', ...checkoutDeliveryMethodIds] as const
-export const productionDeliveryMethodIds = ['courier_riga', 'courier_latvia', 'pickup', 'post', 'venipak', 'unisend'] as const
+// The shop's own courier serves only Riga and its surroundings (`courier_riga`, gated by the
+// configured service area). A Latvia-wide courier is not offered: `courier` (pre-split legacy id)
+// and `courier_latvia` exist only on historical orders — labels, filters, fee recalculation and
+// unchanged-method admin edits — and are never available for new orders.
+export const LEGACY_COURIER_METHOD_IDS = ['courier', 'courier_latvia'] as const
+export const checkoutDeliveryMethodIds = ['courier_riga', 'pickup', 'post', 'venipak', 'venipak_courier', 'unisend', 'unisend_courier', 'expresspasts', 'expresspasts_courier'] as const
+export const acceptedDeliveryMethodIds = [...LEGACY_COURIER_METHOD_IDS, ...checkoutDeliveryMethodIds] as const
+export const productionDeliveryMethodIds = ['courier_riga', 'pickup', 'post', 'venipak', 'unisend'] as const
 export type CheckoutDeliveryMethod = (typeof acceptedDeliveryMethodIds)[number]
 export const SPREADSHEET_DELIVERY_TARIFFS = {
   courier: importedTariffs.tariffs.omniva.courier,
@@ -20,11 +25,11 @@ export const SPREADSHEET_DELIVERY_TARIFFS = {
 } as const
 export const DELIVERY_FEES_EUR: Record<string, number> = Object.fromEntries(Object.entries(SPREADSHEET_DELIVERY_TARIFFS).map(([method, prices]) => [method, prices.LV]))
 export const DELIVERY_METHOD_LABEL_KEYS: Record<CheckoutDeliveryMethod, string> = {
-  courier: 'checkout.delivery.courierLatvia', courier_riga: 'checkout.delivery.courierRiga', courier_latvia: 'checkout.delivery.courierLatvia', pickup: 'checkout.delivery.pickup', post: 'checkout.delivery.omniva', venipak: 'checkout.delivery.venipak',
+  courier: 'checkout.delivery.omnivaCourier', courier_riga: 'checkout.delivery.courierRiga', courier_latvia: 'checkout.delivery.courierLatvia', pickup: 'checkout.delivery.pickup', post: 'checkout.delivery.omniva', venipak: 'checkout.delivery.venipak',
   venipak_courier: 'checkout.delivery.venipakCourier', unisend: 'checkout.delivery.unisend', unisend_courier: 'checkout.delivery.unisendCourier', expresspasts: 'checkout.delivery.expresspasts', expresspasts_courier: 'checkout.delivery.expresspastsCourier',
 }
 export const DELIVERY_METHOD_NAMES_LV: Record<CheckoutDeliveryMethod, string> = {
-  courier: 'Kurjers Latvijā', courier_riga: 'Kurjers Rīgā un apstiprinātajās priekšpilsētās', courier_latvia: 'Kurjers Latvijā', pickup: 'Saņemšana veikalā', post: 'Omniva pakomāts', venipak: 'Venipak pakomāts', venipak_courier: 'Venipak kurjers', unisend: 'Unisend pakomāts', unisend_courier: 'Unisend kurjers', expresspasts: 'Expresspasts pakomāts', expresspasts_courier: 'Expresspasts kurjers',
+  courier: 'Kurjers', courier_riga: 'Kurjers Rīgā un apkārtnē', courier_latvia: 'Kurjers Latvijā', pickup: 'Saņemšana veikalā', post: 'Omniva pakomāts', venipak: 'Venipak pakomāts', venipak_courier: 'Venipak kurjers', unisend: 'Unisend pakomāts', unisend_courier: 'Unisend kurjers', expresspasts: 'Expresspasts pakomāts', expresspasts_courier: 'Expresspasts kurjers',
 }
 export const DEFAULT_DELIVERY_FEE_EUR = DELIVERY_FEES_EUR.courier
 export const FREE_DELIVERY_FROM_EUR = 100
@@ -36,6 +41,10 @@ export type DeliveryAddress = { city?: string | null }
 
 export function isCourierDeliveryMethod(method: string): boolean {
   return method === 'courier' || method === 'courier_riga' || method === 'courier_latvia'
+}
+
+export function isLegacyCourierMethod(method: string): boolean {
+  return (LEGACY_COURIER_METHOD_IDS as readonly string[]).includes(method)
 }
 
 function normalizedCity(value: string | null | undefined): string {
@@ -68,8 +77,7 @@ export function calcDeliveryFee(method: string | null | undefined, subtotalAfter
 }
 
 export function isDeliveryConfigured(method: string, country: DeliveryCountry, settings: CommerceSettings): boolean {
-  if (!(acceptedDeliveryMethodIds as readonly string[]).includes(method)) return false
-  if (method !== 'courier' && !(productionDeliveryMethodIds as readonly string[]).includes(method)) return false
+  if (!(productionDeliveryMethodIds as readonly string[]).includes(method)) return false
   const id = settingsIds[method as keyof typeof settingsIds]
   if (!id) return false
   const configured = settings.delivery[id]

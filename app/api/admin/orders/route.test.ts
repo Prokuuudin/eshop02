@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from 'next/server'
 const { txMock } = vi.hoisted(() => ({ txMock: vi.fn() }))
 
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
+// Test-only Riga service area (real list not approved yet).
+vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: vi.fn(async () => {
+  const settings = structuredClone((await import('@/lib/commerce-settings')).DEFAULT_COMMERCE_SETTINGS)
+  settings.delivery.courier_riga.enabled = true
+  settings.delivery.courier_riga.status = 'ready'
+  settings.delivery.courier_riga.serviceAreaCities = ['Riga']
+  return settings
+}) }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
@@ -53,7 +61,7 @@ const VALID_BODY = {
   lastName: 'Petrov',
   phone: '+37126000000',
   items: [{ id: 'p1', quantity: 2, unitPrice: 25 }],
-  deliveryMethod: 'courier' as const,
+  deliveryMethod: 'courier_riga' as const,
   address: 'Riga st 1',
   city: 'Riga',
   postalCode: 'LV-1001',
@@ -154,6 +162,18 @@ describe('POST /api/admin/orders', () => {
     vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
     vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
     const response = await POST(makeRequest({ ...VALID_BODY, deliveryMethod: 'pickup', pickupStoreId }))
+    expect(response.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { deliveryMethod: 'courier_latvia' },
+    { deliveryMethod: 'courier' },
+    { deliveryMethod: 'courier_riga', city: 'Jelgava' },
+  ])('does not create a new order with a courier outside the Riga area: %j', async destination => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    const response = await POST(makeRequest({ ...VALID_BODY, ...destination }))
     expect(response.status).toBe(400)
     expect(createServerOrder).not.toHaveBeenCalled()
   })

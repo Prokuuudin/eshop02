@@ -1,7 +1,7 @@
 const lvCheckout: Record<string, string> = {
   'checkout.errors.maintenance': 'Pasūtījumu noformēšana īslaicīgi nav pieejama. Grozs ir saglabāts. Lūdzu, mēģiniet vēlāk.',
   "checkout.delivery.omnivaCourier": "Kurjers",
-  "checkout.delivery.courierRiga": "Kurjers Rīgā un apstiprinātajās priekšpilsētās",
+  "checkout.delivery.courierRiga": "Kurjers Rīgā un apkārtnē",
   "checkout.delivery.courierLatvia": "Kurjers Latvijā",
   "checkout.delivery.courierRigaArea": "Kurjers Rīgā piegādā tikai uz adresēm šeit:",
   "checkout.delivery.courierRigaChooseOther": "Norādiet vienu no šīm pilsētām vai izvēlieties citu piegādes veidu.",

@@ -122,8 +122,8 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
       status: 'ready',
       notes: 'Бесплатный самовывоз из любого из 8 магазинов. Наличные принимаются только в офисе Rencēnu iela 10A.',
     }),
-    courier_riga: delivery('Курьер по Риге', ['LV'], 10, 100),
-    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: true, status: 'ready', countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
+    courier_riga: delivery('Курьер по Риге и окрестностям', ['LV'], 10, 100, { notes: 'Own courier: Riga and nearby areas only. Offered only when ready and the order city is in serviceAreaCities (list pending approval).' }),
+    courier_latvia: delivery('Курьер', ['LV', 'LT', 'EE'], 10, 100, { enabled: false, notes: 'Discontinued 2026-10-16: no own courier outside Riga and surroundings; kept only for historical orders.', countryPrices: { LT: { price: 15, freeFrom: null }, EE: { price: 15, freeFrom: null } } }),
     omniva: delivery('Пакоматы Omniva', ['LV', 'LT', 'EE'], 4, 100, {
       enabled: true,
       status: 'ready',

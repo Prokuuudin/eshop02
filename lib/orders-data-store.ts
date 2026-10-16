@@ -470,7 +470,7 @@ export async function updateServerOrderByAdmin(
     const shippingSettings = await getShippingSettings(tx)
     let destination: ReturnType<typeof validateOrderDelivery>
     try {
-      destination = validateOrderDelivery({ ...input, country: input.country ?? current.country }, shippingSettings)
+      destination = validateOrderDelivery({ ...input, country: input.country ?? current.country }, shippingSettings, { existingMethod: current.deliveryMethod })
     } catch (error) {
       throw new AdminOrderUpdateError(error instanceof Error ? error.message : 'Invalid destination', 'invalid_item')
     }

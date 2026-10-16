@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { formatEuro, formatDate, setLocaleFormatConfig } from './utils'
+import { formatEuro, formatEuroIfFinite, formatDate, setLocaleFormatConfig } from './utils'
 import { DEFAULT_LOCALE_CONFIG } from './locale-config'
 
 afterEach(() => {
@@ -14,6 +14,15 @@ describe('formatEuro', () => {
   it('puts the symbol after the amount when configured', () => {
     setLocaleFormatConfig({ ...DEFAULT_LOCALE_CONFIG, priceFormat: 'symbol_after' })
     expect(formatEuro(10, 'en-US')).toBe('10.00 €')
+  })
+})
+
+describe('formatEuroIfFinite', () => {
+  it('formats finite numbers and refuses redacted or invalid runtime values', () => {
+    expect(formatEuroIfFinite(10, 'en-US')).toBe('€10.00')
+    expect(formatEuroIfFinite(undefined, 'en-US')).toBeNull()
+    expect(formatEuroIfFinite(null, 'en-US')).toBeNull()
+    expect(formatEuroIfFinite(Number.NaN, 'en-US')).toBeNull()
   })
 })
 

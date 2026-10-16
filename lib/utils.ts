@@ -28,6 +28,11 @@ export function formatEuro(value: number, locale: string): string {
   return localeFormatConfig.priceFormat === 'symbol_after' ? `${amount} €` : `€${amount}`
 }
 
+/** Formats an optional runtime value without inventing a price for redacted catalog data. */
+export function formatEuroIfFinite(value: unknown, locale: string): string | null {
+  return typeof value === 'number' && Number.isFinite(value) ? formatEuro(value, locale) : null
+}
+
 export function formatDate(
   value: string | number | Date,
   locale: string,

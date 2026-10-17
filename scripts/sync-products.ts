@@ -27,7 +27,7 @@ import { config } from 'dotenv'
 import { createHash } from 'crypto'
 import { readFileSync, statSync } from 'fs'
 import { auditGrinsXml, parseGrinsXml } from '@/lib/sync/grins-xml-parser'
-import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv } from '@/lib/sync/ftps-client'
+import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv, resolveFtpsRunFiles } from '@/lib/sync/ftps-client'
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
 import { evaluatePreflight, loadPreflightState, structuralFailures } from '@/lib/sync/sync-preflight'
@@ -149,8 +149,9 @@ async function runScheduledStocks(): Promise<number> {
     const outcome = await runScheduledStockSync({
       env: process.env,
       getDb: async () => (db = (await import('@/lib/prisma')).prisma),
-      downloadXml: () => downloadFtpsFileWithMetadata(stockFtpsConfig(), MANUAL_IMPORT_MAX_BYTES),
+      downloadXml: (remotePath) => downloadFtpsFileWithMetadata(remotePath ? { ...stockFtpsConfig(), remotePath } : stockFtpsConfig(), MANUAL_IMPORT_MAX_BYTES),
       downloadManifest: (remotePath) => downloadFtpsFileWithMetadata({ ...stockFtpsConfig(), remotePath }, STOCK_MANIFEST_MAX_BYTES),
+      resolveRunFiles: () => resolveFtpsRunFiles(stockFtpsConfig()),
       sendAlert: sendSyncFailureAlert,
     })
     console.log(JSON.stringify({ event: 'stock_sync_complete', ...outcome }))

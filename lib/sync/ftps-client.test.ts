@@ -8,17 +8,19 @@ const downloadToMock = vi.hoisted(() =>
   }),
 )
 const closeMock = vi.hoisted(() => vi.fn())
+const listMock = vi.hoisted(() => vi.fn().mockResolvedValue([]))
 
 vi.mock('basic-ftp', () => ({
   Client: vi.fn().mockImplementation(() => ({
     access: accessMock,
     downloadTo: downloadToMock,
     close: closeMock,
+    list: listMock,
   })),
 }))
 
 import { Client } from 'basic-ftp'
-import { getFtpsConfigForSource, getFtpsConfigFromEnv, downloadFtpsFile } from './ftps-client'
+import { getFtpsConfigForSource, getFtpsConfigFromEnv, downloadFtpsFile, resolveFtpsRunFiles } from './ftps-client'
 
 describe('getFtpsConfigFromEnv', () => {
   const ORIGINAL_ENV = process.env
@@ -117,5 +119,56 @@ describe('downloadFtpsFile', () => {
     const config = { host: 'h', user: 'u', password: 'p', remotePath: 'export.xml' }
     await downloadFtpsFile(config)
     expect(Client).toHaveBeenCalledWith(30_000)
+  })
+})
+
+describe('run-files source layout (GRINS_FTPS_SOURCE_LAYOUT)', () => {
+  const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv
+  const PRIMARY = { GRINS_FTPS_HOST: 'h', GRINS_FTPS_USER: 'u', GRINS_FTPS_PASSWORD: 'p' }
+  const R1 = '20261017T100000000000Z-1'
+  const R2 = '20261017T110000000000Z-1'
+  const file = (name: string) => ({ name, isFile: true })
+  beforeEach(() => vi.clearAllMocks())
+
+  it('keeps the fixed layout (unchanged config) by default', () => {
+    expect(getFtpsConfigForSource('primary', env(PRIMARY))).toEqual({ host: 'h', user: 'u', password: 'p', remotePath: 'export.xml' })
+    expect(getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_SOURCE_LAYOUT: 'fixed', GRINS_FTPS_REMOTE_DIR: '/x' }))).not.toHaveProperty('layout')
+  })
+
+  it('reads layout and directory per source and validates them', () => {
+    expect(getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_SOURCE_LAYOUT: 'run-files', GRINS_FTPS_REMOTE_DIR: '/grins-feed/' })))
+      .toMatchObject({ layout: 'run-files', remoteDir: '/grins-feed' })
+    expect(getFtpsConfigForSource('candidate', env({ GRINS_FTPS_CANDIDATE_HOST: 'h', GRINS_FTPS_CANDIDATE_USER: 'u', GRINS_FTPS_CANDIDATE_PASSWORD: 'p', GRINS_FTPS_CANDIDATE_SOURCE_LAYOUT: 'run-files' })))
+      .toMatchObject({ layout: 'run-files', remoteDir: '' })
+    expect(() => getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_SOURCE_LAYOUT: 'latest' }))).toThrow(/GRINS_FTPS_SOURCE_LAYOUT/)
+    expect(() => getFtpsConfigForSource('primary', env({ ...PRIMARY, GRINS_FTPS_SOURCE_LAYOUT: 'run-files', GRINS_FTPS_REMOTE_DIR: '../up' }))).toThrow(/GRINS_FTPS_REMOTE_DIR/)
+  })
+
+  it('lists the directory over explicit TLS and selects the newest complete pair', async () => {
+    listMock.mockResolvedValueOnce([
+      file(`export-${R1}.xml`), file(`export-${R1}.manifest.json`), file(`export-${R2}.xml`),
+      { name: `export-${R2}.manifest.json`, isFile: false },
+    ])
+    const selection = await resolveFtpsRunFiles({ host: 'h', user: 'u', password: 'p', remotePath: 'export.xml', layout: 'run-files', remoteDir: '/grins-feed' })
+    expect(accessMock).toHaveBeenCalledWith({ host: 'h', user: 'u', password: 'p', secure: true })
+    expect(listMock).toHaveBeenCalledWith('/grins-feed')
+    expect(selection.runId).toBe(R1)
+    expect(selection.manifestPath).toBe(`/grins-feed/export-${R1}.manifest.json`)
+    expect(closeMock).toHaveBeenCalled()
+  })
+
+  it('fails closed without a complete pair and still closes the client', async () => {
+    listMock.mockResolvedValueOnce([file(`export-${R2}.xml`)])
+    await expect(resolveFtpsRunFiles({ host: 'h', user: 'u', password: 'p', remotePath: 'export.xml', layout: 'run-files', remoteDir: '' }))
+      .rejects.toThrow('no_complete_export')
+    expect(closeMock).toHaveBeenCalled()
+  })
+
+  it('refuses a fixed-path download (FULL, backfill, compare) for a run-files source', async () => {
+    const config = { host: 'h', user: 'u', password: 'p', remotePath: 'export.xml', layout: 'run-files' as const, remoteDir: '' }
+    await expect(downloadFtpsFile(config)).rejects.toThrow(/run_files_layout_requires_a_selected_run_file/)
+    expect(accessMock).not.toHaveBeenCalled()
+    await downloadFtpsFile({ ...config, remotePath: `/grins-feed/export-${R1}.xml` })
+    expect(downloadToMock).toHaveBeenCalledWith(expect.anything(), `/grins-feed/export-${R1}.xml`)
   })
 })

@@ -4,6 +4,7 @@ import { logOperationalEvent } from '@/lib/observability'
 import { assertSafeStockFeatureFlags, stockLedgerFlags } from '@/lib/stock-ledger-config'
 import type { FtpsDownload } from './ftps-client'
 import { manifestPathFor, verifyStockReconciliationManifest } from './ftps-source-verification'
+import { parseFtpsSourceLayout, runFilesManifestFailures, type RunFilesSelection } from './ftps-run-files'
 import { auditStockXml, stockStructuralFailures } from './manual-stock-preview'
 import { parseGrinsXml } from './grins-xml-parser'
 import { evaluateStockSyncPreflight } from './stock-sync-preflight'
@@ -15,8 +16,11 @@ import { MANUAL_IMPORT_MAX_BYTES } from './manual-import'
 export interface ScheduledStockSyncDeps {
   env: Record<string, string | undefined>
   getDb: () => Promise<ExtendedPrismaClient>
-  downloadXml: () => Promise<FtpsDownload>
+  /** Fixed layout: no argument (configured export.xml). run-files: the selected run's XML path. */
+  downloadXml: (remotePath?: string) => Promise<FtpsDownload>
   downloadManifest: (remotePath: string) => Promise<FtpsDownload>
+  /** Required when GRINS_FTPS_SOURCE_LAYOUT=run-files: newest complete export-<runId> pair. */
+  resolveRunFiles?: () => Promise<RunFilesSelection>
   sendAlert: typeof SendAlert
   now?: () => Date
   /** Optional fail-closed target assertion for operator-only adapters. It runs
@@ -103,11 +107,23 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
     return fail(`database unavailable before stock sync: ${errorMessage(error)}`)
   }
 
+  let runFiles: RunFilesSelection | undefined
+  try {
+    if (parseFtpsSourceLayout(deps.env.GRINS_FTPS_SOURCE_LAYOUT, 'GRINS_FTPS_SOURCE_LAYOUT') === 'run-files') {
+      // No MDTM ordering exists for run files: the manifest is the only completion and ordering proof.
+      if (!flags.manifestEnabled) return fail('run-files source layout requires GRINS_STOCK_MANIFEST_ENABLED=true')
+      if (!deps.resolveRunFiles) return fail('run-files source layout has no directory resolver')
+      runFiles = await deps.resolveRunFiles()
+    }
+  } catch (error) {
+    return fail(`${sourceLabel} run-files selection failed: ${errorMessage(error)}`)
+  }
+
   let downloaded: FtpsDownload
   try {
-    downloaded = await deps.downloadXml()
+    downloaded = await (runFiles ? deps.downloadXml(runFiles.xmlPath) : deps.downloadXml())
   } catch (error) {
-    return fail(`${sourceLabel} XML read failed: ${errorMessage(error)}`)
+    return fail(`${sourceLabel} XML read failed: ${errorMessage(error)}`, runFiles && { runFilesRunId: runFiles.runId })
   }
   const downloadedBytes = Buffer.byteLength(downloaded.content, 'utf-8')
   if ((downloaded.remoteSizeBytes !== undefined && downloaded.remoteSizeBytes > MANUAL_IMPORT_MAX_BYTES)
@@ -123,9 +139,13 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   if (flags.manifestEnabled) {
     let manifest: FtpsDownload
     try {
-      manifest = await deps.downloadManifest(manifestPathFor(deps.env.GRINS_FTPS_REMOTE_PATH || 'export.xml'))
+      manifest = await deps.downloadManifest(runFiles ? runFiles.manifestPath : manifestPathFor(deps.env.GRINS_FTPS_REMOTE_PATH || 'export.xml'))
     } catch (error) {
       return fail(`${sourceLabel} manifest read failed: ${errorMessage(error)}`, { sha256 })
+    }
+    if (runFiles) {
+      const naming = runFilesManifestFailures(manifest.content, runFiles)
+      if (naming.length) return fail('run-files manifest does not describe the selected pair', { sha256, hard: naming, runFilesRunId: runFiles.runId })
     }
     const verification = verifyStockReconciliationManifest(downloaded.content, manifest.content, now(), {
       maxAgeHours: flags.manifestMaxAgeHours,
@@ -169,7 +189,7 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
     manifestVerified,
   }, preflight, triggeredBy, deps.env)
   if (result.status === 'completed') {
-    logOperationalEvent({ event: 'grins_stock_sync_completed', runId: result.runId, matched: result.matched, reconciled: result.reconciled, awaiting: result.awaiting })
+    logOperationalEvent({ event: 'grins_stock_sync_completed', runId: result.runId, matched: result.matched, reconciled: result.reconciled, awaiting: result.awaiting, ...(runFiles && { runFilesRunId: runFiles.runId }) })
     return { status: 'completed', runId: result.runId, exitCode: 0 }
   }
   if (result.status === 'skipped') return { status: 'skipped', runId: result.runId, exitCode: 0, reason: result.reason }

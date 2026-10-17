@@ -1,6 +1,7 @@
 import { Client } from 'basic-ftp'
 import { Writable } from 'stream'
 import type { TLSSocket } from 'tls'
+import { isRunFileName, normalizeRemoteDir, parseFtpsSourceLayout, selectLatestRunFiles, type RunFilesSelection } from './ftps-run-files'
 
 export interface FtpsConfig {
   host: string
@@ -9,6 +10,10 @@ export interface FtpsConfig {
   remotePath: string
   /** Control-channel port. Omitted → basic-ftp default 21 (explicit TLS). */
   port?: number
+  /** Set only for the exporter's run-files layout; absent = fixed export.xml at remotePath. */
+  layout?: 'run-files'
+  /** run-files only: directory holding export-<runId>.* ("" = login root). */
+  remoteDir?: string
 }
 
 export interface FtpsTlsInfo {
@@ -61,7 +66,11 @@ export function getFtpsConfigForSource(source: FtpsSource, env: NodeJS.ProcessEn
     throw new Error(`${prefix}_HOST, ${prefix}_USER and ${prefix}_PASSWORD must all be set`)
   }
 
-  return { host, user, password, remotePath, ...(port !== undefined && { port }) }
+  const layout = parseFtpsSourceLayout(env[`${prefix}_SOURCE_LAYOUT`], `${prefix}_SOURCE_LAYOUT`)
+  return {
+    host, user, password, remotePath, ...(port !== undefined && { port }),
+    ...(layout === 'run-files' && { layout, remoteDir: normalizeRemoteDir(env[`${prefix}_REMOTE_DIR`], `${prefix}_REMOTE_DIR`) }),
+  }
 }
 
 /** Production source. Scheduled sync, dry-run and backfill read only GRINS_FTPS_*. */
@@ -88,8 +97,7 @@ function readTlsInfo(client: Client): FtpsTlsInfo | undefined {
   }
 }
 
-export async function downloadFtpsFileWithMetadata(config: FtpsConfig, maxBytes?: number): Promise<FtpsDownload> {
-  if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)) throw new Error('invalid_ftps_max_bytes')
+async function connect(config: FtpsConfig): Promise<Client> {
   // basic-ftp has no timeout by default; a hung socket could otherwise stall a sync run
   // indefinitely (compounding with sync-runner's own retry loop — see xml-snapshot-store.ts).
   const client = new Client(FTP_TIMEOUT_MS)
@@ -101,7 +109,34 @@ export async function downloadFtpsFileWithMetadata(config: FtpsConfig, maxBytes?
       ...(config.port !== undefined && { port: config.port }),
       secure: true, // explicit TLS — confirmed working transport, 2026-07-27
     })
+  } catch (error) {
+    client.close()
+    throw error
+  }
+  return client
+}
 
+/** run-files layout: newest complete export-<runId>.xml + .manifest.json pair in remoteDir. */
+export async function resolveFtpsRunFiles(config: FtpsConfig): Promise<RunFilesSelection> {
+  if (config.layout !== 'run-files') throw new Error('ftps_source_is_not_run_files_layout')
+  const client = await connect(config)
+  try {
+    const listing = await client.list(config.remoteDir ?? '')
+    return selectLatestRunFiles(listing.filter(entry => entry.isFile).map(entry => entry.name), config.remoteDir ?? '')
+  } finally {
+    client.close()
+  }
+}
+
+export async function downloadFtpsFileWithMetadata(config: FtpsConfig, maxBytes?: number): Promise<FtpsDownload> {
+  if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)) throw new Error('invalid_ftps_max_bytes')
+  // A run-files source has no fixed export.xml: callers must first select a run (resolveFtpsRunFiles).
+  // FULL sync, backfill and compare read the fixed path only and therefore fail closed here.
+  if (config.layout === 'run-files' && !isRunFileName(config.remotePath.split('/').pop() ?? '')) {
+    throw new Error('run_files_layout_requires_a_selected_run_file; use --file for this command')
+  }
+  const client = await connect(config)
+  try {
     const chunks: Buffer[] = []
     let downloadedBytes = 0
     const sink = new Writable({

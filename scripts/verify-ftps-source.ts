@@ -5,6 +5,9 @@
 //   npx tsx scripts/verify-ftps-source.ts --file <export.xml>  # already downloaded file
 //   add --manifest (FTPS) or --manifest-file <path> (file) to also verify the Hairshop Pro
 //   exporter's export.manifest.json: SHA/size/count match + freshness (generatedAt <= 36 h)
+//   With <PREFIX>_SOURCE_LAYOUT=run-files the newest complete export-<runId>.xml/.manifest.json
+//   pair in <PREFIX>_REMOTE_DIR is verified; the manifest (completion marker) is always checked
+//   and must name that runId and XML file.
 //
 // Never imports Prisma, never writes to the database, never changes which source
 // the scheduled sync uses. Downloads are saved under .ftps-migration/ (gitignored)
@@ -13,7 +16,8 @@
 import { config } from 'dotenv'
 import { mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { downloadFtpsFileWithMetadata, getFtpsConfigForSource, type FtpsConfig } from '@/lib/sync/ftps-client'
+import { downloadFtpsFileWithMetadata, getFtpsConfigForSource, resolveFtpsRunFiles, type FtpsConfig } from '@/lib/sync/ftps-client'
+import { runFilesManifestFailures, type RunFilesSelection } from '@/lib/sync/ftps-run-files'
 import {
   checkFtpsSource, manifestPathFor, parseManifestOption, parseVerifyTarget, sameSourceWarning, verifyExport, verifyExportManifest,
   type ManifestVerification,
@@ -48,7 +52,19 @@ async function main(): Promise<number> {
   }
   if (manifestOption.kind === 'file') throw new Error('--manifest-file is for --file; use --manifest with --source')
 
-  const ftps = getFtpsConfigForSource(target.source)
+  let ftps = getFtpsConfigForSource(target.source)
+  let runFiles: RunFilesSelection | undefined
+  if (ftps.layout === 'run-files') {
+    try {
+      runFiles = await resolveFtpsRunFiles(ftps)
+    } catch (err) {
+      const error = err instanceof Error ? err.message : String(err)
+      console.log(JSON.stringify({ event: 'ftps_source_verification', source: { kind: 'ftps', which: target.source, layout: 'run-files', remoteDir: ftps.remoteDir }, verdict: 'FAIL', failures: [`run-files selection failed: ${error}`] }, null, 2))
+      console.log('\nRESULT: FAIL')
+      return error === 'no_complete_export' ? 2 : 1
+    }
+    ftps = { ...ftps, remotePath: runFiles.xmlPath }
+  }
   const warnings: string[] = []
   if (target.source === 'candidate') {
     const same = sameSourceWarning(primaryOrNull(), ftps)
@@ -65,10 +81,15 @@ async function main(): Promise<number> {
   }
 
   let manifest: ManifestVerification | undefined
-  if (manifestOption.kind === 'remote' && result.content !== undefined) {
+  if ((manifestOption.kind === 'remote' || runFiles) && result.content !== undefined) {
     try {
-      const downloaded = await downloadFtpsFileWithMetadata({ ...ftps, remotePath: manifestPathFor(ftps.remotePath) })
+      const downloaded = await downloadFtpsFileWithMetadata({ ...ftps, remotePath: runFiles ? runFiles.manifestPath : manifestPathFor(ftps.remotePath) })
       manifest = verifyExportManifest(result.content, downloaded.content, new Date())
+      if (runFiles) {
+        const naming = runFilesManifestFailures(downloaded.content, runFiles)
+        if (naming.length) manifest = { ...manifest, verdict: 'FAIL', failures: [...manifest.failures, ...naming] }
+        if (savedTo) writeFileSync(savedTo.replace(/\.xml$/u, '.manifest.json'), downloaded.content, 'utf-8')
+      }
     } catch (err) {
       manifest = { verdict: 'FAIL', failures: [`manifest download failed: ${err instanceof Error ? err.message : String(err)}`] }
     }
@@ -77,7 +98,7 @@ async function main(): Promise<number> {
   const base = result.verification ?? { verdict: 'FAIL' as const, failures: [`connection/download failed: ${result.connection.error}`], warnings: [] }
   const report = {
     event: 'ftps_source_verification',
-    source: { kind: 'ftps', which: target.source },
+    source: { kind: 'ftps', which: target.source, ...(runFiles && { layout: 'run-files', runId: runFiles.runId, xml: runFiles.xmlPath, manifest: runFiles.manifestPath }) },
     connection: result.connection,
     savedTo,
     ...base,

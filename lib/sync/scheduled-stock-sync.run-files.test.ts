@@ -7,7 +7,9 @@ vi.mock('./stock-snapshot', () => ({ applyStockSnapshot }))
 vi.mock('./stock-sync-preflight', () => ({ evaluateStockSyncPreflight: () => ({ hard: [], warnings: [], metrics: {} }) }))
 
 import { runScheduledStockSync } from './scheduled-stock-sync'
-import type { RunFilesSelection } from './ftps-run-files'
+import { FtpsReadError, type RunFilesSnapshot } from './ftps-client'
+import { STOCK_XML_MAX_BYTES, type RunFilesSelection } from './ftps-run-files'
+import { MANUAL_IMPORT_MAX_BYTES } from './manual-import'
 
 const RUN = '20261017T150000000000Z-4242'
 const NOW = new Date('2026-10-17T16:00:00Z')
@@ -130,5 +132,48 @@ describe('scheduled stock sync — run-files source layout', () => {
     expect(deps.resolveRunFiles).not.toHaveBeenCalled()
     expect(deps.downloadXml).toHaveBeenCalledWith()
     expect(deps.downloadManifest).toHaveBeenCalledWith('feed/export.manifest.json')
+  })
+
+  it('prefers the one-session reader and uses its XML and manifest as-is', async () => {
+    const { deps } = setup()
+    const snapshot: RunFilesSnapshot = { selection: SELECTION, xml: { content: XML }, manifest: { content: manifest() }, attempts: 2 }
+    const readRunFiles = vi.fn().mockResolvedValue(snapshot)
+    const result = await runScheduledStockSync({ ...deps, readRunFiles } as never)
+    expect(result).toEqual({ status: 'completed', runId: 'stock-run', exitCode: 0 })
+    expect(readRunFiles).toHaveBeenCalledOnce()
+    expect(deps.resolveRunFiles).not.toHaveBeenCalled()
+    expect(deps.downloadXml).not.toHaveBeenCalled()
+    expect(deps.downloadManifest).not.toHaveBeenCalled()
+    expect(applyStockSnapshot.mock.calls[0][2]).toMatchObject({ identity: `manifest:2026-10-17T15:00:00.000Z:${SHA}`, manifestVerified: true })
+  })
+
+  it('writes nothing but the failed run when the FTPS read fails, per stage', async () => {
+    for (const [stage, reason] of [
+      ['xml', 'FTPS XML read failed: read ECONNRESET (data socket)'],
+      ['manifest', 'FTPS manifest read failed: read ECONNRESET (data socket)'],
+      ['selection', 'FTPS run-files selection failed: read ECONNRESET (data socket)'],
+    ] as const) {
+      const { db, deps } = setup()
+      const error = new FtpsReadError(stage, 3, Object.assign(new Error('read ECONNRESET (data socket)'), { code: 'ECONNRESET' }))
+      const result = await runScheduledStockSync({ ...deps, readRunFiles: vi.fn().mockRejectedValue(error) } as never)
+      expect(result).toMatchObject({ status: 'failed', exitCode: 1, reason })
+      expect(db.syncRun.create).toHaveBeenCalledOnce()
+      expect(db.syncRun.create.mock.calls[0][0].data).toMatchObject({ status: 'failed', mode: 'stocks-only', errorSample: { fatal: reason, ftpsAttempts: 3 } })
+      expect(db.product.findMany).not.toHaveBeenCalled()
+      expect(deps.sendAlert).toHaveBeenCalledOnce()
+    }
+    expect(applyStockSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('keeps content checks after the read: a bad manifest from the reader still fails closed', async () => {
+    const { deps } = setup()
+    const snapshot: RunFilesSnapshot = { selection: SELECTION, xml: { content: XML }, manifest: { content: manifest({ xmlSha256: 'f'.repeat(64) }) }, attempts: 1 }
+    const result = await runScheduledStockSync({ ...deps, readRunFiles: vi.fn().mockResolvedValue(snapshot) } as never)
+    expect(result).toMatchObject({ status: 'failed', reason: 'stock manifest verification failed' })
+    expect(applyStockSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('reads with the same XML limit as the import (drift guard)', () => {
+    expect(STOCK_XML_MAX_BYTES).toBe(MANUAL_IMPORT_MAX_BYTES)
   })
 })

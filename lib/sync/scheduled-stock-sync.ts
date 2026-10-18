@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import { logOperationalEvent } from '@/lib/observability'
 import { assertSafeStockFeatureFlags, stockLedgerFlags } from '@/lib/stock-ledger-config'
-import type { FtpsDownload } from './ftps-client'
+import type { FtpsDownload, FtpsReadError, RunFilesSnapshot } from './ftps-client'
 import { manifestPathFor, verifyStockReconciliationManifest } from './ftps-source-verification'
 import { parseFtpsSourceLayout, runFilesManifestFailures, type RunFilesSelection } from './ftps-run-files'
 import { auditStockXml, stockStructuralFailures } from './manual-stock-preview'
@@ -19,7 +19,9 @@ export interface ScheduledStockSyncDeps {
   /** Fixed layout: no argument (configured export.xml). run-files: the selected run's XML path. */
   downloadXml: (remotePath?: string) => Promise<FtpsDownload>
   downloadManifest: (remotePath: string) => Promise<FtpsDownload>
-  /** Required when GRINS_FTPS_SOURCE_LAYOUT=run-files: newest complete export-<runId> pair. */
+  /** run-files: newest complete pair read in one FTPS session (preferred over resolveRunFiles). */
+  readRunFiles?: () => Promise<RunFilesSnapshot>
+  /** run-files fallback without readRunFiles: newest complete export-<runId> pair. */
   resolveRunFiles?: () => Promise<RunFilesSelection>
   sendAlert: typeof SendAlert
   now?: () => Date
@@ -108,20 +110,32 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   }
 
   let runFiles: RunFilesSelection | undefined
+  let prefetched: { xml: FtpsDownload; manifest: FtpsDownload } | undefined
   try {
     if (parseFtpsSourceLayout(deps.env.GRINS_FTPS_SOURCE_LAYOUT, 'GRINS_FTPS_SOURCE_LAYOUT') === 'run-files') {
       // No MDTM ordering exists for run files: the manifest is the only completion and ordering proof.
       if (!flags.manifestEnabled) return fail('run-files source layout requires GRINS_STOCK_MANIFEST_ENABLED=true')
-      if (!deps.resolveRunFiles) return fail('run-files source layout has no directory resolver')
-      runFiles = await deps.resolveRunFiles()
+      if (deps.readRunFiles) {
+        // One session (LIST, XML, manifest, QUIT) with bounded transient retries; nothing is written before it resolves.
+        const snapshot = await deps.readRunFiles()
+        runFiles = snapshot.selection
+        prefetched = { xml: snapshot.xml, manifest: snapshot.manifest }
+      } else {
+        if (!deps.resolveRunFiles) return fail('run-files source layout has no directory resolver')
+        runFiles = await deps.resolveRunFiles()
+      }
     }
   } catch (error) {
-    return fail(`${sourceLabel} run-files selection failed: ${errorMessage(error)}`)
+    const read = error as Partial<FtpsReadError>
+    const attempts = typeof read.attempts === 'number' ? { ftpsAttempts: read.attempts } : {}
+    if (read.stage === 'xml') return fail(`${sourceLabel} XML read failed: ${errorMessage(error)}`, attempts)
+    if (read.stage === 'manifest') return fail(`${sourceLabel} manifest read failed: ${errorMessage(error)}`, attempts)
+    return fail(`${sourceLabel} run-files selection failed: ${errorMessage(error)}`, attempts)
   }
 
   let downloaded: FtpsDownload
   try {
-    downloaded = await (runFiles ? deps.downloadXml(runFiles.xmlPath) : deps.downloadXml())
+    downloaded = prefetched ? prefetched.xml : await (runFiles ? deps.downloadXml(runFiles.xmlPath) : deps.downloadXml())
   } catch (error) {
     return fail(`${sourceLabel} XML read failed: ${errorMessage(error)}`, runFiles && { runFilesRunId: runFiles.runId })
   }
@@ -139,7 +153,9 @@ export async function runScheduledStockSync(deps: ScheduledStockSyncDeps): Promi
   if (flags.manifestEnabled) {
     let manifest: FtpsDownload
     try {
-      manifest = await deps.downloadManifest(runFiles ? runFiles.manifestPath : manifestPathFor(deps.env.GRINS_FTPS_REMOTE_PATH || 'export.xml'))
+      manifest = prefetched
+        ? prefetched.manifest
+        : await deps.downloadManifest(runFiles ? runFiles.manifestPath : manifestPathFor(deps.env.GRINS_FTPS_REMOTE_PATH || 'export.xml'))
     } catch (error) {
       return fail(`${sourceLabel} manifest read failed: ${errorMessage(error)}`, { sha256 })
     }

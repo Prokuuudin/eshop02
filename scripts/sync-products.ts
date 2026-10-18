@@ -27,7 +27,8 @@ import { config } from 'dotenv'
 import { createHash } from 'crypto'
 import { readFileSync, statSync } from 'fs'
 import { auditGrinsXml, parseGrinsXml } from '@/lib/sync/grins-xml-parser'
-import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv, resolveFtpsRunFiles } from '@/lib/sync/ftps-client'
+import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv, readFtpsRunFilesSnapshot } from '@/lib/sync/ftps-client'
+import { STOCK_MANIFEST_MAX_BYTES, STOCK_XML_MAX_BYTES } from '@/lib/sync/ftps-run-files'
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
 import { evaluatePreflight, loadPreflightState, structuralFailures } from '@/lib/sync/sync-preflight'
@@ -37,8 +38,6 @@ import { MANUAL_IMPORT_MAX_BYTES } from '@/lib/sync/manual-import'
 // .env.local or one of Prisma's fallback URL variables.
 const EXPLICIT_DATABASE_URL = process.env.DATABASE_URL
 config({ path: '.env.local' })
-
-const STOCK_MANIFEST_MAX_BYTES = 1024 * 1024
 
 function argValue(name: string): string | undefined {
   const index = process.argv.indexOf(name)
@@ -151,7 +150,11 @@ async function runScheduledStocks(): Promise<number> {
       getDb: async () => (db = (await import('@/lib/prisma')).prisma),
       downloadXml: (remotePath) => downloadFtpsFileWithMetadata(remotePath ? { ...stockFtpsConfig(), remotePath } : stockFtpsConfig(), MANUAL_IMPORT_MAX_BYTES),
       downloadManifest: (remotePath) => downloadFtpsFileWithMetadata({ ...stockFtpsConfig(), remotePath }, STOCK_MANIFEST_MAX_BYTES),
-      resolveRunFiles: () => resolveFtpsRunFiles(stockFtpsConfig()),
+      readRunFiles: () => readFtpsRunFilesSnapshot(stockFtpsConfig(), {
+        xmlMaxBytes: STOCK_XML_MAX_BYTES,
+        manifestMaxBytes: STOCK_MANIFEST_MAX_BYTES,
+        onRetry: (retry) => console.log(JSON.stringify({ event: 'grins_stock_ftps_retry', ...retry })),
+      }),
       sendAlert: sendSyncFailureAlert,
     })
     console.log(JSON.stringify({ event: 'stock_sync_complete', ...outcome }))

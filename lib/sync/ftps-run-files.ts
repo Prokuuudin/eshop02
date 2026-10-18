@@ -10,6 +10,10 @@
 export const FTPS_SOURCE_LAYOUTS = ['fixed', 'run-files'] as const
 export type FtpsSourceLayout = (typeof FTPS_SOURCE_LAYOUTS)[number]
 
+/** Read limits of a run-files pair (scheduled sync and verify:ftps). XML = MANUAL_IMPORT_MAX_BYTES (tested). */
+export const STOCK_XML_MAX_BYTES = 20 * 1024 * 1024
+export const STOCK_MANIFEST_MAX_BYTES = 1024 * 1024
+
 const RUN_FILE = /^export-(\d{8}T\d{12}Z-\d+)\.(xml|manifest\.json)$/u
 const SAFE_DIR = /^\/?([A-Za-z0-9._-]+\/)*[A-Za-z0-9._-]*\/?$/u
 

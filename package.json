@@ -47,6 +47,7 @@
     "sync:stocks:scheduled": "tsx scripts/sync-products.ts --stocks-only-scheduled",
     "audit:stock-ledger-cutover": "tsx scripts/audit-stock-ledger-cutover.ts",
     "check:stock-ledger": "tsx scripts/check-stock-ledger-invariants.ts --strict",
+    "verify:ftps": "tsx scripts/verify-ftps-source.ts --source primary --manifest --no-save",
     "report:stock-ledger-holds": "tsx scripts/report-stock-ledger-holds.ts",
     "ops:stock-deinitialize:dry-run": "tsx scripts/operate-grins-stock-deinitialize-request.ts dry-run",
     "ops:stock-deinitialize:execute": "tsx scripts/operate-grins-stock-deinitialize-request.ts execute",

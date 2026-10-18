@@ -9,6 +9,9 @@ const downloadToMock = vi.hoisted(() =>
 )
 const closeMock = vi.hoisted(() => vi.fn())
 const listMock = vi.hoisted(() => vi.fn().mockResolvedValue([]))
+const sendMock = vi.hoisted(() => vi.fn().mockResolvedValue({ code: 221, message: '221 Goodbye.' }))
+const sizeMock = vi.hoisted(() => vi.fn().mockRejectedValue(new Error('SIZE not supported')))
+const lastModMock = vi.hoisted(() => vi.fn().mockRejectedValue(new Error('MDTM not supported')))
 
 vi.mock('basic-ftp', () => ({
   Client: vi.fn().mockImplementation(() => ({
@@ -16,11 +19,17 @@ vi.mock('basic-ftp', () => ({
     downloadTo: downloadToMock,
     close: closeMock,
     list: listMock,
+    send: sendMock,
+    size: sizeMock,
+    lastMod: lastModMock,
   })),
 }))
 
 import { Client } from 'basic-ftp'
-import { getFtpsConfigForSource, getFtpsConfigFromEnv, downloadFtpsFile, resolveFtpsRunFiles } from './ftps-client'
+import {
+  getFtpsConfigForSource, getFtpsConfigFromEnv, downloadFtpsFile, resolveFtpsRunFiles,
+  FtpsReadError, isTransientFtpsError, readFtpsRunFilesSnapshot,
+} from './ftps-client'
 
 describe('getFtpsConfigFromEnv', () => {
   const ORIGINAL_ENV = process.env
@@ -170,5 +179,105 @@ describe('run-files source layout (GRINS_FTPS_SOURCE_LAYOUT)', () => {
     expect(accessMock).not.toHaveBeenCalled()
     await downloadFtpsFile({ ...config, remotePath: `/grins-feed/export-${R1}.xml` })
     expect(downloadToMock).toHaveBeenCalledWith(expect.anything(), `/grins-feed/export-${R1}.xml`)
+  })
+})
+
+describe('readFtpsRunFilesSnapshot (scheduled stock sync and verify:ftps)', () => {
+  const R1 = '20261018T182238372777Z-2860'
+  const CONFIG = { host: 'h', user: 'u', password: 'p', remotePath: 'export.xml', layout: 'run-files' as const, remoteDir: '' }
+  const LIMITS = { xmlMaxBytes: 1_000, manifestMaxBytes: 100 }
+  const pair = [{ name: `export-${R1}.xml`, isFile: true }, { name: `export-${R1}.manifest.json`, isFile: true }]
+  const transient = () => Object.assign(new Error('read ECONNRESET (data socket)'), { code: 'ECONNRESET' })
+  const ftpReply = (code: number) => Object.assign(new Error(`${code} refused`), { code })
+  const order = (mock: { mock: { invocationCallOrder: number[] } }) => mock.mock.invocationCallOrder
+  beforeEach(() => {
+    vi.clearAllMocks()
+    listMock.mockResolvedValue(pair)
+  })
+  afterEach(() => listMock.mockResolvedValue([]))
+
+  it('reads LIST, XML and manifest in ONE session and ends it with QUIT before close', async () => {
+    const sleep = vi.fn()
+    const snapshot = await readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep })
+    expect(accessMock).toHaveBeenCalledOnce()
+    expect(listMock).toHaveBeenCalledOnce()
+    expect(downloadToMock.mock.calls.map(call => call[1])).toEqual([`export-${R1}.xml`, `export-${R1}.manifest.json`])
+    expect(sendMock).toHaveBeenCalledOnce()
+    expect(sendMock).toHaveBeenCalledWith('QUIT')
+    expect(closeMock).toHaveBeenCalledOnce()
+    expect(order(listMock)[0]).toBeLessThan(order(downloadToMock)[0])
+    expect(order(downloadToMock)[1]).toBeLessThan(order(sendMock)[0])
+    expect(order(sendMock)[0]).toBeLessThan(order(closeMock)[0])
+    expect(snapshot).toMatchObject({ selection: { runId: R1 }, xml: { content: '<root></root>' }, manifest: { content: '<root></root>' }, attempts: 1 })
+    expect(sleep).not.toHaveBeenCalled()
+  })
+
+  it('retries a transient data-socket reset in a fresh session (2 s, then 5 s)', async () => {
+    downloadToMock.mockRejectedValueOnce(transient()).mockRejectedValueOnce(transient())
+    const sleep = vi.fn().mockResolvedValue(undefined)
+    const onRetry = vi.fn()
+    const snapshot = await readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep, onRetry })
+    expect(snapshot.attempts).toBe(3)
+    expect(accessMock).toHaveBeenCalledTimes(3)
+    expect(sendMock).toHaveBeenCalledTimes(3)
+    expect(closeMock).toHaveBeenCalledTimes(3)
+    expect(sleep.mock.calls).toEqual([[2_000], [5_000]])
+    expect(onRetry).toHaveBeenCalledWith({ attempt: 1, stage: 'xml', error: 'read ECONNRESET (data socket)', delayMs: 2_000 })
+  })
+
+  it('stops after three sessions and reports the failing stage', async () => {
+    downloadToMock.mockRejectedValueOnce(transient()).mockRejectedValueOnce(transient()).mockRejectedValueOnce(transient())
+    const sleep = vi.fn().mockResolvedValue(undefined)
+    const error = await readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep }).catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(FtpsReadError)
+    expect(error).toMatchObject({ stage: 'xml', attempts: 3, message: 'read ECONNRESET (data socket)' })
+    expect(accessMock).toHaveBeenCalledTimes(3)
+    expect(sleep).toHaveBeenCalledTimes(2)
+  })
+
+  it('never retries authentication, missing files or size limits', async () => {
+    const sleep = vi.fn().mockResolvedValue(undefined)
+    accessMock.mockRejectedValueOnce(ftpReply(530))
+    await expect(readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep })).rejects.toMatchObject({ stage: 'selection', attempts: 1, message: '530 refused' })
+
+    downloadToMock.mockImplementationOnce(async (sink: NodeJS.WritableStream) => { sink.write(Buffer.from('<root></root>')); sink.end() })
+      .mockRejectedValueOnce(ftpReply(550))
+    await expect(readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep })).rejects.toMatchObject({ stage: 'manifest', attempts: 1 })
+
+    sizeMock.mockResolvedValueOnce(5_000)
+    await expect(readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep })).rejects.toMatchObject({ stage: 'xml', attempts: 1, message: 'ftps_file_too_large' })
+
+    listMock.mockResolvedValueOnce([pair[0]])
+    await expect(readFtpsRunFilesSnapshot(CONFIG, { ...LIMITS, sleep })).rejects.toMatchObject({ stage: 'selection', attempts: 1, message: 'no_complete_export' })
+    expect(sleep).not.toHaveBeenCalled()
+  })
+
+  it('classifies only network-level failures as transient', () => {
+    for (const code of ['ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED']) expect(isTransientFtpsError(Object.assign(new Error(code), { code }))).toBe(true)
+    for (const code of [421, 425, 426]) expect(isTransientFtpsError(ftpReply(code))).toBe(true)
+    expect(isTransientFtpsError(new Error('Timeout (data socket)'))).toBe(true)
+    expect(isTransientFtpsError(new Error('Socket closed due to transmission error (control socket)'))).toBe(true)
+    for (const code of [530, 550, 553]) expect(isTransientFtpsError(ftpReply(code))).toBe(false)
+    expect(isTransientFtpsError(Object.assign(new Error('refused'), { code: 'ECONNREFUSED' }))).toBe(false)
+    expect(isTransientFtpsError(new Error('ftps_file_too_large'))).toBe(false)
+    expect(isTransientFtpsError('ECONNRESET')).toBe(false)
+  })
+
+  it('closes the socket even when the server never answers QUIT', async () => {
+    vi.useFakeTimers()
+    try {
+      sendMock.mockReturnValueOnce(new Promise(() => {}))
+      const read = readFtpsRunFilesSnapshot(CONFIG, LIMITS)
+      await vi.advanceTimersByTimeAsync(2_000)
+      await expect(read).resolves.toMatchObject({ attempts: 1 })
+      expect(closeMock).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('refuses a fixed-layout config', async () => {
+    await expect(readFtpsRunFilesSnapshot({ ...CONFIG, layout: undefined }, LIMITS)).rejects.toMatchObject({ stage: 'selection', attempts: 0 })
+    expect(accessMock).not.toHaveBeenCalled()
   })
 })

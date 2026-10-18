@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPermissionAccessLevel } from '@/lib/admin-permissions'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
@@ -37,7 +38,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Account must already exist נcreated only via /api/auth/register-card (real card)
     // or an admin invite. This route logs in; it must never double as self-registration.
-    if (!existing) {
+    // Admin-capable accounts must sign in through /api/auth/login so the TOTP step
+    // cannot be skipped. Checked before the password, so this route never confirms one.
+    if (!existing || getPermissionAccessLevel(existing) !== 'none') {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
 

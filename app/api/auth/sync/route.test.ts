@@ -63,6 +63,36 @@ describe('POST /api/auth/sync — login only, no self-registration', () => {
     expect(createSessionMock).not.toHaveBeenCalled()
   })
 
+  it('never issues a session to an admin-capable account (TOTP step cannot be skipped)', async () => {
+    for (const account of [
+      { id: 'a1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true },
+      { id: 'a2', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: false },
+      { id: 'm1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer', teamRole: 'manager' },
+    ]) {
+      vi.clearAllMocks()
+      checkRateLimitMock.mockResolvedValue({ limited: false, resetAt: 0 })
+      userFindUniqueMock.mockResolvedValue(account)
+      verifyPasswordMock.mockResolvedValue(true)
+
+      const res = await POST(makeRequest(SYNC_BODY))
+
+      expect(res.status).toBe(401)
+      expect(verifyPasswordMock).not.toHaveBeenCalled()
+      expect(createSessionMock).not.toHaveBeenCalled()
+      expect(res.cookies.get('eshop_session')).toBeUndefined()
+    }
+  })
+
+  it('still logs in a customer whose company role is admin (not staff access)', async () => {
+    userFindUniqueMock.mockResolvedValue({ id: 'c1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'customer', teamRole: 'admin' })
+    verifyPasswordMock.mockResolvedValue(true)
+
+    const res = await POST(makeRequest(SYNC_BODY))
+
+    expect(res.status).toBe(200)
+    expect(createSessionMock).toHaveBeenCalledWith('c1')
+  })
+
   it('rejects a wrong password for an existing account', async () => {
     userFindUniqueMock.mockResolvedValue({
       id: 'u1',

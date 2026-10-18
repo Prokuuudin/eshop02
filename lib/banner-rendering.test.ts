@@ -36,7 +36,16 @@ describe('storefront banner rendering', () => {
       products: [], banners: [{ ...image, type: 'sale', placement: 'carousel' }],
     }))
     expect(html).toContain('data-count="1"')
-    expect(html).not.toContain('/girl1.png')
+    expect(html).toContain('/girl1.png')
+  })
+  it('keeps the decorative girl when only image banners are present', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, { products: [], banners: [image] }))
+    expect(html).toContain('/girl1.png')
+  })
+  it('keeps the decorative girl beside the subscription form when there are no promotions at all', () => {
+    const html = renderToStaticMarkup(React.createElement(SaleSection, { products: [], banners: [] }))
+    expect(html).toContain('href="/auth/register"')
+    expect(html).toContain('/girl1.png')
   })
   it('renders video with playback controls and a separate link button', () => {
     const html = renderToStaticMarkup(React.createElement(SaleBanner, { banner: { ...image, type: 'video', image: '/banner.mp4' } }))

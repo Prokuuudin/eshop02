@@ -18,11 +18,35 @@ export default function SaleSection({ products, banners }: { products: Product[]
     const restBanners = banners.filter((item) => item !== banner);
     const { listBanners, carouselBanners } = splitBannersByPlacement(restBanners);
 
+    // The decorative girl belongs to the subscription form: wherever the form renders, she renders too.
+    const subscriptionBlock = (
+        <div className="sale-section__feature-wrap relative pt-8 mb-6">
+            <Image
+                src="/girl1.png"
+                alt=""
+                aria-hidden="true"
+                width={483}
+                height={176}
+                className="sale-section__girl pointer-events-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none select-none md:block"
+            />
+            <div className="sale-section__feature-row grid items-stretch md:min-h-36 overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
+                {banner && (
+                    <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
+                        <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40" />
+                    </div>
+                )}
+                <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'md:pl-40 lg:col-span-2'}`}>
+                    <Newsletter compact embedded registration />
+                </div>
+            </div>
+        </div>
+    );
+
     if (!products.length && !banners.length) {
         return (
             <section id="sale" className="sale-section pt-[18px]">
                 <div className="mx-auto w-full max-w-[1440px] px-4">
-                    <Newsletter compact registration />
+                    {subscriptionBlock}
                 </div>
             </section>
         );
@@ -39,28 +63,7 @@ export default function SaleSection({ products, banners }: { products: Product[]
                         <p className="text-sm text-muted-foreground">{t('sale.subtitle')}</p>
                     </div>
                 </div>
-                <div className="sale-section__feature-wrap relative pt-8 mb-6">
-                    {banner && banner.type !== 'image' && (
-                        <Image
-                            src="/girl1.png"
-                            alt=""
-                            aria-hidden="true"
-                            width={483}
-                            height={176}
-                            className="sale-section__girl pointer-events-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none select-none md:block"
-                        />
-                    )}
-                    <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
-                        {banner && (
-                            <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
-                                <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40" />
-                            </div>
-                        )}
-                        <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
-                            <Newsletter compact embedded registration />
-                        </div>
-                    </div>
-                </div>
+                {subscriptionBlock}
                 {listBanners.length > 0 && (
                     <div className="space-y-4 mb-6">
                         {listBanners.map((item) => <SaleBanner key={item.id} banner={item} />)}

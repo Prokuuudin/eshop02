@@ -45,7 +45,7 @@ describe('POST /api/auth/admin-setup', () => {
 
     expect(response.status).toBe(201)
     expect(create).toHaveBeenCalledWith({ data: expect.objectContaining({
-      email: 'first.admin@example.com', passwordHash: 'hashed-password', platformRole: 'admin',
+      email: 'first.admin@example.com', passwordHash: 'hashed-password', platformRole: 'admin', superAdmin: true,
     }) })
     expect(createSessionMock).not.toHaveBeenCalled()
     expect(response.cookies.get('eshop_session')).toBeUndefined()

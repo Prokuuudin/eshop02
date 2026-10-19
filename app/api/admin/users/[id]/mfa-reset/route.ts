@@ -15,7 +15,8 @@ const resetSchema = z.object({
 }).strict()
 
 // POST /api/admin/users/[id]/mfa-reset — for a colleague who lost their phone and recovery
-// codes. Step-up authenticated (actor's password + own TOTP), audited, and never for the
+// codes. Super Admin only (staff.manage): a reset is half of an account takeover.
+// Step-up authenticated (actor's password + own TOTP), audited, and never for the
 // actor themselves. It does not grant access: the target's sessions are revoked and their
 // next login forces a fresh TOTP enrollment.
 export async function POST(
@@ -24,7 +25,7 @@ export async function POST(
 ): Promise<Response> {
   const blocked = guardOrigin(request)
   if (blocked) return blocked
-  const caller = await requireAdminPermission('users.manage')
+  const caller = await requireAdminPermission('staff.manage')
   if (caller instanceof NextResponse) return caller
 
   const parsed = resetSchema.safeParse(await request.json().catch(() => null))

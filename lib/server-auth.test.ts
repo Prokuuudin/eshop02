@@ -213,6 +213,14 @@ describe('mapDbToServerUser', () => {
     expect(mapped).not.toHaveProperty('mfaSecret')
     expect(mapped).not.toHaveProperty('mfaBackupCodes')
   })
+
+  it('reports superAdmin only for platform admins carrying the flag', async () => {
+    const { mapDbToServerUser } = await import('./server-auth')
+    const base = makeSession('admin').user
+    expect(mapDbToServerUser({ ...base, superAdmin: true } as never).superAdmin).toBe(true)
+    expect(mapDbToServerUser({ ...base, superAdmin: false } as never).superAdmin).toBe(false)
+    expect(mapDbToServerUser({ ...base, platformRole: 'customer', superAdmin: true } as never).superAdmin).toBe(false)
+  })
 })
 
 describe('getAdminAccessLevel', () => {

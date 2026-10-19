@@ -51,11 +51,11 @@ beforeEach(() => {
 })
 
 describe('POST /api/admin/users/[id]/mfa-reset', () => {
-  it('requires users.manage', async () => {
+  it('requires staff.manage (Super Admin only)', async () => {
     vi.mocked(requireAdminPermission).mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
     const res = await call('staff1')
     expect(res.status).toBe(403)
-    expect(requireAdminPermission).toHaveBeenCalledWith('users.manage')
+    expect(requireAdminPermission).toHaveBeenCalledWith('staff.manage')
     expect(tx.user.update).not.toHaveBeenCalled()
   })
 

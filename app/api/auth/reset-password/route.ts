@@ -97,6 +97,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     })
     await tx.session.deleteMany({ where: { userId: record.user.id } })
     await tx.passwordResetToken.deleteMany({ where: { userId: record.user.id } })
+    await tx.invitationDelivery.updateMany({
+      where: {
+        userId: record.user.id,
+        channel: 'staff-invite',
+        status: { in: ['pending', 'sent', 'error'] },
+      },
+      data: { status: 'accepted' },
+    })
     return true
   })
   if (!consumed) return NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 })

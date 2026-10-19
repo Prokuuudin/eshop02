@@ -53,5 +53,6 @@ describe('admin permissions', () => {
     expect(permissionForAdminPath('/admin/orders/new')).toBe('orders.update')
     expect(permissionForAdminPath('/en/admin/products/bulk-price')).toBe('prices.update')
     expect(permissionForAdminPath('/admin/accounts')).toBe('customers.read')
+    expect(permissionForAdminPath('/en/admin/system/users')).toBe('users.manage')
   })
 })

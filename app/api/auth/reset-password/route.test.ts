@@ -32,6 +32,7 @@ function makeTx() {
       }) => ({ id: 'u1' })),
     },
     session: { deleteMany: vi.fn(async () => ({ count: 2 })) },
+    invitationDelivery: { updateMany: vi.fn(async () => ({ count: 1 })) },
   }
 }
 
@@ -74,6 +75,14 @@ describe('POST /api/auth/reset-password', () => {
     expect(args.data.passwordHash).toBe('NEW_HASH')
     expect(args.data.mustChangePassword).toBe(false)
     expect(tx.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } })
+    expect(tx.invitationDelivery.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: 'u1',
+        channel: 'staff-invite',
+        status: { in: ['pending', 'sent', 'error'] },
+      },
+      data: { status: 'accepted' },
+    })
   })
 
   it('rejects a too-short password without consuming the token or touching the user', async () => {

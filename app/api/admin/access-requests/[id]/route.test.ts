@@ -254,3 +254,45 @@ describe('PATCH /api/admin/access-requests/[id] — card-type approve', () => {
     expect((await res.json()).error).toBe('card_taken')
   })
 })
+
+describe('PATCH /api/admin/access-requests/[id] — staff accounts are never touched', () => {
+  // The request email is unverified: a stranger can file a card request with a staff email.
+  // Approving it must not attach a card / force a password change on that staff account.
+  it.each([
+    ['platform admin', { platformRole: 'admin', teamRole: null, superAdmin: false }],
+    ['Super Admin', { platformRole: 'admin', teamRole: null, superAdmin: true }],
+    ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
+  ])('approving a card request with the email of a %s → 409, nothing changes', async (_label, roles) => {
+    const { replaceInvitation } = await import('@/lib/invitations')
+    const { sendEmail } = await import('@/lib/mailer')
+    accessRequestFindUniqueMock.mockResolvedValue(CARD_REQUEST)
+    userFindFirstMock.mockImplementation(async ({ where }) => {
+      if (where?.cardNumber) return null
+      return { id: 'staff1', cardNumber: null, ...roles }
+    })
+
+    const res = await PATCH(makeRequest({ status: 'approved' }), params('req2'))
+
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('staff_account')
+    expect(vi.mocked(prisma.$transaction)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.user.update)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.user.create)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.accessRequest.update)).not.toHaveBeenCalled()
+    expect(vi.mocked(replaceInvitation)).not.toHaveBeenCalled()
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled()
+  })
+
+  it('a B2B company owner (teamRole admin, customer) still gets the card', async () => {
+    accessRequestFindUniqueMock.mockResolvedValue(NO_CARD_REQUEST)
+    userFindFirstMock.mockImplementation(async ({ where }) => {
+      if (where?.cardNumber) return null
+      return { id: 'owner1', cardNumber: null, platformRole: 'customer', teamRole: 'admin', superAdmin: false }
+    })
+
+    const res = await PATCH(makeRequest({ status: 'approved', cardNumber: '77003' }), params('req1'))
+
+    expect(res.status).toBe(200)
+    expect(userUpdateMock.mock.calls[0][0]).toMatchObject({ where: { id: 'owner1' }, data: { cardNumber: '77003' } })
+  })
+})

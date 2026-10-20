@@ -175,6 +175,8 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                         ? l(`Номер ${digits} уже занят — укажите другой.`, `Number ${digits} is already in use — specify another.`, `Numurs ${digits} jau tiek izmantots — norādiet citu.`)
                         : json.error === 'user_has_card'
                         ? l(`У клиента уже есть карта №${json.cardNumber}.`, `The customer already has card No. ${json.cardNumber}.`, `Klientam jau ir karte Nr. ${json.cardNumber}.`)
+                        : json.error === 'staff_account'
+                        ? l('Email заявки принадлежит сотруднику — заявку нельзя одобрить.', 'The application email belongs to a staff account — it cannot be approved.', 'Pieteikuma e-pasts pieder darbiniekam — to nevar apstiprināt.')
                         : l('Не удалось одобрить заявку', 'Failed to approve the application', 'Neizdevās apstiprināt pieteikumu')
                 );
                 setMessage('');

@@ -73,6 +73,16 @@ export function isStaffSubject(subject: PermissionSubject): boolean {
   return getPermissionAccessLevel(subject) !== 'none'
 }
 
+/**
+ * Staff account (platform admin, staff manager or Super Admin flag) that the customer card
+ * flows — card request approval, card assignment, card invitations, register-card — must
+ * never modify. Those flows set a new password or force a password change, which on a staff
+ * account is a takeover path whether or not MFA is enrolled.
+ */
+export function isProtectedStaffAccount(subject: PermissionSubject): boolean {
+  return isStaffSubject(subject) || subject?.superAdmin === true
+}
+
 export function isSuperAdminSubject(subject: PermissionSubject): boolean {
   return hasAdminPermission(subject, 'staff.manage')
 }

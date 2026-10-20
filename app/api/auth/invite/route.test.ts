@@ -113,4 +113,20 @@ describe('/api/auth/invite validation and abuse protection', () => {
     expect(response.status).toBe(409)
     expect(createSessionMock).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ['platform admin', { platformRole: 'admin', teamRole: null, superAdmin: false }],
+    ['Super Admin', { platformRole: 'admin', teamRole: null, superAdmin: true }],
+    ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
+  ])('refuses to activate an invitation on a %s account: token, password, role and sessions untouched', async (_label, roles) => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 's1', email: 'staff@test.com', cardNumber: '1234' })
+    userFindMock.mockResolvedValue({ id: 's1', name: 'Staff', companyId: null, mfaEnabled: true, ...roles })
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ ok: false, error: 'staff_account' })
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(response.headers.get('set-cookie')).toBeNull()
+  })
 })

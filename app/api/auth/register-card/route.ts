@@ -9,6 +9,7 @@ import { buildCardActivatedEmail } from '@/lib/invitation-emails'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { grantWelcomeBonus } from '@/lib/bonus-ledger'
+import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 
 // Synthetic placeholder assigned when no real email is on file (see
 // accountEmail() in scripts/import-client-cards.ts) — it's derived from the
@@ -113,6 +114,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
 
     if (cardUser) {
+      // A card on a staff account must never become a way to reset its password. Same answer
+      // as an activated card, so the response does not reveal which cards belong to staff.
+      if (isProtectedStaffAccount(cardUser)) {
+        return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
+      }
       if (!cardUser.mustChangePassword) {
         return NextResponse.json({ error: 'card_already_registered' }, { status: 409 })
       }

@@ -7,6 +7,7 @@ import { hashInviteToken } from '@/lib/invitations'
 import { grantWelcomeBonus } from '@/lib/bonus-ledger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
+import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
@@ -70,6 +71,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const inv = found.invitation
     const user = await prisma.user.findUnique({ where: { id: inv.userId } })
     if (!user) return NextResponse.json({ ok: false, error: 'user_not_found' }, { status: 404 })
+    // Card activation rewrites password, card and teamRole — never on a staff account.
+    if (isProtectedStaffAccount(user)) {
+      return NextResponse.json({ ok: false, error: 'staff_account' }, { status: 409 })
+    }
 
     const passwordHash = await hashPassword(body.password)
     const companyId = user.companyId ?? `company_master_${randomUUID()}`

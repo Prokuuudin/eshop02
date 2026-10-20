@@ -11,6 +11,8 @@ import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
+import { COMPANY } from '@/data/company'
+import { getSiteContentOverridesFromStore } from '@/lib/site-content-server-store'
 import { translations } from '@/data/translations'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { formatDateWithPattern } from '@/lib/date-format'
@@ -99,9 +101,41 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
     const location = order.deliveryLocation
     const titles = { ru: 'Пакомат доставки', en: 'Delivery parcel locker', lv: 'Piegādes pakomāts' }
     const details = `<p><strong>${titles[lang]}:</strong> ${escHtml(location.name)}, ${escHtml(location.address)}, ${escHtml(location.city)}, ${escHtml(location.country)} (ID: ${escHtml(location.id)})</p>`
-    html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${details}</body>`) : html + details
+    html = appendToEmailBody(html, details)
+  }
+  if (order.paymentMethod === 'bank') {
+    html = appendToEmailBody(html, await bankTransferDetailsHtml(order.id, total, lang))
   }
   await sendEmail(order.email, subjects[lang], html)
+}
+
+function appendToEmailBody(html: string, fragment: string): string {
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${fragment}</body>`) : html + fragment
+}
+
+const BANK_TRANSFER_LABELS = {
+  ru: { title: 'Реквизиты для оплаты банковским переводом', recipient: 'Получатель', bank: 'Банк', amount: 'Сумма', reference: 'Назначение платежа', note: 'Обязательно укажите назначение платежа — по нему мы найдём ваш заказ.' },
+  en: { title: 'Bank transfer payment details', recipient: 'Recipient', bank: 'Bank', amount: 'Amount', reference: 'Payment reference', note: 'Please include the payment reference so we can match your payment to the order.' },
+  lv: { title: 'Rekvizīti apmaksai ar bankas pārskaitījumu', recipient: 'Saņēmējs', bank: 'Banka', amount: 'Summa', reference: 'Maksājuma mērķis', note: 'Lūdzu, norādiet maksājuma mērķi — pēc tā atradīsim jūsu pasūtījumu.' },
+} as const
+
+// Same source the footer and contact page show: admin-edited site content, else data/company.ts.
+async function bankTransferDetailsHtml(orderId: string, total: string, lang: 'ru' | 'en' | 'lv'): Promise<string> {
+  const overrides = await getSiteContentOverridesFromStore().catch(() => null)
+  const company = (key: string, fallback: string) => overrides?.text[lang]?.[key]?.trim() || fallback
+  const labels = BANK_TRANSFER_LABELS[lang]
+  const rows: Array<[string, string]> = [
+    [labels.recipient, COMPANY.name],
+    [labels.bank, company('company.bankName', COMPANY.bankName)],
+    ['IBAN', company('company.bankAccount', COMPANY.bankAccount)],
+    ['SWIFT', company('company.swift', COMPANY.swift)],
+    [labels.amount, total],
+    // Payment details are always in Latvian (see data/company.ts), whatever the email language.
+    [labels.reference, `Pasūtījums Nr. ${orderId}`],
+  ]
+  return `<h3>${labels.title}</h3><table style="border-collapse:collapse">${rows
+    .map(([label, value]) => `<tr><td style="padding:4px 8px">${label}</td><td style="padding:4px 8px"><strong>${escHtml(value)}</strong></td></tr>`)
+    .join('')}</table><p>${labels.note}</p>`
 }
 
 const DELIVERY_LABELS_RU: Record<string, string> = {

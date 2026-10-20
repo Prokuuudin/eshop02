@@ -41,6 +41,7 @@ vi.mock('@/lib/turnstile-server', () => ({
   TurnstileConfigurationError: class TurnstileConfigurationError extends Error {},
 }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
+vi.mock('@/lib/site-content-server-store', () => ({ getSiteContentOverridesFromStore: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
   ProductUnavailableError: class ProductUnavailableError extends Error {
@@ -60,6 +61,8 @@ import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
+import { getSiteContentOverridesFromStore } from '@/lib/site-content-server-store'
+import { COMPANY } from '@/data/company'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
@@ -143,6 +146,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
       id: '1001',
     }) as never)
     vi.mocked(getTemplates).mockResolvedValue([])
+    vi.mocked(getSiteContentOverridesFromStore).mockResolvedValue({ text: { ru: {}, en: {}, lv: {} }, images: {} })
     vi.mocked(recomputeOrderPricing).mockResolvedValue({
       items: [{ id: 'p1', price: 25, quantity: 2, bonusRate: 0, fromCatalog: true }],
       subtotal: 50,
@@ -533,10 +537,9 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
 
   it('escapes customer-controlled names in confirmation email templates', async () => {
     await POST(makeRequest({ ...VALID_ORDER, firstName: '<img src=x onerror=alert(1)>' }))
-    await vi.waitFor(() => expect(sendEmail).toHaveBeenCalled())
-    const customerCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === VALID_ORDER.email)
-    expect(customerCall?.[2]).not.toContain('<img')
-    expect(customerCall?.[2]).toContain('&lt;img')
+    const html = await customerEmailHtml()
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img')
   })
 
   it('renders distinct customer confirmations for ru, en and lv without recipient-list leakage', async () => {
@@ -556,6 +559,53 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     }
 
     expect(new Set(subjects).size).toBe(3)
+  })
+
+  const customerEmailHtml = async (email: string = VALID_ORDER.email): Promise<string> => {
+    await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.some(([to]) => to === email)).toBe(true))
+    return vi.mocked(sendEmail).mock.calls.find(([to]) => to === email)![2]
+  }
+
+  it.each(['ru', 'en', 'lv'] as const)('bank-transfer confirmation (%s) carries recipient, IBAN, amount and order reference', async (language) => {
+    await POST(makeRequest({ ...VALID_ORDER, language }))
+    const html = await customerEmailHtml()
+    expect(html).toContain(COMPANY.name)
+    expect(html).toContain(COMPANY.bankName)
+    expect(html).toContain(COMPANY.bankAccount)
+    expect(html).toContain(COMPANY.swift)
+    expect(html).toContain('€64.00')
+    expect(html).toContain('Pasūtījums Nr. 1001')
+  })
+
+  it('bank details in a DB template go inside <body>, and admin-edited company content wins', async () => {
+    vi.mocked(getTemplates).mockResolvedValue([
+      { id: 'order-confirmation-lv', body: '<html><body><p>Nr. {{order_id}}</p></body></html>' } as never,
+    ])
+    vi.mocked(getSiteContentOverridesFromStore).mockResolvedValue({
+      text: { ru: {}, en: {}, lv: { 'company.bankAccount': 'LV00TEST0000000000000', 'company.bankName': '  ' } }, images: {},
+    })
+    await POST(makeRequest({ ...VALID_ORDER, language: 'lv' }))
+    const html = await customerEmailHtml()
+    expect(html).toContain('LV00TEST0000000000000')
+    expect(html).not.toContain(COMPANY.bankAccount)
+    expect(html).toContain(COMPANY.bankName) // blank override falls back to the configured value
+    expect(html.indexOf('LV00TEST0000000000000')).toBeLessThan(html.indexOf('</body>'))
+  })
+
+  it('still sends bank details from the configured company data when the content store is unavailable', async () => {
+    vi.mocked(getSiteContentOverridesFromStore).mockRejectedValue(new Error('db down'))
+    await POST(makeRequest())
+    expect(await customerEmailHtml()).toContain(COMPANY.bankAccount)
+  })
+
+  it('does not add bank-transfer details for cash or Paysera orders', async () => {
+    await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId: 'riga-office', paymentMethod: 'cash' }))
+    expect(await customerEmailHtml()).not.toContain(COMPANY.bankAccount)
+
+    vi.mocked(sendEmail).mockClear()
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({ paymentUrl: 'https://pay.example/x' } as never)
+    await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
+    expect(await customerEmailHtml()).not.toContain(COMPANY.bankAccount)
   })
 
   // ── B1 regression: the persisted order is built from a server whitelist ──────────────

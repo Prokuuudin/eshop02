@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { canAccessOrder, getServerOrderById } from '@/lib/orders-data-store'
 import { getServerUser } from '@/lib/server-auth'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { isPayseraCheckoutEnabled } from '@/lib/paysera-checkout'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -35,6 +36,9 @@ export async function POST(_req: NextRequest, context: Context): Promise<NextRes
     }
     if (order.paymentMethod !== 'paysera') {
       return NextResponse.json({ error: 'not_online_payment' }, { status: 400 })
+    }
+    if (!isPayseraCheckoutEnabled()) {
+      return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
     }
     if (order.paymentStatus === 'paid') {
       return NextResponse.json({ error: 'already_paid' }, { status: 409 })

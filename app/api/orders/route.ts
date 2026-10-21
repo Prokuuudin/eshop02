@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { isPayseraCheckoutEnabled } from '@/lib/paysera-checkout'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
@@ -331,6 +332,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!['bank', 'cash', 'paysera'].includes(paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
     }
+    // Paysera stays integrated but is switched off for customers until PAYSERA_CHECKOUT_ENABLED=true.
+    if (paymentMethod === 'paysera' && !isPayseraCheckoutEnabled()) {
+      return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
+    }
     if (paymentMethod === 'cash' && (deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
       return NextResponse.json({ error: 'cash_payment_unavailable' }, { status: 400 })
     }
@@ -517,7 +522,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // A resubmit (double-click / network retry before the client got the first response)
       // hits the same checkoutKey. The original payment link is gone with that response —
       // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
-      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid') {
+      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid' && isPayseraCheckoutEnabled()) {
         try {
           const payment = await createPayseraPaymentForOrder(existing)
           return NextResponse.json({ success: true, orderId: existing.id, order: payment.order ?? existing, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })

@@ -29,6 +29,8 @@ const context = { params: Promise.resolve({ id: '1001' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
+  vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'true')
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
 })
 
@@ -125,6 +127,19 @@ describe('POST /api/orders/[id]/pay', () => {
     const res = await POST(makeRequest(), context)
 
     expect(res.status).toBe(502)
+  })
+
+  it('rejects a Paysera retry while Paysera is switched off for customers', async () => {
+    vi.unstubAllEnvs()
+    vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+
+    const res = await POST(makeRequest(), context)
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'payment_method_unavailable' })
+    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
   })
 
 })

@@ -134,6 +134,9 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
 })
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
+    // Existing Paysera cases describe the enabled gateway; the switched-off cases override this.
+    vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'true')
     dbProducts.mockImplementation(async () => [DB_PRODUCT_P1])
     vi.mocked(getShippingSettings).mockResolvedValue(rigaCourierSettings())
     vi.mocked(getServerUser).mockResolvedValue(null)
@@ -684,6 +687,37 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
     expect(res.status).toBe(502)
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
+  })
+
+  it.each([undefined, 'false'])('rejects Paysera checkout before any order or gateway work when the flag is %s', async (flag) => {
+    if (flag === undefined) vi.unstubAllEnvs()
+    else vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', flag)
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'payment_method_unavailable' })
+    expect(createServerOrder).not.toHaveBeenCalled()
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
+  it('keeps bank transfer checkout working while Paysera is switched off', async () => {
+    vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'false')
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank' }))
+    expect(res.status).toBe(200)
+    expect(await persistedOrder()).toMatchObject({ paymentMethod: 'bank', paymentProvider: 'manual', paymentStatus: 'unpaid' })
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
+  it('does not mint a Paysera link for a duplicate resubmit while Paysera is switched off', async () => {
+    vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'false')
+    vi.mocked(createServerOrder).mockRejectedValue(new ExistingCheckoutOrderError({
+      id: '1001', paymentMethod: 'paysera', paymentStatus: 'unpaid', total: 64, language: 'ru',
+    } as never))
+    const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'bank' }, 'checkout-ORD-001'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toMatchObject({ success: true, orderId: '1001', idempotent: true })
+    expect(body).not.toHaveProperty('paymentUrl')
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
   })
 
   it('normal cash checkout at the office persists an unpaid manual order', async () => {

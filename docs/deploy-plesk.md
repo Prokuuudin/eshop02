@@ -56,6 +56,7 @@ Vercel-конфигурация в репозитории пока не удал
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` | anti-spam на чекауте/контакте/заявках. **Оба или ни одного** — частичная настройка бросает ошибку (`lib/turnstile-server.ts`). Сейчас в проде это fail-open стопгэп (см. память `project_turnstile_checkout_outage`) |
 | `MFA_ENCRYPTION_KEY` | шифрование TOTP-секретов (AES-256-GCM); без него включение MFA сломано |
 | `PAYSERA_PROJECT_ID`, `PAYSERA_CLIENT_ID`, `PAYSERA_CLIENT_SECRET` | Paysera Checkout Modern |
+| `PAYSERA_CHECKOUT_ENABLED` | `true` — Paysera виден в чекауте и выдаёт новые ссылки; любое другое значение/отсутствие — скрыт, API отвечает `payment_method_unavailable`. Webhook работает всегда. Читается в рантайме: смена env + recycle, без пересборки. Включать только для live-проекта Paysera |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_API_BASE` | PayPal Orders v2 REST |
 | `PAYPAL_WEBHOOK_ID` | верификация подписи `/api/webhooks/paypal` |
 | `NEWSLETTER_UNSUB_SECRET` | подпись ссылок отписки от рассылки |

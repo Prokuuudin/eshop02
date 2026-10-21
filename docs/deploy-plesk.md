@@ -259,6 +259,15 @@ Task **может не наследовать** — поэтому на серв
 -   Idle timeout / recycling iisnode не рвёт долгие запросы (например,
     генерация PDF-инвойса) раньше времени.
 
+**IP клиента (rate limit, Turnstile, аудит).** Перед IIS нет прокси/CDN, поэтому
+`X-Forwarded-For`, `CF-Connecting-IP`, `X-Real-IP` целиком контролирует клиент.
+`server.js` (`server-client-ip.js`) удаляет их и выставляет `x-forwarded-for`
+только из `x-iisnode-remote_addr` — адреса IIS `REMOTE_ADDR`, который iisnode
+передаёт при `<iisnode promoteServerVars="REMOTE_ADDR" />` в `web.config`.
+Без этого атрибута IP = `unknown` (как до исправления, но без возможности подмены).
+После включения атрибута и recycle проверить на сервере, что подменённый клиентом
+заголовок `X-iisnode-REMOTE_ADDR` не принимается (многозначное значение → `unknown`).
+
 ## 11) Чеклист первого Plesk-деплоя
 
 Базовое:

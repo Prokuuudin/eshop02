@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { Instrument_Sans } from 'next/font/google'
 import ThemeInitScript from '@/components/ThemeInitScript'
 import Header from '@/components/Header'
+import StoreLaunchNotice from '@/components/StoreLaunchNotice'
 import Footer from '@/components/Footer'
 import AppBreadcrumbs from '@/components/AppBreadcrumbs'
 import RouteTransition from '@/components/RouteTransition'
@@ -121,6 +122,7 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
               until they set their own password (blocking modal). */}
           <AccountGuard>
             <Header />
+            <StoreLaunchNotice />
             <main id="main-content" className="w-full pb-6">
               <div className="mx-auto mt-2 w-full max-w-[1440px] px-4">
                 <Suspense fallback={null}>

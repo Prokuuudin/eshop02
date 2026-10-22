@@ -51,13 +51,13 @@ export default function StoreLaunchNotice(): React.ReactElement | null {
   }
 
   return (
-    <section aria-labelledby={titleId} className="mx-auto mt-3 w-full max-w-[1440px] px-4">
-      <div className="relative rounded-lg border border-border bg-muted/50 px-4 py-3 pr-14 text-sm text-foreground">
+    <section aria-labelledby={titleId} className="mx-auto mt-2 w-full max-w-[1440px] px-4">
+      <div className="relative rounded-lg border border-green-200 bg-green-50 px-4 py-2 pr-14 text-sm text-foreground dark:border-green-700 dark:bg-green-900/30">
         <button
           type="button"
           onClick={dismiss}
           aria-label={t('launchNotice.close')}
-          className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-green-100 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-green-900/50"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -71,7 +71,7 @@ export default function StoreLaunchNotice(): React.ReactElement | null {
             </a>
           </p>
         </div>
-        <label className="mt-1 inline-flex min-h-11 cursor-pointer items-center gap-2">
+        <label className="inline-flex min-h-8 cursor-pointer items-center gap-2">
           <input type="checkbox" checked={dontShowAgain} onChange={(event) => setDontShowAgain(event.target.checked)} className="h-4 w-4 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
           <span>{t('launchNotice.dontShowAgain')}</span>
         </label>

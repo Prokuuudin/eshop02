@@ -2,7 +2,7 @@
 
 import { useId, useState, useSyncExternalStore } from 'react'
 import { X } from 'lucide-react'
-import { COMPANY } from '@/data/company'
+import { localizePath } from '@/lib/i18n-routing'
 import { useUnprefixedPathname } from '@/lib/i18n-context'
 import { useTranslation } from '@/lib/use-translation'
 
@@ -30,7 +30,7 @@ function getVisibleSnapshot(): boolean {
 const getServerSnapshot = (): boolean => false
 
 export default function StoreLaunchNotice(): React.ReactElement | null {
-  const { t } = useTranslation()
+  const { t, language } = useTranslation()
   const pathname = useUnprefixedPathname()
   const titleId = useId()
   const visible = useSyncExternalStore(subscribe, getVisibleSnapshot, getServerSnapshot)
@@ -66,7 +66,7 @@ export default function StoreLaunchNotice(): React.ReactElement | null {
           <p className="inline">
             {t('launchNotice.body')}{' '}
             {t('launchNotice.feedback')}{' '}
-            <a href={`mailto:${COMPANY.email}`} className="whitespace-nowrap rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <a href={localizePath('/contact#contact-form', language)} className="whitespace-nowrap rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               {t('launchNotice.contact')}
             </a>
           </p>

@@ -61,14 +61,16 @@ export default function StoreLaunchNotice(): React.ReactElement | null {
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
-        <h2 id={titleId} className="font-semibold">{t('launchNotice.title')}</h2>
-        <p className="mt-1 leading-relaxed">{t('launchNotice.body')}</p>
-        <p className="mt-2">
-          {t('launchNotice.feedback')}{' '}
-          <a href={`mailto:${COMPANY.email}`} className="rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            {t('launchNotice.contact')}
-          </a>
-        </p>
+        <div className="leading-5">
+          <h2 id={titleId} className="inline font-semibold">{t('launchNotice.title')}</h2>{' '}
+          <p className="inline">
+            {t('launchNotice.body')}{' '}
+            {t('launchNotice.feedback')}{' '}
+            <a href={`mailto:${COMPANY.email}`} className="whitespace-nowrap rounded-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              {t('launchNotice.contact')}
+            </a>
+          </p>
+        </div>
         <label className="mt-1 inline-flex min-h-11 cursor-pointer items-center gap-2">
           <input type="checkbox" checked={dontShowAgain} onChange={(event) => setDontShowAgain(event.target.checked)} className="h-4 w-4 accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
           <span>{t('launchNotice.dontShowAgain')}</span>

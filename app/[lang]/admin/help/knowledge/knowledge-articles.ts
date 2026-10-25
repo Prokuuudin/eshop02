@@ -229,7 +229,7 @@ const articles: KnowledgeArticle[] = [
         description:
             'В конфигурации настраиваются способы доставки и оплаты, параметры локализации. Группы B2B-цен пока можно только создавать и редактировать здесь — на фактические цены в каталоге и чекауте они не влияют. После изменения доставки или оплаты проверьте результат на тестовом сценарии оформления заказа с подходящим аккаунтом.',
         href: '/admin/config/shipping',
-        linkLabel: 'Открыть доставку и оплату',
+        linkLabel: 'Открыть доставку',
     },
     {
         icon: '🧾',
@@ -382,7 +382,7 @@ const articlesEn: ArticleTranslation[] = [
     [
         'Shipping, localization, and B2B prices',
         'Configure shipping and payment methods and localization settings here. B2B price groups can currently only be created and edited on this screen — they do not yet affect actual catalog or checkout prices. After changing shipping or payment settings, verify the result with a test checkout on a suitable account.',
-        'Open shipping and payment',
+        'Open shipping',
     ],
     [
         'System logs',
@@ -530,7 +530,7 @@ const articlesLv: ArticleTranslation[] = [
     [
         'Piegāde, lokalizācija un B2B cenas',
         'Šeit konfigurējiet piegādes un apmaksas veidus, kā arī lokalizācijas iestatījumus. B2B cenu grupas pagaidām var tikai izveidot un rediģēt šajā ekrānā — tās vēl neietekmē faktiskās cenas katalogā vai pasūtījuma noformēšanā. Pēc piegādes vai apmaksas iestatījumu maiņas pārbaudiet rezultātu ar testa pasūtījumu piemērotā kontā.',
-        'Atvērt piegādi un apmaksu',
+        'Atvērt piegādi',
     ],
     [
         'Sistēmas žurnāli',

@@ -58,4 +58,17 @@ describe('commerce settings', () => {
     expect(issues).toContain('Оплата «Банковская карта онлайн»: не выбраны способы доставки')
     expect(issues).toContain('Paysera: merchant-аккаунт не готов')
   })
+
+  it('limits issues to the requested admin page scope', () => {
+    const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    settings.delivery.dpd.enabled = true
+    settings.payment.card_online.enabled = true
+
+    const delivery = getCommerceSettingsIssues(settings, 'ru', 'delivery')
+    const payment = getCommerceSettingsIssues(settings, 'ru', 'payment')
+    expect(delivery).toContain('Доставка «DPD»: не указана цена')
+    expect(delivery.some((issue) => issue.startsWith('Оплата') || issue.startsWith('Paysera'))).toBe(false)
+    expect(payment).toContain('Paysera: merchant-аккаунт не готов')
+    expect(payment.some((issue) => issue.startsWith('Доставка'))).toBe(false)
+  })
 })

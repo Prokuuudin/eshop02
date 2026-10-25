@@ -313,7 +313,7 @@ const ruCommon: Record<string, string> = {
   'breadcrumb.media': 'Медиа-библиотека',
   'breadcrumb.banners': 'Баннеры',
   'breadcrumb.config': 'Конфигурация',
-  'breadcrumb.shipping': 'Доставка и оплата',
+  'breadcrumb.shipping': 'Доставка',
   'breadcrumb.bonus': 'Бонусная программа',
   'breadcrumb.locale': 'Локализация',
   'breadcrumb.integrations': 'Интеграции',

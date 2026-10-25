@@ -134,7 +134,8 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Settings,
         tone: 'slate',
         items: [
-            { label: 'Доставка и оплата', href: '/admin/config/shipping' },
+            { label: 'Доставка', href: '/admin/config/shipping' },
+            { label: 'Оплата', href: '/admin/config/payment' },
             { label: 'Бонусная программа', href: '/admin/bonus' },
             { label: 'Локализация', href: '/admin/config/locale' },
             { label: 'Email-шаблоны', href: '/admin/config/email-templates' },
@@ -217,7 +218,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
         'Промокоды': l('Промокоды', 'Promo codes', 'Promokodi'), 'Прайс-листы': l('Прайс-листы', 'Price lists', 'Cenu lapas'),
         'Контент': l('Контент', 'Content', 'Saturs'), 'Блог': l('Блог', 'Blog', 'Blogs'),
         'Страницы': l('Страницы', 'Pages', 'Lapas'), 'Баннеры': l('Баннеры', 'Banners', 'Baneri'), 'Медиа': l('Медиа', 'Media', 'Mediji'),
-        'Конфигурация': l('Конфигурация', 'Configuration', 'Konfigurācija'), 'Доставка и оплата': l('Доставка и оплата', 'Delivery and payment', 'Piegāde un apmaksa'),
+        'Конфигурация': l('Конфигурация', 'Configuration', 'Konfigurācija'), 'Доставка': l('Доставка', 'Delivery', 'Piegāde'), 'Оплата': l('Оплата', 'Payment', 'Apmaksa'),
         'Бонусная программа': l('Бонусная программа', 'Bonus program', 'Bonusu programma'), 'Локализация': l('Локализация', 'Localization', 'Lokalizācija'),
         'Email-шаблоны': l('Email-шаблоны', 'Email templates', 'E-pasta veidnes'), 'Система': l('Система', 'System', 'Sistēma'),
         'Журнал аудита': l('Журнал аудита', 'Audit log', 'Audita žurnāls'), 'Логи': l('Логи', 'Logs', 'Žurnāli'),

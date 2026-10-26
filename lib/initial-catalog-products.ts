@@ -10,6 +10,7 @@ import {
 import { redactProductPrices } from '@/lib/product-price-visibility'
 import { getServerUser } from '@/lib/server-auth'
 import { sortAvailableProductsFirst, sortBrandProductsNewestFirst } from '@/lib/catalog-product-sort'
+import { matchesProductSearch, parseProductSearchQuery, rankProductSearchMatch } from '@/lib/product-search'
 
 export const CATALOG_PAGE_SIZE = 24
 
@@ -75,7 +76,7 @@ export async function getInitialCatalogProducts({
   // Reuse the narrow facet index to order the entire filtered result by availability.
   // Full product rows are fetched only for the selected page.
   const [products, user] = await Promise.all([getStorefrontFacetProducts(), getServerUser()])
-  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const searchQuery = parseProductSearchQuery(search)
 
   const filtered = products.filter((product) => {
     if (category && product.category !== category) return false
@@ -85,17 +86,18 @@ export async function getInitialCatalogProducts({
     if (maxPrice !== undefined && !(product.price <= maxPrice)) return false
     if (onSale && !isProductOnSale(product)) return false
 
-    if (normalizedSearch) {
-      const searchable = [localizedTitle(product, language), product.title, product.brand]
-        .join(' ')
-        .toLocaleLowerCase()
-      if (!searchable.includes(normalizedSearch)) return false
-    }
+    if (searchQuery && !matchesProductSearch(product, searchQuery, localizedTitle(product, language))) return false
 
     return true
   })
 
-  const sorted = sortAvailableProductsFirst(sortProducts(filtered, order, language, brands.length > 0))
+  // A search without an explicit order lists the most relevant matches first.
+  const ranked = searchQuery && !order
+    ? filtered.map((product) => ({ product, score: rankProductSearchMatch(product, searchQuery, localizedTitle(product, language)) }))
+      .sort((a, b) => b.score - a.score)
+      .map(({ product }) => product)
+    : sortProducts(filtered, order, language, brands.length > 0)
+  const sorted = sortAvailableProductsFirst(ranked)
 
   const totalProducts = sorted.length
   const totalPages = Math.max(1, Math.ceil(totalProducts / CATALOG_PAGE_SIZE))
@@ -138,15 +140,10 @@ export async function getCatalogFacets({
   onSale = false,
 }: CatalogFacetFilters): Promise<CatalogFacets> {
   const products = await getStorefrontFacetProducts()
-  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const searchQuery = parseProductSearchQuery(search)
 
-  const matchesSearch = (product: Product): boolean => {
-    if (!normalizedSearch) return true
-    const searchable = [localizedTitle(product, language), product.title, product.brand]
-      .join(' ')
-      .toLocaleLowerCase()
-    return searchable.includes(normalizedSearch)
-  }
+  const matchesSearch = (product: Product): boolean =>
+    !searchQuery || matchesProductSearch(product, searchQuery, localizedTitle(product, language))
   const matchesPrice = (product: Product): boolean =>
     (minPrice === undefined || product.price >= minPrice) && (maxPrice === undefined || product.price <= maxPrice)
   const matchesBrandsList = (product: Product, list: string[]): boolean =>

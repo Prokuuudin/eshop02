@@ -1,35 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
-import { prisma } from '@/lib/prisma'
-import { toNum } from '@/lib/decimal'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { getServerUser } from '@/lib/server-auth'
 import { getClientIp } from '@/lib/request-ip'
-import { hasValidB2BPrice } from '@/lib/product-sellability'
+import { getMergedProductsByIds } from '@/lib/product-overrides-store'
+import { getProductSearchIndex } from '@/lib/product-search-index'
+import { matchesProductSearch, parseProductSearchQuery, rankProductSearchMatch, SEARCH_MAX_LENGTH } from '@/lib/product-search'
+import type { Product } from '@/data/products'
 
 const SEARCH_LIMIT = { windowMs: 60 * 1000, maxAttempts: 30 }
-const MAX_QUERY_LENGTH = 160
+const MAX_TAKE = 10
 const MAX_CATEGORY_LENGTH = 100
 
+/** Header suggestions carry no price, stock or barcode: they render for guests and customers alike. */
+export type SearchSuggestion = {
+  id: string
+  title: string
+  brand: string
+  sku?: string
+  image?: string
+}
+
+function localizedTitle(product: Pick<Product, 'title' | 'titleEn' | 'titleLv'>, lang: string): string {
+  if (lang === 'en' && product.titleEn) return product.titleEn
+  if (lang === 'lv' && product.titleLv) return product.titleLv
+  return product.title
+}
+
+/**
+ * GET /api/search?q=&take=&lang=&category= — header autocomplete. Uses the same storefront index
+ * (active, non-deleted products with overrides applied; cached for a minute) and the same matcher
+ * as the catalog page, so a suggestion has a matching result behind "show all". Only the returned
+ * suggestions are read in full, through the storefront card mapping.
+ */
 export async function GET(req: NextRequest): Promise<Response> {
   try {
-    const query = req.nextUrl.searchParams.get('q')?.trim() || ''
-    const rawTake = req.nextUrl.searchParams.get('take') ?? '20'
+    const raw = req.nextUrl.searchParams.get('q') ?? ''
+    const rawTake = req.nextUrl.searchParams.get('take') ?? '6'
     const take = Number(rawTake)
+    const lang = req.nextUrl.searchParams.get('lang') ?? 'ru'
     const category = req.nextUrl.searchParams.get('category') || ''
 
-    if (!query || query.length < 2) {
-      return NextResponse.json({ products: [] })
-    }
-    if (query.length > MAX_QUERY_LENGTH) {
+    if (raw.length > SEARCH_MAX_LENGTH) {
       return NextResponse.json({ error: 'query_too_long', products: [] }, { status: 400 })
     }
-    if (!Number.isInteger(take) || take < 1 || take > 50) {
+    if (!Number.isInteger(take) || take < 1 || take > MAX_TAKE) {
       return NextResponse.json({ error: 'invalid_take', products: [] }, { status: 400 })
     }
     if (category.length > MAX_CATEGORY_LENGTH) {
       return NextResponse.json({ error: 'invalid_category', products: [] }, { status: 400 })
     }
+    const query = parseProductSearchQuery(raw)
+    if (!query) return NextResponse.json({ products: [] })
 
     const limit = await checkRateLimit(`search:ip:${getClientIp(req)}`, SEARCH_LIMIT)
     if (limit.limited) {
@@ -39,64 +60,25 @@ export async function GET(req: NextRequest): Promise<Response> {
       })
     }
 
-    type ProductRow = {
-      id: string
-      title: string
-      brand: string
-      price: number
-      image: string | null
-      category: string
-      stock: number
-      similarity: number
-      externalId: string | null
-      erpPriceMissing: boolean
-      manualPriceApproved: boolean
-      manualApprovedPrice: unknown
-    }
+    const index = await getProductSearchIndex()
+    const ids = index
+      .filter((product) => (!category || product.category === category)
+        && matchesProductSearch(product, query, localizedTitle(product, lang)))
+      .map((product) => ({ id: product.id, score: rankProductSearchMatch(product, query, localizedTitle(product, lang)) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, take)
+      .map(({ id }) => id)
 
-    const whereCategory = category ? `AND "category" = $3` : ''
-    const params: (string | number)[] = [query, take]
-    if (category) params.push(category)
-
-    const results = await prisma.$queryRawUnsafe<ProductRow[]>(
-      `SELECT id, title, brand, price, image, category, stock, "externalId", "erpPriceMissing", "manualPriceApproved", "manualApprovedPrice",
-              similarity(
-                COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,''),
-                $1
-              ) AS similarity
-       FROM "Product"
-       WHERE "isDeleted" = false
-         AND "isActive" = true
-         AND (
-               COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,'')
-             ) <-> $1 < 0.9
-         ${whereCategory}
-       ORDER BY (
-         COALESCE(title,'') || ' ' || COALESCE(brand,'') || ' ' || COALESCE(description,'') || ' ' || COALESCE(sku,'')
-       ) <-> $1
-       LIMIT $2`,
-      ...params
-    )
-
-    // $queryRawUnsafe bypasses the Prisma Client Extension in lib/prisma-money-extension.ts,
-    // so `price` (a Decimal column) needs manual conversion back to a plain number here.
-    const canSeePrices = Boolean(await getServerUser())
-    const products = results.map(({ externalId, erpPriceMissing, manualPriceApproved, manualApprovedPrice, ...row }) => {
-      // No valid ERP B2B price: never expose the kept local price, not even to customers.
-      if (!hasValidB2BPrice({ externalId, erpPriceMissing, manualPriceApproved, manualApprovedPrice, price: row.price })) {
-        const { price: _price, ...notForSale } = row
-        return { ...notForSale, stock: 0, priceUnavailable: true }
-      }
-      const product = { ...row, price: toNum(row.price) }
-      if (canSeePrices) return product
-      const { price: _price, ...publicProduct } = product
-      return publicProduct
-    })
-
-    return NextResponse.json({ products })
+    const products: SearchSuggestion[] = (await getMergedProductsByIds(ids)).map((product) => ({
+      id: product.id,
+      title: localizedTitle(product, lang),
+      brand: product.brand,
+      ...(product.sku ? { sku: product.sku } : {}),
+      ...(product.image ? { image: product.image } : {}),
+    }))
+    return NextResponse.json({ products }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (e) {
-    logApiError("[api/search]", e)
+    logApiError('[api/search]', e)
     return NextResponse.json({ products: [] })
   }
 }
-

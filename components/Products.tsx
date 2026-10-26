@@ -21,6 +21,7 @@ import { sortAvailableProductsFirst, sortBrandProductsNewestFirst } from '@/lib/
 import { usePersistentViewMode } from '@/hooks/usePersistentViewMode'
 import { useAuthStore } from '@/lib/auth-store'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
+import { matchesProductSearch, parseProductSearchQuery } from '@/lib/product-search'
 
 const CATALOG_VIEW_MODES = ['grid', 'list'] as const
 
@@ -188,7 +189,9 @@ export default function Products({ initialProducts, initialFilters, initialSearc
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false })
   }, [baseCategory, filterSignature, filters.brands, filters.group, filters.subcat, filters.onSale, filters.minPrice, filters.maxPrice, filters.order, pathname, router, searchParams])
 
-  const normalizedSearch = initialSearch.trim().toLowerCase();
+  // Same matcher as the server (lib/initial-catalog-products.ts), so SKU/barcode matches survive the refilter.
+  const productSearch = React.useMemo(() => parseProductSearchQuery(initialSearch), [initialSearch]);
+  const normalizedSearch = productSearch?.normalized ?? '';
   const activeSubcat = filters.subcat
   const subcatItem = activeSubcat
     ? Object.values(SUBCATEGORIES_BY_ID).flat().find((item) => item.slug === activeSubcat)
@@ -199,17 +202,13 @@ export default function Products({ initialProducts, initialFilters, initialSearc
   }
 
   const searchMatchedProducts = products.filter((product) => {
-    const localizedTitle = (
-      (language === 'en' && product.titleEn)
-        ? product.titleEn
-        : (language === 'lv' && product.titleLv)
-          ? product.titleLv
-          : t(product.titleKey ?? `products.${product.id}.title`, product.title)
-    ).toLowerCase();
-    return !normalizedSearch
-      || localizedTitle.includes(normalizedSearch)
-      || product.title.toLowerCase().includes(normalizedSearch)
-      || product.brand.toLowerCase().includes(normalizedSearch);
+    if (!productSearch) return true;
+    const localizedTitle = (language === 'en' && product.titleEn)
+      ? product.titleEn
+      : (language === 'lv' && product.titleLv)
+        ? product.titleLv
+        : t(product.titleKey ?? `products.${product.id}.title`, product.title);
+    return matchesProductSearch(product, productSearch, localizedTitle);
   });
 
   // сортировка

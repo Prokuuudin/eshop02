@@ -16,7 +16,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { canAccessOrder, createServerOrder, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createOrderPaymentSession, createServerOrder, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
@@ -271,5 +271,73 @@ describe('canAccessOrder — IDOR guard for order/payment endpoints', () => {
   it('denies email match when the order has an owning userId (no downgrade to email guessing)', () => {
     const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
     expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, caller)).toBe(false)
+  })
+})
+
+describe('createOrderPaymentSession - retry serialization', () => {
+  function paymentRow(paymentSessionId: string | null = null) {
+    return {
+      id: '1001', ...ORDER, createdAt: new Date(ORDER.createdAt), paymentMethod: 'paysera',
+      legalDetails: null, deliveryLocation: null, pickupStoreId: null, promoCode: null,
+      trackingNumber: null, trackingUrl: null, labelUrl: null, shipmentCarrier: null,
+      country: 'LV', postalCode: null, bonusSpent: null, bonusEarned: null,
+      paymentStatus: 'unpaid', paymentProvider: 'paysera', paymentSessionId,
+      stockReservationStatus: 'reserved', stockReservedUntil: new Date(Date.now() + 60_000),
+      stockReleasedAt: null, language: 'ru', userId: 'user-1', companyId: null, checkoutKey: null,
+    }
+  }
+
+  it('serializes two concurrent retries so only the first creates a Paysera order', async () => {
+    let storedSession: string | null = null
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      order: {
+        findUnique: vi.fn(async () => paymentRow(storedSession)),
+        update: vi.fn(async ({ data }: { data: { paymentSessionId: string } }) => {
+          storedSession = data.paymentSessionId
+          return paymentRow(storedSession)
+        }),
+      },
+    }
+    let queue = Promise.resolve()
+    transactionMock.mockImplementation((operation) => {
+      const run = queue.then(() => operation(tx))
+      queue = run.then(() => undefined, () => undefined)
+      return run
+    })
+    let created = 0
+    const resolve = vi.fn(async (order: ServerOrder) => {
+      if (order.paymentSessionId) {
+        return { payseraOrderId: order.paymentSessionId, paymentUrl: 'https://pay.test/reused' }
+      }
+      created += 1
+      return { payseraOrderId: 'session-1', paymentUrl: 'https://pay.test/new' }
+    })
+
+    const [first, second] = await Promise.all([
+      createOrderPaymentSession('1001', resolve),
+      createOrderPaymentSession('1001', resolve),
+    ])
+
+    expect(created).toBe(1)
+    expect(first.payseraOrderId).toBe('session-1')
+    expect(second.payseraOrderId).toBe('session-1')
+    expect(resolve.mock.calls[1][0].paymentSessionId).toBe('session-1')
+  })
+
+  it('refuses to overwrite an existing in-flight Paysera session', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      order: {
+        findUnique: vi.fn(async () => paymentRow('session-1')),
+        update: vi.fn(),
+      },
+    }
+    transactionMock.mockImplementation(async (operation) => operation(tx))
+
+    await expect(createOrderPaymentSession('1001', async () => ({
+      payseraOrderId: 'session-2', paymentUrl: 'https://pay.test/2',
+    }))).rejects.toThrow('payment_session_conflict')
+    expect(tx.order.update).not.toHaveBeenCalled()
   })
 })

@@ -8,7 +8,10 @@ vi.mock('@/lib/orders-data-store', () => ({
   updateServerOrderPayment: vi.fn(),
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
-vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
+vi.mock('@/lib/paysera', () => {
+  class PayseraOrderNotRetryableError extends Error {}
+  return { createPayseraPaymentForOrder: vi.fn(), PayseraOrderNotRetryableError }
+})
 vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
 
@@ -79,8 +82,27 @@ describe('POST /api/orders/[id]/pay', () => {
 
     const res = await POST(makeRequest(), context)
 
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'paid' })
     expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a remotely paid existing session instead of creating another Paysera order', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentSessionId: 'session-1' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({
+      payseraOrderId: 'session-1',
+      paidEvidence: { sessionId: 'session-1', amount: 100, amountPaid: 100, currency: 'EUR' },
+    })
+    vi.mocked(updateServerOrderPayment).mockResolvedValue({ ...ORDER, paymentStatus: 'paid', paymentProvider: 'paysera' } as never)
+
+    const res = await POST(makeRequest(), context)
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'paid', order: { paymentStatus: 'paid' } })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001',
+      { paymentStatus: 'paid', paymentProvider: 'paysera' },
+      { sessionId: 'session-1', amount: 100, amountPaid: 100, currency: 'EUR' })
   })
 
   it('mints a fresh payment link and persists the new session id for an owner-accessible unpaid order', async () => {

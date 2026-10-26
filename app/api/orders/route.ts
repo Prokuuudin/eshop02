@@ -483,15 +483,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // "success" — if the gateway call fails, fail the local order (releases the stock hold)
     // rather than showing a confirmation screen with no way to actually pay.
     let paymentUrl: string | undefined
+    let payseraPaidEvidenceSeen = false
     if (paymentMethod === 'paysera') {
       try {
         const payment = await createPayseraPaymentForOrder(created)
         created = payment.order ?? created
-        paymentUrl = payment.paymentUrl
+        payseraPaidEvidenceSeen = Boolean(payment.paidEvidence)
+        if (payment.paidEvidence) {
+          const reconciled = await updateServerOrderPayment(created.id,
+            { paymentStatus: 'paid', paymentProvider: 'paysera' }, payment.paidEvidence)
+          if (!reconciled) throw new Error('order_not_found')
+          created = reconciled
+        } else {
+          if (!payment.paymentUrl) throw new Error('paysera_payment_url_missing')
+          paymentUrl = payment.paymentUrl
+        }
       } catch (error) {
         logOperationalEvent({
           event: `${paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: created.id,
         }, error)
+        if (payseraPaidEvidenceSeen) {
+          return NextResponse.json({ error: 'payment_reconciliation_pending', orderId: created.id }, { status: 409 })
+        }
         await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => {})
         return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
       }
@@ -520,11 +533,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'stock_reservation_expired' }, { status: 409 })
       }
       // A resubmit (double-click / network retry before the client got the first response)
-      // hits the same checkoutKey. The original payment link is gone with that response —
-      // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
+      // hits the same checkoutKey. Resolve the stored Paysera order and reuse its active
+      // link; creating another Paysera order for the same local order is forbidden.
       if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid' && isPayseraCheckoutEnabled()) {
         try {
           const payment = await createPayseraPaymentForOrder(existing)
+          if (payment.paidEvidence) {
+            const reconciled = await updateServerOrderPayment(existing.id,
+              { paymentStatus: 'paid', paymentProvider: 'paysera' }, payment.paidEvidence)
+            if (!reconciled) throw new Error('order_not_found')
+            return NextResponse.json({ success: true, orderId: existing.id, order: reconciled, deliveryLocation: existing.deliveryLocation, idempotent: true })
+          }
+          if (!payment.paymentUrl) throw new Error('paysera_payment_url_missing')
           return NextResponse.json({ success: true, orderId: existing.id, order: payment.order ?? existing, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
         } catch (gatewayError) {
           logOperationalEvent({

@@ -379,8 +379,8 @@ export const updateServerOrderPayment = async (
 /** Serialize gateway creation with admin edits, callbacks and reservation release. */
 export async function createOrderPaymentSession(
   orderId: string,
-  create: (order: ServerOrder) => Promise<{ payseraOrderId: string; paymentUrl: string }>,
-): Promise<{ payseraOrderId: string; paymentUrl: string; order: ServerOrder }> {
+  create: (order: ServerOrder) => Promise<{ payseraOrderId: string; paymentUrl?: string; paidEvidence?: { sessionId: string; amount: number; amountPaid: number; currency: string } }>,
+): Promise<{ payseraOrderId: string; paymentUrl?: string; paidEvidence?: { sessionId: string; amount: number; amountPaid: number; currency: string }; order: ServerOrder }> {
   return prisma.$transaction(async tx => {
     await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
     const row = await tx.order.findUnique({ where: { id: orderId } })
@@ -388,8 +388,14 @@ export async function createOrderPaymentSession(
     if (!['reserved', 'committed'].includes(row.stockReservationStatus)
       || (row.stockReservationStatus === 'reserved' && (!row.stockReservedUntil || row.stockReservedUntil <= new Date()))) throw new Error('stock_reservation_expired')
     const payment = await create(mapDbToServerOrder(row))
+    // A retry may reuse the stored Paysera order or create its first session, but it
+    // must never replace an in-flight session. The paid webhook is bound to this id.
+    if (row.paymentSessionId && payment.payseraOrderId !== row.paymentSessionId) {
+      throw new Error('payment_session_conflict')
+    }
     // The gateway call may outlive the reservation; do not expose that link.
-    if (row.stockReservationStatus === 'reserved' && (!row.stockReservedUntil || row.stockReservedUntil <= new Date())) throw new Error('stock_reservation_expired')
+    if (!payment.paidEvidence && row.stockReservationStatus === 'reserved'
+      && (!row.stockReservedUntil || row.stockReservedUntil <= new Date())) throw new Error('stock_reservation_expired')
     await tx.order.update({ where: { id: orderId }, data: { paymentSessionId: payment.payseraOrderId } })
     return { ...payment, order: { ...mapDbToServerOrder(row), paymentSessionId: payment.payseraOrderId } }
   }, { timeout: 20_000 })

@@ -7,6 +7,38 @@ const TOKEN_URL = 'https://api.paysera.com/auth/realms/Paysera/protocol/openid-c
 const ORDERS_URL = 'https://api.paysera.com/merchant-order/integration/v1/orders'
 const PAYMENT_LINKS_URL = 'https://api.paysera.com/checkout-payment-link/integration/v1/payment-links'
 
+type PayseraOrderState = {
+  id: string
+  reference: string
+  amount: number
+  amount_paid: number
+  currency: string
+  status: string
+}
+
+type PayseraPaymentLinkState = {
+  order_id: string
+  amount: number
+  currency: string
+  status: string
+  expired_at: number
+  link?: { url?: string }
+}
+
+export type PayseraPaidEvidence = {
+  sessionId: string
+  amount: number
+  amountPaid: number
+  currency: string
+}
+
+export class PayseraOrderNotRetryableError extends Error {
+  constructor(public readonly status: string) {
+    super('paysera_order_not_retryable')
+    this.name = 'PayseraOrderNotRetryableError'
+  }
+}
+
 export class PayseraConfigurationError extends Error {
   constructor() {
     super('PAYSERA_CLIENT_ID, PAYSERA_CLIENT_SECRET and PAYSERA_PROJECT_ID must be configured')
@@ -48,7 +80,41 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.value
 }
 
-export type PayseraPayment = { payseraOrderId: string; paymentUrl: string; order?: import('./orders-data-types').ServerOrder }
+export type PayseraPayment = {
+  payseraOrderId: string
+  paymentUrl?: string
+  paidEvidence?: PayseraPaidEvidence
+  order?: import('./orders-data-types').ServerOrder
+}
+
+async function payseraHeaders(): Promise<Record<string, string>> {
+  return { Authorization: `Bearer ${await getAccessToken()}`, 'Content-Type': 'application/json' }
+}
+
+async function createPaymentLink(params: {
+  payseraOrderId: string
+  orderReference: string
+  amountCents: number
+  language?: string
+  lifetime?: number
+}): Promise<PayseraPayment> {
+  const response = await fetch(PAYMENT_LINKS_URL, {
+    method: 'POST',
+    headers: await payseraHeaders(),
+    body: JSON.stringify({
+      order_id: params.payseraOrderId,
+      name: `Order ${params.orderReference}`,
+      lifetime: params.lifetime ?? 3600,
+      purchase: { amount: params.amountCents },
+      experience: { language: params.language ?? 'lv' },
+    }),
+  })
+  if (!response.ok) {
+    throw new Error(`Paysera payment link create failed: ${response.status} ${await response.text().catch(() => '')}`)
+  }
+  const link = (await response.json()) as { payment_URL: string }
+  return { payseraOrderId: params.payseraOrderId, paymentUrl: link.payment_URL }
+}
 
 export async function createPayseraPayment(params: {
   orderReference: string
@@ -60,12 +126,9 @@ export async function createPayseraPayment(params: {
   language?: string
   lifetime?: number
 }): Promise<PayseraPayment> {
-  const token = await getAccessToken()
-  const authHeaders = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-
   const orderResponse = await fetch(ORDERS_URL, {
     method: 'POST',
-    headers: authHeaders,
+    headers: await payseraHeaders(),
     body: JSON.stringify({
       purchase: {
         reference: params.orderReference,
@@ -83,49 +146,146 @@ export async function createPayseraPayment(params: {
     throw new Error(`Paysera order create failed: ${orderResponse.status} ${await orderResponse.text().catch(() => '')}`)
   }
   const order = (await orderResponse.json()) as { order_id: string }
-
-  const linkResponse = await fetch(PAYMENT_LINKS_URL, {
-    method: 'POST',
-    headers: authHeaders,
-    body: JSON.stringify({
-      order_id: order.order_id,
-      name: `Order ${params.orderReference}`,
-      lifetime: params.lifetime ?? 3600,
-      purchase: { amount: params.amountCents },
-      experience: { language: params.language ?? 'lv' },
-    }),
+  return createPaymentLink({
+    payseraOrderId: order.order_id,
+    orderReference: params.orderReference,
+    amountCents: params.amountCents,
+    language: params.language,
+    lifetime: params.lifetime,
   })
-  if (!linkResponse.ok) {
-    throw new Error(`Paysera payment link create failed: ${linkResponse.status} ${await linkResponse.text().catch(() => '')}`)
-  }
-  const link = (await linkResponse.json()) as { payment_URL: string }
+}
 
-  return { payseraOrderId: order.order_id, paymentUrl: link.payment_URL }
+async function readPayseraOrder(payseraOrderId: string): Promise<PayseraOrderState> {
+  const response = await fetch(`${ORDERS_URL}/${encodeURIComponent(payseraOrderId)}`, {
+    method: 'GET',
+    headers: await payseraHeaders(),
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error(`Paysera order read failed: ${response.status} ${await response.text().catch(() => '')}`)
+  }
+  return (await response.json()) as PayseraOrderState
+}
+
+async function findActivePaymentLink(payseraOrderId: string, amountCents: number, currency: string): Promise<string | null> {
+  const params = new URLSearchParams({ order_id: payseraOrderId, status: 'active', size: '10', order_direction: 'desc' })
+  const response = await fetch(`${PAYMENT_LINKS_URL}?${params.toString()}`, {
+    method: 'GET',
+    headers: await payseraHeaders(),
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error(`Paysera payment link read failed: ${response.status} ${await response.text().catch(() => '')}`)
+  }
+  const data = (await response.json()) as { items?: PayseraPaymentLinkState[] }
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  const active = data.items?.find((link) => link.order_id === payseraOrderId
+    && link.status === 'active'
+    && link.amount === amountCents
+    && link.currency === currency
+    && link.expired_at > nowSeconds
+    && Boolean(link.link?.url))
+  return active?.link?.url ?? null
+}
+
+async function findPayseraOrderByReference(orderId: string, amountCents: number): Promise<PayseraOrderState | null> {
+  const params = new URLSearchParams({ q: orderId, size: '100', include_total_count: 'true' })
+  const response = await fetch(`${ORDERS_URL}?${params.toString()}`, {
+    method: 'GET',
+    headers: await payseraHeaders(),
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    throw new Error(`Paysera order search failed: ${response.status} ${await response.text().catch(() => '')}`)
+  }
+  const data = (await response.json()) as { items?: PayseraOrderState[] }
+  const exact = (data.items ?? []).filter((order) => order.reference === orderId)
+  if (exact.length > 1) throw new Error('paysera_order_reference_ambiguous')
+  const found = exact[0]
+  if (!found) return null
+  if (found.amount !== amountCents || found.currency !== 'EUR') throw new Error('paysera_order_mismatch')
+  return found
+}
+
+function assertPayseraOrderMatches(order: PayseraOrderState, expected: { sessionId: string; orderId: string; total: number }): void {
+  if (order.id !== expected.sessionId
+    || order.reference !== expected.orderId
+    || order.amount !== Math.round(expected.total * 100)
+    || order.currency !== 'EUR') {
+    throw new Error('paysera_order_mismatch')
+  }
+}
+
+export async function resolvePayseraPaymentForOrder(order: {
+  id: string
+  total: number
+  language?: string
+  paymentSessionId?: string
+  stockReservedUntil?: string
+}): Promise<PayseraPayment> {
+  const lang = order.language === 'en' || order.language === 'lv' ? order.language : 'ru'
+  const lifetime = order.stockReservedUntil
+    ? Math.max(1, Math.min(3600, Math.floor((new Date(order.stockReservedUntil).getTime() - Date.now()) / 1000)))
+    : 3600
+
+  const discovered = order.paymentSessionId
+    ? await readPayseraOrder(order.paymentSessionId)
+    : await findPayseraOrderByReference(order.id, Math.round(order.total * 100))
+
+  if (discovered) {
+    const payseraOrder = discovered
+    assertPayseraOrderMatches(payseraOrder, {
+      sessionId: order.paymentSessionId ?? payseraOrder.id,
+      orderId: order.id,
+      total: order.total,
+    })
+    if (payseraOrder.status === 'paid') {
+      return {
+        payseraOrderId: payseraOrder.id,
+        paidEvidence: {
+          sessionId: payseraOrder.id,
+          amount: payseraOrder.amount,
+          amountPaid: payseraOrder.amount_paid,
+          currency: payseraOrder.currency,
+        },
+      }
+    }
+    if (payseraOrder.status !== 'pending_payment') {
+      throw new PayseraOrderNotRetryableError(payseraOrder.status)
+    }
+
+    const activeUrl = await findActivePaymentLink(payseraOrder.id, payseraOrder.amount, payseraOrder.currency)
+    if (activeUrl) return { payseraOrderId: payseraOrder.id, paymentUrl: activeUrl }
+    return createPaymentLink({
+      payseraOrderId: payseraOrder.id,
+      orderReference: order.id,
+      amountCents: payseraOrder.amount,
+      language: lang,
+      lifetime,
+    })
+  }
+
+  const siteUrl = getSiteUrl()
+  return createPayseraPayment({
+    orderReference: order.id,
+    amountCents: Math.round(order.total * 100),
+    currency: 'EUR',
+    lifetime,
+    successUrl: `${siteUrl}/${lang}/order/${order.id}?payment=success`,
+    failureUrl: `${siteUrl}/${lang}/order/${order.id}?payment=failed`,
+    callbackUrl: `${siteUrl}/api/webhooks/paysera`,
+    language: lang,
+  })
 }
 
 /**
- * Builds the redirect/callback URLs and mints a Paysera payment for one of our orders.
- * Shared by the checkout submit path, the idempotent-duplicate-submit fallback, and the
- * customer-facing "retry payment" endpoint — each needs a *fresh* link, never a cached one.
+ * Resolves one local order to a single Paysera order. Existing active links are reused;
+ * an expired link may be replaced, but an in-flight Paysera order is never replaced.
+ * Shared by checkout idempotency and the customer-facing retry endpoint.
  */
 export async function createPayseraPaymentForOrder(order: { id: string; total: number; language?: string }): Promise<PayseraPayment> {
   const { createOrderPaymentSession } = await import('./orders-data-store')
-  return createOrderPaymentSession(order.id, async current => {
-    const lang = current.language === 'en' || current.language === 'lv' ? current.language : 'ru'
-    const siteUrl = getSiteUrl()
-    return createPayseraPayment({
-      orderReference: current.id,
-      amountCents: Math.round(current.total * 100),
-      currency: 'EUR',
-      lifetime: current.stockReservedUntil
-        ? Math.max(1, Math.min(3600, Math.floor((new Date(current.stockReservedUntil).getTime() - Date.now()) / 1000)))
-        : 3600,
-      successUrl: `${siteUrl}/${lang}/order/${current.id}?payment=success`,
-      failureUrl: `${siteUrl}/${lang}/order/${current.id}?payment=failed`,
-      callbackUrl: `${siteUrl}/api/webhooks/paysera`,
-      language: lang,
-    })
-  })
+  return createOrderPaymentSession(order.id, resolvePayseraPaymentForOrder)
 }
 
 /**

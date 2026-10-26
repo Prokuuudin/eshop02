@@ -145,6 +145,7 @@ describe('current payment and stock invariants', () => {
     expect(tx.product.updateMany).not.toHaveBeenCalled()
   })
   it('withholds a link when reservation expires during gateway creation', async () => {
+    row.paymentSessionId = null
     await expect(createOrderPaymentSession('o1', async () => {
       row.stockReservedUntil = new Date(Date.now() - 1)
       return { payseraOrderId: 'expired', paymentUrl: 'https://gateway.test/pay' }
@@ -153,7 +154,7 @@ describe('current payment and stock invariants', () => {
     expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.order.findUnique)
   })
   it('allows payment of committed staff stock without requiring an expiring reservation', async () => {
-    row.stockReservationStatus = 'committed'; row.stockReservedUntil = null
+    row.stockReservationStatus = 'committed'; row.stockReservedUntil = null; row.paymentSessionId = null
     await createOrderPaymentSession('o1', async () => ({ payseraOrderId: 'staff-payment', paymentUrl: 'https://gateway.test/pay' }))
     await paid('staff-payment')
     expect(row.paymentStatus).toBe('paid'); expect(row.stockReservationStatus).toBe('committed')

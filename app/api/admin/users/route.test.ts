@@ -86,6 +86,8 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     ['grant the staff manager role', CUSTOMER_TARGET, { teamRole: 'manager' }],
     ['change another admin\'s email', ADMIN_TARGET, { email: 'attacker@evil.test' }],
     ['change a Super Admin\'s name', SUPER_TARGET, { name: 'Renamed' }],
+    ['attach a client card to another admin', ADMIN_TARGET, { cardNumber: '4321' }],
+    ['revoke the staff manager role', { ...CUSTOMER_TARGET, teamRole: 'manager' }, { teamRole: null }],
   ])('a regular admin cannot %s', async (_label, target, changes) => {
     permissionMock.mockResolvedValue(REGULAR_ADMIN)
     userFindMock.mockResolvedValueOnce(target)

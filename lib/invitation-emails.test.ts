@@ -19,9 +19,18 @@ describe('buildInviteEmail', () => {
     })
     expect(subject.length).toBeGreaterThan(0)
     expect(html).toContain('1001')
-    expect(html).toContain('https://x.lv/auth/register')
-    expect(html).not.toContain('/auth/invite?token=')
+    expect(html).toContain('https://x.lv/auth/invite?token=t')
+    expect(html).not.toContain('/auth/register')
     expect(html).toContain('Anna')
+  })
+
+  it('старый плейсхолдер {{registration_link}} в сохранённом шаблоне тоже ведёт по персональной ссылке', () => {
+    const { html } = buildInviteEmail(
+      'ru',
+      { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t' },
+      { subject: 'S', body: 'B {{registration_link}}' }
+    )
+    expect(html).toBe('B https://x.lv/auth/invite?token=t')
   })
 
   it('DB-шаблон имеет приоритет', () => {
@@ -48,9 +57,9 @@ describe('buildInviteEmail — трёхъязычный дефолт', () => {
     const { subject, html } = buildInviteEmail('lv', {
       name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t',
     })
-    expect(html).toContain('Reģistrēties')
-    expect(html).toContain('Зарегистрироваться')
-    expect(html).toContain('Register')
+    expect(html).toContain('Aktivizēt kontu')
+    expect(html).toContain('Активировать аккаунт')
+    expect(html).toContain('Activate account')
     expect(subject.length).toBeGreaterThan(0)
     expect(subject).not.toContain('{{') // без неподставленных плейсхолдеров
   })
@@ -67,8 +76,15 @@ describe('buildInviteEmail — трёхъязычный дефолт', () => {
     const { html } = buildInviteEmail('en', {
       name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc',
     })
-    const occurrences = html.split('https://x.lv/auth/register').length - 1
+    const occurrences = html.split('https://x.lv/auth/invite?token=abc').length - 1
     expect(occurrences).toBeGreaterThanOrEqual(2)
+  })
+
+  it('не учит активировать карту по номеру и цифрам телефона', () => {
+    const { html } = buildInviteEmail('en', {
+      name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc',
+    })
+    expect(html).not.toMatch(/4 cipar|4 цифр|last 4 digits/)
   })
 })
 
@@ -94,17 +110,17 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
   ) as { templates: { id: string; subject: string; body: string; variables: string[] }[] }
   const tpl = data.templates.find((t) => t.id === 'pro-invite')
 
-  it('существует и ведёт на обычную регистрацию', () => {
+  it('существует и ведёт по персональной одноразовой ссылке', () => {
     expect(tpl).toBeDefined()
-    expect(tpl!.body).toContain('{{registration_link}}')
-    expect(tpl!.body).not.toContain('{{invite_link}}')
+    expect(tpl!.body).toContain('{{invite_link}}')
+    expect(tpl!.body).not.toContain('{{registration_link}}')
   })
 
-  it('трёхъязычный с номером карты, инструкцией и общей кнопкой', () => {
+  it('трёхъязычный с номером карты, инструкцией и кнопкой активации', () => {
     expect(tpl!.body).toContain('{{card_number}}')
-    expect(tpl!.body).toContain('Reģistrēties')
-    expect(tpl!.body).toContain('Зарегистрироваться')
-    expect(tpl!.body).toContain('Register')
+    expect(tpl!.body).toContain('Aktivizēt kontu')
+    expect(tpl!.body).toContain('Активировать аккаунт')
+    expect(tpl!.body).toContain('Activate account')
     expect(tpl!.body).toContain('<ol')
   })
 
@@ -114,13 +130,13 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
     expect(tpl!.body).toContain('профессиональные цены')
     expect(tpl!.body).toContain('бонусных баллов')
     expect(tpl!.body).toContain('следующих покупках')
-    expect(tpl!.body).toContain('Есть карта клиента')
-    expect(tpl!.body).toContain('последние 4 цифры телефона')
+    expect(tpl!.body).toContain('Задайте свой пароль')
+    expect(tpl!.body).not.toMatch(/4 cipar|4 цифр|last 4 digits/)
     expect(tpl!.body).not.toMatch(/войдите.*e-?mail/i)
   })
 
   it('variables описывают все плейсхолдеры', () => {
-    expect(tpl!.variables).toEqual(expect.arrayContaining(['name', 'card_number', 'registration_link']))
+    expect(tpl!.variables).toEqual(expect.arrayContaining(['name', 'card_number', 'invite_link']))
   })
 })
 

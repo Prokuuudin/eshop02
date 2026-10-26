@@ -7,6 +7,7 @@ import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
+import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
@@ -21,6 +22,7 @@ const patchSchema = z.object({
   name: z.string().trim().min(1).max(200).nullable().optional(),
   email: z.string().trim().toLowerCase().email().max(320).optional(),
   platformRole: platformRoleSchema.optional(),
+  superAdmin: z.boolean().optional(),
   companyId: z.string().trim().max(200).nullable().optional(),
   companyName: z.string().trim().max(300).nullable().optional(),
   teamRole: teamRoleSchema.nullable().optional(),
@@ -96,6 +98,7 @@ export async function GET(req: NextRequest): Promise<Response> {
           companyId: true,
           companyName: true,
           teamRole: true,
+          superAdmin: true,
           phone: true,
           cardNumber: true,
           avatarUrl: true,
@@ -154,6 +157,21 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
 }
 
+type StaffTarget = { platformRole: string; teamRole: string | null; superAdmin: boolean }
+type PatchUpdates = Omit<z.infer<typeof patchSchema>, 'id' | 'expectedUpdatedAt' | 'currentPassword' | 'mfaCode' | 'reason'>
+
+const changesStaffAccess = (target: StaffTarget, updates: PatchUpdates): boolean =>
+  updates.platformRole !== undefined || updates.superAdmin !== undefined
+  || (updates.teamRole !== undefined && (updates.teamRole === 'manager' || target.teamRole === 'manager'))
+
+/**
+ * Super Admin (staff.manage) is required to change anyone's staff access (platform role,
+ * the staff 'manager' team role, the Super Admin flag) and to edit another staff account
+ * at all — an email change there is the first step of an account takeover via password reset.
+ */
+const requiresStaffManage = (target: StaffTarget, updates: PatchUpdates, isSelf: boolean): boolean =>
+  changesStaffAccess(target, updates) || (!isSelf && isStaffSubject(target))
+
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
@@ -175,15 +193,27 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
-    const roleChangeRequested = updates.platformRole !== undefined
-    if (id === caller.id && roleChangeRequested) {
+    const isSelf = id === caller.id
+    if (isSelf && (updates.platformRole !== undefined || updates.superAdmin !== undefined)) {
       return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
     }
+    const target = await prisma.user.findUnique({ where: { id }, select: { platformRole: true, teamRole: true, superAdmin: true } })
+    if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 })
+    if (isSelf && changesStaffAccess(target, updates)) {
+      return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
+    }
+    const staffChange = requiresStaffManage(target, updates, isSelf)
+    if (staffChange && !hasAdminPermission(caller, 'staff.manage')) {
+      return NextResponse.json({ error: 'super_admin_required' }, { status: 403 })
+    }
+    if (updates.superAdmin === true && (target.platformRole !== 'admin' || updates.platformRole !== undefined)) {
+      return NextResponse.json({ error: 'super_admin_requires_admin' }, { status: 409 })
+    }
 
-    // Role changes are step-up authenticated: MFA is mandatory for the acting admin.
-    // The target needs no prior MFA — every session is revoked on promotion and the
+    // Staff changes are step-up authenticated: MFA is mandatory for the acting Super Admin.
+    // A promoted target needs no prior MFA — every session is revoked on promotion and the
     // next login forces TOTP enrollment before any admin session exists.
-    if (roleChangeRequested) {
+    if (staffChange) {
       if (!reason) return NextResponse.json({ error: 'change_reason_required' }, { status: 400 })
       if (!currentPassword || !mfaCode) {
         return NextResponse.json({ error: 'reauthentication_required' }, { status: 401 })
@@ -204,12 +234,12 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     if (updates.platformRole === 'admin') {
-      const target = await prisma.user.findUnique({ where: { id }, select: { email: true, platformRole: true, updatedAt: true } })
-      if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-      if (target.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
+      const promotionTarget = await prisma.user.findUnique({ where: { id }, select: { email: true, platformRole: true, updatedAt: true } })
+      if (!promotionTarget) return NextResponse.json({ error: 'not_found' }, { status: 404 })
+      if (promotionTarget.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
         return NextResponse.json({ error: 'optimistic_conflict' }, { status: 409 })
       }
-      if (target.platformRole !== 'admin') {
+      if (promotionTarget.platformRole !== 'admin') {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
         const approval = await prisma.$transaction(async (tx) => {
           await tx.adminRoleChangeRequest.updateMany({
@@ -221,7 +251,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
           })
           await appendServerAudit(tx, req, caller, {
             action: 'user.admin_promotion_requested', entityType: 'user', entityId: id,
-            entityTitle: target.email, before: { platformRole: target.platformRole },
+            entityTitle: promotionTarget.email, before: { platformRole: promotionTarget.platformRole },
             after: { requestedPlatformRole: 'admin', approvalRequestId: request.id },
             reason,
           })
@@ -240,39 +270,53 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       if (before.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
         throw new Error('optimistic_conflict')
       }
+      // The target may have become staff since the pre-check: re-decide on the locked row.
+      if (requiresStaffManage(before, updates, isSelf) && !staffChange) throw new Error('reauthentication_required')
+      if (isSelf && changesStaffAccess(before, updates)) throw new Error('self_role_change_forbidden')
+      if (updates.superAdmin === true && before.platformRole !== 'admin') throw new Error('super_admin_requires_admin')
       if (before.platformRole === 'admin' && updates.platformRole && updates.platformRole !== 'admin') {
         const adminCount = await tx.user.count({ where: { platformRole: 'admin' } })
         if (adminCount <= 1) throw new Error('last_admin_protected')
       }
 
+      // Leaving the admin role always drops the Super Admin flag with it.
+      const data = updates.platformRole !== undefined && updates.platformRole !== 'admin'
+        ? { ...updates, superAdmin: false }
+        : updates
       const updateResult = await tx.user.updateMany({
         where: { id, updatedAt: new Date(expectedUpdatedAt) },
-        data: updates,
+        data,
       })
       if (updateResult.count !== 1) throw new Error('optimistic_conflict')
       const after = await tx.user.findUniqueOrThrow({ where: { id } })
+      if (isSuperAdminSubject(before) && !isSuperAdminSubject(after)) {
+        const superAdmins = await tx.user.count({ where: { platformRole: 'admin', superAdmin: true } })
+        if (superAdmins < 1) throw new Error('last_super_admin_protected')
+      }
 
       const privilegesChanged = before.platformRole !== after.platformRole
         || before.teamRole !== after.teamRole
+        || before.superAdmin !== after.superAdmin
         || before.companyId !== after.companyId
         || before.approvalRequired !== after.approvalRequired
         || before.mustChangePassword !== after.mustChangePassword
       if (privilegesChanged) await tx.session.deleteMany({ where: { userId: id } })
 
+      const emailChanged = before.email !== after.email
       await appendServerAudit(tx, req, caller, {
           action: privilegesChanged ? 'user.privileges_changed' : 'user.updated', entityType: 'user', entityId: id, entityTitle: before.email,
           before: {
-            platformRole: before.platformRole, teamRole: before.teamRole, companyId: before.companyId,
+            platformRole: before.platformRole, teamRole: before.teamRole, superAdmin: before.superAdmin, companyId: before.companyId,
             approvalRequired: before.approvalRequired, auditLoggingEnabled: before.auditLoggingEnabled,
-            mustChangePassword: before.mustChangePassword,
+            mustChangePassword: before.mustChangePassword, ...(emailChanged ? { email: before.email } : {}),
           },
           after: {
-            platformRole: after.platformRole, teamRole: after.teamRole, companyId: after.companyId,
+            platformRole: after.platformRole, teamRole: after.teamRole, superAdmin: after.superAdmin, companyId: after.companyId,
             approvalRequired: after.approvalRequired, auditLoggingEnabled: after.auditLoggingEnabled,
-            mustChangePassword: after.mustChangePassword,
+            mustChangePassword: after.mustChangePassword, ...(emailChanged ? { email: after.email } : {}),
           },
           details: `expectedUpdatedAt=${expectedUpdatedAt}; sessionsRevoked=${privilegesChanged}`,
-          reason: privilegesChanged ? reason ?? null : null,
+          reason: privilegesChanged || staffChange ? reason ?? null : null,
       })
       return after
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })
@@ -280,15 +324,17 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (!user) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     return NextResponse.json({ user: {
       id: user.id, email: user.email, name: user.name, platformRole: user.platformRole,
-      companyId: user.companyId, teamRole: user.teamRole, mfaEnabled: user.mfaEnabled,
+      companyId: user.companyId, teamRole: user.teamRole, superAdmin: user.superAdmin, mfaEnabled: user.mfaEnabled,
       customerType: user.customerType, registrationNumber: user.registrationNumber,
       vatNumber: user.vatNumber, legalAddress: user.legalAddress,
       updatedAt: user.updatedAt.toISOString(),
     } })
   } catch (e) {
     const message = e instanceof Error ? e.message : ''
-    if (message === 'optimistic_conflict') return NextResponse.json({ error: message }, { status: 409 })
-    if (message === 'last_admin_protected') return NextResponse.json({ error: message }, { status: 409 })
+    if (['optimistic_conflict', 'last_admin_protected', 'last_super_admin_protected', 'super_admin_requires_admin', 'self_role_change_forbidden'].includes(message)) {
+      return NextResponse.json({ error: message }, { status: 409 })
+    }
+    if (message === 'reauthentication_required') return NextResponse.json({ error: message }, { status: 401 })
     if (message === 'forbidden') return NextResponse.json({ error: message }, { status: 403 })
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
       return NextResponse.json({ error: 'email_taken' }, { status: 409 })

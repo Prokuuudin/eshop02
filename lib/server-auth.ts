@@ -27,6 +27,8 @@ export type ServerUser = {
   companyId?: string
   companyName?: string
   teamRole?: string
+  /** Only meaningful for platform admins; grants staff.manage. */
+  superAdmin?: boolean
   approvalRequired: boolean
   auditLoggingEnabled: boolean
   phone?: string
@@ -48,6 +50,7 @@ export function mapDbToServerUser(u: PrismaUser): ServerUser {
     companyId: u.companyId ?? undefined,
     companyName: u.companyName ?? undefined,
     teamRole: u.teamRole ?? undefined,
+    superAdmin: u.platformRole === 'admin' && u.superAdmin === true,
     approvalRequired: u.approvalRequired,
     auditLoggingEnabled: u.auditLoggingEnabled,
     phone: u.phone ?? undefined,

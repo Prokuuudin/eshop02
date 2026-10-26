@@ -16,6 +16,8 @@ model User {
   companyId           String?
   companyName         String?
   teamRole            String?
+  // Super Admin: only platform admins with this flag may manage staff (lib/admin-permissions.ts staff.manage).
+  superAdmin          Boolean   @default(false)
   approvalRequired    Boolean   @default(false)
   auditLoggingEnabled Boolean   @default(false)
   phone               String?

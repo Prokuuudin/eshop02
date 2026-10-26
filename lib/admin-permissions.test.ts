@@ -19,6 +19,19 @@ describe('admin permissions', () => {
     expect(hasAdminPermission(admin, 'settings.manage')).toBe(true)
   })
 
+  it('reserves staff.manage for Super Admins: regular admins keep every shop permission', () => {
+    const superAdmin = { platformRole: 'admin', superAdmin: true }
+    expect(hasAdminPermission(admin, 'staff.manage')).toBe(false)
+    expect(hasAdminPermission({ platformRole: 'admin', superAdmin: false }, 'staff.manage')).toBe(false)
+    expect(hasAdminPermission(superAdmin, 'staff.manage')).toBe(true)
+    // The flag means nothing without the admin platform role (e.g. after a demotion).
+    expect(hasAdminPermission({ platformRole: 'customer', superAdmin: true }, 'staff.manage')).toBe(false)
+    expect(hasAdminPermission({ platformRole: 'customer', teamRole: 'manager', superAdmin: true }, 'staff.manage')).toBe(false)
+    expect(getAdminPermissions(admin)).not.toContain('staff.manage')
+    expect(getAdminPermissions(admin)).toEqual(getAdminPermissions(superAdmin).filter((p) => p !== 'staff.manage'))
+    expect(getAdminPermissions(superAdmin)).toContain('staff.manage')
+  })
+
   it('does not grant admin access to ordinary company roles', () => {
     expect(hasAdminPermission({ platformRole: 'customer', teamRole: 'buyer' }, 'admin.access')).toBe(false)
     expect(hasAdminPermission(null, 'orders.read')).toBe(false)

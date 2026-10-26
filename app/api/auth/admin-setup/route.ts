@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return tx.user.create({
         data: {
           id: randomUUID(), email, passwordHash, name: name || 'Administrator',
-          platformRole: 'admin', auditLoggingEnabled: true,
+          platformRole: 'admin', superAdmin: true, auditLoggingEnabled: true,
         },
       })
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable })

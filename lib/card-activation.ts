@@ -44,6 +44,11 @@ export function isCardActivationEligible(user: ActivationCandidate | null): user
     && hasDeliverableEmail(user.email))
 }
 
+/** A link the cardholder can still use: neither accepted, undelivered (error) nor expired. */
+function activeInvitationWhere(userId: string): { userId: string; status: string; acceptedAt: null; expiresAt: { gt: Date } } {
+  return { userId, status: 'sent', acceptedAt: null, expiresAt: { gt: new Date() } }
+}
+
 export async function findCardActivationCandidate(cardNumber: string): Promise<ActivationCandidate | null> {
   return prisma.user.findFirst({
     where: { cardNumber: { equals: cardNumber, mode: 'insensitive' } },
@@ -60,16 +65,25 @@ export async function findCardActivationCandidate(cardNumber: string): Promise<A
  */
 export async function sendCardActivationInvite(user: ActivationCandidate & { cardNumber: string }, language: InviteLang): Promise<void> {
   try {
+    // Anyone can submit a card number, so a request must never cancel a link the cardholder may
+    // already hold (a staff invitation or an earlier self-service one). While one is usable,
+    // nothing is issued or sent and the daily e-mail quota is not spent.
+    if (await prisma.invitationToken.findFirst({ where: activeInvitationWhere(user.id), select: { id: true } })) return
+
     const limit = await checkRateLimit(`card-activation-send:${user.id}`, CARD_ACTIVATION_SEND_LIMIT)
     if (limit.limited) return
 
     const email = user.email.trim().toLowerCase()
     const token = newInviteToken()
     const expiresAt = new Date(Date.now() + CARD_ACTIVATION_TTL_HOURS * 60 * 60 * 1000).toISOString()
-    await prisma.$transaction(
-      async (tx) => replaceInvitation(tx, { userId: user.id, email, cardNumber: user.cardNumber, token, expiresAt, language }),
-      { isolationLevel: 'Serializable' },
-    )
+    // Re-checked inside the serializable transaction: of two concurrent requests only one issues a
+    // link, and the other can no longer delete it. replaceInvitation only clears expired/undelivered rows here.
+    const issued = await prisma.$transaction(async (tx) => {
+      if (await tx.invitationToken.findFirst({ where: activeInvitationWhere(user.id), select: { id: true } })) return false
+      await replaceInvitation(tx, { userId: user.id, email, cardNumber: user.cardNumber, token, expiresAt, language })
+      return true
+    }, { isolationLevel: 'Serializable' })
+    if (!issued) return
 
     const templates = await getTemplates()
     const tpl = pickInviteTemplate(templates, language)

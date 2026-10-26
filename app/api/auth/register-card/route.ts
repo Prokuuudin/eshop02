@@ -48,7 +48,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (isCardActivationEligible(candidate)) {
       const language = resolveInviteLang(typeof body.language === 'string' ? body.language : undefined)
       // Token creation and SMTP run after the response, so its timing does not reveal eligibility.
-      after(() => sendCardActivationInvite(candidate, language))
+      // The long-lived server.js process provides waitUntil; should after() ever be unavailable it
+      // throws synchronously, and a 500 for eligible cards only would be an oracle — run it unawaited
+      // instead (sendCardActivationInvite never throws).
+      try {
+        after(() => sendCardActivationInvite(candidate, language))
+      } catch (error) {
+        logApiError('[auth/register-card] after() unavailable, sending without it', error)
+        void sendCardActivationInvite(candidate, language)
+      }
     }
     return NextResponse.json(ACCEPTED, { status: 202 })
   } catch (e) {

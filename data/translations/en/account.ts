@@ -171,7 +171,7 @@ const enAccount: Record<string, string> = {
   'auth.registrationError': 'Registration error.',
   'auth.hasCardNoPassword': "Have a card but this doesn't work? Contact us:",
   'auth.cardActivationIntro': 'Enter your client card number. We will send the account activation link to the email stored in our client database.',
-  'auth.cardActivationSent': 'If the card is in our database and has an email on file, we have sent an activation link to it. The link is valid for 24 hours. If there is no email, check your spam folder or contact us:',
+  'auth.cardActivationSent': 'If the card is in our database and has an email on file, we have sent an activation link to it. The link is valid for 24 hours; while it is valid, no new one is sent. If there is no email, check your spam folder or contact us:',
   'auth.cardActivationSubmit': 'Get the link',
   'auth.invalidCardNumber': 'Card number: 1 to 6 digits.',
   'auth.confirm': 'Confirm',

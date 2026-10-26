@@ -171,7 +171,7 @@ const lvAccount: Record<string, string> = {
   'auth.registrationError': 'Reģistrācijas kļūda.',
   'auth.hasCardNoPassword': 'Ir karte, bet šie dati neder? Sazinieties ar mums:',
   'auth.cardActivationIntro': 'Ievadiet klienta kartes numuru. Konta aktivizēšanas saiti nosūtīsim uz e-pastu, kas norādīts mūsu klientu datubāzē.',
-  'auth.cardActivationSent': 'Ja karte ir mūsu datubāzē un tai ir piesaistīts e-pasts, uz to nosūtījām aktivizēšanas saiti. Saite ir derīga 24 stundas. Ja vēstules nav, pārbaudiet mapi “Surogātpasts” vai sazinieties ar mums:',
+  'auth.cardActivationSent': 'Ja karte ir mūsu datubāzē un tai ir piesaistīts e-pasts, uz to nosūtījām aktivizēšanas saiti. Saite ir derīga 24 stundas; kamēr tā ir derīga, jauna netiek sūtīta. Ja vēstules nav, pārbaudiet mapi “Surogātpasts” vai sazinieties ar mums:',
   'auth.cardActivationSubmit': 'Saņemt saiti',
   'auth.invalidCardNumber': 'Kartes numurs: no 1 līdz 6 cipariem.',
   'auth.confirm': 'Apstiprināt',

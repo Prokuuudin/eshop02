@@ -7,15 +7,21 @@ const {
   tokenDeleteManyMock,
   tokenCreateMock,
   tokenUpdateManyMock,
+  activeTokenMock,
+  txActiveTokenMock,
   transactionMock,
   checkRateLimitMock,
   sendEmailMock,
+  afterUnavailable,
 } = vi.hoisted(() => ({
+  afterUnavailable: { value: false },
   afterCallbacks: [] as Array<() => unknown>,
   userFindFirstMock: vi.fn(),
   tokenDeleteManyMock: vi.fn(),
   tokenCreateMock: vi.fn(),
   tokenUpdateManyMock: vi.fn(),
+  activeTokenMock: vi.fn(),
+  txActiveTokenMock: vi.fn(),
   transactionMock: vi.fn(),
   checkRateLimitMock: vi.fn(),
   sendEmailMock: vi.fn(),
@@ -24,12 +30,15 @@ const {
 vi.mock('server-only', () => ({}))
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
-  after: (callback: () => unknown) => { afterCallbacks.push(callback) },
+  after: (callback: () => unknown) => {
+    if (afterUnavailable.value) throw new Error('`after()` will not work correctly, because `waitUntil` is not available')
+    afterCallbacks.push(callback)
+  },
 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findFirst: userFindFirstMock },
-    invitationToken: { updateMany: tokenUpdateManyMock },
+    invitationToken: { updateMany: tokenUpdateManyMock, findFirst: activeTokenMock },
     $transaction: transactionMock,
   },
 }))
@@ -75,13 +84,16 @@ const DORMANT = {
 beforeEach(() => {
   vi.clearAllMocks()
   afterCallbacks.length = 0
+  afterUnavailable.value = false
   checkRateLimitMock.mockResolvedValue(NOT_LIMITED)
   sendEmailMock.mockResolvedValue(undefined)
   tokenDeleteManyMock.mockResolvedValue({ count: 0 })
   tokenCreateMock.mockResolvedValue({})
   tokenUpdateManyMock.mockResolvedValue({ count: 1 })
+  activeTokenMock.mockResolvedValue(null)
+  txActiveTokenMock.mockResolvedValue(null)
   transactionMock.mockImplementation(async (fn: (tx: unknown) => unknown) =>
-    fn({ invitationToken: { deleteMany: tokenDeleteManyMock, create: tokenCreateMock } }))
+    fn({ invitationToken: { deleteMany: tokenDeleteManyMock, create: tokenCreateMock, findFirst: txActiveTokenMock } }))
 })
 
 describe('POST /api/auth/register-card — activation link request', () => {
@@ -159,7 +171,79 @@ describe('POST /api/auth/register-card — activation link request', () => {
     expect(new Set(bodies)).toEqual(new Set(['202 {"ok":true}']))
   })
 
-  it('caps activation e-mails per card account (each new link replaces the previous one)', async () => {
+  it('never cancels a usable link: with an active invitation nothing is issued, sent or counted', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    activeTokenMock.mockResolvedValue({ id: 'staff_invite' })
+
+    const answers: string[] = []
+    for (let i = 0; i < 3; i++) {
+      const res = await POST(makeRequest({ cardNumber: '4321' }))
+      answers.push(`${res.status} ${await res.text()}`)
+    }
+    await runAfterResponse()
+
+    expect(new Set(answers)).toEqual(new Set(['202 {"ok":true}']))
+    expect(activeTokenMock).toHaveBeenCalledWith({
+      where: { userId: 'u_dormant', status: 'sent', acceptedAt: null, expiresAt: { gt: expect.any(Date) } },
+      select: { id: true },
+    })
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(tokenDeleteManyMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(checkRateLimitMock).not.toHaveBeenCalledWith('card-activation-send:u_dormant', expect.anything())
+  })
+
+  it('re-checks inside the serializable transaction: a concurrent winner keeps its link', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    txActiveTokenMock.mockResolvedValue({ id: 'issued_concurrently' })
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    expect(res.status).toBe(202)
+    expect(transactionMock).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' })
+    expect(tokenDeleteManyMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('logs and sends nothing when the serializable transaction loses a race', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    transactionMock.mockRejectedValue(Object.assign(new Error('write conflict'), { code: 'P2034' }))
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await expect(runAfterResponse()).resolves.toBeUndefined()
+
+    expect(res.status).toBe(202)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('replaces only expired or undelivered links: a new link is issued when none is active', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+
+    await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    // replaceInvitation clears non-accepted rows; with no active link these can only be expired/error rows.
+    expect(tokenDeleteManyMock).toHaveBeenCalledWith({ where: { userId: 'u_dormant', status: { not: 'accepted' } } })
+    expect(tokenCreateMock).toHaveBeenCalledTimes(1)
+    expect(sendEmailMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the same answer and still sends when after() is unavailable', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    afterUnavailable.value = true
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+
+    expect(res.status).toBe(202)
+    expect(await res.json()).toEqual({ ok: true })
+    await vi.waitFor(() => expect(sendEmailMock).toHaveBeenCalledTimes(1))
+    expect(sendEmailMock.mock.calls[0][0]).toBe('salon@example.lv')
+  })
+
+  it('caps activation e-mails per card account', async () => {
     userFindFirstMock.mockResolvedValue(DORMANT)
     checkRateLimitMock.mockImplementation(async (key: string) => (key === 'card-activation-send:u_dormant' ? LIMITED : NOT_LIMITED))
 

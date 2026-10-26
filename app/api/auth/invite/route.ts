@@ -12,6 +12,7 @@ import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
 const MAX_PASSWORD_LENGTH = 128
+const PRIVACY_NOTICE_VERSION = '2026-07-03'
 
 class InviteConsumedError extends Error {}
 
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    const body = (await req.json()) as { token?: string; password?: string }
+    const body = (await req.json()) as { token?: string; password?: string; privacyAcknowledged?: unknown }
     const tokenHash = hashInviteToken(body.token ?? '')
     const limits = await Promise.all([
       checkRateLimit(`invite:ip:${getClientIp(req)}`, INVITE_ATTEMPT_LIMIT),
@@ -64,6 +65,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     if (body.password.length > MAX_PASSWORD_LENGTH) {
       return NextResponse.json({ ok: false, error: 'password_too_long' }, { status: 400 })
+    }
+    // Activation is the cardholder's first use of the account: the privacy notice is acknowledged here.
+    if (body.privacyAcknowledged !== true) {
+      return NextResponse.json({ ok: false, error: 'privacy_acknowledgement_required' }, { status: 400 })
     }
 
     const found = await findValid(body.token ?? null)
@@ -110,6 +115,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           data: {
             passwordHash, mustChangePassword: false, cardNumber: inv.cardNumber,
             companyId, companyName, teamRole: 'admin',
+            privacyNoticeVersion: PRIVACY_NOTICE_VERSION, privacyAcknowledgedAt: new Date(),
           },
         })
         await grantWelcomeBonus(tx, user.id)

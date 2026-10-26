@@ -17,6 +17,7 @@ const ERROR_TEXT: Record<string, [string, string, string]> = {
     weak_password: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],
     password_too_short: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],
     user_not_found: ['Аккаунт для этого приглашения не найден. Свяжитесь с администратором.', 'The account for this invitation was not found. Please contact the administrator.', 'Šī ielūguma konts nav atrasts. Lūdzu, sazinieties ar administratoru.'],
+    staff_account: ['Эта ссылка не может активировать учётную запись сотрудника.', 'This link cannot activate a staff account.', 'Šī saite nevar aktivizēt darbinieka kontu.'],
     too_many_attempts: ['Слишком много попыток. Попробуйте позже.', 'Too many attempts. Please try again later.', 'Pārāk daudz mēģinājumu. Lūdzu, mēģiniet vēlāk.'],
     server_error: ['Ошибка сервера. Попробуйте ещё раз.', 'Server error. Please try again.', 'Servera kļūda. Mēģiniet vēlreiz.'],
 };
@@ -80,7 +81,7 @@ export default function InvitePage(): React.ReactElement {
             const res = await fetch('/api/auth/invite', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, password }),
+                body: JSON.stringify({ token, password, privacyAcknowledged: true }),
             });
             const json = await res.json() as { ok: boolean; error?: string; email?: string };
             if (!json.ok) {
@@ -214,6 +215,18 @@ export default function InvitePage(): React.ReactElement {
                         </label>
 
                         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+                        <p className="text-xs text-muted-foreground">
+                            {l(
+                                'Активируя аккаунт, вы подтверждаете, что ознакомились с',
+                                'By activating the account, you confirm that you have read the',
+                                'Aktivizējot kontu, jūs apstiprināt, ka esat iepazinies ar'
+                            )}{' '}
+                            <Link href="/privacy" className="underline text-foreground">
+                                {l('Политикой конфиденциальности', 'Privacy Policy', 'Privātuma politiku')}
+                            </Link>
+                            .
+                        </p>
 
                         <Button type="submit" className="w-full" disabled={stage === 'submitting'}>
                             {stage === 'submitting'

@@ -147,95 +147,40 @@ export const updateUserTeamRole = (
     return { success: true, user: updatedUser };
 };
 
-export type RegisterCardErrorCode =
-    | 'card_not_found'
-    | 'card_already_registered'
-    | 'wrong_password'
-    | 'wrong_contact'
-    | 'no_contact_on_file'
-    | 'contact_required'
+export type CardActivationErrorCode =
+    | 'invalid_card'
     | 'too_many_attempts'
     | 'network_error'
     | 'server_error';
 
 /**
- * Registers a B2B customer against a real company card number. Validates the
- * card and creates the account server-side (Prisma + session cookie) via
- * /api/auth/register-card — never locally. A local-only account would look
- * logged in but be invisible to every server-authoritative endpoint (orders,
- * bonus, addresses), so this must round-trip the server like loginUserAuto.
+ * Asks the server to e-mail a one-time activation link for a client card. The server answers
+ * the same way for every card (it never says whether the card exists or has an e-mail) and
+ * never opens a session here: the account is activated from the link, in /auth/invite.
  */
-export const registerCardUser = async (data: {
+export const requestCardActivation = async (data: {
     cardNumber: string;
-    /** @deprecated Corporate-card passwords are no longer supported or sent. */
-    password?: string;
-    phoneLast4?: string;
-    email?: string;
-    name?: string;
-    privacyAcknowledged?: boolean;
-    marketingConsent?: boolean;
-}): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
-    const normalizedCard = normalizeCardNumber(data.cardNumber);
-
+    language?: string;
+}): Promise<{ success: boolean; errorCode?: CardActivationErrorCode }> => {
     let res: Response;
     try {
         res = await fetch('/api/auth/register-card', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                cardNumber: normalizedCard,
-                phoneLast4: data.phoneLast4,
-                email: data.email,
-                name: data.name,
-                privacyAcknowledged: data.privacyAcknowledged === true,
-                marketingConsent: data.marketingConsent === true,
+                cardNumber: normalizeCardNumber(data.cardNumber),
+                language: data.language,
+                privacyAcknowledged: true,
             }),
         });
     } catch {
         return { success: false, errorCode: 'network_error' };
     }
 
-    if (res.status === 404) return { success: false, errorCode: 'card_not_found' };
-    if (res.status === 409) return { success: false, errorCode: 'card_already_registered' };
-    if (res.status === 422) return { success: false, errorCode: 'no_contact_on_file' };
-    if (res.status === 400) {
-        let errorCode: RegisterCardErrorCode = 'server_error';
-        try {
-            const body = (await res.json()) as { error?: string };
-            if (body.error === 'contact_required') errorCode = 'contact_required';
-        } catch {
-            // No readable JSON body — fall through to the generic server error.
-        }
-        return { success: false, errorCode };
-    }
-    if (res.status === 401) {
-        let errorCode: RegisterCardErrorCode = 'wrong_password';
-        try {
-            const body = (await res.json()) as { error?: string };
-            if (body.error === 'wrong_contact') errorCode = 'wrong_contact';
-        } catch {
-            // No readable JSON body (e.g. a legacy mocked response) — the shared
-            // company-branch wrong-password case is the safe default here.
-        }
-        return { success: false, errorCode };
-    }
+    if (res.status === 202) return { success: true };
     if (res.status === 429) return { success: false, errorCode: 'too_many_attempts' };
-    if (!res.ok) return { success: false, errorCode: 'server_error' };
-
-    const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } };
-    if (!payload.user) return { success: false, errorCode: 'server_error' };
-
-    const verifiedUser = normalizeUser({ ...payload.user, password: '', isNewUser: true });
-    const users = readUsers().filter((u) => u.id !== verifiedUser.id);
-    writeUsers([...users, verifiedUser]);
-    writeCurrentUser(verifiedUser);
-
-    if (verifiedUser.companyId) {
-        useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId);
-    }
-
-    notifyAuthChanged();
-    return { success: true };
+    if (res.status === 400) return { success: false, errorCode: 'invalid_card' };
+    return { success: false, errorCode: 'server_error' };
 };
 
 export const clearNewUserFlag = (): void => {

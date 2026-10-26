@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { I18nProvider } from '@/lib/i18n-context'
 import type { Language } from '@/data/translations'
 import { ToastProvider } from '@/lib/toast-context'
@@ -81,28 +81,16 @@ function NotificationScopeSync(): null {
   return null
 }
 
+// Корзина хранится за каждым пользователем отдельно: выход или истёкшая сессия только скрывают
+// её (гость корзины не видит), повторный вход восстанавливает с актуальными ценами.
 function CartUserSync(): null {
-  const clearCart = useCart((state) => state.clearCart)
   const userId = useAuthStore((s) => s.user?.id ?? null)
   const isHydrated = useAuthStore((s) => s.isHydrated)
-  const prevUserId = useRef<string | null>(null)
-  const initialized = useRef(false)
 
   useEffect(() => {
     if (!isHydrated) return
-    // Establish the baseline on first hydrated render; don't treat hydration as a user switch.
-    if (!initialized.current) {
-      initialized.current = true
-      prevUserId.current = userId
-      // Гость не может иметь корзину — выкидываем остатки, добавленные до auth-гейтов.
-      if (userId === null) clearCart()
-      return
-    }
-    if (userId !== prevUserId.current) {
-      clearCart()
-      prevUserId.current = userId
-    }
-  }, [userId, isHydrated, clearCart])
+    useCart.getState().syncCartUser(userId)
+  }, [userId, isHydrated])
 
   return null
 }

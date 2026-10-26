@@ -9,7 +9,13 @@ import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
 import { localizePath } from '@/lib/i18n-routing';
-import { blocksPayseraRetry, payRetryResult, pollForPaymentConfirmation, type PaymentReturnState } from '@/lib/payment-return-polling';
+import {
+    blocksPayseraRetry,
+    mergePaymentOrderSnapshot,
+    payRetryResult,
+    pollForPaymentConfirmation,
+    type PaymentReturnState,
+} from '@/lib/payment-return-polling';
 
 type PageProps = {
     params: Promise<{
@@ -40,6 +46,7 @@ function useOrderPageState({ params, searchParams }: PageProps) {
     const [paymentReturnState, setPaymentReturnState] = React.useState<PaymentReturnState>(
         query.payment === 'success' ? 'processing' : 'none'
     );
+    const latestServerOrderRef = React.useRef<LoadedOrder | null>(null);
     const { showToast } = useToast();
 
     const loadServerOrder = React.useCallback(async (signal?: AbortSignal): Promise<LoadedOrder | null> => {
@@ -60,8 +67,11 @@ function useOrderPageState({ params, searchParams }: PageProps) {
     }, [id]);
 
     const applyLoadedOrder = React.useCallback((loadedOrder: LoadedOrder | null): void => {
-        setServerOrder(loadedOrder);
-        if (loadedOrder) upsertOrder(loadedOrder);
+        const acceptedOrder = mergePaymentOrderSnapshot(latestServerOrderRef.current, loadedOrder);
+        if (acceptedOrder === latestServerOrderRef.current && acceptedOrder !== loadedOrder) return;
+        latestServerOrderRef.current = acceptedOrder;
+        setServerOrder(acceptedOrder);
+        if (acceptedOrder) upsertOrder(acceptedOrder);
     }, [upsertOrder]);
 
     React.useEffect(() => {
@@ -75,7 +85,7 @@ function useOrderPageState({ params, searchParams }: PageProps) {
             })
             .catch(() => {
                 if (!isMounted) return;
-                setServerOrder(null);
+                applyLoadedOrder(null);
             })
             .finally(() => {
                 if (!isMounted) return;

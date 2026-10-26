@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { blocksPayseraRetry, payRetryResult, pollForPaymentConfirmation } from './payment-return-polling'
+import {
+  blocksPayseraRetry,
+  mergePaymentOrderSnapshot,
+  payRetryResult,
+  pollForPaymentConfirmation,
+} from './payment-return-polling'
 
 describe('Paysera success-return polling', () => {
   it('keeps polling when the success redirect arrives before the delayed webhook', async () => {
@@ -32,6 +37,20 @@ describe('Paysera success-return polling', () => {
     expect(load).toHaveBeenCalledTimes(3)
   })
 
+  it('stops after unmount aborts the polling signal', async () => {
+    const controller = new AbortController()
+    const load = vi.fn().mockResolvedValue({ paymentStatus: 'unpaid' })
+
+    const result = await pollForPaymentConfirmation(load, {
+      attempts: 5,
+      signal: controller.signal,
+      wait: async () => controller.abort(),
+    })
+
+    expect(result).toBe('aborted')
+    expect(load).toHaveBeenCalledTimes(1)
+  })
+
   it('treats paid and legacy already_paid responses as refreshes, not generic failures', () => {
     expect(payRetryResult(true, 200, { status: 'paid' })).toBe('paid')
     expect(payRetryResult(false, 409, { error: 'already_paid' })).toBe('refresh-paid')
@@ -43,5 +62,25 @@ describe('Paysera success-return polling', () => {
     expect(blocksPayseraRetry('paid')).toBe(true)
     expect(blocksPayseraRetry('timeout')).toBe(true)
     expect(blocksPayseraRetry('none')).toBe(false)
+  })
+
+  it('does not let a late initial unpaid response overwrite an earlier paid polling response', () => {
+    const paid = { id: '1085', paymentStatus: 'paid', marker: 'polling' }
+    const staleUnpaid = { id: '1085', paymentStatus: 'unpaid', marker: 'initial' }
+
+    const afterPolling = mergePaymentOrderSnapshot(null, paid)
+    const afterLateInitial = mergePaymentOrderSnapshot(afterPolling, staleUnpaid)
+
+    expect(afterLateInitial).toBe(paid)
+    expect(afterLateInitial?.paymentStatus).toBe('paid')
+    expect(afterLateInitial?.marker).toBe('polling')
+    expect(mergePaymentOrderSnapshot(afterLateInitial, null)).toBe(paid)
+  })
+
+  it('still accepts normal non-paid status transitions', () => {
+    const unpaid = { id: '1085', paymentStatus: 'unpaid' }
+    const failed = { id: '1085', paymentStatus: 'failed' }
+
+    expect(mergePaymentOrderSnapshot(unpaid, failed)).toBe(failed)
   })
 })

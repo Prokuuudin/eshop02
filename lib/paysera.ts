@@ -1,5 +1,5 @@
 import 'server-only'
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { getSiteUrl } from './site-url'
 
 // Paysera Checkout Modern (REST/OAuth2). Docs: https://developers.paysera.com/guides/checkout-modern
@@ -91,26 +91,57 @@ async function payseraHeaders(): Promise<Record<string, string>> {
   return { Authorization: `Bearer ${await getAccessToken()}`, 'Content-Type': 'application/json' }
 }
 
+const PAYMENT_LINK_NAME_MAX_LENGTH = 255
+
+function paymentLinkName(orderReference: string, unique: boolean): string {
+  const prefix = `Order ${orderReference}`
+  if (!unique) return prefix.slice(0, PAYMENT_LINK_NAME_MAX_LENGTH)
+  const suffix = ` retry-${randomUUID()}`
+  return `${prefix.slice(0, PAYMENT_LINK_NAME_MAX_LENGTH - suffix.length)}${suffix}`
+}
+
+function payseraErrorCode(responseText: string): string | undefined {
+  try {
+    return (JSON.parse(responseText) as { error?: string }).error
+  } catch {
+    return undefined
+  }
+}
+
 async function createPaymentLink(params: {
   payseraOrderId: string
   orderReference: string
   amountCents: number
   language?: string
   lifetime?: number
+  uniqueName?: boolean
 }): Promise<PayseraPayment> {
-  const response = await fetch(PAYMENT_LINKS_URL, {
+  const headers = await payseraHeaders()
+  const send = (name: string): Promise<Response> => fetch(PAYMENT_LINKS_URL, {
     method: 'POST',
-    headers: await payseraHeaders(),
+    headers,
     body: JSON.stringify({
       order_id: params.payseraOrderId,
-      name: `Order ${params.orderReference}`,
+      name,
       lifetime: params.lifetime ?? 3600,
       purchase: { amount: params.amountCents },
       experience: { language: params.language ?? 'lv' },
     }),
   })
+
+  let response = await send(paymentLinkName(params.orderReference, params.uniqueName ?? false))
   if (!response.ok) {
-    throw new Error(`Paysera payment link create failed: ${response.status} ${await response.text().catch(() => '')}`)
+    const responseText = await response.text().catch(() => '')
+    if (response.status === 409 && payseraErrorCode(responseText) === 'validation_duplicate_name') {
+      // A previous expired/canceled link keeps its name. Retry once with a fresh name,
+      // always on the same Paysera order; never create or replace the provider order.
+      response = await send(paymentLinkName(params.orderReference, true))
+      if (!response.ok) {
+        throw new Error(`Paysera payment link create failed: ${response.status} ${await response.text().catch(() => '')}`)
+      }
+    } else {
+      throw new Error(`Paysera payment link create failed: ${response.status} ${responseText}`)
+    }
   }
   const link = (await response.json()) as { payment_URL: string }
   return { payseraOrderId: params.payseraOrderId, paymentUrl: link.payment_URL }
@@ -262,6 +293,7 @@ export async function resolvePayseraPaymentForOrder(order: {
       amountCents: payseraOrder.amount,
       language: lang,
       lifetime,
+      uniqueName: true,
     })
   }
 

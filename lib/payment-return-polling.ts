@@ -4,6 +4,18 @@ export const PAYMENT_CONFIRMATION_POLL_INTERVAL_MS = 2_000
 export type PaymentConfirmationResult = 'paid' | 'timeout' | 'aborted'
 export type PaymentReturnState = 'none' | 'processing' | 'paid' | 'timeout'
 
+type PaymentOrderSnapshot = { id?: string; paymentStatus?: string }
+
+/** A verified paid snapshot is terminal and must not be replaced by an older response. */
+export function mergePaymentOrderSnapshot<T extends PaymentOrderSnapshot>(
+  current: T | null,
+  incoming: T | null,
+): T | null {
+  if (current?.id && incoming?.id && current.id !== incoming.id) return incoming
+  if (current?.paymentStatus === 'paid' && incoming?.paymentStatus !== 'paid') return current
+  return incoming
+}
+
 export function blocksPayseraRetry(state: PaymentReturnState): boolean {
   return state !== 'none'
 }

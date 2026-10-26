@@ -381,4 +381,34 @@ describe('POST /api/auth/register-card', () => {
 
     expect(res.status).toBe(429)
   })
+
+  // Takeover chain: a card attached to a staff account (e.g. via an approved card request
+  // with the staff email) plus mustChangePassword must not let anyone reset its password.
+  it.each([
+    ['platform admin', { platformRole: 'admin', teamRole: null, superAdmin: false }],
+    ['Super Admin', { platformRole: 'admin', teamRole: null, superAdmin: true }],
+    ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
+  ])('refuses to activate a card on a %s account and changes nothing', async (_label, roles) => {
+    userFindFirstMock.mockResolvedValue({ ...DORMANT_USER, ...roles, mfaEnabled: false })
+
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321', email: 'master@example.com' }))
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'card_already_registered' })
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(res.headers.get('set-cookie')).toBeNull()
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('still activates a dormant customer whose teamRole is a B2B company owner', async () => {
+    userFindFirstMock.mockResolvedValue({ ...DORMANT_USER, platformRole: 'customer', teamRole: 'admin', superAdmin: false })
+
+    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321' }))
+
+    expect(res.status).toBe(200)
+    expect(createSessionMock).toHaveBeenCalledWith('user_dormant_1')
+  })
 })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
+import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
@@ -163,8 +164,8 @@ export async function POST(req: NextRequest): Promise<Response> {
           { email: { not: { endsWith: '@deleted.invalid' } } },
         ],
       },
-      select: { id: true, name: true, email: true, cardNumber: true },
-    })
+      select: { id: true, name: true, email: true, cardNumber: true, platformRole: true, teamRole: true, superAdmin: true },
+    }).then((rows) => rows.filter((u) => !isProtectedStaffAccount(u)))
 
     const templates = await getTemplates()
     // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override

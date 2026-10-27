@@ -307,9 +307,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                 : l('Держателей карт пока нет.', 'There are no cardholders yet.', 'Karšu īpašnieku vēl nav.')}
                         </p>
                     ) : (
-                        <div className={`overflow-x-auto transition-opacity ${cardHoldersLoading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={cardHoldersLoading}>
+                        // On desktop the table gets its own viewport-high scroll box, so its horizontal
+                        // scrollbar stays on screen instead of below 50 rows; the header row stays on top.
+                        <div className={`overflow-x-auto md:max-h-[70vh] md:overflow-y-auto transition-opacity ${cardHoldersLoading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={cardHoldersLoading}>
                             <table className="w-full text-sm">
-                                <thead>
+                                <thead className="sticky top-0 z-20 bg-card">
                                     <tr className="border-b border-border text-left">
                                         <th className="pb-2 pr-4 font-medium">{l('Карта', 'Card', 'Karte')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Имя', 'Name', 'Vārds')}</th>

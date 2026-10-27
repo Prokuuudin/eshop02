@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import {
     createNoCardDraft,
-    getCardHolderEdit,
     isValidCardNumber,
     isValidCompanyDraft,
     normalizeCardDigits,
@@ -52,8 +51,9 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [cardHoldersTotal, setCardHoldersTotal] = useState(0);
     const [cardHoldersLoading, setCardHoldersLoading] = useState(false);
     const [cardHoldersError, setCardHoldersError] = useState('');
-    const [clientEdits, setClientEdits] = useState<Record<string, { name: string; email: string; phone: string; customerType: 'individual' | 'company'; registrationNumber: string }>>({});
-    const [clientSaveBusy, setClientSaveBusy] = useState<string | null>(null);
+    // Customer opened in the staff editor (AdminCustomerEditDialog); edits go through
+    // /api/admin/customers/[id], never through the role-management /api/admin/users PATCH.
+    const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -192,41 +192,6 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-    const getClientEdit = (holder: CardHolder) => clientEdits[holder.id] ?? getCardHolderEdit(holder);
-
-    const handleSaveClientDetails = async (holder: CardHolder) => {
-        const edit = getClientEdit(holder);
-        const registrationNumber = normalizeRegistrationNumber(edit.registrationNumber);
-        if (edit.customerType === 'company' && registrationNumber.length !== 11) {
-            setFormError(l('Регистрационный номер юрлица должен содержать 11 цифр.', 'The company registration number must contain 11 digits.', 'Uzņēmuma reģistrācijas numurā jābūt 11 cipariem.'));
-            return;
-        }
-        setClientSaveBusy(holder.id);
-        try {
-            const response = await fetch('/api/admin/users', {
-                method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: holder.id,
-                    expectedUpdatedAt: holder.updatedAt,
-                    name: edit.name.trim() || null,
-                    ...(edit.email.trim() ? { email: edit.email.trim().toLowerCase() } : {}),
-                    phone: edit.phone.trim() || null,
-                    customerType: edit.customerType,
-                    registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
-                }),
-            });
-            const payload = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(payload?.error ?? 'client_update_failed');
-            setMessage(l('Данные клиента обновлены.', 'Customer details updated.', 'Klienta dati atjaunināti.'));
-            setFormError('');
-            await loadCardHolders();
-        } catch (cause) {
-            setFormError(cause instanceof Error ? cause.message : l('Не удалось обновить клиента.', 'Failed to update the customer.', 'Neizdevās atjaunināt klienta datus.'));
-        } finally {
-            setClientSaveBusy(null);
-        }
-    };
-
     const handleRejectNoCardRequest = async (requestId: string, email: string, name: string) => {
         const note = rejectNotes[requestId]?.trim() || undefined;
         setEmailBusy((prev) => ({ ...prev, [requestId]: true }));
@@ -259,7 +224,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, editingCustomerId, setEditingCustomerId, loadCardHolders, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

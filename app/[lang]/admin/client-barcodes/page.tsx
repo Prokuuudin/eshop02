@@ -12,6 +12,8 @@ import IconSearch from '@/components/ui/icon-search';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
+import AdminCustomerEditDialog from '@/components/admin/customers/AdminCustomerEditDialog';
+import { displayEmail } from './client-barcodes-model';
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage';
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
@@ -20,7 +22,6 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
     const pageState = useAdminClientBarcodesPage(registeredOnly);
     const {
         l,
-        tl,
         language,
         formError,
         message,
@@ -34,10 +35,9 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         cardHoldersTotal,
         cardHoldersLoading,
         cardHoldersError,
-        setClientEdits,
-        clientSaveBusy,
-        getClientEdit,
-        handleSaveClientDetails,
+        editingCustomerId,
+        setEditingCustomerId,
+        loadCardHolders,
         noCardRequests,
         setNoCardDrafts,
         rejectNotes,
@@ -328,100 +328,21 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                 </thead>
                                 <tbody className="divide-y divide-border">
                                     {cardHolders.map((holder) => {
-                                        const edit = getClientEdit(holder);
+                                        const notSet = l('Не указан', 'Not specified', 'Nav norādīts');
+                                        const isCompany = holder.customerType === 'company';
                                         return (
                                             <tr key={holder.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                                 <td className="py-2 pr-4 font-mono text-xs">{holder.cardNumber ?? '—'}</td>
-                                                <td className="py-2 pr-4">
-                                                    <Input
-                                                        className="min-w-36"
-                                                        value={edit.name}
-                                                        onChange={(e) =>
-                                                            setClientEdits((prev) => ({
-                                                                ...prev,
-                                                                [holder.id]: {
-                                                                    ...edit,
-                                                                    name: e.target.value,
-                                                                },
-                                                            }))
-                                                        }
-                                                        placeholder={l('Не указано', 'Not specified', 'Nav norādīts')}
-                                                    />
+                                                <td className="min-w-36 py-2 pr-4">
+                                                    {holder.personName || <span className="text-muted-foreground">{notSet}</span>}
+                                                    {isCompany && holder.companyName && <span className="block text-xs text-muted-foreground">{holder.companyName}</span>}
                                                 </td>
-                                                <td className="py-2 pr-4">
-                                                    <Input
-                                                        className="min-w-44 font-mono text-xs"
-                                                        type="email"
-                                                        value={edit.email}
-                                                        onChange={(e) =>
-                                                            setClientEdits((prev) => ({
-                                                                ...prev,
-                                                                [holder.id]: {
-                                                                    ...edit,
-                                                                    email: e.target.value,
-                                                                },
-                                                            }))
-                                                        }
-                                                        placeholder={tl('admin.clientBarcodes.emailMissing', 'Не указано', 'Not specified', 'Nav norādīts')}
-                                                    />
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    <Input
-                                                        className="min-w-36"
-                                                        value={edit.phone}
-                                                        onChange={(e) =>
-                                                            setClientEdits((prev) => ({
-                                                                ...prev,
-                                                                [holder.id]: {
-                                                                    ...edit,
-                                                                    phone: e.target.value,
-                                                                },
-                                                            }))
-                                                        }
-                                                        placeholder={tl('admin.clientBarcodes.phoneMissing', 'Не указан', 'Not specified', 'Nav norādīts')}
-                                                    />
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    <Select
-                                                        value={edit.customerType}
-                                                        onValueChange={(value: 'individual' | 'company') =>
-                                                            setClientEdits((prev) => ({
-                                                                ...prev,
-                                                                [holder.id]: {
-                                                                    ...edit,
-                                                                    customerType: value,
-                                                                },
-                                                            }))
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="w-28">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="individual">{l('Физлицо', 'Individual', 'Privātpersona')}</SelectItem>
-                                                            <SelectItem value="company">{l('Юрлицо', 'Company', 'Uzņēmums')}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </td>
-                                                <td className="py-2 pr-4">
-                                                    <Input
-                                                        className="min-w-32 font-mono text-xs"
-                                                        disabled={edit.customerType !== 'company'}
-                                                        value={edit.customerType === 'company' ? edit.registrationNumber : ''}
-                                                        onChange={(e) =>
-                                                            setClientEdits((prev) => ({
-                                                                ...prev,
-                                                                [holder.id]: {
-                                                                    ...edit,
-                                                                    registrationNumber: e.target.value,
-                                                                },
-                                                            }))
-                                                        }
-                                                        placeholder={l('11 цифр', '11 digits', '11 cipari')}
-                                                    />
-                                                </td>
-                                                <td className="py-2 pr-4 text-xs">{edit.customerType === 'company' ? holder.vatNumber || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
-                                                <td className="min-w-48 py-2 pr-4 text-xs">{edit.customerType === 'company' ? holder.legalAddress || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
+                                                <td className="py-2 pr-4 font-mono text-xs">{displayEmail(holder) || <span className="text-muted-foreground">{notSet}</span>}</td>
+                                                <td className="py-2 pr-4 text-xs">{holder.phone || <span className="text-muted-foreground">{notSet}</span>}</td>
+                                                <td className="py-2 pr-4 text-xs">{isCompany ? l('Юрлицо', 'Company', 'Uzņēmums') : l('Физлицо', 'Individual', 'Privātpersona')}</td>
+                                                <td className="py-2 pr-4 font-mono text-xs">{isCompany ? holder.registrationNumber || notSet : '—'}</td>
+                                                <td className="py-2 pr-4 text-xs">{isCompany ? holder.vatNumber || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
+                                                <td className="min-w-48 py-2 pr-4 text-xs">{isCompany ? holder.legalAddress || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
                                                 <td className="min-w-48 py-2 pr-4 text-xs">{holder.address || l('Не указан', 'Not specified', 'Nav norādīts')}</td>
                                                 <td className="min-w-48 py-2 pr-4 text-xs">
                                                     {holder.bankName || holder.iban ? (
@@ -445,8 +366,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     <span className="ml-1 text-xs text-muted-foreground">({formatEuro(pointsToEuros(holder.bonusPoints ?? 0), locale)})</span>
                                                 </td>
                                                 <td className="py-2 pl-2">
-                                                    <Button size="sm" variant="outline" disabled={clientSaveBusy === holder.id} onClick={() => void handleSaveClientDetails(holder)}>
-                                                        {clientSaveBusy === holder.id ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Сохранить', 'Save', 'Saglabāt')}
+                                                    <Button size="sm" variant="outline" onClick={() => setEditingCustomerId(holder.id)}>
+                                                        {l('Карточка', 'Details', 'Kartīte')}
                                                     </Button>
                                                 </td>
                                             </tr>
@@ -470,6 +391,12 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         </div>
                     )}
                 </section>
+                <AdminCustomerEditDialog
+                    key={editingCustomerId ?? 'closed'}
+                    customerId={editingCustomerId}
+                    onClose={() => setEditingCustomerId(null)}
+                    onSaved={() => void loadCardHolders()}
+                />
             </main>
         </AdminGate>
     );

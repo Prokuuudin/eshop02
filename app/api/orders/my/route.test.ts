@@ -34,7 +34,7 @@ describe('GET /api/orders/my', () => {
     const response = await GET(request('?take=25'))
     expect(response.status).toBe(200)
     expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({
-      where: { OR: [{ userId: 'u1' }, { email: 'buyer@test.com' }] },
+      where: { OR: [{ userId: 'u1' }, { userId: null, email: { equals: 'buyer@test.com', mode: 'insensitive' } }] },
       take: 26,
     }))
   })

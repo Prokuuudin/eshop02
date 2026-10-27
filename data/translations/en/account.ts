@@ -407,6 +407,7 @@ const enAccount: Record<string, string> = {
   'account.errors.emailTaken': 'This email is already in use',
   'account.errors.sessionExpired': 'Your session has expired. Sign in again',
   'account.errors.saveFailed': 'Could not save the profile. Please try again',
+  'account.errors.profileConflict': 'Your details were updated in the meantime. The form now shows the current data — check it and save again',
   'account.requestQuote.b2bOnlyToast': 'RFQ is available only for B2B accounts',
   'account.requestQuote.addAtLeastOneToast': 'Add at least one product',
   'account.requestQuote.submitErrorToast': 'Failed to send the request. Please try again.',

@@ -14,6 +14,7 @@ export type CardHolder = {
   id: string
   email: string
   name: string | null
+  personName: string | null
   phone: string | null
   cardNumber: string | null
   bonusPoints: number
@@ -37,13 +38,6 @@ export type NoCardDraft = {
   cardNumber: string
 }
 
-export type CardHolderEdit = {
-  name: string
-  email: string
-  phone: string
-  customerType: 'individual' | 'company'
-  registrationNumber: string
-}
 
 export const normalizeCardDigits = (value: string): string => value.replace(/\D/g, '')
 export const normalizeRegistrationNumber = (value: string): string => value.replace(/\D/g, '')
@@ -58,12 +52,7 @@ export function isValidCompanyDraft(draft: NoCardDraft): boolean {
     || (!!draft.companyName.trim() && normalizeRegistrationNumber(draft.registrationNumber).length === 11)
 }
 
-export function getCardHolderEdit(holder: CardHolder): CardHolderEdit {
-  return {
-    name: holder.name ?? '',
-    email: holder.email.endsWith('@client.local') ? '' : holder.email,
-    phone: holder.phone ?? '',
-    customerType: holder.customerType === 'company' ? 'company' : 'individual',
-    registrationNumber: holder.registrationNumber ?? '',
-  }
+/** Generated @client.local addresses are an internal login key, not a contact address. */
+export function displayEmail(holder: Pick<CardHolder, 'email'>): string {
+  return holder.email.endsWith('@client.local') ? '' : holder.email
 }

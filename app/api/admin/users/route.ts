@@ -7,8 +7,9 @@ import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
-import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
+import { hasAdminPermission, isProtectedStaffAccount, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
+import { joinName, readCustomerCanonical } from '@/lib/admin/customer-edit-model'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -121,28 +122,24 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.user.count({ where }),
     ])
 
+    // Columns are the source of truth; checkoutProfile only fills a column that is still empty
+    // (see lib/admin/customer-edit-model.ts). Overlaying the profile hid staff edits (BUG-002).
     const mapped = users.map(({ checkoutProfile, ...u }) => {
-      const profile = checkoutProfile && typeof checkoutProfile === 'object' && !Array.isArray(checkoutProfile)
-        ? checkoutProfile as Record<string, unknown>
-        : null
-      const profileText = (field: string): string => typeof profile?.[field] === 'string' ? String(profile[field]).trim() : ''
-      const profileType = profileText('customerType')
-      const customerType = profileType === 'company' || profileType === 'individual' ? profileType : u.customerType
-      const profileName = customerType === 'company'
-        ? profileText('companyName')
-        : [profileText('firstName'), profileText('lastName')].filter(Boolean).join(' ')
+      const canonical = readCustomerCanonical({ ...u, checkoutProfile })
+      const personName = joinName(canonical.firstName, canonical.lastName)
       return {
         ...u,
-        name: profileName || u.name,
-        phone: profileText('phone') || u.phone,
-        companyName: profileText('companyName') || u.companyName,
-        customerType,
-        registrationNumber: profileText('regNumber').replace(/\D/gu, '') || u.registrationNumber,
-        vatNumber: profileText('vatNumber') || u.vatNumber,
-        legalAddress: profileText('legalAddress') || u.legalAddress,
-        address: [profileText('address'), profileText('city'), profileText('postalCode')].filter(Boolean).join(', ') || u.legalAddress,
-        bankName: profileText('bankName') || null,
-        iban: profileText('iban') || null,
+        name: (canonical.customerType === 'company' && canonical.companyName) || personName || u.name,
+        personName: personName || null,
+        phone: canonical.phone || null,
+        companyName: canonical.companyName || null,
+        customerType: canonical.customerType,
+        registrationNumber: canonical.registrationNumber || null,
+        vatNumber: canonical.vatNumber || null,
+        legalAddress: canonical.legalAddress || null,
+        address: [canonical.address, canonical.city, canonical.postalCode].filter(Boolean).join(', ') || null,
+        bankName: canonical.bankName || null,
+        iban: canonical.iban || null,
         registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
         registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,
         createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
@@ -172,6 +169,16 @@ const changesStaffAccess = (target: StaffTarget, updates: PatchUpdates): boolean
 const requiresStaffManage = (target: StaffTarget, updates: PatchUpdates, isSelf: boolean): boolean =>
   changesStaffAccess(target, updates) || (!isSelf && isStaffSubject(target))
 
+const CUSTOMER_DATA_FIELDS = ['name', 'email', 'phone', 'cardNumber', 'avatarUrl', 'companyName', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress'] as const
+
+/**
+ * A customer's contact data, requisites and card are edited only through
+ * /api/admin/customers/[id] (customers.update, reason, audit, email step-up). Staff
+ * accounts keep being edited here under staff.manage.
+ */
+const editsCustomerData = (target: StaffTarget, updates: PatchUpdates): boolean =>
+  !isProtectedStaffAccount(target) && CUSTOMER_DATA_FIELDS.some((field) => updates[field] !== undefined)
+
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
@@ -187,9 +194,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
-    const customerDetailFields = new Set(['name', 'email', 'phone', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress'])
-    const customerDetailsOnly = Object.keys(updates).every((field) => customerDetailFields.has(field))
-    if (caller.platformRole !== 'admin' && !customerDetailsOnly) {
+    // Staff managers edit no accounts here; customer data has its own endpoint and permission.
+    if (caller.platformRole !== 'admin') {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -201,6 +207,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     if (isSelf && changesStaffAccess(target, updates)) {
       return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
+    }
+    if (editsCustomerData(target, updates)) {
+      return NextResponse.json({ error: 'use_customer_endpoint' }, { status: 409 })
     }
     const staffChange = requiresStaffManage(target, updates, isSelf)
     if (staffChange && !hasAdminPermission(caller, 'staff.manage')) {
@@ -272,6 +281,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
       // The target may have become staff since the pre-check: re-decide on the locked row.
       if (requiresStaffManage(before, updates, isSelf) && !staffChange) throw new Error('reauthentication_required')
+      if (editsCustomerData(before, updates)) throw new Error('use_customer_endpoint')
       if (isSelf && changesStaffAccess(before, updates)) throw new Error('self_role_change_forbidden')
       if (updates.superAdmin === true && before.platformRole !== 'admin') throw new Error('super_admin_requires_admin')
       if (before.platformRole === 'admin' && updates.platformRole && updates.platformRole !== 'admin') {
@@ -331,7 +341,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     } })
   } catch (e) {
     const message = e instanceof Error ? e.message : ''
-    if (['optimistic_conflict', 'last_admin_protected', 'last_super_admin_protected', 'super_admin_requires_admin', 'self_role_change_forbidden'].includes(message)) {
+    if (['optimistic_conflict', 'last_admin_protected', 'last_super_admin_protected', 'super_admin_requires_admin', 'self_role_change_forbidden', 'use_customer_endpoint'].includes(message)) {
       return NextResponse.json({ error: message }, { status: 409 })
     }
     if (message === 'reauthentication_required') return NextResponse.json({ error: message }, { status: 401 })

@@ -10,6 +10,7 @@ describe('admin permissions', () => {
       'admin.access', 'orders.read', 'orders.update', 'customers.read', 'rfq.read', 'rfq.quote',
     ])
     expect(hasAdminPermission(manager, 'users.manage')).toBe(false)
+    expect(hasAdminPermission(manager, 'customers.update')).toBe(false)
     expect(hasAdminPermission(manager, 'catalog.update')).toBe(false)
   })
 
@@ -17,6 +18,8 @@ describe('admin permissions', () => {
     expect(hasAdminPermission(admin, 'users.manage')).toBe(true)
     expect(hasAdminPermission(admin, 'orders.refund')).toBe(true)
     expect(hasAdminPermission(admin, 'settings.manage')).toBe(true)
+    expect(hasAdminPermission(admin, 'customers.update')).toBe(true)
+    expect(hasAdminPermission({ platformRole: 'admin', superAdmin: true }, 'customers.update')).toBe(true)
   })
 
   it('reserves staff.manage for Super Admins: regular admins keep every shop permission', () => {

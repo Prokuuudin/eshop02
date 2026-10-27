@@ -407,6 +407,7 @@ const lvAccount: Record<string, string> = {
   'account.errors.emailTaken': 'Šis e-pasts jau tiek izmantots',
   'account.errors.sessionExpired': 'Sesija ir beigusies. Piesakieties vēlreiz',
   'account.errors.saveFailed': 'Neizdevās saglabāt profilu. Mēģiniet vēlreiz',
+  'account.errors.profileConflict': 'Jūsu dati pa to laiku tika atjaunināti. Forma tagad rāda aktuālos datus — pārbaudiet tos un saglabājiet vēlreiz',
   'account.requestQuote.b2bOnlyToast': 'RFQ ir pieejams tikai B2B kontiem',
   'account.requestQuote.addAtLeastOneToast': 'Pievienojiet vismaz vienu preci',
   'account.requestQuote.submitErrorToast': 'Neizdevās nosūtīt pieprasījumu. Mēģiniet vēlreiz.',

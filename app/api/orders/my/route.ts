@@ -12,7 +12,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const take = Number.isInteger(rawTake) ? Math.min(100, Math.max(1, rawTake)) : 50
     const cursor = req.nextUrl.searchParams.get('cursor') || undefined
     const rows = await prisma.order.findMany({
-      where: { OR: [{ userId: user.id }, { email: user.email }] },
+      // Same rule as canAccessOrder: the email fallback covers guest orders only, never an
+      // order that belongs to another account whose snapshot happens to carry this email.
+      where: { OR: [{ userId: user.id }, { userId: null, email: { equals: user.email, mode: 'insensitive' } }] },
       orderBy: { createdAt: 'desc' },
       take: take + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

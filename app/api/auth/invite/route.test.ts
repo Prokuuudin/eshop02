@@ -68,7 +68,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
   it('atomically consumes an invitation and establishes a new session', async () => {
     const invitation = { status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' }
     invitationFindMock.mockResolvedValue(invitation)
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a', email: 'buyer@test.com', cardNumber: '1234567890' })
     const tx = {
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
@@ -99,6 +99,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
   it.each([
     ['an expired', { status: 'sent', expiresAt: new Date(Date.now() - 1000) }, 410, 'token_expired'],
     ['an undelivered (error)', { status: 'error', expiresAt: future }, 404, 'invalid_token'],
+    ['a revoked', { status: 'revoked', expiresAt: future }, 404, 'invalid_token'],
   ])('refuses %s invitation without creating a session', async (_label, invitation, status, error) => {
     invitationFindMock.mockResolvedValue({ userId: 'u1', email: 'buyer@test.com', cardNumber: '1234', ...invitation })
     const response = await post({ token: 'token', password: 'valid-password' })
@@ -111,7 +112,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
   it('grants the one-time welcome bonus on invitation acceptance', async () => {
     const invitation = { status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' }
     invitationFindMock.mockResolvedValue(invitation)
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a', email: 'buyer@test.com', cardNumber: '1234567890' })
     const tx = {
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
@@ -130,7 +131,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
 
   it('maps a concurrent consume loss to already_used and creates no session', async () => {
     invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' })
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a', email: 'buyer@test.com', cardNumber: '1234567890' })
     transactionMock.mockImplementation(async (fn) => fn({
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     }))
@@ -153,5 +154,34 @@ describe('/api/auth/invite validation and abuse protection', () => {
     expect(transactionMock).not.toHaveBeenCalled()
     expect(createSessionMock).not.toHaveBeenCalled()
     expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  it.each([
+    ['the account email changed after the link was sent', { email: 'new-owner@test.com', cardNumber: '1234' }],
+    ['the account card changed after the link was sent', { email: 'buyer@test.com', cardNumber: '5678' }],
+  ])('refuses a stale invitation when %s: card and password stay untouched', async (_label, current) => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234' })
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a', platformRole: 'customer', teamRole: null, superAdmin: false, ...current })
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ ok: false, error: 'invitation_stale' })
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('keeps the account card instead of restoring the card stored in the invitation', async () => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'Buyer@Test.com', cardNumber: '01234' })
+    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a', email: 'buyer@test.com', cardNumber: '1234' })
+    const tx = {
+      invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+      user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
+      bonusTransaction: { findFirst: vi.fn().mockResolvedValue(null), create: vi.fn() },
+      keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
+    }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(200)
+    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ cardNumber: '1234' }) }))
   })
 })

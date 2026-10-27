@@ -406,6 +406,7 @@ const ruAccount: Record<string, string> = {
   'account.errors.emailTaken': 'Этот email уже используется',
   'account.errors.sessionExpired': 'Сессия истекла. Войдите в аккаунт заново',
   'account.errors.saveFailed': 'Не удалось сохранить профиль. Попробуйте ещё раз',
+  'account.errors.profileConflict': 'Ваши данные за это время были изменены. В форме теперь актуальные данные — проверьте их и сохраните ещё раз',
   'account.requestQuote.b2bOnlyToast': 'RFQ доступен только для B2B-аккаунтов',
   'account.requestQuote.addAtLeastOneToast': 'Добавьте хотя бы один товар',
   'account.requestQuote.submitErrorToast': 'Не удалось отправить запрос. Попробуйте ещё раз.',

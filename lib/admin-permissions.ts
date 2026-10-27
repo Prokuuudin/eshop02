@@ -10,6 +10,9 @@ export const ADMIN_PERMISSIONS = [
   'prices.update',
   'customers.read',
   'customers.export',
+  // Edit a customer's contact data, requisites, addresses and card (not staff accounts).
+  // Admins and Super Admins hold it; staff managers do not.
+  'customers.update',
   'rfq.read',
   'rfq.quote',
   'marketing.manage',
@@ -102,6 +105,7 @@ const ADMIN_PATH_PERMISSIONS: ReadonlyArray<readonly [string, AdminPermission]> 
   ['/admin/stock-alerts', 'catalog.read'],
   ['/admin/customers', 'customers.read'],
   ['/admin/client-barcodes', 'customers.read'],
+  ['/admin/client-database', 'customers.read'],
   ['/admin/accounts', 'customers.read'],
   ['/admin/invitations', 'users.manage'],
   ['/admin/marketing', 'marketing.manage'],

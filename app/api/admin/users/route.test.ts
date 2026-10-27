@@ -10,7 +10,8 @@ vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   user: { findUnique: userFindMock, findMany: vi.fn(), count: vi.fn() }, $transaction: transactionMock,
 } }))
-import { PATCH } from './route'
+import { prisma } from '@/lib/prisma'
+import { GET, PATCH } from './route'
 
 const now = new Date('2026-08-31T07:00:00.000Z').toISOString()
 const patch = (body: unknown, origin = 'https://shop.test') => PATCH(new NextRequest('https://shop.test/api/admin/users', {
@@ -98,23 +99,44 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect(transactionMock).not.toHaveBeenCalled()
   })
 
-  it('still lets a regular admin edit a customer without step-up (shop operations unchanged)', async () => {
-    permissionMock.mockResolvedValue(REGULAR_ADMIN)
+  it.each([
+    ['regular admin', REGULAR_ADMIN, { name: 'New name' }],
+    ['regular admin', REGULAR_ADMIN, { email: 'attacker@evil.test' }],
+    ['Super Admin', SUPER_ADMIN, { email: 'attacker@evil.test', ...STEP_UP }],
+    ['Super Admin', SUPER_ADMIN, { cardNumber: '4321', ...STEP_UP }],
+  ])('sends a %s editing customer data to /api/admin/customers (no step-up bypass)', async (_label, caller, changes) => {
+    permissionMock.mockResolvedValue(caller)
     userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
-    const tx = txFor(row({ ...CUSTOMER_TARGET, name: 'Old' }))
-    const response = await patch({ id: 'u1', expectedUpdatedAt: now, name: 'New name' })
-    expect(response.status).toBe(200)
-    expect(verifyPasswordMock).not.toHaveBeenCalled()
-    expect(tx.session.deleteMany).not.toHaveBeenCalled()
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, ...changes })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'use_customer_endpoint' })
+    expect(transactionMock).not.toHaveBeenCalled()
   })
 
   it('refuses when the target became staff after the pre-check', async () => {
     permissionMock.mockResolvedValue(REGULAR_ADMIN)
     userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
     const tx = txFor(row(ADMIN_TARGET))
-    const response = await patch({ id: 'u1', expectedUpdatedAt: now, email: 'attacker@evil.test' })
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, approvalRequired: true })
     expect(response.status).toBe(401)
     expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('refuses customer data when a staff target became a customer after the pre-check', async () => {
+    userFindMock.mockResolvedValueOnce(ADMIN_TARGET).mockResolvedValueOnce(CREDENTIALS)
+    const tx = txFor(row(CUSTOMER_TARGET))
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, name: 'Renamed', ...STEP_UP })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'use_customer_endpoint' })
+    expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('still lets a Super Admin edit a staff account name with step-up', async () => {
+    userFindMock.mockResolvedValueOnce(ADMIN_TARGET).mockResolvedValueOnce(CREDENTIALS)
+    const tx = txFor(row(ADMIN_TARGET))
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, name: 'Renamed', ...STEP_UP })
+    expect(response.status).toBe(200)
+    expect(tx.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { name: 'Renamed' } }))
   })
 
   it('fails role-change step-up when either credential is invalid', async () => {
@@ -195,5 +217,34 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'last_admin_protected' })
     expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /api/admin/users customer view', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionMock.mockResolvedValue(REGULAR_ADMIN)
+  })
+
+  it('shows the User columns staff edit, not a stale checkoutProfile mirror (BUG-002)', async () => {
+    vi.mocked(prisma.user.findMany).mockResolvedValue([{
+      id: 'u1', email: 'anna@example.test', name: 'Anna Correct', phone: '+37120000001', cardNumber: '9001',
+      customerType: 'company', companyName: 'SIA Correct', registrationNumber: '40000000001', vatNumber: 'LV40000000001',
+      legalAddress: 'Riga, Correct 1', privacyAcknowledgedAt: null, platformRole: 'customer',
+      createdAt: new Date(now), updatedAt: new Date(now),
+      checkoutProfile: {
+        customerType: 'company', firstName: 'Anna', lastName: 'Stale', phone: '+37129999999', companyName: 'SIA Stale',
+        regNumber: '40000000009', vatNumber: 'LV40000000009', legalAddress: 'Old', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001',
+        bankName: 'Bank', iban: 'LV00BANK0000000000001',
+      },
+    }] as never)
+    vi.mocked(prisma.user.count).mockResolvedValue(1 as never)
+    const response = await GET(new NextRequest('https://shop.test/api/admin/users?hasCard=1'))
+    const { users } = await response.json() as { users: Array<Record<string, unknown>> }
+    expect(users[0]).toMatchObject({
+      name: 'SIA Correct', personName: 'Anna Correct', phone: '+37120000001', companyName: 'SIA Correct',
+      registrationNumber: '40000000001', vatNumber: 'LV40000000001', legalAddress: 'Riga, Correct 1',
+      address: 'Street 1, Riga, LV-1001', bankName: 'Bank', iban: 'LV00BANK0000000000001',
+    })
   })
 })

@@ -42,27 +42,52 @@ function useAccountProfileImpl(
     const [profileDraft, setProfileDraft] = useState<ProfileDraft | null>(null);
     const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
 
-    const startEditingProfile = () => {
-        const nameParts = (user?.name || '').trim().split(/\s+/, 2);
-        setProfileDraft({
-            name: user?.name || '',
-            email: isInternalEmail(user?.email || '') ? '' : (user?.email || ''),
+    // Version of the server profile the draft was built from; echoed back on save so a stale
+    // form cannot silently overwrite newer data (e.g. requisites corrected by staff).
+    const [profileRevision, setProfileRevision] = useState<string | null>(null);
+
+    const draftFrom = (source: Pick<User, 'name' | 'email' | 'phone' | 'avatarUrl' | 'checkoutProfile' | 'companyName' | 'companyId'>): ProfileDraft => {
+        const nameParts = (source.name || '').trim().split(/\s+/, 2);
+        return {
+            name: source.name || '',
+            email: isInternalEmail(source.email || '') ? '' : (source.email || ''),
             ...EMPTY_CHECKOUT_PROFILE,
             firstName: nameParts[0] || '',
             lastName: nameParts[1] || '',
-            ...user?.checkoutProfile,
-            phone: user?.checkoutProfile?.phone || user?.phone || '',
+            ...source.checkoutProfile,
+            phone: source.checkoutProfile?.phone || source.phone || '',
             password: '',
-            companyName: user?.checkoutProfile?.companyName || (user?.companyId ? '' : (user?.companyName || '')),
-            avatarUrl: user?.avatarUrl || '',
-        });
+            companyName: source.checkoutProfile?.companyName || (source.companyId ? '' : (source.companyName || '')),
+            avatarUrl: source.avatarUrl || '',
+        };
+    };
+
+    const loadServerDraft = async (): Promise<boolean> => {
+        try {
+            const response = await fetch('/api/user/profile', { cache: 'no-store' });
+            if (!response.ok) return false;
+            const { profile } = await response.json() as { profile?: Pick<User, 'name' | 'email' | 'phone' | 'avatarUrl' | 'checkoutProfile'> & { updatedAt: string } };
+            if (!profile) return false;
+            setProfileDraft(draftFrom(profile));
+            setProfileRevision(profile.updatedAt);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    const startEditingProfile = () => {
+        setProfileDraft(user ? draftFrom(user) : null);
+        setProfileRevision(null);
         setProfileErrors({});
         setIsEditingProfile(true);
+        void loadServerDraft();
     };
 
     const cancelEditingProfile = () => {
         setIsEditingProfile(false);
         setProfileDraft(null);
+        setProfileRevision(null);
         setProfileErrors({});
     };
 
@@ -79,6 +104,7 @@ function useAccountProfileImpl(
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    expectedUpdatedAt: profileRevision,
                     name: profileDraft.name,
                     email: normalizedEmail,
                     phone: profileDraft.phone,
@@ -101,6 +127,11 @@ function useAccountProfileImpl(
                 }),
             });
             const result = await response.json().catch(() => ({})) as { error?: string };
+            if (response.status === 409 && result.error === 'profile_conflict') {
+                await loadServerDraft();
+                setProfileErrors({ email: t('account.errors.profileConflict') });
+                return;
+            }
             if (!response.ok) {
                 const message = result.error === 'email_taken'
                     ? t('account.errors.emailTaken')

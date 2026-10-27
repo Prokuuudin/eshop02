@@ -8,6 +8,7 @@ import { grantWelcomeBonus } from '@/lib/bonus-ledger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
+import { normalizeCardNumber } from '@/lib/card-number'
 
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
@@ -28,6 +29,10 @@ async function findValid(token: string | null) {
   }
   if (invitation.status === 'accepted') {
     return { ok: false as const, res: NextResponse.json({ ok: false, error: 'already_used' }, { status: 409 }) }
+  }
+  // Only a delivered, not yet consumed link is usable; any other state (error, revoked) is dead.
+  if (invitation.status !== 'sent') {
+    return { ok: false as const, res: NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 }) }
   }
   if (invitation.expiresAt < new Date()) {
     return { ok: false as const, res: NextResponse.json({ ok: false, error: 'token_expired' }, { status: 410 }) }
@@ -80,6 +85,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (isProtectedStaffAccount(user)) {
       return NextResponse.json({ ok: false, error: 'staff_account' }, { status: 409 })
     }
+    // Staff may have changed the account's email or card since this link was sent. A stale link
+    // must neither activate the account for the old address nor restore the old card number.
+    if (user.email.toLowerCase() !== inv.email.toLowerCase()
+      || (user.cardNumber && normalizeCardNumber(user.cardNumber) !== normalizeCardNumber(inv.cardNumber))) {
+      return NextResponse.json({ ok: false, error: 'invitation_stale' }, { status: 409 })
+    }
 
     const passwordHash = await hashPassword(body.password)
     const companyId = user.companyId ?? `company_master_${randomUUID()}`
@@ -113,7 +124,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         await tx.user.update({
           where: { id: user.id },
           data: {
-            passwordHash, mustChangePassword: false, cardNumber: inv.cardNumber,
+            passwordHash, mustChangePassword: false, cardNumber: user.cardNumber ?? inv.cardNumber,
             companyId, companyName, teamRole: 'admin',
             privacyNoticeVersion: PRIVACY_NOTICE_VERSION, privacyAcknowledgedAt: new Date(),
           },

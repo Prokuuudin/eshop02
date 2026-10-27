@@ -22,7 +22,7 @@ import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT } from '@/lib/orders
 import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-variants'
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
-import { sendAdminOrderNotificationEmail } from '@/lib/order-admin-notification'
+import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
 
 export const runtime = 'nodejs'
 
@@ -373,7 +373,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         total: pricing.total,
         promoCode: pricing.promoApplied ? promoCode : undefined,
       }
-    })
+    }, { notificationSource: 'checkout', notificationCorrelationId: correlationId })
 
     logOperationalEvent({
       event: 'order_created',
@@ -409,15 +409,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           event: `${paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: created.id,
         }, error)
         if (payseraPaidEvidenceSeen) {
-          await sendAdminOrderNotificationEmail({ ...created, paymentStatus: 'pending' }, {
-            source: 'checkout', correlationId,
+          await setAdminOrderNotificationPaymentStatusOverride(created.id, 'pending').catch((outboxError) => {
+            logOperationalEvent({
+              event: 'order_admin_email_status_hint_failed', level: 'error', alert: true,
+              correlationId, orderId: created.id, paymentStatus: 'pending',
+              errorType: outboxError instanceof Error ? outboxError.name : 'UnknownError',
+            })
           })
           return NextResponse.json({ error: 'payment_reconciliation_pending', orderId: created.id }, { status: 409 })
         }
         const failedOrder = await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => null)
-        await sendAdminOrderNotificationEmail(failedOrder ?? { ...created, paymentStatus: 'failed' }, {
-          source: 'checkout', correlationId,
-        })
+        if (!failedOrder) {
+          await setAdminOrderNotificationPaymentStatusOverride(created.id, 'failed').catch((outboxError) => {
+            logOperationalEvent({
+              event: 'order_admin_email_status_hint_failed', level: 'error', alert: true,
+              correlationId, orderId: created.id, paymentStatus: 'failed',
+              errorType: outboxError instanceof Error ? outboxError.name : 'UnknownError',
+            })
+          })
+        }
         return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
       }
     }
@@ -429,8 +439,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ? (error as { responseCode: number }).responseCode
         : undefined,
     }))
-    await sendAdminOrderNotificationEmail(created, { source: 'checkout', correlationId })
-
     if (Math.random() < 0.01) void gcRateLimitStore()
 
     return NextResponse.json({ success: true, orderId: created.id, order: created, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })

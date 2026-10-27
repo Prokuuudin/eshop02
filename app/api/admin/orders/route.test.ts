@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { txMock, adminNotificationMock } = vi.hoisted(() => ({
+const { txMock } = vi.hoisted(() => ({
   txMock: vi.fn(),
-  adminNotificationMock: vi.fn(),
 }))
 
 vi.mock('@/lib/observability', () => ({
@@ -20,7 +19,6 @@ vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: vi
 }) }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
-vi.mock('@/lib/order-admin-notification', () => ({ sendAdminOrderNotificationEmail: adminNotificationMock }))
 vi.mock('@/lib/orders-data-store', () => ({
   updateServerOrderByAdmin: vi.fn(),
   AdminOrderUpdateError: class AdminOrderUpdateError extends Error {
@@ -91,7 +89,6 @@ function makeRequest(body: Record<string, unknown> = VALID_BODY): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  adminNotificationMock.mockResolvedValue('sent')
   vi.mocked(prisma.orderOperationalException.findMany).mockResolvedValue([] as never)
   txMock.mockImplementation(async (cb: (tx: unknown) => unknown) => cb({
     orderStatusRecord: { create: vi.fn() },
@@ -269,10 +266,10 @@ describe('POST /api/admin/orders', () => {
     expect(orderArg.total).toBe(55)
     expect(orderArg.paymentProvider).toBe('manual')
     expect(orderArg.userId).toBeUndefined()
-    expect(adminNotificationMock).toHaveBeenCalledOnce()
-    expect(adminNotificationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: '1042' }),
-      expect.objectContaining({ source: 'admin' }),
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.any(Object),
+      undefined,
+      expect.objectContaining({ notificationSource: 'admin' }),
     )
 
     // Status starts 'confirmed' (staff already processed this sale) and it's
@@ -344,9 +341,10 @@ describe('POST /api/admin/orders', () => {
     expect(res.status).toBe(201)
     expect(body.order.id).toBe('1045')
     expect(body.warning).toBe('order_saved_status_note_failed')
-    expect(adminNotificationMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: '1045' }),
-      expect.objectContaining({ source: 'admin' }),
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.any(Object),
+      undefined,
+      expect.objectContaining({ notificationSource: 'admin' }),
     )
   })
 })

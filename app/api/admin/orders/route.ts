@@ -20,7 +20,6 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
 import { stockLedgerFlags } from '@/lib/stock-ledger-config'
-import { sendAdminOrderNotificationEmail } from '@/lib/order-admin-notification'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -188,7 +187,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Staff typed every unit price: customer sellability (ERP B2B price) does not apply here.
-    const created = await createServerOrder(orderBase, undefined, { staffPricedSale: true })
+    const created = await createServerOrder(orderBase, undefined, {
+      staffPricedSale: true,
+      notificationSource: 'admin',
+      notificationCorrelationId: correlationId,
+    })
 
     // Staff already processed this sale, so it starts confirmed (not pending)
     // and, unlike a status transition on an existing order, this can't fail
@@ -211,8 +214,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       logApiError("[admin/orders POST meta]", metaError)
       metaWarning = 'order_saved_status_note_failed'
     }
-
-    await sendAdminOrderNotificationEmail(created, { source: 'admin', correlationId })
 
     return NextResponse.json({ order: created, ...(metaWarning ? { warning: metaWarning } : {}) }, { status: 201 })
   } catch (error) {

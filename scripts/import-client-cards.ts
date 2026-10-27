@@ -13,7 +13,9 @@
  *
  * Для отсутствующего, некорректного или повторяющегося email использует
  * уникальный технический адрес card.<номер>@client.local. Пропускает (с
- * отчётом): нечисловой код, дубли кодов и конфликты карт в БД.
+ * отчётом): нечисловой код, дубли кодов и конфликты карт в БД. Имя с
+ * однозначно испорченной кодировкой (cp1257 как cp1251) чинит, сомнительное
+ * пропускает и печатает списком (см. lib/name-encoding.ts, BUG-001).
  *
  * Usage:
  *   npx tsx scripts/import-client-cards.ts           # dry run, только отчёт
@@ -30,6 +32,7 @@ import bcrypt from 'bcryptjs'
 import * as XLSX from 'xlsx'
 import { derivePkLast3 } from '../lib/personal-code'
 import { isValidCardNumber, normalizeCardNumber } from '../lib/card-number'
+import { resolveImportedClientName } from '../lib/name-encoding'
 
 const APPLY = process.argv.includes('--apply')
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -68,6 +71,7 @@ async function main() {
 
   // ── 1. Чистка и фильтрация строк файла ──────────────────────────────────
   const raw: Client[] = []
+  const encodingReview: string[] = []
   for (const r of rows) {
     const code = clean(r['Код'])
     const rawEmail = clean(r['mail'])?.toLowerCase() ?? null
@@ -81,10 +85,19 @@ async function main() {
       skip('нечисловой код')
       continue
     }
+    // Экспорт GrinS отдаёт cp1257 прочитанным как cp1251 («Bзrziтa», BUG-001):
+    // однозначное чиним, сомнительное — в ручную проверку, без создания аккаунта
+    const resolvedName = resolveImportedClientName(clean(r['Наименование'])!)
+    if (!resolvedName.ok) {
+      skip(`имя: подозрение на ошибочную кодировку (${resolvedName.reason})`)
+      encodingReview.push(`${normalizedCode}\t${clean(r['Наименование'])}`)
+      continue
+    }
+    if (resolvedName.repaired) skip('имя перекодировано cp1257 (не пропуск)')
     if (rawEmail && !email) skip('невалидный email заменён техническим')
     raw.push({
       code: normalizedCode,
-      name: clean(r['Наименование']),
+      name: resolvedName.name,
       pk: clean(r['pk']),
       tel: clean(r['tel']),
       email,
@@ -164,6 +177,10 @@ async function main() {
   console.log(`Обновить cardNumber у существующих юзеров: ${toUpdate.length}`)
   console.log(`Создать спящих юзеров: ${toCreate.length}`)
   console.log('Пропущено:', skipped)
+  if (encodingReview.length > 0) {
+    console.log(`\nИмена на ручную проверку кодировки (${encodingReview.length}), код\tимя:`)
+    for (const line of encodingReview) console.log(`  ${line}`)
+  }
 
   if (!APPLY) {
     console.log('\nDry run. Для записи: npx tsx scripts/import-client-cards.ts --apply')

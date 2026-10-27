@@ -9,12 +9,15 @@ import { logOperationalEvent } from '@/lib/observability'
 import type { ServerOrder } from '@/lib/orders-data-store'
 import { stores } from '@/data/stores'
 import { translations } from '@/data/translations'
+import type { AdminOrderNotificationSource } from '@/lib/order-admin-notification-outbox'
 
-export type AdminOrderNotificationSource = 'checkout' | 'admin' | 'api_v1'
+export type { AdminOrderNotificationSource } from '@/lib/order-admin-notification-outbox'
 
 export type AdminOrderNotificationContext = {
   source: AdminOrderNotificationSource
   correlationId?: string
+  outboxId?: string
+  attempt?: number
 }
 
 export type AdminOrderNotificationResult = 'sent' | 'not_configured' | 'failed'
@@ -176,6 +179,8 @@ export async function sendAdminOrderNotificationEmail(
   const diagnostics = {
     correlationId: context.correlationId,
     orderId: order.id,
+    outboxId: context.outboxId,
+    attempt: context.attempt,
     source: context.source,
     paymentStatus: order.paymentStatus ?? 'unknown',
     paymentProvider: order.paymentProvider ?? 'unknown',

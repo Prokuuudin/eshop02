@@ -26,6 +26,10 @@ import {
   tryHoldOrderStock,
 } from '@/lib/stock-ledger'
 import { logOperationalEvent } from '@/lib/observability'
+import {
+  enqueueAdminOrderNotification,
+  type AdminOrderNotificationSource,
+} from '@/lib/order-admin-notification-outbox'
 
 export type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerOrderLegalDetails, ServerPaymentStatus } from '@/lib/orders-data-types'
 export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -49,6 +53,9 @@ export type CreateOrderOptions = {
    * existence and stock are. Never set this for customer-initiated orders.
    */
   staffPricedSale?: boolean
+  /** Safe routing metadata persisted with the transactional admin-email outbox event. */
+  notificationSource?: AdminOrderNotificationSource
+  notificationCorrelationId?: string
 }
 
 /** Create the order row plus its side effects (stock, promo usage, bonus balance) atomically. */
@@ -163,6 +170,12 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
         },
       })
     }
+
+    await enqueueAdminOrderNotification(tx, {
+      orderId: created.id,
+      source: options.notificationSource ?? 'checkout',
+      correlationId: options.notificationCorrelationId,
+    })
 
     return created
   })

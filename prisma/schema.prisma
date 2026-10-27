@@ -490,6 +490,7 @@ model Order {
   checkoutKey      String?  @unique
   stockAllocations StockAllocation[]
   operationalExceptions OrderOperationalException[]
+  adminNotifications OrderNotificationOutbox[]
 
   @@index([email])
   @@index([createdAt])
@@ -497,6 +498,30 @@ model Order {
   @@index([stockReservationStatus, stockReservedUntil])
   @@index([userId])
   @@index([companyId])
+}
+
+model OrderNotificationOutbox {
+  id                    String   @id @default(cuid())
+  orderId               String
+  notificationType      String
+  source                String
+  correlationId         String?
+  paymentStatusOverride String?
+  status                String   @default("pending")
+  attempts              Int      @default(0)
+  nextAttemptAt         DateTime @default(now())
+  lockedAt              DateTime?
+  lockToken             String?
+  sentAt                DateTime?
+  lastErrorCode         String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, notificationType])
+  @@index([status, nextAttemptAt])
+  @@index([status, lockedAt])
 }
 
 model OrderOperationalException {

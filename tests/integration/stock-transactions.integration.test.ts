@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 type State = {
   stock: Record<string, number>
   orders: string[]
+  outboxOrders: string[]
   checkoutOpen: boolean
   lockedProducts: string[][]
 }
 
-const state: State = { stock: {}, orders: [], checkoutOpen: true, lockedProducts: [] }
+const state: State = { stock: {}, orders: [], outboxOrders: [], checkoutOpen: true, lockedProducts: [] }
 
 // The GrinS maintenance gate reads KeyValueSetting through $queryRawUnsafe (outside and
 // FOR SHARE inside the transaction); the harness answers it from `state.checkoutOpen`.
@@ -67,6 +68,15 @@ function transactionClient(draft: State) {
         return data
       }),
     },
+    orderNotificationOutbox: {
+      create: vi.fn(async ({ data }: { data: { orderId: string } }) => {
+        if (draft.outboxOrders.includes(data.orderId)) {
+          throw Object.assign(new Error('duplicate outbox'), { code: 'P2002' })
+        }
+        draft.outboxOrders.push(data.orderId)
+        return data
+      }),
+    },
     product: {
       findMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
         where.id.in.filter((id) => draft.stock[id] !== undefined)
@@ -89,6 +99,7 @@ function transactionClient(draft: State) {
 beforeEach(() => {
   state.stock = { p1: 5, p2: 3 }
   state.orders = []
+  state.outboxOrders = []
   state.checkoutOpen = true
   state.lockedProducts = []
   vi.clearAllMocks()
@@ -99,6 +110,7 @@ beforeEach(() => {
     const result = await operation(transactionClient(draft))
     state.stock = draft.stock
     state.orders = draft.orders
+    state.outboxOrders = draft.outboxOrders
     state.lockedProducts = draft.lockedProducts
     return result
   })
@@ -111,6 +123,7 @@ describe('order stock transaction integration', () => {
     await expect(createServerOrder(baseOrder)).rejects.toBeInstanceOf(CheckoutMaintenanceError)
     expect(prismaMock.$transaction).not.toHaveBeenCalled()
     expect(state.orders).toEqual([])
+    expect(state.outboxOrders).toEqual([])
     expect(state.stock).toEqual({ p1: 5, p2: 3 })
   })
 
@@ -119,6 +132,7 @@ describe('order stock transaction integration', () => {
 
     expect(created.id).toBe('1001')
     expect(state.orders).toEqual(['1001'])
+    expect(state.outboxOrders).toEqual(['1001'])
     expect(state.stock).toEqual({ p1: 3, p2: 2 })
     expect(state.lockedProducts).toEqual([['p1', 'p2']])
   })
@@ -128,6 +142,7 @@ describe('order stock transaction integration', () => {
 
     await expect(createServerOrder(baseOrder)).rejects.toBeInstanceOf(InsufficientStockError)
     expect(state.orders).toEqual([])
+    expect(state.outboxOrders).toEqual([])
     expect(state.stock).toEqual({ p1: 5, p2: 0 })
   })
 
@@ -147,6 +162,7 @@ describe('order stock transaction integration', () => {
         const result = await operation(transactionClient(draft))
         state.stock = draft.stock
         state.orders = draft.orders
+        state.outboxOrders = draft.outboxOrders
         return result
       })
       transactionTail = current.then(() => undefined, () => undefined)

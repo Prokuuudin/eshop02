@@ -8,7 +8,6 @@ import { authenticateRequest, successResponse, errorResponse, parsePagination } 
 import { prisma } from '@/lib/prisma'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
-import { sendAdminOrderNotificationEmail } from '@/lib/order-admin-notification'
 
 export const runtime = 'nodejs'
 
@@ -204,9 +203,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           ? body.promoCode.trim().toUpperCase() : undefined,
         total: pricing.total,
       }
-    })
-
-    await sendAdminOrderNotificationEmail(created, { source: 'api_v1', correlationId })
+    }, { notificationSource: 'api_v1', notificationCorrelationId: correlationId })
 
     return successResponse(
       {

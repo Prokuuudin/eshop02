@@ -34,6 +34,9 @@ vi.mock('@/lib/orders-data-store', () => ({
   },
 }))
 vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
+vi.mock('@/lib/order-admin-notification-outbox', () => ({
+  setAdminOrderNotificationPaymentStatusOverride: vi.fn().mockResolvedValue(undefined),
+}))
 vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 vi.mock('@/lib/turnstile-server', () => ({
@@ -57,6 +60,7 @@ import { getServerUser } from '@/lib/server-auth'
 import { createServerOrder, ExistingCheckoutOrderError, updateServerOrderPayment } from '@/lib/orders-data-store'
 import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
 import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
@@ -234,7 +238,11 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
   })
   it('stores pickup id and allows pickup and lockers without a home address', async () => {
     expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'pickup', pickupStoreId: 'imanta', address: '', city: '', postalCode: '' }))).status).toBe(200)
-    expect(createServerOrder).toHaveBeenLastCalledWith(expect.objectContaining({ pickupStoreId: 'imanta' }), expect.any(Function))
+    expect(createServerOrder).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pickupStoreId: 'imanta' }),
+      expect.any(Function),
+      expect.objectContaining({ notificationSource: 'checkout' }),
+    )
     const terminal = getDeliveryLocations('unisend', 'LV')[0]
     expect((await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: terminal.id, address: '', city: '', postalCode: '' }))).status).toBe(200)
   })
@@ -263,24 +271,26 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     const response = await POST(makeRequest({ ...VALID_ORDER, deliveryMethod: 'unisend', deliveryLocationId: terminal.id, deliveryLocation: { id: terminal.id, address: 'FORGED ADDRESS' } }))
     expect(response.status).toBe(200)
     expect((await response.json()).deliveryLocation).toEqual(terminal)
-    expect(createServerOrder).toHaveBeenCalledWith(expect.objectContaining({ deliveryLocation: terminal }), expect.any(Function))
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ deliveryLocation: terminal }),
+      expect.any(Function),
+      expect.objectContaining({ notificationSource: 'checkout' }),
+    )
     await vi.waitFor(() => expect(sendEmail).toHaveBeenCalledWith(VALID_ORDER.email, expect.any(String), expect.stringContaining(`ID: ${terminal.id}`)))
   })
 
-  it('sends email to CONTACT_TO with order id in subject', async () => {
+  it('passes checkout metadata for the transactional admin notification', async () => {
     const res = await POST(makeRequest())
     expect(res.status).toBe(200)
-
-    // Wait for fire-and-forget emails to flush
-    await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.length).toBeGreaterThanOrEqual(1))
-
-    const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
-    expect(adminCall).toBeDefined()
-    const [, subject, html] = adminCall!
-    expect(subject).toContain('1001')
-    expect(html).toContain('1001')
-    expect(html).toContain('Ivan')
-    expect(html).toContain('64')
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Function),
+      expect.objectContaining({
+        notificationSource: 'checkout',
+        notificationCorrelationId: expect.any(String),
+      }),
+    )
+    expect(vi.mocked(sendEmail).mock.calls.some(([to]) => to === 'admin@shop.com')).toBe(false)
   })
 
   it('F: rejects a stale-cart product without a valid B2B price with 409 and sends no email', async () => {
@@ -366,7 +376,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(adminCall).toBeUndefined()
   })
 
-  it('ignores a client-supplied creation date in the persisted notification', async () => {
+  it('ignores a client-supplied creation date in the persisted order used by the outbox', async () => {
     vi.mocked(getLocaleConfig).mockResolvedValue({
       defaultLanguage: 'ru',
       dateFormat: 'YYYY-MM-DD',
@@ -375,11 +385,8 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     })
 
     await POST(makeRequest({ ...VALID_ORDER, createdAt: '2026-06-16T10:00:00.000Z' }))
-    await vi.waitFor(() => expect(vi.mocked(sendEmail).mock.calls.length).toBeGreaterThanOrEqual(1))
-
-    const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
-    const [, , html] = adminCall!
-    expect(html).not.toContain('2026-06-16')
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0]
+    expect(persisted.createdAt).not.toBe('2026-06-16T10:00:00.000Z')
   })
 
   it('accepts the bank-transfer option offered by checkout', async () => {
@@ -688,13 +695,30 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
     expect(res.status).toBe(502)
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
-    await vi.waitFor(() => {
-      const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
-      expect(adminCall?.[2]).toContain('Ошибка оплаты')
-    })
+    expect(setAdminOrderNotificationPaymentStatusOverride).toHaveBeenCalledWith('1001', 'failed')
   })
 
-  it('does not roll back or change a saved order when the admin SMTP notification fails', async () => {
+  it('keeps the outbox notification pending when Paysera paid evidence needs reconciliation', async () => {
+    const paidEvidence = { sessionId: 'pay-1', amount: 6400, amountPaid: 6400, currency: 'EUR' }
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({
+      payseraOrderId: 'pay-1',
+      paidEvidence,
+    })
+    vi.mocked(updateServerOrderPayment).mockRejectedValue(new Error('reconciliation unavailable'))
+
+    const response = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'payment_reconciliation_pending', orderId: '1001' })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith(
+      '1001',
+      { paymentStatus: 'paid', paymentProvider: 'paysera' },
+      paidEvidence,
+    )
+    expect(setAdminOrderNotificationPaymentStatusOverride).toHaveBeenCalledWith('1001', 'pending')
+  })
+
+  it('does not roll back or change a saved order when the customer email fails', async () => {
     vi.mocked(sendEmail).mockRejectedValue(new Error('smtp unavailable'))
 
     const res = await POST(makeRequest())

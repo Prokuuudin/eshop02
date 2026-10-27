@@ -4,9 +4,9 @@ import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 import { getDeliveryLocations } from '@/lib/delivery-locations'
 import { calcDeliveryFee } from '@/lib/delivery'
 
-const { authenticateMock, pricingMock, persistMock, productFindMock, orderFindMock, orderCountMock } = vi.hoisted(() => ({
+const { authenticateMock, pricingMock, persistMock, productFindMock, orderFindMock, orderCountMock, adminNotificationMock } = vi.hoisted(() => ({
   authenticateMock: vi.fn(), pricingMock: vi.fn(), persistMock: vi.fn(),
-  productFindMock: vi.fn(), orderFindMock: vi.fn(), orderCountMock: vi.fn(),
+  productFindMock: vi.fn(), orderFindMock: vi.fn(), orderCountMock: vi.fn(), adminNotificationMock: vi.fn(),
 }))
 vi.mock('@/lib/api-helpers', () => ({
   authenticateRequest: authenticateMock,
@@ -23,6 +23,7 @@ vi.mock('@/lib/orders-data-store', async () => {
   class ExistingCheckoutOrderError extends Error { constructor(public order: { id: string }) { super('existing') } }
   return { createServerOrder: persistMock, InsufficientStockError, ExistingCheckoutOrderError }
 })
+vi.mock('@/lib/order-admin-notification', () => ({ sendAdminOrderNotificationEmail: adminNotificationMock }))
 // Test-only Riga service area (real list not approved yet).
 vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: async () => {
   const settings = structuredClone((await import('@/lib/commerce-settings')).DEFAULT_COMMERCE_SETTINGS)
@@ -46,6 +47,7 @@ const request = (method: string, body?: unknown, query = '', idempotencyKey?: st
 describe('/api/v1/orders', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    adminNotificationMock.mockResolvedValue('sent')
     authenticateMock.mockResolvedValue({ authenticated: true, user: {
       id: 'api-user', email: 'buyer@test.com', companyId: 'company-a', apiAccess: true,
     } })
@@ -139,6 +141,11 @@ describe('/api/v1/orders', () => {
     expect(pricingMock).toHaveBeenCalledWith(expect.objectContaining({ items: [{ id: 'p1', quantity: 2 }] }), expect.anything())
     const responseBody = await response.json()
     expect(responseBody.data).toMatchObject({ orderId: '1001', total: 121 })
+    expect(adminNotificationMock).toHaveBeenCalledOnce()
+    expect(adminNotificationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: '1001', total: 121 }),
+      expect.objectContaining({ source: 'api_v1' }),
+    )
   })
 
   it('maps stock conflicts to 409 without hiding the affected products', async () => {
@@ -177,5 +184,6 @@ describe('/api/v1/orders', () => {
     expect((await response.json()).data).toMatchObject({ orderId: '1001', idempotent: true })
     const persisted = persistMock.mock.calls[0][0]
     expect(persisted.checkoutKey).toMatch(/^[a-f0-9]{64}$/)
+    expect(adminNotificationMock).not.toHaveBeenCalled()
   })
 })

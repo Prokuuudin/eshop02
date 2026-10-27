@@ -100,7 +100,8 @@ export async function sendEmail(
         correlationId: options.correlationId,
         attempt,
         responseCode,
-      }, error)
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      })
       if (!transient || attempt === 3) break
       await new Promise((resolve) => setTimeout(resolve, attempt * 500))
     }

@@ -46,7 +46,8 @@ describe('mailer degradation', () => {
 
     expect(sendMail).toHaveBeenCalledTimes(1)
     expect(logOperationalEvent).toHaveBeenCalledWith(expect.objectContaining({
-      event: 'smtp_send_failed', level: 'error', alert: true, responseCode: 550,
-    }), expect.any(Error))
+      event: 'smtp_send_failed', level: 'error', alert: true, responseCode: 550, errorType: 'Error',
+    }))
+    expect(JSON.stringify(vi.mocked(logOperationalEvent).mock.calls)).not.toContain('mailbox rejected')
   })
 })

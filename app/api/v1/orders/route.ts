@@ -3,11 +3,12 @@ import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest } from 'next/server'
 import { createHash } from 'node:crypto'
-import { logApiError } from '@/lib/observability'
+import { getCorrelationId, logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
+import { sendAdminOrderNotificationEmail } from '@/lib/order-admin-notification'
 
 export const runtime = 'nodejs'
 
@@ -82,6 +83,7 @@ export async function GET(req: NextRequest): Promise<Response> {
  * Body: { items: [{ productId, quantity }], address: {...}, payment?, promoCode?, deliveryMethod?, notes? }
  */
 export async function POST(req: NextRequest): Promise<Response> {
+  const correlationId = getCorrelationId(req)
   try {
     const auth = await authenticateRequest(req)
     if (!auth.authenticated) {
@@ -203,6 +205,8 @@ export async function POST(req: NextRequest): Promise<Response> {
         total: pricing.total,
       }
     })
+
+    await sendAdminOrderNotificationEmail(created, { source: 'api_v1', correlationId })
 
     return successResponse(
       {

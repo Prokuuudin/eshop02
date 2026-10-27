@@ -3,7 +3,7 @@ import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-
 import { calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest, NextResponse } from 'next/server'
-import { logApiError } from '@/lib/observability'
+import { getCorrelationId, logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import {
@@ -20,6 +20,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
 import { stockLedgerFlags } from '@/lib/stock-ledger-config'
+import { sendAdminOrderNotificationEmail } from '@/lib/order-admin-notification'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -123,6 +124,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // every other money field (subtotal/discount/delivery/total) is still
 // recomputed server-side, never trusted from the client.
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const correlationId = getCorrelationId(req)
   const user = await requireAdminPermission('orders.update')
   if (user instanceof NextResponse) return user
 
@@ -209,6 +211,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       logApiError("[admin/orders POST meta]", metaError)
       metaWarning = 'order_saved_status_note_failed'
     }
+
+    await sendAdminOrderNotificationEmail(created, { source: 'admin', correlationId })
 
     return NextResponse.json({ order: created, ...(metaWarning ? { warning: metaWarning } : {}) }, { status: 201 })
   } catch (error) {

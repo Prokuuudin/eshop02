@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: { $queryRawUnsafe: vi.fn().mockRejectedValue(new Error('Unexpected DB access in orders API unit test')) },
 }))
@@ -687,6 +688,22 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     const res = await POST(makeRequest({ ...VALID_ORDER, paymentMethod: 'paysera' }))
     expect(res.status).toBe(502)
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
+    await vi.waitFor(() => {
+      const adminCall = vi.mocked(sendEmail).mock.calls.find(([to]) => to === 'admin@shop.com')
+      expect(adminCall?.[2]).toContain('Ошибка оплаты')
+    })
+  })
+
+  it('does not roll back or change a saved order when the admin SMTP notification fails', async () => {
+    vi.mocked(sendEmail).mockRejectedValue(new Error('smtp unavailable'))
+
+    const res = await POST(makeRequest())
+
+    expect(res.status).toBe(200)
+    expect((await res.json()).order).toMatchObject({ id: '1001', paymentStatus: 'unpaid' })
+    expect(createServerOrder).toHaveBeenCalledOnce()
+    expect(updateServerOrderPayment).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(sendEmail).toHaveBeenCalled())
   })
 
   it.each([undefined, 'false'])('rejects Paysera checkout before any order or gateway work when the flag is %s', async (flag) => {

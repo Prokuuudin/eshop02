@@ -13,6 +13,9 @@
  *   npx tsx scripts/repair-client-name-encoding.ts                 # dry run: CSV + сводка
  *   npx tsx scripts/repair-client-name-encoding.ts --apply --expect-host=<db host>
  *   npx tsx scripts/repair-client-name-encoding.ts --rollback=<rollback.json> --expect-host=<db host>
+ *   npx tsx scripts/repair-client-name-encoding.ts --apply-file=<changes.json> --expect-host=<db host>
+ *     применяет утверждённые вручную замены (формат rollback-файла: host, rows[id, cardNumber, oldName, newName]);
+ *     откат — тот же файл через --rollback; dry run — --check-file=<changes.json> (только SELECT)
  *   --out-dir=<dir>   куда писать отчёты (по умолчанию C:/Temp/bug001-name-repair-<ts>)
  *
  * Запись требует --expect-host, равный хосту из DATABASE_URL: .env.local
@@ -31,6 +34,8 @@ import { classifyNameEncoding, type NameEncodingIssue } from '../lib/name-encodi
 const arg = (name: string) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
 const APPLY = process.argv.includes('--apply')
 const ROLLBACK = arg('rollback')
+const APPLY_FILE = arg('apply-file')
+const CHECK_FILE = arg('check-file')
 const EXPECT_HOST = arg('expect-host')
 const OUT_DIR = arg('out-dir') ?? `C:/Temp/bug001-name-repair-${Date.now()}`
 
@@ -108,29 +113,68 @@ const MANUAL_CONFIDENCE: Record<NameEncodingIssue | 'provenance', Confidence> = 
   provenance: 'medium',
 }
 
-async function rollback(file: string) {
+/** Dry run для --apply-file: сколько строк файла сейчас готово к применению и к откату. Только SELECT. */
+async function checkFile(file: string) {
+  const { prisma } = await import('../lib/prisma')
+  const host = databaseHost()
+  const data = JSON.parse(readFileSync(file, 'utf8')) as RollbackFile
+  const ids = data.rows.map((r) => r.id)
+  const current = new Map(
+    (await prisma.$queryRaw<{ id: string; cardNumber: string | null; name: string | null }[]>`
+      SELECT id, "cardNumber", name FROM "User" WHERE id = ANY(${ids}::text[])`).map((u) => [u.id, u]),
+  )
+  let ready = 0, alreadyApplied = 0
+  const mismatches: string[] = []
+  for (const r of data.rows) {
+    const u = current.get(r.id)
+    if (u && u.cardNumber === r.cardNumber && u.name === r.oldName) ready++
+    else if (u && u.cardNumber === r.cardNumber && u.name === r.newName) alreadyApplied++
+    else mismatches.push(`${r.cardNumber}\t${r.id}`)
+  }
+  console.log({ host, fileHost: data.host, hostMatches: data.host === host, rows: data.rows.length, uniqueIds: new Set(ids).size, ready, alreadyApplied, mismatches: mismatches.length })
+  for (const m of mismatches) console.log(`  расхождение: ${m}`)
+}
+
+/**
+ * Переименовывает строки файла oldName → newName (forward) или обратно
+ * (back) одной транзакцией: только если текущее имя равно исходному и
+ * совпали все строки, иначе не меняет ничего.
+ */
+async function applyFile(file: string, direction: 'forward' | 'back') {
   const { prisma } = await import('../lib/prisma')
   const host = databaseHost()
   assertWriteTarget(host)
   const data = JSON.parse(readFileSync(file, 'utf8')) as RollbackFile
-  if (data.host !== host) throw new Error(`rollback-файл записан для ${data.host}, а не для ${host}`)
-  const restored = await prisma.$transaction(
+  if (data.host !== host) throw new Error(`файл ${file} записан для ${data.host}, а не для ${host}`)
+  const from = data.rows.map((r) => (direction === 'forward' ? r.oldName : r.newName))
+  const to = data.rows.map((r) => (direction === 'forward' ? r.newName : r.oldName))
+  const label = direction === 'forward' ? 'Применение' : 'Откат'
+  if (direction === 'forward') {
+    // Для применения файл и есть rollback-файл: копия рядом с отчётами до записи
+    mkdirSync(OUT_DIR, { recursive: true })
+    const rollbackPath = join(OUT_DIR, `rollback-${Date.now()}.json`)
+    writeFileSync(rollbackPath, JSON.stringify(data, null, 2))
+    console.log(`Rollback-файл: ${rollbackPath}`)
+  }
+  const changed = await prisma.$transaction(
     async (tx) => {
       const n = await tx.$executeRaw`
-        UPDATE "User" u SET name = v.old_name
-        FROM unnest(${data.rows.map((r) => r.id)}::text[], ${data.rows.map((r) => r.newName)}::text[], ${data.rows.map((r) => r.oldName)}::text[])
-          AS v(id, new_name, old_name)
-        WHERE u.id = v.id AND u.name = v.new_name`
-      if (n !== data.rows.length) throw new Error(`Откат: совпало ${n} из ${data.rows.length} строк — ничего не изменено`)
+        UPDATE "User" u SET name = v.to_name
+        FROM unnest(${data.rows.map((r) => r.id)}::text[], ${from}::text[], ${to}::text[])
+          AS v(id, from_name, to_name)
+        WHERE u.id = v.id AND u.name = v.from_name`
+      if (n !== data.rows.length) throw new Error(`${label}: совпало ${n} из ${data.rows.length} строк — ничего не изменено`)
       return n
     },
     { timeout: 120_000 },
   )
-  console.log(`✓ Откат: восстановлено ${restored} имён на ${host}`)
+  console.log(`✓ ${label}: изменено ${changed} имён на ${host}`)
 }
 
 async function main() {
-  if (ROLLBACK) return rollback(ROLLBACK)
+  if (CHECK_FILE) return checkFile(CHECK_FILE)
+  if (ROLLBACK) return applyFile(ROLLBACK, 'back')
+  if (APPLY_FILE) return applyFile(APPLY_FILE, 'forward')
   const { prisma } = await import('../lib/prisma')
   const host = databaseHost()
   if (APPLY) assertWriteTarget(host)

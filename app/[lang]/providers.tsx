@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { I18nProvider } from '@/lib/i18n-context'
 import type { Language } from '@/data/translations'
-import { ToastProvider } from '@/lib/toast-context'
+import { ToastProvider, useToast } from '@/lib/toast-context'
+import { useTranslation } from '@/lib/use-translation'
 import { useWishlist } from '@/lib/wishlist-store'
 import { useCart } from '@/lib/cart-store'
 import { seedTestAccounts } from '@/lib/auth'
@@ -83,13 +84,23 @@ function NotificationScopeSync(): null {
 
 // Корзина хранится за каждым пользователем отдельно: выход или истёкшая сессия только скрывают
 // её (гость корзины не видит), повторный вход восстанавливает с актуальными ценами.
+// Позиции, которые больше не продаются, при восстановлении удаляются — клиенту об этом сообщаем.
 function CartUserSync(): null {
   const userId = useAuthStore((s) => s.user?.id ?? null)
   const isHydrated = useAuthStore((s) => s.isHydrated)
+  const { showToast } = useToast()
+  const { t } = useTranslation()
+  const notifyRemovedRef = useRef(() => {})
+
+  useEffect(() => {
+    notifyRemovedRef.current = () => showToast(t('cart.notForSaleRemoved'), 'info')
+  }, [showToast, t])
 
   useEffect(() => {
     if (!isHydrated) return
-    useCart.getState().syncCartUser(userId)
+    void useCart.getState().syncCartUser(userId).then((removed) => {
+      if (removed > 0) notifyRemovedRef.current()
+    })
   }, [userId, isHydrated])
 
   return null

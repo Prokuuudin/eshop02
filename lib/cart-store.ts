@@ -76,8 +76,11 @@ type CartStore = PersistedCartState & {
   replaceWithItems: (items: CartItem[]) => void
   clearCart: () => void
   total: () => number
-  /** Переключает корзину на пользователя (null — гость/выход) и при необходимости восстанавливает её. */
-  syncCartUser: (userId: string | null) => void
+  /**
+   * Переключает корзину на пользователя (null — гость/выход) и при необходимости восстанавливает её.
+   * Возвращает число позиций, удалённых при восстановлении как больше не продаваемые.
+   */
+  syncCartUser: (userId: string | null) => Promise<number>
 }
 
 function toCartLine(item: Pick<CartItem, 'id' | 'lineKey' | 'quantity' | 'selectedVariants'>): CartLine {
@@ -195,40 +198,48 @@ const MAX_PRODUCT_BATCH = 100 // = MAX_BATCH_IDS в app/api/products/route.ts
 /**
  * Подтягивает актуальные данные и цены для строк пользователя без деталей (после входа или
  * смены пользователя). Цену и надбавки вариантов даёт каталог; checkout всё равно пересчитывает
- * заказ на сервере. Пропавшие из витрины, непродаваемые товары и исчезнувшие варианты удаляются.
+ * заказ на сервере. Пропавшие из витрины, непродаваемые товары, исчезнувшие варианты и строки
+ * с испорченным количеством удаляются; остальные строки восстанавливаются независимо от них.
+ * Возвращает число удалённых строк.
  */
-export async function restoreCartForUser(userId: string): Promise<void> {
+export async function restoreCartForUser(userId: string): Promise<number> {
   const { linesByUser, details } = useCart.getState()
   const ids = [...new Set((linesByUser[userId] ?? []).filter((line) => !details[line.lineKey]).map((line) => line.id))]
-  if (ids.length === 0) return
+  if (ids.length === 0) return 0
 
   const products: Product[] = []
   try {
     for (let i = 0; i < ids.length; i += MAX_PRODUCT_BATCH) {
       const chunk = ids.slice(i, i + MAX_PRODUCT_BATCH)
       const res = await fetch(`/api/products?ids=${chunk.map(encodeURIComponent).join(',')}`)
-      if (!res.ok) return
+      if (!res.ok) return 0
       products.push(...(((await res.json()) as { data?: { products?: Product[] } }).data?.products ?? []))
     }
   } catch {
-    return // Сеть недоступна: строки остаются, следующая синхронизация попробует снова.
+    return 0 // Сеть недоступна: строки остаются, следующая синхронизация попробует снова.
   }
-  // Без действующей сессии API вырезает цены — проверить позиции нечем, ничего не удаляем.
-  if (products.some((product) => typeof product.price !== 'number')) return
+  // Без действующей сессии API вырезает цены у всех товаров — проверить позиции нечем, ничего
+  // не удаляем. Товар без действующей B2B-цены приходит без цены и при живой сессии, но с
+  // флагом priceUnavailable: он удаляется ниже и не мешает восстановить остальные строки.
+  if (products.some((product) => !product.priceUnavailable && typeof product.price !== 'number')) return 0
 
   const byId = new Map(products.map((product) => [product.id, product]))
   const requestedIds = new Set(ids)
+  let removed = 0
   useCart.setState((state) => {
     if (state.ownerId !== userId) return state // пользователь сменился, пока шёл запрос
+    removed = 0
     const nextDetails = { ...state.details }
     const nextLines = (state.linesByUser[userId] ?? []).filter((line) => {
       if (!requestedIds.has(line.id)) return true // добавлено во время запроса, детали уже свежие
       const product = byId.get(line.id)
       const variants = product && !product.priceUnavailable && Number.isFinite(product.price)
+        && Number.isInteger(line.quantity) && line.quantity > 0
         ? resolveSelectedVariants(product.technicalSpecs, line.selectedVariants)
         : null
       if (!product || !variants) {
         delete nextDetails[line.lineKey]
+        removed += 1
         return false
       }
       nextDetails[line.lineKey] = buildLineDetails(product, variants)
@@ -236,6 +247,7 @@ export async function restoreCartForUser(userId: string): Promise<void> {
     })
     return withOwnerLines(state, nextLines, nextDetails)
   })
+  return removed
 }
 
 export const useCart = create<CartStore>()(
@@ -250,7 +262,7 @@ export const useCart = create<CartStore>()(
           // Корзина прежнего пользователя остаётся в linesByUser; его названия и цены — нет.
           set({ ownerId: userId, details: {}, items: [] })
         }
-        if (userId) void restoreCartForUser(userId)
+        return userId ? restoreCartForUser(userId) : Promise.resolve(0)
       },
       addItem: (product: AddableProduct, quantity: number, selectedVariants?: SelectedVariant[]) => {
         // Корзина только для авторизованных: UI-гейты это уже обеспечивают,
@@ -260,7 +272,7 @@ export const useCart = create<CartStore>()(
         // Not for sale (no valid B2B price) or no price at all — nothing sensible to add.
         // Checkout rejects such lines server-side anyway; this keeps the cart honest.
         if (product.priceUnavailable || !Number.isFinite(product.price)) return
-        if (get().ownerId !== user.id) get().syncCartUser(user.id)
+        if (get().ownerId !== user.id) void get().syncCartUser(user.id)
         const lineDetails = buildLineDetails(product, selectedVariants)
         set((state) => {
           const lines = state.linesByUser[user.id] ?? []
@@ -295,7 +307,7 @@ export const useCart = create<CartStore>()(
       },
       replaceWithItems: (items: CartItem[]) => {
         const user = typeof window === 'undefined' ? null : getCurrentUser()
-        if (user && get().ownerId !== user.id) get().syncCartUser(user.id)
+        if (user && get().ownerId !== user.id) void get().syncCartUser(user.id)
         set((state) => withOwnerLines(
           state,
           items.map(toCartLine),

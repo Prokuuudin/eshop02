@@ -1,26 +1,24 @@
-import { createHash, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import type { Prisma } from '@/generated/prisma/client'
 import type { ErpProduct } from './erp-adapter'
 import type { GrinsXmlAudit } from './grins-xml-parser'
 import { applyAtomic, restoreAtomic } from './manual-import-atomic'
+import { BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, PENDING_KEY, sha256Hex, type ConsumeError, type PendingPreview } from './manual-import-pending'
 import { evaluatePriceFeed, priceCatalogFingerprint } from './manual-price-preflight'
 import type { PreflightResult } from './sync-preflight'
 import type { runSync as RunSync, SyncRunResult } from './sync-runner'
+
+export {
+  BACKUP_KEY_PREFIX, MANUAL_IMPORT_KIND, MANUAL_IMPORT_MODE, MANUAL_IMPORT_RESTORE_KIND, consumePendingPreview, sha256Hex,
+  type ConsumeError, type PendingPreview,
+} from './manual-import-pending'
 
 // Manual GrinS allows only price2 updates, with exact cents, dedicated price
 // gates and an atomic transaction. XML stock is never a write input.
 
 export const MANUAL_IMPORT_MAX_BYTES = 20 * 1024 * 1024
 export const MANUAL_IMPORT_PREVIEW_TTL_MS = 30 * 60 * 1000
-export const MANUAL_IMPORT_MODE = 'prices-only' as const
-export const MANUAL_IMPORT_KIND = 'admin-manual-import'
-export const MANUAL_IMPORT_RESTORE_KIND = 'admin-manual-import-restore'
-const PENDING_KEY = 'grins-manual-import-pending'
-export const BACKUP_KEY_PREFIX = 'grins-manual-import-backup:'
-
-export const sha256Hex = (content: string | Uint8Array): string =>
-  createHash('sha256').update(content).digest('hex')
 
 export type UploadErrorCode = 'file_required' | 'empty_file' | 'file_too_large' | 'not_xml_file' | 'invalid_encoding' | 'forbidden_xml_construct'
 
@@ -106,19 +104,6 @@ export async function evaluateFeed(db: ExtendedPrismaClient, xml: string): Promi
 
 // ─── Pending preview: the exact uploaded snapshot, bound to its SHA-256 ──────
 
-export interface PendingPreview {
-  mode: typeof MANUAL_IMPORT_MODE
-  catalogFingerprint: string
-  previewId: string
-  sha256: string
-  fileName: string
-  sizeBytes: number
-  actorId: string
-  createdAt: string
-  expiresAt: string
-  xml: string
-}
-
 /** Stores the previewed file. A newer preview replaces an older one (single slot). */
 export async function savePendingPreview(
   db: ExtendedPrismaClient,
@@ -136,34 +121,6 @@ export async function savePendingPreview(
   const value = preview as unknown as Prisma.InputJsonValue
   await db.keyValueSetting.upsert({ where: { key: PENDING_KEY }, create: { key: PENDING_KEY, value }, update: { value } })
   return preview
-}
-
-export type ConsumeError = 'preview_not_found' | 'preview_mismatch' | 'preview_expired' | 'content_mismatch' | 'preview_mode_mismatch'
-
-/**
- * Atomically takes the pending preview out of storage. Only the uploader, with
- * the exact previewId and SHA-256 they saw, can consume it — and only once.
- */
-export async function consumePendingPreview(
-  db: ExtendedPrismaClient,
-  input: { previewId: string; sha256: string; actorId: string },
-  now: Date = new Date(),
-): Promise<{ ok: true; preview: PendingPreview } | { ok: false; error: ConsumeError }> {
-  const rows = await db.$queryRawUnsafe<Array<{ value: PendingPreview }>>(
-    `DELETE FROM "KeyValueSetting"
-      WHERE key = $1 AND value->>'previewId' = $2 AND value->>'sha256' = $3 AND value->>'actorId' = $4
-      RETURNING value`,
-    PENDING_KEY, input.previewId, input.sha256, input.actorId,
-  )
-  const preview = rows[0]?.value
-  if (!preview) {
-    const existing = await db.keyValueSetting.findUnique({ where: { key: PENDING_KEY }, select: { key: true } })
-    return { ok: false, error: existing ? 'preview_mismatch' : 'preview_not_found' }
-  }
-  if (preview.mode !== MANUAL_IMPORT_MODE || typeof preview.catalogFingerprint !== 'string') return { ok: false, error: 'preview_mode_mismatch' }
-  if (Date.parse(preview.expiresAt) < now.getTime()) return { ok: false, error: 'preview_expired' }
-  if (typeof preview.xml !== 'string' || sha256Hex(preview.xml) !== input.sha256) return { ok: false, error: 'content_mismatch' }
-  return { ok: true, preview }
 }
 
 // ─── Pre-apply backup and restore ────────────────────────────────────────────

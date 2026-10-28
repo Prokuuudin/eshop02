@@ -4,10 +4,10 @@ import { releaseSyncLock } from './sync-lock'
 import { buildManualPriceQuery } from './manual-price-query'
 import { grinsMaintenanceClosed } from '@/lib/grins-import-maintenance'
 import {
-  BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND,
-  consumePendingPreview, evaluateFeed,
-  type ManualApplyDeps, type ManualApplyOutcome, type RestoreResult,
-} from './manual-import'
+  BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND, consumePendingPreview,
+} from './manual-import-pending'
+import { evaluatePriceFeed } from './manual-price-preflight'
+import type { ManualApplyDeps, ManualApplyOutcome, RestoreResult } from './manual-import'
 
 const LEASE_MS = 30 * 60 * 1000
 const SHA_PREFIX = 'grins-manual-import-applied:prices-only:'
@@ -132,7 +132,7 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
       const { preview } = consumed
       fileName = preview.fileName
       Object.assign(base, { fileName, sizeBytes: preview.sizeBytes, stage: 'preflight' })
-      const evaluation = await evaluateFeed(tx, preview.xml)
+      const evaluation = await evaluatePriceFeed(tx, preview.xml)
       const { preflight, products } = evaluation
       if (evaluation.catalogFingerprint !== preview.catalogFingerprint) preflight.hard.push('catalog_changed_since_preview')
       if (preflight.hard.length) {

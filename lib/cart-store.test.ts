@@ -29,12 +29,13 @@ import {
 } from './cart-store'
 import { useCartSelection } from './cart-selection-store'
 import { getCurrentUser } from '@/lib/auth'
+import { toStorefrontProduct } from '@/lib/product-sellability'
 
 type CatalogProduct = Record<string, unknown> & { id: string }
 
-function loginAs(userId: string | null): void {
+function loginAs(userId: string | null): Promise<number> {
   vi.mocked(getCurrentUser).mockReturnValue(userId ? ({ id: userId, email: `${userId}@example.lv` } as never) : null)
-  useCart.getState().syncCartUser(userId)
+  return useCart.getState().syncCartUser(userId)
 }
 
 function product(id: string, price: number, extra: Record<string, unknown> = {}): CatalogProduct {
@@ -50,6 +51,16 @@ function serveCatalog(products: CatalogProduct[]): ReturnType<typeof vi.fn> {
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
+}
+
+// Так /api/products?ids= отдаёт товар без действующей B2B-цены вошедшему клиенту:
+// toStorefrontProduct вырезает все денежные поля и ставит priceUnavailable.
+function unpriced(id: string): CatalogProduct {
+  return toStorefrontProduct(product(id, 9.99, { priceUnavailable: true }) as never) as unknown as CatalogProduct
+}
+
+function savedLines(...ids: string[]): CartLine[] {
+  return ids.map((id, index) => ({ id, lineKey: id, quantity: index + 1 }))
 }
 
 const variantSpecs = {
@@ -246,6 +257,191 @@ describe('per-user cart', () => {
 
     loginAs(null)
     expect(useCartSelection.getState().deselectedLineKeys).toEqual([])
+  })
+})
+
+describe('restore with products that cannot be sold (A-04)', () => {
+  const itemsOf = (): Array<[string, number]> => useCart.getState().items.map((item) => [item.id, item.quantity])
+
+  it('the storefront answer for a product without a valid price really has no price field', () => {
+    expect(unpriced('bad')).not.toHaveProperty('price')
+    expect(unpriced('bad')).toMatchObject({ id: 'bad', priceUnavailable: true, stock: 0 })
+  })
+
+  it('restores the whole cart when every product is sellable', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'p2', 'p3') } })
+    serveCatalog([product('p1', 10), product('p2', 20), product('p3', 30)])
+
+    expect(await loginAs('u1')).toBe(0)
+
+    expect(itemsOf()).toEqual([['p1', 1], ['p2', 2], ['p3', 3]])
+    expect(useCart.getState().total()).toBe(140)
+  })
+
+  it('restores the other lines when one product among several has no valid price', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad', 'p2') } })
+    serveCatalog([product('p1', 10), unpriced('bad'), product('p2', 20)])
+
+    expect(await loginAs('u1')).toBe(1)
+
+    expect(itemsOf()).toEqual([['p1', 1], ['p2', 3]])
+    expect(useCart.getState().linesByUser.u1.map((line) => line.id)).toEqual(['p1', 'p2'])
+    expect(useCart.getState().details.bad).toBeUndefined()
+    expect(useCart.getState().total()).toBe(70)
+  })
+
+  it('does not lose the following lines when the first product has no valid price', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('bad', 'p1', 'p2') } })
+    serveCatalog([unpriced('bad'), product('p1', 10), product('p2', 20)])
+
+    loginAs('u1')
+    await restoreCartForUser('u1')
+
+    expect(itemsOf()).toEqual([['p1', 2], ['p2', 3]])
+  })
+
+  it('restores the sellable lines when several products have no valid price', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('bad1', 'p1', 'bad2', 'bad3', 'p2') } })
+    serveCatalog([unpriced('bad1'), product('p1', 10), unpriced('bad2'), unpriced('bad3'), product('p2', 20)])
+
+    expect(await loginAs('u1')).toBe(3)
+
+    expect(itemsOf()).toEqual([['p1', 2], ['p2', 5]])
+  })
+
+  it('drops deleted or hidden products (absent from the answer) together with unpriced ones', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('deleted', 'p1', 'hidden', 'bad') } })
+    serveCatalog([product('p1', 10), unpriced('bad')])
+
+    expect(await loginAs('u1')).toBe(3)
+
+    expect(itemsOf()).toEqual([['p1', 2]])
+  })
+
+  it('keeps a zero catalog price apart from a missing price and never invents one', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('free', 'bad') } })
+    serveCatalog([product('free', 0), unpriced('bad')])
+
+    loginAs('u1')
+    await restoreCartForUser('u1')
+
+    // 0 — цена, которую назначил каталог; у товара без цены строки и деталей нет вовсе.
+    expect(useCart.getState().items).toEqual([expect.objectContaining({ id: 'free', price: 0, quantity: 1 })])
+    expect(useCart.getState().details.bad).toBeUndefined()
+  })
+
+  it('drops a line with a corrupted quantity and leaves the valid quantities as they were', async () => {
+    useCart.setState({
+      linesByUser: {
+        u1: [
+          { id: 'zero', lineKey: 'zero', quantity: 0 },
+          { id: 'p1', lineKey: 'p1', quantity: 3 },
+          { id: 'frac', lineKey: 'frac', quantity: 1.5 },
+          { id: 'nan', lineKey: 'nan', quantity: 'x' as never },
+          { id: 'neg', lineKey: 'neg', quantity: -2 },
+        ],
+      },
+    })
+    serveCatalog(['zero', 'p1', 'frac', 'nan', 'neg'].map((id) => product(id, 10)))
+
+    loginAs('u1')
+    await restoreCartForUser('u1')
+
+    expect(itemsOf()).toEqual([['p1', 3]])
+    expect(useCart.getState().total()).toBe(30)
+  })
+
+  it('does nothing for an empty cart', async () => {
+    const fetchMock = serveCatalog([product('p1', 10)])
+    expect(await loginAs('u1')).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(useCart.getState().items).toEqual([])
+  })
+
+  it('shows a guest nothing and keeps the owner lines, unsellable ones included, until the owner logs in', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad') } })
+    const fetchMock = serveCatalog([product('p1', 10), unpriced('bad')])
+
+    expect(await useCart.getState().syncCartUser(null)).toBe(0)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(useCart.getState().items).toEqual([])
+    expect(useCart.getState().linesByUser.u1).toHaveLength(2)
+
+    loginAs('u1')
+    await vi.waitFor(() => expect(itemsOf()).toEqual([['p1', 1]]))
+  })
+
+  it('restores each user own lines only when switching between two users', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad'), u2: savedLines('bad', 'p2') } })
+    serveCatalog([product('p1', 10), product('p2', 20), unpriced('bad')])
+
+    loginAs('u1')
+    await restoreCartForUser('u1')
+    expect(itemsOf()).toEqual([['p1', 1]])
+
+    loginAs('u2')
+    await restoreCartForUser('u2')
+    expect(itemsOf()).toEqual([['p2', 2]])
+    expect(useCart.getState().details.p1).toBeUndefined()
+
+    loginAs('u1')
+    await restoreCartForUser('u1')
+    expect(itemsOf()).toEqual([['p1', 1]])
+    expect(useCart.getState().linesByUser).toEqual({
+      u1: [{ id: 'p1', lineKey: 'p1', quantity: 1 }],
+      u2: [{ id: 'p2', lineKey: 'p2', quantity: 2 }],
+    })
+  })
+
+  it('shows the restored lines after a page reload without the removed one', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad', 'p2') } })
+    serveCatalog([product('p1', 10), unpriced('bad'), product('p2', 20)])
+    loginAs('u1')
+    await restoreCartForUser('u1')
+
+    const saved = JSON.parse(storage.get('cart-store') ?? '{}') as { state: unknown }
+    const reloaded = mergePersistedCart(saved.state, useCart.getState())
+    expect(reloaded.items.map((item) => [item.id, item.quantity])).toEqual([['p1', 1], ['p2', 3]])
+    expect(JSON.stringify(saved)).not.toContain('"bad"')
+  })
+
+  it('totals the restored cart at the current catalog B2B price, not the price saved earlier', async () => {
+    loginAs('u1')
+    useCart.getState().addItem(product('p1', 10) as never, 2)
+    useCart.getState().addItem(product('p2', 5) as never, 4)
+    loginAs(null)
+    useCart.setState((state) => ({ linesByUser: { u1: [...state.linesByUser.u1, { id: 'bad', lineKey: 'bad', quantity: 1 }] } }))
+
+    // price в ответе каталога — уже разрешённая B2B-цена (price2).
+    serveCatalog([product('p1', 12.5), product('p2', 7.25), unpriced('bad')])
+    loginAs('u1')
+    await vi.waitFor(() => expect(useCart.getState().items).toHaveLength(2))
+
+    expect(useCart.getState().items.map((item) => [item.id, item.price, item.quantity]))
+      .toEqual([['p1', 12.5, 2], ['p2', 7.25, 4]])
+    expect(useCart.getState().total()).toBe(54)
+  })
+
+  it('still keeps every saved line when the session expired, unsellable ones included', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad') } })
+    // Без сессии API вырезает цены у всех товаров, флаг priceUnavailable остаётся.
+    serveCatalog([{ id: 'p1', title: 'Product p1', brand: 'Brand', category: 'hair', stock: 5 }, unpriced('bad')])
+
+    expect(await loginAs('u1')).toBe(0)
+
+    expect(useCart.getState().items).toEqual([])
+    expect(useCart.getState().linesByUser.u1).toHaveLength(2)
+  })
+
+  it('reports the removed lines through syncCartUser so the UI can tell the customer', async () => {
+    useCart.setState({ linesByUser: { u1: savedLines('p1', 'bad') } })
+    serveCatalog([product('p1', 10), unpriced('bad')])
+    vi.mocked(getCurrentUser).mockReturnValue({ id: 'u1', email: 'u1@example.lv' } as never)
+
+    expect(await useCart.getState().syncCartUser('u1')).toBe(1)
+    // Повторная синхронизация того же пользователя ничего не удаляет и не сообщает снова.
+    expect(await useCart.getState().syncCartUser('u1')).toBe(0)
+    expect(itemsOf()).toEqual([['p1', 1]])
   })
 })
 

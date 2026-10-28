@@ -282,6 +282,8 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       await tx.bonusTransaction.updateMany({ where: { orderId }, data: { orderId: null } })
       await tx.orderNote.deleteMany({ where: { orderId } })
       await tx.orderStatusRecord.deleteMany({ where: { orderId } })
+      // The outbox FK is ON DELETE RESTRICT; a cancelled order needs no admin email.
+      await tx.orderNotificationOutbox.deleteMany({ where: { orderId } })
       await tx.order.delete({ where: { id: orderId } })
       return 'deleted' as const
     })

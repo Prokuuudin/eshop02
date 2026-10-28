@@ -62,6 +62,9 @@ function makeTx() {
       updateMany: vi.fn(),
     },
     keyValueSetting: { findUnique: vi.fn(async () => null) },
+    orderNotificationOutbox: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
+    },
   }
 }
 
@@ -175,6 +178,49 @@ describe('createServerOrder — server-side id generation', () => {
       where: { id: 'p1', isDeleted: false, stock: { gte: 2 } },
       data: { stock: { decrement: 2 } },
     })
+  })
+
+  it.each(['checkout', 'admin', 'api_v1'] as const)(
+    'enqueues the admin notification with source %s in the order transaction',
+    async (source) => {
+      queryRawMock.mockResolvedValue([{ max: 1042n }])
+      const tx = makeTx()
+      transactionMock.mockImplementation(async (fn) => fn(tx))
+
+      await createServerOrder(ORDER, undefined, { notificationSource: source, notificationCorrelationId: 'corr-1' })
+
+      expect(tx.orderNotificationOutbox.create).toHaveBeenCalledTimes(1)
+      expect(tx.orderNotificationOutbox.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          orderId: '1043',
+          notificationType: 'admin_order_created',
+          source,
+          correlationId: 'corr-1',
+        }),
+      })
+    },
+  )
+
+  it('defaults the notification source to checkout', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await createServerOrder(ORDER)
+
+    expect(tx.orderNotificationOutbox.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ orderId: '1043', source: 'checkout' }),
+    })
+  })
+
+  it('does not enqueue a notification when the order fails before commit', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    tx.product.updateMany.mockResolvedValue({ count: 0 })
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
+    expect(tx.orderNotificationOutbox.create).not.toHaveBeenCalled()
   })
 
   it('rejects the whole order when an item has insufficient stock, instead of silently creating it', async () => {

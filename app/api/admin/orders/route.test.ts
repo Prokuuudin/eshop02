@@ -55,7 +55,7 @@ vi.mock('@/lib/prisma', () => ({
 import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-store'
-import { GET, POST } from './route'
+import { DELETE, GET, POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -346,5 +346,97 @@ describe('POST /api/admin/orders', () => {
       undefined,
       expect.objectContaining({ notificationSource: 'admin' }),
     )
+  })
+})
+
+describe('DELETE /api/admin/orders', () => {
+  function makeDeleteTx(overrides: { status?: string | null; invoices?: number; outboxRows?: number } = {}) {
+    const calls: string[] = []
+    const record = (name: string, result: unknown = { count: 0 }) => vi.fn(async () => { calls.push(name); return result })
+    const tx = {
+      $queryRaw: vi.fn(async () => [{ id: '1043' }]),
+      order: {
+        findUnique: vi.fn(async () => ({ id: '1043', firstName: 'Ivan', lastName: 'Petrov' })),
+        delete: record('order.delete', { id: '1043' }),
+      },
+      orderStatusRecord: {
+        findUnique: vi.fn(async () => (overrides.status === null ? null : { status: overrides.status ?? 'cancelled' })),
+        deleteMany: record('orderStatusRecord.deleteMany'),
+      },
+      invoice: { count: vi.fn(async () => overrides.invoices ?? 0) },
+      returnRequest: { count: vi.fn(async () => 0) },
+      stockAllocation: { count: vi.fn(async () => 0) },
+      promoCodeRedemption: { deleteMany: record('promoCodeRedemption.deleteMany') },
+      bonusTransaction: { updateMany: record('bonusTransaction.updateMany') },
+      orderNote: { deleteMany: record('orderNote.deleteMany') },
+      orderNotificationOutbox: { deleteMany: record('orderNotificationOutbox.deleteMany', { count: overrides.outboxRows ?? 1 }) },
+    }
+    txMock.mockImplementation(async (cb: (client: unknown) => unknown) => cb(tx))
+    return { tx, calls }
+  }
+
+  function makeDeleteRequest(orderId = '1043'): NextRequest {
+    return new NextRequest(`http://localhost/api/admin/orders?orderId=${orderId}`, { method: 'DELETE' })
+  }
+
+  beforeEach(() => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+  })
+
+  it('deletes the outbox row of a cancelled order before the order itself', async () => {
+    const { tx, calls } = makeDeleteTx({ outboxRows: 1 })
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(tx.orderNotificationOutbox.deleteMany).toHaveBeenCalledWith({ where: { orderId: '1043' } })
+    expect(calls.indexOf('orderNotificationOutbox.deleteMany')).toBeLessThan(calls.indexOf('order.delete'))
+    expect(txMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('deletes a cancelled order that has no outbox row', async () => {
+    const { tx } = makeDeleteTx({ outboxRows: 0 })
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(200)
+    expect(tx.order.delete).toHaveBeenCalledWith({ where: { id: '1043' } })
+  })
+
+  it('returns 500 and relies on the single transaction when the order delete fails', async () => {
+    const { tx } = makeDeleteTx()
+    tx.order.delete.mockRejectedValueOnce(Object.assign(new Error('fk'), { code: 'P2003' }))
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(500)
+    expect(txMock).toHaveBeenCalledTimes(1)
+    expect(tx.orderNotificationOutbox.deleteMany).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    { name: 'a not-cancelled order', overrides: { status: 'pending' }, status: 409, error: 'order_must_be_cancelled' },
+    { name: 'an order without a status record', overrides: { status: null }, status: 409, error: 'order_must_be_cancelled' },
+    { name: 'an order with an invoice', overrides: { invoices: 1 }, status: 409, error: 'order_has_related_records' },
+  ])('keeps refusing to delete $name and leaves its outbox row untouched', async ({ overrides, status, error }) => {
+    const { tx } = makeDeleteTx(overrides)
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(status)
+    expect(await res.json()).toEqual({ error })
+    expect(tx.orderNotificationOutbox.deleteMany).not.toHaveBeenCalled()
+    expect(tx.order.delete).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 for a missing order without deleting anything', async () => {
+    const { tx } = makeDeleteTx()
+    tx.order.findUnique.mockResolvedValueOnce(null as never)
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(404)
+    expect(tx.orderNotificationOutbox.deleteMany).not.toHaveBeenCalled()
   })
 })

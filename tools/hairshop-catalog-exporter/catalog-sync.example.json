@@ -1,0 +1,10 @@
+{
+  "CatalogExporterConfigPath": "D:\\PrivateConfig\\hairshop-catalog-exporter.json",
+  "ApiEndpoint": "https://hairshoppro.lv/api/internal/hairshop-catalog-sync",
+  "ApiKeyFile": "D:\\PrivateConfig\\hairshop-catalog-sync.key",
+  "StatePath": "D:\\PrivateState\\hairshop-catalog-sync-state.json",
+  "ReportDirectory": "D:\\PrivateReports\\hairshop-catalog-sync",
+  "BatchSize": 50,
+  "RequestTimeoutSeconds": 120,
+  "AllowApply": false
+}

@@ -30,6 +30,7 @@ import {
 import { useCartSelection } from './cart-selection-store'
 import { getCurrentUser } from '@/lib/auth'
 import { toStorefrontProduct } from '@/lib/product-sellability'
+import { redactProductPrices } from '@/lib/product-price-visibility'
 
 type CatalogProduct = Record<string, unknown> & { id: string }
 
@@ -431,6 +432,45 @@ describe('restore with products that cannot be sold (A-04)', () => {
 
     expect(useCart.getState().items).toEqual([])
     expect(useCart.getState().linesByUser.u1).toHaveLength(2)
+  })
+
+  describe('every saved product has no valid price', () => {
+    const allUnpriced = ['bad1', 'bad2', 'bad3']
+
+    it('valid session: drops every line, reports them and keeps the other user cart', async () => {
+      useCart.setState({ linesByUser: { u1: savedLines(...allUnpriced), u2: savedLines('p2') } })
+      serveCatalog(allUnpriced.map(unpriced))
+
+      expect(await loginAs('u1')).toBe(3)
+
+      expect(useCart.getState().items).toEqual([])
+      expect(useCart.getState().linesByUser.u1).toEqual([])
+      expect(useCart.getState().linesByUser.u2).toEqual([{ id: 'p2', lineKey: 'p2', quantity: 1 }])
+      expect(useCart.getState().total()).toBe(0)
+    })
+
+    it('expired session: the answer is identical, because priceUnavailable is decided before redaction', () => {
+      // /api/products без сессии = redactProductPrices(ответ с сессией); флаг и stock не денежные поля.
+      const withSession = allUnpriced.map(unpriced)
+      expect(redactProductPrices(withSession)).toEqual(withSession)
+    })
+
+    it('expired session: drops the same unsellable lines, since none of them could be bought anyway', async () => {
+      useCart.setState({ linesByUser: { u1: savedLines(...allUnpriced) } })
+      serveCatalog(redactProductPrices(allUnpriced.map(unpriced)))
+
+      expect(await loginAs('u1')).toBe(3)
+      expect(useCart.getState().linesByUser.u1).toEqual([])
+    })
+
+    it('expired session: one sellable product among them still keeps every line untouched', async () => {
+      useCart.setState({ linesByUser: { u1: savedLines('bad1', 'p1', 'bad2') } })
+      serveCatalog(redactProductPrices([unpriced('bad1'), product('p1', 10), unpriced('bad2')]))
+
+      expect(await loginAs('u1')).toBe(0)
+      expect(useCart.getState().items).toEqual([])
+      expect(useCart.getState().linesByUser.u1.map((line) => line.id)).toEqual(['bad1', 'p1', 'bad2'])
+    })
   })
 
   it('reports the removed lines through syncCartUser so the UI can tell the customer', async () => {

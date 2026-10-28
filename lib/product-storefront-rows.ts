@@ -30,6 +30,8 @@ export type StorefrontFilterIndexRow = Prisma.ProductGetPayload<{ select: typeof
 
 export const STOREFRONT_FACET_SELECT = {
     id: true, title: true, titleEn: true, titleLv: true, brand: true,
+    // sku/barcode: searchable codes (lib/product-search.ts); never rendered from this index.
+    sku: true, barcode: true,
     price: true, oldPrice: true, rating: true, badges: true, category: true, stock: true,
     createdAt: true, externalId: true, erpPriceMissing: true,
     manualPriceApproved: true, manualApprovedPrice: true,
@@ -95,6 +97,8 @@ export function mapStorefrontFacetRow(row: StorefrontFacetRow): Product {
         titleEn: row.titleEn ?? undefined,
         titleLv: row.titleLv ?? undefined,
         brand: row.brand,
+        sku: row.sku ?? undefined,
+        barcode: row.barcode ?? undefined,
         price: Number(row.price),
         oldPrice: row.oldPrice === null ? undefined : Number(row.oldPrice),
         rating: row.rating,

@@ -22,6 +22,7 @@ export function buildUpsertQuery(rowCount: number): string {
            "erpPriceMissing" = NOT (COALESCE(incoming.price, 0) > 0),
            "manualPriceApproved" = CASE WHEN COALESCE(incoming.price, 0) > 0 THEN false ELSE product."manualPriceApproved" END,
            "manualApprovedPrice" = CASE WHEN COALESCE(incoming.price, 0) > 0 THEN NULL ELSE product."manualApprovedPrice" END,
+           "revision" = product."revision" + 1,
            "updatedAt" = now()
       FROM (VALUES ${values}) AS incoming("externalId", price, stock)
      WHERE product."externalId" = incoming."externalId"

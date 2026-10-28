@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAdminPermission, verifyPassword } from '@/lib/server-auth'
 import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
+import { isSuperAdminSubject } from '@/lib/admin-permissions'
 
 const approvalSchema = z.object({
   requestId: z.string().min(1).max(200),
@@ -16,19 +17,24 @@ const approvalSchema = z.object({
 }).strict()
 
 export async function GET(): Promise<Response> {
-  const caller = await requireAdminPermission('users.manage')
+  const caller = await requireAdminPermission('staff.manage')
   if (caller instanceof NextResponse) return caller
   const requests = await prisma.adminRoleChangeRequest.findMany({
     where: { status: 'pending', expiresAt: { gt: new Date() } },
     orderBy: { createdAt: 'asc' }, take: 100,
   })
-  return NextResponse.json({ requests })
+  const ids = [...new Set(requests.flatMap((r) => [r.targetUserId, r.requestedByUserId]))]
+  const users = ids.length ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, email: true } }) : []
+  const emailOf = new Map(users.map((u) => [u.id, u.email]))
+  return NextResponse.json({ requests: requests.map((r) => ({
+    ...r, targetEmail: emailOf.get(r.targetUserId) ?? null, requestedByEmail: emailOf.get(r.requestedByUserId) ?? null,
+  })) })
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
   const blocked = guardOrigin(request)
   if (blocked) return blocked
-  const caller = await requireAdminPermission('users.manage')
+  const caller = await requireAdminPermission('staff.manage')
   if (caller instanceof NextResponse) return caller
   const parsed = approvalSchema.safeParse(await request.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
@@ -45,9 +51,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       const pending = await tx.adminRoleChangeRequest.findUnique({ where: { id: parsed.data.requestId } })
       if (!pending || pending.status !== 'pending' || pending.expiresAt <= new Date()) throw new Error('approval_not_pending')
       if (pending.requestedByUserId === caller.id) throw new Error('four_eyes_required')
+      // A request filed by someone who is no longer a Super Admin cannot be approved.
+      const requester = await tx.user.findUnique({ where: { id: pending.requestedByUserId }, select: { platformRole: true, teamRole: true, superAdmin: true } })
+      if (!isSuperAdminSubject(requester)) throw new Error('requester_not_super_admin')
       const target = await tx.user.findUnique({ where: { id: pending.targetUserId } })
       if (!target) throw new Error('target_not_found')
-      if (!target.mfaEnabled) throw new Error('target_mfa_required')
+      // No prior MFA needed: sessions are revoked below, and getServerUser() refuses admin
+      // access until the promoted user completes mandatory enrollment at the next login.
       if (target.updatedAt.getTime() !== pending.expectedUpdatedAt.getTime()) throw new Error('optimistic_conflict')
 
       const changed = await tx.user.updateMany({
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ approved: true, userId: result })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'server_error'
-    if (['approval_not_pending', 'four_eyes_required', 'target_not_found', 'target_mfa_required', 'optimistic_conflict'].includes(message)) {
+    if (['approval_not_pending', 'four_eyes_required', 'requester_not_super_admin', 'target_not_found', 'optimistic_conflict'].includes(message)) {
       return NextResponse.json({ error: message }, { status: 409 })
     }
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034') {

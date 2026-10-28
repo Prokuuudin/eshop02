@@ -1,0 +1,15 @@
+{
+  "DatabaseName": "hairshop_p34s",
+  "ConnectionStringEnvironmentVariable": "",
+  "ConnectionStringFile": "D:\\PrivateConfig\\hairshop-catalog-mssql.txt",
+  "OutputDirectory": "D:\\PrivateExports\\hairshop-catalog-first-run",
+  "CommandTimeoutSeconds": 180,
+  "LockTimeoutMilliseconds": 5000,
+  "MinimumProductCount": 6500,
+  "MinimumPublishedCount": 2400,
+  "MinimumUnpublishedCount": 4000,
+  "ExpectedProductCount": 0,
+  "ExpectedPublishedCount": 0,
+  "ExpectedUnpublishedCount": 0,
+  "MaximumProductDropPercent": 5.0
+}

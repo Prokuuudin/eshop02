@@ -1,5 +1,5 @@
 'use client';
-import { checkoutDeliveryMethodIds, isDeliveryAvailable } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, isDeliveryAvailable, isDeliveryConfigured } from '@/lib/delivery';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
 
 import React, { useRef, useState } from 'react';
@@ -35,7 +35,7 @@ import {
 } from '@/lib/checkout-address-prefill';
 import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
-import { createCheckoutOrder } from './checkout-order-api';
+import { createCheckoutOrder, checkoutOrderFailureMessage } from './checkout-order-api';
 import { calculateCheckoutTotals } from './checkout-totals';
 import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
 
@@ -105,16 +105,31 @@ function useCheckoutPageState() {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser?.id, currentUser?.email]);
-    const [deliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
+    const [selectedDeliveryMethod, setDeliveryMethodState] = useState<DeliveryMethod>(() => {
         const method = searchParams.get('delivery');
+        // Old links used the pre-split `courier`; the shop's only own courier is now Riga-only.
+        if (method === 'courier' || method === 'courier_latvia') return 'courier_riga';
         return (checkoutDeliveryMethodIds as readonly (string | null)[]).includes(method)
             ? method as DeliveryMethod
-            : 'courier';
+            : 'courier_riga';
     });
-    const [deliveryLocationId, setDeliveryLocationId] = useState('');
+    const [selectedDeliveryLocationId, setSelectedDeliveryLocationId] = useState('');
     const setDeliveryMethod = (method: DeliveryMethod): void => {
         setDeliveryMethodState(method);
-        setDeliveryLocationId('');
+        setSelectedDeliveryLocationId('');
+    };
+    // If the selected method is not offered (e.g. Riga courier before its area is approved),
+    // use the first method that is, instead of leaving nothing selected. Derived, not stored,
+    // so a locker chosen for another method never leaks into the fallback.
+    const deliveryCountry = formData.country ?? 'LV';
+    const deliveryMethod: DeliveryMethod = !shippingSettings.shippingReady || isDeliveryConfigured(selectedDeliveryMethod, deliveryCountry, shippingSettings)
+        ? selectedDeliveryMethod
+        : checkoutDeliveryMethodIds.find((id) => isDeliveryConfigured(id, deliveryCountry, shippingSettings)) ?? selectedDeliveryMethod;
+    const deliveryLocationId = deliveryMethod === selectedDeliveryMethod ? selectedDeliveryLocationId : '';
+    // Choosing a locker while the fallback method is shown commits that method as the selection.
+    const setDeliveryLocationId = (id: string): void => {
+        if (deliveryMethod !== selectedDeliveryMethod) setDeliveryMethodState(deliveryMethod);
+        setSelectedDeliveryLocationId(id);
     };
     const [pickupStoreId, setPickupStoreId] = useState('');
     const [cashLockAlert, setCashLockAlert] = useState(false);
@@ -186,7 +201,7 @@ function useCheckoutPageState() {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-        if (e.target.name === 'country') setDeliveryLocationId('');
+        if (e.target.name === 'country') setSelectedDeliveryLocationId('');
         setFormData((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,
@@ -233,7 +248,7 @@ function useCheckoutPageState() {
 
     const handleSubmit = async (e: React.FormEvent): Promise<void> => {
         e.preventDefault();
-        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings)) {
+        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, formData.country ?? 'LV', shippingSettings, { city: formData.city })) {
             showToast(t('checkout.deliveryUnavailable', 'Delivery is unavailable. Select another method.'), 'error');
             return;
         }
@@ -319,15 +334,7 @@ function useCheckoutPageState() {
         // notification) — checkout must stop here rather than fake a success screen.
         const createResult = await createCheckoutOrder(orderData, turnstileToken);
         if (!createResult.ok) {
-            const message = createResult.reason === 'payment_gateway_error'
-                ? t('checkout.errors.paymentGateway')
-                : createResult.reason === 'product_unavailable'
-                ? t('checkout.errors.productUnavailable')
-                : createResult.reason === 'insufficient_stock'
-                ? 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.'
-                : createResult.reason === 'network'
-                    ? 'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.'
-                    : 'Не удалось оформить заказ. Попробуйте ещё раз.';
+            const message = checkoutOrderFailureMessage(createResult.reason, t);
             showToast(message, 'error');
             if (createResult.reason !== 'invalid_response') resetTurnstile();
             setIsSubmitting(false);
@@ -335,7 +342,17 @@ function useCheckoutPageState() {
         }
         const { orderId, paymentUrl } = createResult;
 
-        const order = { id: orderId, ...orderData, deliveryLocation: createResult.deliveryLocation };
+        const canonical = createResult.order;
+        const order = {
+            ...canonical,
+            createdAt: new Date(canonical.createdAt),
+            deliveryMethod: canonical.deliveryMethod as import('@/lib/orders-store').DeliveryMethod,
+            items: canonical.items.map((item, index) => ({
+                ...item,
+                lineKey: item.lineKey ?? `${orderId}:${index}`,
+                category: item.category as import('@/data/products').CategoryType,
+            })),
+        };
         addOrder(order);
 
         // Silently keep the address book in sync so next checkout prefills from it.
@@ -361,10 +378,10 @@ function useCheckoutPageState() {
             const invoiceId = await createInvoice({
                 companyId: currentUser.companyId,
                 orderId,
-                subtotal,
-                taxRate: 18,
-                taxAmount,
-                total: grandTotal,
+                subtotal: order.subtotal,
+                taxRate: 21,
+                taxAmount: order.tax,
+                total: order.total,
                 status: 'issued',
                 issuedDate,
                 dueDate,
@@ -380,7 +397,7 @@ function useCheckoutPageState() {
                 {
                     invoiceId,
                     orderId,
-                    amount: grandTotal,
+                    amount: order.total,
                     dueDate: dueDate.toISOString(),
                 },
                 { userName: currentUser.name, userEmail: currentUser.email }

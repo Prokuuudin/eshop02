@@ -47,11 +47,11 @@ describe('/api/invoices tenant and money boundaries', () => {
 
     const response = await POST(request('https://shop.test/api/invoices', {
       id: 'i1', invoiceNumber: 'INV-1', companyId: 'company-a', orderId: 'o1',
-      subtotal: 0.01, taxAmount: 0, total: 0.01, status: 'paid', items: [],
+      subtotal: 0.01, taxRate: 18, taxAmount: 0, total: 0.01, status: 'paid', items: [],
     }))
     expect(response.status).toBe(200)
     expect(createInvoiceInDb).toHaveBeenCalledWith(expect.objectContaining({
-      companyId: 'company-a', orderId: 'o1', subtotal: 100, taxAmount: 21, total: 121,
+      companyId: 'company-a', orderId: 'o1', subtotal: 100, taxRate: 21, taxAmount: 21, total: 121,
       status: 'issued', items: [{ productId: 'p1', productTitle: 'Product', quantity: 2, unitPrice: 50, total: 100 }],
     }))
   })

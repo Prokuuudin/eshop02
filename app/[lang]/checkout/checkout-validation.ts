@@ -1,4 +1,4 @@
-import { requiresDeliveryLocation } from '@/lib/delivery';
+import { isCourierDeliveryMethod, requiresDeliveryLocation } from '@/lib/delivery';
 import type { DeliveryMethod } from '@/lib/orders-store';
 import type { CheckoutFormData } from './CheckoutFormSections';
 
@@ -34,7 +34,7 @@ export function validateCheckoutForm(
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         errors.email = t('checkout.errors.emailInvalid');
     }
-    if (deliveryMethod === 'courier') {
+    if (isCourierDeliveryMethod(deliveryMethod)) {
         if (!formData.address.trim()) errors.address = t('checkout.errors.address');
         if (!formData.city.trim()) errors.city = t('checkout.errors.city');
         if (!formData.postalCode.trim()) errors.postalCode = t('checkout.errors.postalCode');

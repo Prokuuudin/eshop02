@@ -4,6 +4,7 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, requireAdmin } from '@/lib/server-auth'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 
@@ -37,8 +38,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     // Case-insensitive: User.email хранится как есть (mixed case), уникальный индекс case-sensitive
     const user = await prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
-      select: { id: true },
+      select: { id: true, platformRole: true, teamRole: true, superAdmin: true },
     })
+    // A card on a staff account opens register-card/invite activation for it — refuse.
+    if (user && isProtectedStaffAccount(user)) {
+      return NextResponse.json({ error: 'staff_account' }, { status: 409 })
+    }
 
     try {
       if (user) {

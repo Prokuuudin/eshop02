@@ -3,21 +3,35 @@ import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/d
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { useOrders, type OrderLegalDetails } from '@/lib/orders-store';
+import { useOrders, type Order } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';
 import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useToast } from '@/lib/toast-context';
 import { localizePath } from '@/lib/i18n-routing';
+import {
+    blocksPayseraRetry,
+    mergePaymentOrderSnapshot,
+    payRetryResult,
+    pollForPaymentConfirmation,
+    type PaymentReturnState,
+} from '@/lib/payment-return-polling';
 
 type PageProps = {
     params: Promise<{
         id: string;
     }>;
+    searchParams: Promise<{
+        payment?: string | string[];
+    }>;
 };
 
-function useOrderPageState({ params }: PageProps) {
+type LoadedOrder = Order;
+type WireOrder = Omit<LoadedOrder, 'createdAt'> & { createdAt: string };
+
+function useOrderPageState({ params, searchParams }: PageProps) {
     const { id } = React.use(params);
+    const query = React.use(searchParams);
     const { t, language } = useTranslation();
     const { getOrder, upsertOrder } = useOrders();
     const { getOrderStatus } = useAdminStore();
@@ -29,81 +43,49 @@ function useOrderPageState({ params }: PageProps) {
     const locale = getLocaleFromLanguage(language);
     const [returnDialogOpen, setReturnDialogOpen] = React.useState(false);
     const [payingNow, setPayingNow] = React.useState(false);
+    const [paymentReturnState, setPaymentReturnState] = React.useState<PaymentReturnState>(
+        query.payment === 'success' ? 'processing' : 'none'
+    );
+    const latestServerOrderRef = React.useRef<LoadedOrder | null>(null);
     const { showToast } = useToast();
+
+    const loadServerOrder = React.useCallback(async (signal?: AbortSignal): Promise<LoadedOrder | null> => {
+        const res = await fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: 'no-store', signal });
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error('Failed to load server order');
+
+        const payload = (await res.json()) as { order?: WireOrder };
+        if (!payload.order) return null;
+        return {
+            ...payload.order,
+            createdAt: new Date(payload.order.createdAt),
+            items: payload.order.items.map((item) => ({
+                ...item,
+                category: item.category as import('@/data/products').CategoryType,
+            })),
+        };
+    }, [id]);
+
+    const applyLoadedOrder = React.useCallback((loadedOrder: LoadedOrder | null): void => {
+        const acceptedOrder = mergePaymentOrderSnapshot(latestServerOrderRef.current, loadedOrder);
+        if (acceptedOrder === latestServerOrderRef.current && acceptedOrder !== loadedOrder) return;
+        latestServerOrderRef.current = acceptedOrder;
+        setServerOrder(acceptedOrder);
+        if (acceptedOrder) upsertOrder(acceptedOrder);
+    }, [upsertOrder]);
 
     React.useEffect(() => {
         if (serverOrderResolved) return;
 
         let isMounted = true;
-        fetch(`/api/orders/${encodeURIComponent(id)}`, { cache: 'no-store' })
-            .then(async (res) => {
-                if (res.status === 404) return null;
-                if (!res.ok) throw new Error('Failed to load server order');
-
-                const payload = (await res.json()) as {
-                    order?: {
-                        id: string;
-                        createdAt: string;
-                        items: Array<{
-                            id: string;
-                            lineKey: string;
-                            variantLabel?: string;
-                            title: string;
-                            brand: string;
-                            image: string;
-                            category: string;
-                            price: number;
-                            rating: number;
-                            stock: number;
-                            quantity: number;
-                        }>;
-                        subtotal: number;
-                        tax: number;
-                        delivery: number;
-                        deliveryMethod: import('@/lib/delivery').CheckoutDeliveryMethod;
-                        paymentMethod: string;
-                        promoCode?: string;
-                        discount: number;
-                        total: number;
-                        firstName: string;
-                        lastName: string;
-                        email: string;
-                        phone: string;
-                        address: string;
-                        city: string;
-                        postalCode?: string;
-                        bonusSpent?: number;
-                        bonusEarned?: number;
-                        paymentStatus?: 'unpaid' | 'pending' | 'paid' | 'failed';
-                        paymentProvider?: 'manual';
-                        paymentSessionId?: string;
-                        status?: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-                        legalDetails?: OrderLegalDetails;
-                    };
-                };
-
-                if (!payload.order) return null;
-
-                return {
-                    ...payload.order,
-                    createdAt: new Date(payload.order.createdAt),
-                    items: payload.order.items.map((item) => ({
-                        ...item,
-                        category: item.category as import('@/data/products').CategoryType,
-                    })),
-                };
-            })
+        loadServerOrder()
             .then((loadedOrder) => {
                 if (!isMounted) return;
-                setServerOrder(loadedOrder);
-
-                if (loadedOrder) {
-                    upsertOrder(loadedOrder);
-                }
+                applyLoadedOrder(loadedOrder);
             })
             .catch(() => {
                 if (!isMounted) return;
-                setServerOrder(null);
+                applyLoadedOrder(null);
             })
             .finally(() => {
                 if (!isMounted) return;
@@ -114,7 +96,24 @@ function useOrderPageState({ params }: PageProps) {
         return () => {
             isMounted = false;
         };
-    }, [id, serverOrderResolved, upsertOrder]);
+    }, [applyLoadedOrder, loadServerOrder, serverOrderResolved]);
+
+    React.useEffect(() => {
+        if (paymentReturnState !== 'processing') return;
+        const controller = new AbortController();
+        let mounted = true;
+        void pollForPaymentConfirmation(() => loadServerOrder(controller.signal), {
+            signal: controller.signal,
+            onOrder: applyLoadedOrder,
+        }).then((result) => {
+            if (!mounted || result === 'aborted') return;
+            setPaymentReturnState(result);
+        });
+        return () => {
+            mounted = false;
+            controller.abort();
+        };
+    }, [applyLoadedOrder, loadServerOrder, paymentReturnState]);
 
     const getDeliveryLabel = (deliveryMethod: string): string => {
         const key = DELIVERY_METHOD_LABEL_KEYS[deliveryMethod as CheckoutDeliveryMethod];
@@ -220,12 +219,28 @@ function useOrderPageState({ params }: PageProps) {
     const currentStatusIndex = statusOrder[status] ?? 0;
 
     const handlePayNow = async (): Promise<void> => {
-        if (payingNow) return;
+        if (payingNow || paymentReturnState === 'processing'
+            || paymentReturnState === 'paid' || paymentReturnState === 'timeout') return;
         setPayingNow(true);
         try {
             const response = await fetch(`/api/orders/${encodeURIComponent(order.id)}/pay`, { method: 'POST' });
-            const payload = (await response.json().catch(() => null)) as { paymentUrl?: string } | null;
-            if (!response.ok || !payload?.paymentUrl) {
+            const payload = (await response.json().catch(() => null)) as {
+                paymentUrl?: string;
+                status?: string;
+                error?: string;
+                order?: WireOrder;
+            } | null;
+            const result = payRetryResult(response.ok, response.status, payload);
+            if (result === 'paid' || result === 'refresh-paid') {
+                const loadedOrder = payload?.order
+                    ? { ...payload.order, createdAt: new Date(payload.order.createdAt) }
+                    : await loadServerOrder();
+                applyLoadedOrder(loadedOrder);
+                if (loadedOrder?.paymentStatus === 'paid') setPaymentReturnState('paid');
+                setPayingNow(false);
+                return;
+            }
+            if (result !== 'redirect' || !payload?.paymentUrl) {
                 showToast(t('order.payNowFailed'), 'error');
                 setPayingNow(false);
                 return;
@@ -237,9 +252,11 @@ function useOrderPageState({ params }: PageProps) {
         }
     };
 
-      return { id, t, language, getOrder, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, showToast, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex }
+      const paymentReturnBlocksRetry = blocksPayseraRetry(paymentReturnState);
+
+      return { id, t, language, getOrder, upsertOrder, getOrderStatus, localOrder, serverOrder, setServerOrder, serverOrderLoading, setServerOrderLoading, serverOrderResolved, setServerOrderResolved, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, showToast, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, statusOrder, currentStatusIndex, paymentReturnState, paymentReturnBlocksRetry }
 }
 
-export function useOrderPage({ params }: PageProps): ReturnType<typeof useOrderPageState> {
-  return useOrderPageState({ params })
+export function useOrderPage({ params, searchParams }: PageProps): ReturnType<typeof useOrderPageState> {
+  return useOrderPageState({ params, searchParams })
 }

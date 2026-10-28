@@ -34,76 +34,21 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('POST /api/webhooks/paypal', () => {
-  it('rejects an invalid signature with 401 and never touches the order', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(false)
-
-    const res = await POST(makeRequest(CAPTURE_EVENT('COMPLETED')))
-
-    expect(res.status).toBe(401)
+// Release 2026-10-20: PayPal is disabled and its webhook must never change an order,
+// whatever the payload, signature or event type.
+describe('POST /api/webhooks/paypal (disabled for this release)', () => {
+  it.each([
+    ['verified capture completed', CAPTURE_EVENT('COMPLETED'), true],
+    ['verified capture denied', JSON.stringify({ event_type: 'PAYMENT.CAPTURE.DENIED', resource: { id: 'cap-1', custom_id: '1001' } }), true],
+    ['invalid signature', CAPTURE_EVENT('COMPLETED'), false],
+    ['capture without custom_id', JSON.stringify({ event_type: 'PAYMENT.CAPTURE.COMPLETED', resource: { id: 'cap-1' } }), true],
+    ['unparsable JSON', '{not json', true],
+  ])('returns retryable 503 and never touches an order: %s', async (_name, body, signatureValid) => {
+    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(signatureValid as boolean)
+    const res = await POST(makeRequest(body as string))
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: 'paypal_disabled' })
     expect(updateServerOrderPayment).not.toHaveBeenCalled()
-  })
-
-  it('marks the order paid on a verified PAYMENT.CAPTURE.COMPLETED event', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(true)
-
-    const res = await POST(makeRequest(CAPTURE_EVENT('COMPLETED', '1001')))
-
-    expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'paid', paymentProvider: 'paypal' })
-  })
-
-  it('marks the order failed (releasing the stock hold) on a verified PAYMENT.CAPTURE.DENIED event', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(true)
-    const body = JSON.stringify({ event_type: 'PAYMENT.CAPTURE.DENIED', resource: { id: 'cap-1', custom_id: '1001' } })
-
-    const res = await POST(makeRequest(body))
-
-    expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed', paymentProvider: 'paypal' })
-  })
-
-  it('acknowledges but ignores event types it does not act on', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(true)
-    const body = JSON.stringify({ event_type: 'CHECKOUT.ORDER.APPROVED', resource: { id: 'o-1' } })
-
-    const res = await POST(makeRequest(body))
-
-    expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).not.toHaveBeenCalled()
-  })
-
-  it('acknowledges a capture event with no custom_id without touching an order', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(true)
-    const body = JSON.stringify({ event_type: 'PAYMENT.CAPTURE.COMPLETED', resource: { id: 'cap-1' } })
-
-    const res = await POST(makeRequest(body))
-
-    expect(res.status).toBe(200)
-    expect(updateServerOrderPayment).not.toHaveBeenCalled()
-  })
-
-  it('returns 400 on unparsable JSON even with valid-looking headers', async () => {
-    const res = await POST(makeRequest('not json'))
-
-    expect(res.status).toBe(400)
-    expect(updateServerOrderPayment).not.toHaveBeenCalled()
-  })
-
-  it('returns 500 (retryable) when signature verification itself throws, e.g. missing config', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockRejectedValue(new Error('PAYPAL_WEBHOOK_ID must be configured'))
-
-    const res = await POST(makeRequest(CAPTURE_EVENT('COMPLETED')))
-
-    expect(res.status).toBe(500)
-  })
-
-  it('returns 500 (retryable) when the DB update throws', async () => {
-    vi.mocked(verifyPaypalWebhookSignature).mockResolvedValue(true)
-    vi.mocked(updateServerOrderPayment).mockRejectedValue(new Error('db down'))
-
-    const res = await POST(makeRequest(CAPTURE_EVENT('COMPLETED')))
-
-    expect(res.status).toBe(500)
+    expect(verifyPaypalWebhookSignature).not.toHaveBeenCalled()
   })
 })

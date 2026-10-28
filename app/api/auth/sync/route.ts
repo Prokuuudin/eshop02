@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
-import { verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
+import { verifyPassword, createSession, requiresAdminMfa, SESSION_COOKIE } from '@/lib/server-auth'
 import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
 
@@ -37,7 +37,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Account must already exist נcreated only via /api/auth/register-card (real card)
     // or an admin invite. This route logs in; it must never double as self-registration.
-    if (!existing) {
+    // Admin-capable accounts must sign in through /api/auth/login so the TOTP step
+    // cannot be skipped (getServerUser would reject such a session anyway).
+    if (!existing || requiresAdminMfa(existing)) {
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
 

@@ -1,8 +1,9 @@
-import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
-import { isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
+import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
+import { calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest, NextResponse } from 'next/server'
-import { logApiError } from '@/lib/observability'
+import { getCorrelationId, logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import {
@@ -18,6 +19,7 @@ import { adminOrderCreateSchema, adminOrderUpdateSchema } from '@/lib/api-schema
 import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
+import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -73,14 +75,22 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       prisma.order.count({ where }),
     ])
     const orderIds = orders.map((order) => order.id)
-    const [statusRows, noteRows] = orderIds.length > 0
+    const [statusRows, noteRows, operationalExceptions] = orderIds.length > 0
       ? await Promise.all([
           prisma.orderStatusRecord.findMany({ where: { orderId: { in: orderIds } } }),
           prisma.orderNote.findMany({ where: { orderId: { in: orderIds } } }),
+          prisma.orderOperationalException.findMany({
+            where: { orderId: { in: orderIds }, status: 'open' },
+            select: { orderId: true, code: true, productIds: true, firstSeenAt: true, occurrences: true },
+          }),
         ])
-      : [[], []]
+      : [[], [], []]
     const statuses = Object.fromEntries(statusRows.map((row) => [row.orderId, row.status]))
     const notes = Object.fromEntries(noteRows.map((row) => [row.orderId, row.note]))
+    const exceptionsByOrder = operationalExceptions.reduce<Record<string, typeof operationalExceptions>>((groups, row) => {
+      ;(groups[row.orderId] ??= []).push(row)
+      return groups
+    }, {})
 
     const damagedProductIds = productIdsForDamagedOrderItems(orders.map((row) => row.items))
     const titleRows = damagedProductIds.length > 0
@@ -95,6 +105,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ...row,
       items: repairOrderItemTitles(row.items, catalogTitles),
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
+      operationalExceptions: (exceptionsByOrder[row.id] ?? []).map((exception) => ({
+        ...exception,
+        firstSeenAt: exception.firstSeenAt.toISOString(),
+      })),
     }))
 
     return NextResponse.json({ orders: mapped, total, statuses, notes })
@@ -109,6 +123,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // every other money field (subtotal/discount/delivery/total) is still
 // recomputed server-side, never trusted from the client.
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const correlationId = getCorrelationId(req)
   const user = await requireAdminPermission('orders.update')
   if (user instanceof NextResponse) return user
 
@@ -139,13 +154,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const subtotal = Math.round(items.reduce((s, i) => s + i.price * i.quantity, 0) * 100) / 100
     const discount = Math.min(input.discount, subtotal)
-    if (input.deliveryMethod === 'courier' && (!input.address || !input.city || !input.postalCode)) {
-      return NextResponse.json({ error: 'missing_delivery_address' }, { status: 400 })
-    }
-    const deliveryLocation = resolveDeliveryLocation(input.deliveryMethod, input.country ?? 'LV', input.deliveryLocationId)
-    if (requiresDeliveryLocation(input.deliveryMethod) && !deliveryLocation) return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
     const shippingSettings = await getShippingSettings()
-    if (!isDeliveryAvailable(input.deliveryMethod, input.country ?? 'LV', shippingSettings)) return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
+    const destination = validateOrderDelivery(input, shippingSettings)
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, shippingSettings)
     const total = Math.max(0, Math.round((subtotal - discount + delivery) * 100) / 100)
 
@@ -160,7 +170,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       subtotal,
       tax: 0,
       delivery,
-      deliveryMethod: input.deliveryMethod,
       paymentMethod: input.paymentMethod,
       promoCode: input.promoCode,
       discount,
@@ -169,11 +178,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lastName: input.lastName ?? '',
       email: input.email,
       phone: input.phone ?? '',
-      address: input.address || 'Самовывоз',
-      city: input.city || '—',
-      country: input.country,
-      deliveryLocation: deliveryLocation ?? undefined,
-      postalCode: input.postalCode,
+      ...destination,
       paymentStatus: input.paymentStatus,
       paymentProvider: 'manual',
       stockReservationStatus: 'committed',
@@ -182,7 +187,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Staff typed every unit price: customer sellability (ERP B2B price) does not apply here.
-    const created = await createServerOrder(orderBase, undefined, { staffPricedSale: true })
+    const created = await createServerOrder(orderBase, undefined, {
+      staffPricedSale: true,
+      notificationSource: 'admin',
+      notificationCorrelationId: correlationId,
+    })
 
     // Staff already processed this sale, so it starts confirmed (not pending)
     // and, unlike a status transition on an existing order, this can't fail
@@ -208,6 +217,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ order: created, ...(metaWarning ? { warning: metaWarning } : {}) }, { status: 201 })
   } catch (error) {
+    if (error instanceof CheckoutMaintenanceError) return NextResponse.json({ error: 'checkout_maintenance' }, { status: 503 })
+    if (error instanceof OrderDeliveryError) return NextResponse.json({ error: error.message }, { status: 400 })
     if (error instanceof InsufficientStockError) {
       return NextResponse.json({ error: 'insufficient_stock', items: error.items }, { status: 409 })
     }
@@ -257,11 +268,12 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       if (!order) return 'not_found' as const
       const status = await tx.orderStatusRecord.findUnique({ where: { orderId }, select: { status: true } })
       if (status?.status !== 'cancelled') return 'not_cancelled' as const
-      const [invoices, returns] = await Promise.all([
+      const [invoices, returns, allocations] = await Promise.all([
         tx.invoice.count({ where: { orderId } }),
         tx.returnRequest.count({ where: { orderId } }),
+        stockLedgerFlags().ledgerEnabled ? tx.stockAllocation.count({ where: { orderId } }) : Promise.resolve(0),
       ])
-      if (invoices > 0 || returns > 0) return 'related_records' as const
+      if (invoices > 0 || returns > 0 || allocations > 0) return 'related_records' as const
       await appendServerAudit(tx, req, user, {
         action: 'order.deleted', entityType: 'order', entityId: orderId,
         entityTitle: `${order.firstName} ${order.lastName}`.trim(), before: { status: 'cancelled' },
@@ -270,6 +282,8 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       await tx.bonusTransaction.updateMany({ where: { orderId }, data: { orderId: null } })
       await tx.orderNote.deleteMany({ where: { orderId } })
       await tx.orderStatusRecord.deleteMany({ where: { orderId } })
+      // The outbox FK is ON DELETE RESTRICT; a cancelled order needs no admin email.
+      await tx.orderNotificationOutbox.deleteMany({ where: { orderId } })
       await tx.order.delete({ where: { id: orderId } })
       return 'deleted' as const
     })

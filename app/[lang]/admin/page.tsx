@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboard-cards';
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
 import RevenueBarChart from './RevenueBarChart';
+import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/delivery';
 
 export default function AdminPage(): React.ReactElement {
     const { t, language } = useTranslation();
@@ -484,7 +485,7 @@ export default function AdminPage(): React.ReactElement {
                                                 <div>
                                                     <p className="text-sm text-muted-foreground">{t('checkout.delivery.method')}</p>
                                                     <p className="text-sm mt-1">
-                                                        {order.deliveryMethod === 'courier' ? t('checkout.delivery.courier') : order.deliveryMethod === 'pickup' ? t('checkout.delivery.pickup') : t('checkout.delivery.post')}
+                                                        {DELIVERY_METHOD_LABEL_KEYS[order.deliveryMethod as CheckoutDeliveryMethod] ? t(DELIVERY_METHOD_LABEL_KEYS[order.deliveryMethod as CheckoutDeliveryMethod]) : order.deliveryMethod}
                                                     </p>
                                                 </div>
                                                 <div>

@@ -1,7 +1,8 @@
 'use client';
+import { stores } from '@/data/stores';
 import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, calcDeliveryFee } from '@/lib/delivery';
 
 
 import AdminGate from '@/components/admin/AdminGate';
@@ -83,7 +84,7 @@ export default function NewOrderPage(): React.ReactElement {
             selectCls,
           } = pageState;
     const { t } = useTranslation();
-    const deliveryOptions: DeliveryOption[] = checkoutDeliveryMethodIds.filter(id => isDeliveryAvailable(id, country, shippingSettings)).map(value => ({ value, label: t(DELIVERY_METHOD_LABEL_KEYS[value]), cost: calcDeliveryFee(value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
+    const deliveryOptions: DeliveryOption[] = checkoutDeliveryMethodIds.filter(id => isDeliveryConfigured(id, country, shippingSettings)).map(value => ({ value, label: t(DELIVERY_METHOD_LABEL_KEYS[value]), cost: calcDeliveryFee(value, pageState.subtotal - pageState.discount, country, shippingSettings) }));
     return (
         <AdminGate access="partial">
             <main className="w-full py-4">
@@ -277,6 +278,14 @@ export default function NewOrderPage(): React.ReactElement {
 
                         {/* Delivery */}
                         <Section title={l('Доставка', 'Delivery', 'Piegāde')}>
+                            {deliveryMethod === 'pickup' && (
+                                <label>{l('Магазин самовывоза', 'Pickup store', 'Saņemšanas veikals')}
+                                    <select required value={pageState.pickupStoreId} onChange={e => pageState.setPickupStoreId(e.target.value)} className="ml-3 rounded border bg-card p-2">
+                                        <option value="">{l('Выберите магазин', 'Select store', 'Izvēlieties veikalu')}</option>
+                                        {stores.map(store => <option key={store.id} value={store.id}>{store.address.lv}</option>)}
+                                    </select>
+                                </label>
+                            )}
                             <label className="mb-3 block">{l('Страна', 'Country', 'Valsts')}<select className="ml-3 rounded border bg-card p-2" value={country} onChange={e => { setCountry(e.target.value as typeof country); setDeliveryLocationId(''); }}><option value="LV">LV</option><option value="LT">LT</option><option value="EE">EE</option></select></label>
                             <div className="flex flex-wrap gap-2">
                                 {deliveryOptions.map((opt) => (

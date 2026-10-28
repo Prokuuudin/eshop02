@@ -101,4 +101,18 @@ describe('POST /api/admin/invitations/card', () => {
     expect(res.status).toBe(403)
     expect(userFindFirstMock).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ['platform admin', { platformRole: 'admin', teamRole: null, superAdmin: false }],
+    ['Super Admin', { platformRole: 'admin', teamRole: null, superAdmin: true }],
+    ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
+  ])('refuses to attach a card to a %s account', async (_label, roles) => {
+    userFindFirstMock.mockResolvedValue({ id: 'staff-1', ...roles })
+    const res = await POST(makeRequest({ email: 'staff@miksplus.eu', cardNumber: '1001', phone: '+37120000000' }))
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'staff_account' })
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(userCreateMock).not.toHaveBeenCalled()
+  })
 })

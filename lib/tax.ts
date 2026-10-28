@@ -1,6 +1,8 @@
 // Product prices are VAT-inclusive (Latvia VAT 21%). Cart/checkout totals must not
 // add tax on top of the subtotal again — this only extracts the VAT portion already
 // baked into the price, for informational display (invoices, order summaries).
+import { pointsToEuros } from './bonus-program'
+
 export const VAT_RATE = 0.21
 
 export function extractVat(grossAmount: number): number {
@@ -24,10 +26,10 @@ type OrderTotals = {
  * only one of the two reconstructs its own stored `total`. Pick whichever fits.
  */
 export function isOrderTaxIncluded(order: OrderTotals): boolean {
-  const bonusSpent = order.bonusSpent ?? 0
+  const bonusSpent = pointsToEuros(order.bonusSpent ?? 0)
   const withoutTax = order.subtotal - order.discount + order.delivery - bonusSpent
   const withTaxAdded = withoutTax + order.tax
-  return Math.abs(order.total - withoutTax) <= Math.abs(order.total - withTaxAdded)
+  return Math.abs(order.total - Math.max(0, withoutTax)) <= Math.abs(order.total - Math.max(0, withTaxAdded))
 }
 
 /** VAT amount to display for an order, correct under either pricing model. */

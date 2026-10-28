@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/paypal', () => ({ capturePaypalOrder: vi.fn() }))
+vi.mock('@/lib/prisma', () => ({ prisma: new Proxy({}, { get: () => { throw new Error('order or session access') } }) }))
 vi.mock('@/lib/observability', () => ({ logOperationalEvent: vi.fn() }))
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: () => 'https://shop.example' }))
 
@@ -16,45 +17,25 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
-describe('GET /api/orders/paypal-return', () => {
-  it('captures the approved order and redirects to the order page with payment=success', async () => {
+// Release 2026-10-20: PayPal is disabled; the return URL must never capture money.
+describe('GET /api/orders/paypal-return (disabled for this release)', () => {
+  it.each([
+    ['approved order with payer', '?orderId=1001&lang=en&token=paypal-order-1&PayerID=payer-1'],
+    ['unknown language', '?orderId=1001&lang=fr&token=paypal-order-1'],
+    ['missing orderId', '?lang=ru&token=paypal-order-1'],
+    ['missing token', '?orderId=1001&lang=ru'],
+    ['no parameters', ''],
+  ])('fails closed with 503 and never calls PayPal: %s', async (_name, query) => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     vi.mocked(capturePaypalOrder).mockResolvedValue({ status: 'COMPLETED' })
 
-    const res = await GET(makeRequest('?orderId=1001&lang=en&token=paypal-order-1&PayerID=payer-1'))
+    const res = await GET(makeRequest(query))
 
-    expect(capturePaypalOrder).toHaveBeenCalledWith('paypal-order-1')
-    expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe('https://shop.example/en/order/1001?payment=success')
-  })
-
-  it('defaults to ru when lang is missing or not one of ru/en/lv', async () => {
-    vi.mocked(capturePaypalOrder).mockResolvedValue({ status: 'COMPLETED' })
-
-    const res = await GET(makeRequest('?orderId=1001&lang=fr&token=paypal-order-1'))
-
-    expect(res.headers.get('location')).toBe('https://shop.example/ru/order/1001?payment=success')
-  })
-
-  it('redirects to payment=failed when the capture call throws (expired/already-captured/etc.)', async () => {
-    vi.mocked(capturePaypalOrder).mockRejectedValue(new Error('PayPal order capture failed: 422'))
-
-    const res = await GET(makeRequest('?orderId=1001&lang=ru&token=paypal-order-1'))
-
-    expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toBe('https://shop.example/ru/order/1001?payment=failed')
-  })
-
-  it('returns 400 without calling PayPal when orderId is missing', async () => {
-    const res = await GET(makeRequest('?lang=ru&token=paypal-order-1'))
-
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: 'paypal_disabled' })
+    expect(res.headers.get('location')).toBeNull()
     expect(capturePaypalOrder).not.toHaveBeenCalled()
-  })
-
-  it('returns 400 without calling PayPal when token is missing', async () => {
-    const res = await GET(makeRequest('?orderId=1001&lang=ru'))
-
-    expect(res.status).toBe(400)
-    expect(capturePaypalOrder).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
   })
 })

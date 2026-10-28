@@ -35,7 +35,10 @@ function cancellationTx(paymentStatus = 'unpaid') {
       upsert: vi.fn(),
     },
     orderNote: { findUnique: vi.fn(), upsert: vi.fn() },
-    product: { updateMany: vi.fn() },
+    product: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'p1', stock: 10, externalId: null, grinsStock: null }]),
+      updateMany: vi.fn(),
+    },
   }
 }
 
@@ -91,6 +94,69 @@ describe('POST /api/admin/order-meta cancellation', () => {
     expect(tx.order.update).toHaveBeenCalledWith({
       where: { id: 'o1' },
       data: { stockReservationStatus: 'committed', stockReleasedAt: null, stockReservedUntil: null },
+    })
+  })
+})
+
+describe('POST /api/admin/order-meta shipment guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    permissionMock.mockResolvedValue({ id: 'admin', email: 'admin@test.com' })
+  })
+
+  function shipmentTx(openException: boolean, stockReservationStatus = openException ? 'released' : 'committed') {
+    const tx = {
+      ...cancellationTx('paid'),
+      orderOperationalException: {
+        findMany: vi.fn().mockResolvedValue(openException ? [{ orderId: 'o1' }] : []),
+      },
+    }
+    tx.order.findUnique.mockResolvedValue({
+      id: 'o1', firstName: 'A', lastName: 'B', items: [{ id: 'p1', quantity: 2 }],
+      paymentStatus: 'paid', stockReservationStatus,
+    })
+    return tx
+  }
+
+  it('refuses shipped while late_payment_stock_unavailable is open, after locking the order', async () => {
+    const tx = shipmentTx(true)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'late_payment_stock_unavailable', current: 'confirmed' })
+    expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.orderOperationalException.findMany)
+    expect(tx.orderOperationalException.findMany).toHaveBeenCalledWith({
+      where: { orderId: { in: ['o1'] }, code: 'late_payment_stock_unavailable', status: 'open' },
+      select: { orderId: true },
+    })
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['released', 'reserved'])('refuses shipped for %s stock even without an exception', async (stockReservationStatus) => {
+    const tx = shipmentTx(false, stockReservationStatus)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({ error: 'order_stock_not_committed', current: 'confirmed', stockReservationStatus })
+    expect(tx.$queryRaw).toHaveBeenCalledBefore(tx.order.findUnique)
+    expect(tx.orderStatusRecord.upsert).not.toHaveBeenCalled()
+    expect(auditMock).not.toHaveBeenCalled()
+  })
+
+  it('ships once no exception is open and the stock is committed', async () => {
+    const tx = shipmentTx(false)
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    const response = await post({ orderId: 'o1', status: 'shipped' })
+
+    expect([200, 202]).toContain(response.status)
+    expect(tx.orderStatusRecord.upsert).toHaveBeenCalledWith({
+      where: { orderId: 'o1' }, create: { orderId: 'o1', status: 'shipped' }, update: { status: 'shipped' },
     })
   })
 })

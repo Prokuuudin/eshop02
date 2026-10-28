@@ -2,11 +2,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { hasAdminUsers, loginUserAuto, verifyMfaAndLogin } from '@/lib/auth';
+import Image from 'next/image';
+import {
+    confirmMfaEnrollment,
+    hasAdminUsers,
+    loginUserAuto,
+    startMfaEnrollment,
+    verifyMfaAndLogin,
+} from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
+import { isMfaCodeComplete, sanitizeMfaCodeInput, type MfaCodeMode } from '@/lib/mfa-code-input';
 
 export default function LoginForm({
     onSuccess,
@@ -30,11 +38,51 @@ export default function LoginForm({
     const [submitting, setSubmitting] = useState(false);
     const [mfaChallengeToken, setMfaChallengeToken] = useState<string | null>(null);
     const [mfaCode, setMfaCode] = useState('');
+    // Sign-in MFA step: authenticator app code (default) or one of the saved backup codes.
+    const [mfaMode, setMfaMode] = useState<MfaCodeMode>('app');
+    const [enrollmentRequired, setEnrollmentRequired] = useState(false);
+    const [enrollment, setEnrollment] = useState<{ qrCodeDataUrl: string; secret?: string } | null>(null);
+    const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
     const mfaCodeInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (mfaChallengeToken) mfaCodeInputRef.current?.focus();
-    }, [mfaChallengeToken]);
+    }, [mfaChallengeToken, enrollment, mfaMode]);
+
+    const mfaErrorText = (code?: string): string => {
+        switch (code) {
+            case 'invalid_code': return t('auth.mfaInvalidCode');
+            case 'rate_limited': return t('auth.mfaRateLimited');
+            case 'not_configured': return t('auth.mfaNotConfigured');
+            case 'expired': return t('auth.mfaExpired');
+            default: return t('form.error');
+        }
+    };
+
+    const resetMfa = () => {
+        setMfaChallengeToken(null);
+        setEnrollmentRequired(false);
+        setEnrollment(null);
+        setBackupCodes(null);
+        setMfaCode('');
+        setMfaMode('app');
+        setError('');
+    };
+
+    const switchMfaMode = (next: MfaCodeMode) => {
+        setMfaMode(next);
+        setMfaCode('');
+        setError('');
+    };
+
+    const beginEnrollment = async (challengeToken: string) => {
+        setSubmitting(true);
+        setError('');
+        const res = await startMfaEnrollment(challengeToken);
+        setSubmitting(false);
+        if (!res.success || !res.qrCodeDataUrl) return setError(mfaErrorText(res.error));
+        setEnrollment({ qrCodeDataUrl: res.qrCodeDataUrl, secret: res.secret });
+    };
 
     const finishLogin = () => {
         router.refresh();
@@ -53,6 +101,8 @@ export default function LoginForm({
         setSubmitting(false);
         if (res.mfaRequired && res.challengeToken) {
             setMfaChallengeToken(res.challengeToken);
+            setEnrollmentRequired(res.enrollmentRequired === true);
+            if (res.enrollmentRequired) void beginEnrollment(res.challengeToken);
             return;
         }
         if (!res.success) return setError(res.error || t('form.error'));
@@ -64,11 +114,122 @@ export default function LoginForm({
         if (submitting || !mfaChallengeToken) return;
         setSubmitting(true);
         setError('');
-        const res = await verifyMfaAndLogin(mfaChallengeToken, mfaCode);
+        const res = await verifyMfaAndLogin(mfaChallengeToken, mfaCode.trim());
         setSubmitting(false);
-        if (!res.success) return setError(res.error || t('form.error'));
+        if (!res.success) {
+            if (res.reason === 'expired') {
+                resetMfa();
+                return setError(t('auth.mfaExpired'));
+            }
+            if (res.reason === 'invalid_code') {
+                return setError(t(mfaMode === 'recovery' ? 'auth.mfaRecoveryInvalid' : 'auth.mfaInvalidCode'));
+            }
+            if (res.reason === 'rate_limited') return setError(t('auth.mfaRateLimited'));
+            if (res.reason === 'server') return setError(t('auth.mfaServerError'));
+            return setError(res.error || t('form.error'));
+        }
         finishLogin();
     };
+
+    const handleEnrollmentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (submitting || !mfaChallengeToken) return;
+        setSubmitting(true);
+        setError('');
+        const res = await confirmMfaEnrollment(mfaChallengeToken, mfaCode.trim());
+        setSubmitting(false);
+        if (!res.success || !res.backupCodes) return setError(mfaErrorText(res.error));
+        setMfaCode('');
+        setBackupCodes(res.backupCodes);
+    };
+
+    if (backupCodes) {
+        return (
+            <div className="space-y-3 bg-card p-3 rounded-lg">
+                <h2 className="text-base font-semibold text-foreground">{t('auth.mfaRecoveryTitle')}</h2>
+                <p className="text-sm text-amber-700 dark:text-amber-400">{t('auth.mfaRecoveryIntro')}</p>
+                <ul className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-3 font-mono text-sm text-foreground">
+                    {backupCodes.map((c) => <li key={c}>{c}</li>)}
+                </ul>
+                <Button type="button" className="w-full" onClick={finishLogin}>
+                    {t('auth.mfaRecoveryDone')}
+                </Button>
+            </div>
+        );
+    }
+
+    if (mfaChallengeToken && enrollmentRequired) {
+        return (
+            <form onSubmit={handleEnrollmentSubmit} className="space-y-3 bg-card p-3 rounded-lg">
+                <h2 className="text-base font-semibold text-foreground">{t('auth.mfaSetupTitle')}</h2>
+                <p className="text-sm text-muted-foreground">{t('auth.mfaSetupIntro')}</p>
+                <div className="rounded-md border border-border bg-muted/40 p-3 text-sm">
+                    <p className="font-medium text-foreground">{t('auth.mfaSetupHowTitle')}</p>
+                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+                        <li>{t('auth.mfaSetupStep1')}</li>
+                        <li>{t('auth.mfaSetupStep2')}</li>
+                        <li>{t('auth.mfaSetupStep3')}</li>
+                        <li>{t('auth.mfaSetupStep4')}</li>
+                    </ol>
+                    <p className="mt-2 text-amber-700 dark:text-amber-400">{t('auth.mfaSetupSaveCodes')}</p>
+                </div>
+                {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
+                {enrollment ? (
+                    <>
+                        <Image
+                            src={enrollment.qrCodeDataUrl}
+                            alt={t('auth.mfaSetupTitle')}
+                            width={200}
+                            height={200}
+                            unoptimized
+                            className="mx-auto rounded bg-white p-2"
+                        />
+                        {enrollment.secret && (
+                            <p className="text-xs text-muted-foreground">
+                                {t('auth.mfaSetupManual')}{' '}
+                                <code className="break-all font-mono text-foreground">{enrollment.secret}</code>
+                            </p>
+                        )}
+                        <div>
+                            <label htmlFor="login-mfa-enroll-code" className="block mb-1 text-sm text-foreground">
+                                {t('auth.mfaCode')}
+                            </label>
+                            <Input
+                                id="login-mfa-enroll-code"
+                                ref={mfaCodeInputRef}
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                className="bg-card text-foreground border-border"
+                                value={mfaCode}
+                                onChange={(e) => setMfaCode(sanitizeMfaCodeInput('app', e.target.value))}
+                                maxLength={6}
+                                required
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        disabled={submitting}
+                        onClick={() => void beginEnrollment(mfaChallengeToken)}
+                    >
+                        {t('auth.mfaSetupStart')}
+                    </Button>
+                )}
+                <div className="flex gap-2">
+                    <Button type="submit" className="flex-1" disabled={!enrollment || submitting || !isMfaCodeComplete('app', mfaCode)}>
+                        {t('auth.mfaSetupConfirm')}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={resetMfa}>
+                        {t('common.cancel', 'Отмена')}
+                    </Button>
+                </div>
+            </form>
+        );
+    }
 
     if (mfaChallengeToken) {
         return (
@@ -76,25 +237,41 @@ export default function LoginForm({
                 {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
                 <div>
                     <label htmlFor="login-mfa-code" className="block mb-1 text-sm text-foreground">
-                        {t('auth.mfaCode', 'Код из приложения-аутентификатора')}
+                        {mfaMode === 'app' ? t('auth.mfaCode', 'Код из приложения-аутентификатора') : t('auth.mfaRecoveryLabel')}
                     </label>
+                    {/* Backup codes contain letters a–f, so the recovery mode must not use a numeric keypad. */}
                     <Input
+                        key={mfaMode}
                         id="login-mfa-code"
                         ref={mfaCodeInputRef}
                         type="text"
-                        inputMode="numeric"
-                        className="bg-card text-foreground border-border"
+                        inputMode={mfaMode === 'app' ? 'numeric' : 'text'}
+                        autoComplete={mfaMode === 'app' ? 'one-time-code' : 'off'}
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        className="bg-card text-foreground border-border font-mono"
                         value={mfaCode}
-                        onChange={(e) => setMfaCode(e.target.value)}
-                        maxLength={10}
+                        onChange={(e) => setMfaCode(sanitizeMfaCodeInput(mfaMode, e.target.value))}
+                        placeholder={mfaMode === 'app' ? '123456' : undefined}
                         required
                     />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {mfaMode === 'app' ? t('auth.mfaCodeHint') : t('auth.mfaRecoveryHint')}
+                    </p>
+                    <button
+                        type="button"
+                        className="mt-2 text-sm text-primary hover:underline"
+                        onClick={() => switchMfaMode(mfaMode === 'app' ? 'recovery' : 'app')}
+                    >
+                        {mfaMode === 'app' ? t('auth.mfaUseRecovery') : t('auth.mfaUseApp')}
+                    </button>
                 </div>
                 <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={mfaCode.length < 6}>
+                    <Button type="submit" className="flex-1" disabled={submitting || !isMfaCodeComplete(mfaMode, mfaCode)}>
                         {t('auth.login')}
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => { setMfaChallengeToken(null); setMfaCode(''); setError(''); }}>
+                    <Button type="button" variant="outline" onClick={resetMfa}>
                         {t('common.cancel', 'Отмена')}
                     </Button>
                 </div>

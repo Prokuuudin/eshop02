@@ -25,8 +25,8 @@ vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: rateLimitMock }))
 import { GET, POST } from './route'
 
 const future = new Date(Date.now() + 60_000)
-const post = (body: unknown) => POST(new NextRequest('https://shop.test/api/auth/invite', {
-  method: 'POST', body: JSON.stringify(body), headers: { 'cf-connecting-ip': '203.0.113.1' },
+const post = (body: Record<string, unknown>) => POST(new NextRequest('https://shop.test/api/auth/invite', {
+  method: 'POST', body: JSON.stringify({ privacyAcknowledged: true, ...body }), headers: { 'cf-connecting-ip': '203.0.113.1' },
 }))
 
 describe('/api/auth/invite validation and abuse protection', () => {
@@ -79,8 +79,33 @@ describe('/api/auth/invite validation and abuse protection', () => {
     const response = await post({ token: 'token', password: 'valid-password' })
     expect(response.status).toBe(200)
     expect(tx.invitationToken.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: 'sent' }) }))
-    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ passwordHash: 'new-hash' }) }))
+    expect(tx.user.update).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({
+      passwordHash: 'new-hash',
+      mustChangePassword: false,
+      privacyNoticeVersion: '2026-07-03',
+      privacyAcknowledgedAt: expect.any(Date),
+    }) }))
     expect(response.cookies.get('eshop_session')?.value).toBe('session-token')
+  })
+
+  it('requires the privacy notice acknowledgement before touching the invitation', async () => {
+    const response = await post({ token: 'token', password: 'valid-password', privacyAcknowledged: undefined })
+    expect(response.status).toBe(400)
+    expect(await response.json()).toEqual({ ok: false, error: 'privacy_acknowledgement_required' })
+    expect(invitationFindMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['an expired', { status: 'sent', expiresAt: new Date(Date.now() - 1000) }, 410, 'token_expired'],
+    ['an undelivered (error)', { status: 'error', expiresAt: future }, 404, 'invalid_token'],
+  ])('refuses %s invitation without creating a session', async (_label, invitation, status, error) => {
+    invitationFindMock.mockResolvedValue({ userId: 'u1', email: 'buyer@test.com', cardNumber: '1234', ...invitation })
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(status)
+    expect(await response.json()).toMatchObject({ ok: false, error })
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
   })
 
   it('grants the one-time welcome bonus on invitation acceptance', async () => {
@@ -112,5 +137,21 @@ describe('/api/auth/invite validation and abuse protection', () => {
     const response = await post({ token: 'token', password: 'valid-password' })
     expect(response.status).toBe(409)
     expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['platform admin', { platformRole: 'admin', teamRole: null, superAdmin: false }],
+    ['Super Admin', { platformRole: 'admin', teamRole: null, superAdmin: true }],
+    ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
+  ])('refuses to activate an invitation on a %s account: token, password, role and sessions untouched', async (_label, roles) => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 's1', email: 'staff@test.com', cardNumber: '1234' })
+    userFindMock.mockResolvedValue({ id: 's1', name: 'Staff', companyId: null, mfaEnabled: true, ...roles })
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ ok: false, error: 'staff_account' })
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 })

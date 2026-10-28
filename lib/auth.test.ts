@@ -8,7 +8,7 @@ vi.mock('@/lib/audit-log-store', () => ({
   logAuditAction: vi.fn(),
 }))
 
-import { clearNewUserFlag, getCurrentUser, loginUserAuto, logout, registerCardUser, submitNoCardRequest, verifyMfaAndLogin, forceChangePassword } from './auth'
+import { clearNewUserFlag, getCurrentUser, loginUserAuto, logout, requestCardActivation, submitNoCardRequest, verifyMfaAndLogin, forceChangePassword } from './auth'
 import { CURRENT_KEY } from './auth-storage'
 
 function makeLocalStorageMock() {
@@ -209,9 +209,53 @@ describe('verifyMfaAndLogin — second step of an MFA-gated login', () => {
 
     const res = await verifyMfaAndLogin('challenge-token', '000000')
 
-    expect(res).toEqual({ success: false, error: expect.any(String) })
+    expect(res).toEqual({ success: false, error: expect.any(String), reason: 'invalid_code' })
     expect(res.error).toMatch(/Неверный код/)
     expect(getCurrentUser()).toBeNull()
+  })
+
+  it.each([
+    ['500 with an error body', { ok: false, status: 500, json: async () => ({ error: 'server_error' }) }],
+    ['504 timeout without JSON', { ok: false, status: 504, json: async () => { throw new SyntaxError('Unexpected token <') } }],
+  ])('never reports a server failure (%s) as a wrong code', async (_label, response) => {
+    vi.mocked(fetch).mockResolvedValue(response as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(false)
+    expect(res.reason).toBe('server')
+    expect(res.error).not.toMatch(/Неверный код/)
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('reports an expired sign-in step separately from a wrong code', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'invalid_challenge' }),
+    } as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(false)
+    expect(res.reason).toBe('expired')
+    expect(getCurrentUser()).toBeNull()
+  })
+
+  it('sends a backup code through the same field and endpoint as an app code', async () => {
+    const fetchMock = vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ user: { id: 'admin1', email: 'admin@example.com' } }),
+    } as unknown as Response)
+
+    const res = await verifyMfaAndLogin('challenge-token', 'a1b2c3d4e5')
+
+    expect(res.success).toBe(true)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/mfa/verify',
+      expect.objectContaining({ body: JSON.stringify({ challengeToken: 'challenge-token', code: 'a1b2c3d4e5' }) })
+    )
   })
 
   it('surfaces rate limiting distinctly from a wrong code', async () => {
@@ -233,168 +277,48 @@ describe('verifyMfaAndLogin — second step of an MFA-gated login', () => {
   })
 })
 
-describe('registerCardUser — server-authoritative card registration', () => {
-  it('never creates a local account without a successful server round-trip', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 404 } as Response)
+describe('requestCardActivation — activation link request', () => {
+  it('sends only the card number and language, never a session-making payload', async () => {
+    const fetchMock = vi.mocked(fetch).mockResolvedValue({ ok: true, status: 202 } as Response)
 
-    const res = await registerCardUser({ cardNumber: '9999', password: 'Welcome1!Change' })
+    const res = await requestCardActivation({ cardNumber: ' 0042 ', language: 'lv' })
 
-    expect(res.success).toBe(false)
-    expect(res.errorCode).toBe('card_not_found')
+    expect(res).toEqual({ success: true })
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/register-card', expect.objectContaining({ method: 'POST' }))
+    const sent = JSON.parse(String(fetchMock.mock.calls[0][1]?.body))
+    expect(sent).toEqual({ cardNumber: '42', language: 'lv', privacyAcknowledged: true })
     expect(getCurrentUser()).toBeNull()
   })
 
-  it('surfaces "already registered" distinctly from "not found"', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 409 } as Response)
+  it('never stores a local user, whatever the server answers', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true, status: 202, json: async () => ({ user: { id: 'u1', email: 'x@y.lv' } }),
+    } as unknown as Response)
 
-    const res = await registerCardUser({ cardNumber: '1234', password: 'Welcome1!Change' })
+    await requestCardActivation({ cardNumber: '1234' })
 
-    expect(res.errorCode).toBe('card_already_registered')
+    expect(getCurrentUser()).toBeNull()
   })
 
-  it('surfaces the wrong shared welcome password distinctly', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
+  it.each([
+    [429, 'too_many_attempts'],
+    [400, 'invalid_card'],
+    [500, 'server_error'],
+  ])('maps HTTP %s to %s', async (status, errorCode) => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false, status } as Response)
 
-    const res = await registerCardUser({ cardNumber: '1234', password: 'nope' })
+    const res = await requestCardActivation({ cardNumber: '1234' })
 
-    expect(res.errorCode).toBe('wrong_password')
-  })
-
-  it('surfaces rate limiting distinctly', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 429 } as Response)
-
-    const res = await registerCardUser({ cardNumber: '1234', password: 'Welcome1!Change' })
-
-    expect(res.errorCode).toBe('too_many_attempts')
+    expect(res).toEqual({ success: false, errorCode })
   })
 
   it('fails closed when the server is unreachable', async () => {
     vi.mocked(fetch).mockRejectedValue(new Error('network down'))
 
-    const res = await registerCardUser({ cardNumber: '1234', password: 'Welcome1!Change' })
+    const res = await requestCardActivation({ cardNumber: '1234' })
 
-    expect(res.success).toBe(false)
-    expect(res.errorCode).toBe('network_error')
+    expect(res).toEqual({ success: false, errorCode: 'network_error' })
     expect(getCurrentUser()).toBeNull()
-  })
-
-  it('does not send the obsolete corporate-card password to the server', async () => {
-    const fetchMock = vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
-
-    await registerCardUser({ cardNumber: '1234', password: 'Welcome1!Change' })
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/register-card',
-      expect.objectContaining({
-        body: expect.not.stringContaining('"password"'),
-      })
-    )
-  })
-
-  it('sends the typed phone last-4 and email to the server', async () => {
-    const fetchMock = vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
-
-    await registerCardUser({ cardNumber: '5678', phoneLast4: '4321', email: 'master@example.com' })
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/register-card',
-      expect.objectContaining({
-        body: expect.stringContaining('"phoneLast4":"4321"'),
-      })
-    )
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/auth/register-card',
-      expect.objectContaining({
-        body: expect.stringContaining('"email":"master@example.com"'),
-      })
-    )
-  })
-
-  it('on success, mirrors the server-created account locally and sets the current company', async () => {
-    const serverUser = {
-      id: 'u_real_123',
-      email: 'card.1234@client.local',
-      companyId: 'company_1',
-      companyName: 'SIA MIKS PLUS',
-      teamRole: 'buyer',
-      bonusPoints: 500,
-    }
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({ user: serverUser }),
-    } as unknown as Response)
-
-    const res = await registerCardUser({ cardNumber: '1234', name: 'Ivan', password: 'Welcome1!Change' })
-
-    expect(res.success).toBe(true)
-    const stored = getCurrentUser()
-    expect(stored?.id).toBe('u_real_123')
-    expect(stored?.companyId).toBe('company_1')
-    expect(stored?.password).toBe('')
-    expect(setCurrentCompany).toHaveBeenCalledWith('company_1')
-  })
-
-  it('never stores a raw pkLast3 code in the local mirror even if the server sent one', async () => {
-    const serverUser = {
-      id: 'u_soft_1',
-      email: 'card.5678@client.local',
-      mustChangePassword: true,
-      // Defence-in-depth: even if a future server regression leaked this
-      // raw field, the client must never persist it.
-      pkLast3: 'X9Z',
-    }
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ user: serverUser }),
-    } as unknown as Response)
-
-    await registerCardUser({ cardNumber: '5678', phoneLast4: '4321' })
-
-    const stored = getCurrentUser()
-    expect(stored?.mustChangePassword).toBe(true)
-    expect((stored as unknown as { pkLast3?: unknown })?.pkLast3).toBeUndefined()
-  })
-
-  it('surfaces a wrong phone/email contact distinctly from a wrong shared password', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      status: 401,
-      json: async () => ({ error: 'wrong_contact' }),
-    } as unknown as Response)
-
-    const res = await registerCardUser({ cardNumber: '5678', phoneLast4: '9999' })
-
-    expect(res.errorCode).toBe('wrong_contact')
-  })
-
-  it('falls back to wrong_password on a 401 with no readable body (legacy shape)', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 401 } as Response)
-
-    const res = await registerCardUser({ cardNumber: '1234', password: 'nope' })
-
-    expect(res.errorCode).toBe('wrong_password')
-  })
-
-  it('surfaces a card with no usable phone or email on file distinctly', async () => {
-    vi.mocked(fetch).mockResolvedValue({ ok: false, status: 422 } as Response)
-
-    const res = await registerCardUser({ cardNumber: '5678', phoneLast4: '2210' })
-
-    expect(res.errorCode).toBe('no_contact_on_file')
-  })
-
-  it('surfaces a missing phone/email/password as a distinct 400', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      status: 400,
-      json: async () => ({ error: 'contact_required' }),
-    } as unknown as Response)
-
-    const res = await registerCardUser({ cardNumber: '5678' })
-
-    expect(res.errorCode).toBe('contact_required')
   })
 })
 

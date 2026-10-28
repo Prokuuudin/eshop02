@@ -17,6 +17,8 @@ describe('commerce settings', () => {
     expect(upgraded.delivery.omniva.enabled).toBe(false)
     expect(upgraded.delivery.omniva.freeFrom).toBe(350)
     expect(upgraded.delivery.unisend.enabled).toBe(true)
+    expect(upgraded.delivery.unisend.maxWeightKg).toBe(30)
+    expect(upgraded.delivery.courier_riga.serviceAreaCities).toEqual([])
     expect(upgraded.delivery.expresspasts.enabled).toBe(false)
     expect(commerceSettingsSchema.safeParse(upgraded).success).toBe(true)
   })
@@ -31,6 +33,7 @@ describe('commerce settings', () => {
     expect(DEFAULT_COMMERCE_SETTINGS.delivery.omniva.enabled).toBe(true)
     expect(DEFAULT_COMMERCE_SETTINGS.delivery.venipak.enabled).toBe(true)
     expect(DEFAULT_COMMERCE_SETTINGS.delivery.unisend.enabled).toBe(true)
+    expect(DEFAULT_COMMERCE_SETTINGS.delivery.unisend.maxWeightKg).toBe(30)
   })
 
   it('migrates the legacy courier, pickup and post values without enabling new integrations', () => {
@@ -57,5 +60,27 @@ describe('commerce settings', () => {
     expect(issues).toContain('Доставка «DPD»: не указана цена')
     expect(issues).toContain('Оплата «Банковская карта онлайн»: не выбраны способы доставки')
     expect(issues).toContain('Paysera: merchant-аккаунт не готов')
+  })
+
+  it('reports an enabled Riga courier without an approved service area', () => {
+    const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    settings.delivery.courier_riga.enabled = true
+    settings.delivery.courier_riga.status = 'ready'
+    expect(getCommerceSettingsIssues(settings, 'en')).toContain('Courier in Riga: service area is not configured')
+    expect(getCommerceSettingsIssues(settings, 'en', 'delivery')).toContain('Courier in Riga: service area is not configured')
+    expect(getCommerceSettingsIssues(settings, 'en', 'payment')).not.toContain('Courier in Riga: service area is not configured')
+  })
+
+  it('limits issues to the requested admin page scope', () => {
+    const settings = structuredClone(DEFAULT_COMMERCE_SETTINGS)
+    settings.delivery.dpd.enabled = true
+    settings.payment.card_online.enabled = true
+
+    const delivery = getCommerceSettingsIssues(settings, 'ru', 'delivery')
+    const payment = getCommerceSettingsIssues(settings, 'ru', 'payment')
+    expect(delivery).toContain('Доставка «DPD»: не указана цена')
+    expect(delivery.some((issue) => issue.startsWith('Оплата') || issue.startsWith('Paysera'))).toBe(false)
+    expect(payment).toContain('Paysera: merchant-аккаунт не готов')
+    expect(payment.some((issue) => issue.startsWith('Доставка'))).toBe(false)
   })
 })

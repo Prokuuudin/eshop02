@@ -1,7 +1,7 @@
 'use client';
 import { Hint } from '@/components/ui/tooltip';
 import { useTranslation } from '@/lib/use-translation';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
+import { acceptedDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery';
 
 import React from 'react';
 import Image from 'next/image';
@@ -21,6 +21,7 @@ import { localizeVariantLabel } from '@/lib/variant-group-label';
 import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
 import { useToast } from '@/lib/toast-context';
+import { StockAcknowledgment } from './StockAcknowledgment';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
@@ -39,7 +40,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
         paid: l('Оплачен', 'Paid', 'Apmaksāts'), refunded: l('Возвращён', 'Refunded', 'Atmaksāts'),
         failed: l('Ошибка оплаты', 'Payment failed', 'Maksājuma kļūda'),
     };
-    const DELIVERY_LABELS = Object.fromEntries(checkoutDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
+    const DELIVERY_LABELS = Object.fromEntries(acceptedDeliveryMethodIds.map(id => [id, t(DELIVERY_METHOD_LABEL_KEYS[id])]));
     const PAYMENT_METHOD_LABELS: Record<string, string> = {
         bank: l('Банковский перевод', 'Bank transfer', 'Bankas pārskaitījums'),
         cash: l('Оплата при получении', 'Cash on delivery', 'Skaidra nauda saņemot'),
@@ -120,6 +121,11 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 {DELIVERY_LABELS[order.deliveryMethod] ??
                                                     order.deliveryMethod}
                                             </span>
+                                            {order.operationalExceptions?.some((exception) => exception.code === 'late_payment_stock_unavailable') && (
+                                                <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-950 dark:text-red-200">
+                                                    {l('Оплата получена — товара недостаточно', 'Payment received — stock unavailable', 'Maksājums saņemts — prece nav pieejama')}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                                             <span className="text-sm font-medium text-foreground">
@@ -144,6 +150,8 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                             {isExpanded && (
                                 <div className="border-t border-border px-4 py-4 space-y-3">
                                     <OrderQuickActions order={order} state={state} status={status} />
+
+                                    <StockAcknowledgment orderId={order.id} />
 
                                     <OrderEditForm order={order} state={state} />
 

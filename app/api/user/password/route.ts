@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
-import { getServerUser, hashPassword, verifyPassword, createSession, SESSION_COOKIE } from '@/lib/server-auth'
+import { getServerUser, hashPassword, verifyPassword, createSession, requiresAdminMfa, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
@@ -56,7 +56,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Rotate sessions: a changed password should invalidate every existing session (e.g. one
     // stolen alongside the old password) and reissue a fresh one for the current request.
     await prisma.session.deleteMany({ where: { userId: user.id } })
-    const newToken = await createSession(user.id)
+    // getServerUser only returns an admin-capable user for an MFA-verified session,
+    // so the rotated session keeps that status; for customers it is irrelevant.
+    const newToken = await createSession(user.id, { mfaVerified: requiresAdminMfa(session) })
 
     const res = NextResponse.json({ ok: true })
     res.cookies.set(SESSION_COOKIE, newToken, {

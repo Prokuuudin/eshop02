@@ -18,6 +18,9 @@ export const ADMIN_PERMISSIONS = [
   'audit.read',
   'audit.manage',
   'settings.manage',
+  // Staff administration: admin/manager roles, Super Admin, staff MFA resets and
+  // edits of other staff accounts. Only Super Admins hold it (see hasAdminPermission).
+  'staff.manage',
 ] as const
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number]
@@ -25,6 +28,7 @@ export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number]
 type PermissionSubject = {
   platformRole?: string | null
   teamRole?: string | null
+  superAdmin?: boolean | null
 } | null | undefined
 
 const MANAGER_PERMISSIONS = new Set<AdminPermission>([
@@ -54,14 +58,33 @@ export function hasAdminPermission(
   permission: AdminPermission,
 ): boolean {
   const level = getPermissionAccessLevel(subject)
+  if (permission === 'staff.manage') return level === 'admin' && subject?.superAdmin === true
   if (level === 'admin') return true
   if (level === 'manager') return MANAGER_PERMISSIONS.has(permission)
   return false
 }
 
 export function getAdminPermissions(subject: PermissionSubject): AdminPermission[] {
-  if (getPermissionAccessLevel(subject) === 'admin') return [...ADMIN_PERMISSIONS]
   return ADMIN_PERMISSIONS.filter((permission) => hasAdminPermission(subject, permission))
+}
+
+/** Holds admin-panel access (platform admin or staff manager) — i.e. a staff account. */
+export function isStaffSubject(subject: PermissionSubject): boolean {
+  return getPermissionAccessLevel(subject) !== 'none'
+}
+
+/**
+ * Staff account (platform admin, staff manager or Super Admin flag) that the customer card
+ * flows — card request approval, card assignment, card invitations, register-card — must
+ * never modify. Those flows set a new password or force a password change, which on a staff
+ * account is a takeover path whether or not MFA is enrolled.
+ */
+export function isProtectedStaffAccount(subject: PermissionSubject): boolean {
+  return isStaffSubject(subject) || subject?.superAdmin === true
+}
+
+export function isSuperAdminSubject(subject: PermissionSubject): boolean {
+  return hasAdminPermission(subject, 'staff.manage')
 }
 
 /** Required permission for every navigable admin area. Longest prefixes win. */

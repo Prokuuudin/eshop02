@@ -3,9 +3,18 @@ type CheckoutOrderPayload = {
     [key: string]: unknown;
 };
 
-export type CheckoutOrderFailure = 'insufficient_stock' | 'product_unavailable' | 'payment_gateway_error' | 'server' | 'invalid_response' | 'network';
+export type CheckoutOrderFailure = 'insufficient_stock' | 'product_unavailable' | 'payment_gateway_error' | 'checkout_maintenance' | 'server' | 'invalid_response' | 'network';
+
+export function checkoutOrderFailureMessage(reason: CheckoutOrderFailure, t: (key: string) => string): string {
+    if (reason === 'checkout_maintenance') return t('checkout.errors.maintenance');
+    if (reason === 'payment_gateway_error') return t('checkout.errors.paymentGateway');
+    if (reason === 'product_unavailable') return t('checkout.errors.productUnavailable');
+    if (reason === 'insufficient_stock') return 'Некоторых товаров уже нет в достаточном количестве. Обновите корзину и попробуйте снова.';
+    if (reason === 'network') return 'Не удалось оформить заказ. Проверьте соединение и попробуйте ещё раз.';
+    return 'Не удалось оформить заказ. Попробуйте ещё раз.';
+}
 export type CheckoutOrderResult =
-    | { ok: true; orderId: string; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation }
+    | { ok: true; orderId: string; order: import('@/lib/orders-data-types').ServerOrder; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation }
     | { ok: false; reason: CheckoutOrderFailure };
 
 const pendingCheckoutKeys = new Map<string, string>();
@@ -37,15 +46,15 @@ export async function createCheckoutOrder(
             const payload = (await response.json().catch(() => null)) as { error?: string } | null;
             return {
                 ok: false,
-                reason: payload?.error === 'insufficient_stock' || payload?.error === 'product_unavailable' || payload?.error === 'payment_gateway_error'
+                reason: payload?.error === 'insufficient_stock' || payload?.error === 'product_unavailable' || payload?.error === 'payment_gateway_error' || payload?.error === 'checkout_maintenance'
                     ? payload.error : 'server',
             };
         }
 
-        const payload = (await response.json()) as { orderId?: string; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation };
-        if (payload.orderId) {
+        const payload = (await response.json()) as { orderId?: string; order?: import('@/lib/orders-data-types').ServerOrder; paymentUrl?: string; deliveryLocation?: import('@/lib/delivery-locations').DeliveryLocation };
+        if (payload.orderId && payload.order && Number.isFinite(payload.order.total) && Array.isArray(payload.order.items)) {
             pendingCheckoutKeys.delete(fingerprint);
-            return { ok: true, orderId: String(payload.orderId), paymentUrl: payload.paymentUrl, ...(payload.deliveryLocation ? { deliveryLocation: payload.deliveryLocation } : {}) };
+            return { ok: true, orderId: String(payload.orderId), paymentUrl: payload.paymentUrl, order: payload.order, ...(payload.deliveryLocation ? { deliveryLocation: payload.deliveryLocation } : {}) };
         }
         return { ok: false, reason: 'invalid_response' };
     } catch {

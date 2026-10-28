@@ -57,9 +57,8 @@ export const registerAdminUser = async (
                 ? { success: false, error: 'Администратор уже создан', adminAlreadyExists: true }
                 : { success: false, error: 'Не удалось создать администратора. Попробуйте позже.' };
         }
-        const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } };
-        if (!payload.user) return { success: false, error: 'Не удалось загрузить аккаунт' };
-        applyLoggedInUser(payload.user);
+        // The account is created without a session: the next step is a normal admin
+        // login, which forces authenticator (TOTP) enrollment.
         return { success: true };
     } catch {
         return { success: false, error: 'Сервер недоступен. Попробуйте позже.' };
@@ -148,95 +147,40 @@ export const updateUserTeamRole = (
     return { success: true, user: updatedUser };
 };
 
-export type RegisterCardErrorCode =
-    | 'card_not_found'
-    | 'card_already_registered'
-    | 'wrong_password'
-    | 'wrong_contact'
-    | 'no_contact_on_file'
-    | 'contact_required'
+export type CardActivationErrorCode =
+    | 'invalid_card'
     | 'too_many_attempts'
     | 'network_error'
     | 'server_error';
 
 /**
- * Registers a B2B customer against a real company card number. Validates the
- * card and creates the account server-side (Prisma + session cookie) via
- * /api/auth/register-card — never locally. A local-only account would look
- * logged in but be invisible to every server-authoritative endpoint (orders,
- * bonus, addresses), so this must round-trip the server like loginUserAuto.
+ * Asks the server to e-mail a one-time activation link for a client card. The server answers
+ * the same way for every card (it never says whether the card exists or has an e-mail) and
+ * never opens a session here: the account is activated from the link, in /auth/invite.
  */
-export const registerCardUser = async (data: {
+export const requestCardActivation = async (data: {
     cardNumber: string;
-    /** @deprecated Corporate-card passwords are no longer supported or sent. */
-    password?: string;
-    phoneLast4?: string;
-    email?: string;
-    name?: string;
-    privacyAcknowledged?: boolean;
-    marketingConsent?: boolean;
-}): Promise<{ success: boolean; errorCode?: RegisterCardErrorCode }> => {
-    const normalizedCard = normalizeCardNumber(data.cardNumber);
-
+    language?: string;
+}): Promise<{ success: boolean; errorCode?: CardActivationErrorCode }> => {
     let res: Response;
     try {
         res = await fetch('/api/auth/register-card', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                cardNumber: normalizedCard,
-                phoneLast4: data.phoneLast4,
-                email: data.email,
-                name: data.name,
-                privacyAcknowledged: data.privacyAcknowledged === true,
-                marketingConsent: data.marketingConsent === true,
+                cardNumber: normalizeCardNumber(data.cardNumber),
+                language: data.language,
+                privacyAcknowledged: true,
             }),
         });
     } catch {
         return { success: false, errorCode: 'network_error' };
     }
 
-    if (res.status === 404) return { success: false, errorCode: 'card_not_found' };
-    if (res.status === 409) return { success: false, errorCode: 'card_already_registered' };
-    if (res.status === 422) return { success: false, errorCode: 'no_contact_on_file' };
-    if (res.status === 400) {
-        let errorCode: RegisterCardErrorCode = 'server_error';
-        try {
-            const body = (await res.json()) as { error?: string };
-            if (body.error === 'contact_required') errorCode = 'contact_required';
-        } catch {
-            // No readable JSON body — fall through to the generic server error.
-        }
-        return { success: false, errorCode };
-    }
-    if (res.status === 401) {
-        let errorCode: RegisterCardErrorCode = 'wrong_password';
-        try {
-            const body = (await res.json()) as { error?: string };
-            if (body.error === 'wrong_contact') errorCode = 'wrong_contact';
-        } catch {
-            // No readable JSON body (e.g. a legacy mocked response) — the shared
-            // company-branch wrong-password case is the safe default here.
-        }
-        return { success: false, errorCode };
-    }
+    if (res.status === 202) return { success: true };
     if (res.status === 429) return { success: false, errorCode: 'too_many_attempts' };
-    if (!res.ok) return { success: false, errorCode: 'server_error' };
-
-    const payload = (await res.json()) as { user?: Partial<User> & { id: string; email: string } };
-    if (!payload.user) return { success: false, errorCode: 'server_error' };
-
-    const verifiedUser = normalizeUser({ ...payload.user, password: '', isNewUser: true });
-    const users = readUsers().filter((u) => u.id !== verifiedUser.id);
-    writeUsers([...users, verifiedUser]);
-    writeCurrentUser(verifiedUser);
-
-    if (verifiedUser.companyId) {
-        useCompanyStore.getState().setCurrentCompany(verifiedUser.companyId);
-    }
-
-    notifyAuthChanged();
-    return { success: true };
+    if (res.status === 400) return { success: false, errorCode: 'invalid_card' };
+    return { success: false, errorCode: 'server_error' };
 };
 
 export const clearNewUserFlag = (): void => {
@@ -396,14 +340,21 @@ export async function syncCurrentSessionUser(): Promise<boolean> {
  * purposes only, with the password field blanked — it is never the source of
  * truth for auth again once a login round-trip has verified the account.
  *
- * MFA-enabled admins don't get a session here: the server responds with
+ * Admin-panel users never get a session here: the server responds with
  * `mfaRequired` + a short-lived `challengeToken` instead, and the caller must
- * follow up with `verifyMfaAndLogin`.
+ * follow up with `verifyMfaAndLogin` — or, when `enrollmentRequired`, with
+ * `startMfaEnrollment` + `confirmMfaEnrollment` (mandatory first-time setup).
  */
 export const loginUserAuto = async (
     identifier: string,
     password: string
-): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; challengeToken?: string }> => {
+): Promise<{
+    success: boolean;
+    error?: string;
+    mfaRequired?: boolean;
+    enrollmentRequired?: boolean;
+    challengeToken?: string;
+}> => {
     const trimmed = identifier.trim();
 
     let res: Response;
@@ -433,11 +384,17 @@ export const loginUserAuto = async (
     const payload = (await res.json().catch(() => ({}))) as {
         user?: Partial<User> & { id: string; email: string };
         mfaRequired?: boolean;
+        enrollmentRequired?: boolean;
         challengeToken?: string;
     };
 
     if (payload.mfaRequired && payload.challengeToken) {
-        return { success: false, mfaRequired: true, challengeToken: payload.challengeToken };
+        return {
+            success: false,
+            mfaRequired: true,
+            enrollmentRequired: payload.enrollmentRequired === true,
+            challengeToken: payload.challengeToken,
+        };
     }
     if (!payload.user) {
         return { success: false, error: 'Не удалось загрузить аккаунт' };
@@ -450,7 +407,7 @@ export const loginUserAuto = async (
 export const verifyMfaAndLogin = async (
     challengeToken: string,
     code: string
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; error?: string; reason?: 'invalid_code' | 'expired' | 'rate_limited' | 'network' | 'server' }> => {
     let res: Response;
     try {
         res = await fetch('/api/auth/mfa/verify', {
@@ -459,14 +416,28 @@ export const verifyMfaAndLogin = async (
             body: JSON.stringify({ challengeToken, code }),
         });
     } catch {
-        return { success: false, error: 'Сервер недоступен. Попробуйте позже.' };
+        return { success: false, error: 'Сервер недоступен. Попробуйте позже.', reason: 'network' };
     }
 
     if (res.status === 429) {
-        return { success: false, error: 'Слишком много попыток. Попробуйте позже.' };
+        return { success: false, error: 'Слишком много попыток. Попробуйте позже.', reason: 'rate_limited' };
     }
     if (!res.ok) {
-        return { success: false, error: 'Неверный код' };
+        // An expired/used sign-in step is not a wrong code: the person has to start over.
+        let body: { error?: string } = {};
+        try {
+            body = (await res.json()) as { error?: string };
+        } catch {
+            // Non-JSON error body: treat as a wrong code.
+        }
+        if (body.error === 'invalid_challenge') {
+            return { success: false, error: 'Время входа истекло. Войдите заново.', reason: 'expired' };
+        }
+        if (res.status === 401) {
+            return { success: false, error: 'Неверный код', reason: 'invalid_code' };
+        }
+        // 5xx / timeout / unexpected: never report a server failure as a wrong code.
+        return { success: false, error: 'Ошибка сервера. Попробуйте позже.', reason: 'server' };
     }
 
     const payload = (await res.json().catch(() => ({}))) as { user?: Partial<User> & { id: string; email: string } };
@@ -476,4 +447,54 @@ export const verifyMfaAndLogin = async (
 
     applyLoggedInUser(payload.user);
     return { success: true };
+};
+
+/** Mandatory first-time MFA setup during login: returns the QR code for the authenticator app. */
+export const startMfaEnrollment = async (
+    challengeToken: string
+): Promise<{ success: boolean; qrCodeDataUrl?: string; secret?: string; error?: 'expired' | 'rate_limited' | 'not_configured' | 'network' }> => {
+    let res: Response;
+    try {
+        res = await fetch('/api/auth/mfa/enroll', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken }),
+        });
+    } catch {
+        return { success: false, error: 'network' };
+    }
+    if (res.status === 429) return { success: false, error: 'rate_limited' };
+    if (res.status === 503) return { success: false, error: 'not_configured' };
+    if (!res.ok) return { success: false, error: 'expired' };
+    const payload = (await res.json().catch(() => ({}))) as { qrCodeDataUrl?: string; secret?: string };
+    if (!payload.qrCodeDataUrl) return { success: false, error: 'network' };
+    return { success: true, qrCodeDataUrl: payload.qrCodeDataUrl, secret: payload.secret };
+};
+
+/** Confirms the first code; on success MFA is enabled, a session exists and recovery codes are returned once. */
+export const confirmMfaEnrollment = async (
+    challengeToken: string,
+    code: string
+): Promise<{ success: boolean; backupCodes?: string[]; error?: 'invalid_code' | 'expired' | 'rate_limited' | 'not_configured' | 'network' }> => {
+    let res: Response;
+    try {
+        res = await fetch('/api/auth/mfa/enroll/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ challengeToken, code }),
+        });
+    } catch {
+        return { success: false, error: 'network' };
+    }
+    if (res.status === 429) return { success: false, error: 'rate_limited' };
+    if (res.status === 503) return { success: false, error: 'not_configured' };
+    const payload = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        user?: Partial<User> & { id: string; email: string };
+        backupCodes?: string[];
+    };
+    if (!res.ok) return { success: false, error: payload.error === 'invalid_code' ? 'invalid_code' : 'expired' };
+    if (!payload.user || !payload.backupCodes) return { success: false, error: 'network' };
+    applyLoggedInUser(payload.user);
+    return { success: true, backupCodes: payload.backupCodes };
 };

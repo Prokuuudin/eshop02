@@ -1,35 +1,46 @@
 ﻿'use client';
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Phone, Mail } from 'lucide-react';
-import { registerCardUser, type RegisterCardErrorCode } from '@/lib/auth';
+import { requestCardActivation, type CardActivationErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/lib/use-translation';
 
 type Props = {
     onClose?: () => void;
-    onNoContactOnFile?: () => void;
 };
 
-export default function RegisterForm({ onClose, onNoContactOnFile }: Props): React.ReactElement {
-    const { t } = useTranslation();
-    const router = useRouter();
-    const [name, setName] = useState('');
+function ContactLinks(): React.ReactElement {
+    return (
+        <div className="flex gap-2">
+            <a
+                href="tel:+37127067730"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
+            >
+                <Phone className="w-3 h-3" />
+                +371 27067730
+            </a>
+            <a
+                href="mailto:office@miksplus.eu"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
+            >
+                <Mail className="w-3 h-3" />
+                office@miksplus.eu
+            </a>
+        </div>
+    );
+}
+
+export default function RegisterForm({ onClose }: Props): React.ReactElement {
+    const { t, language } = useTranslation();
     const [cardNumber, setCardNumber] = useState('');
-    const [phoneLast4, setPhoneLast4] = useState('');
-    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
+    const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const ERROR_MESSAGES: Record<RegisterCardErrorCode, string> = {
-        card_not_found: t('auth.cardNotFound'),
-        card_already_registered: t('auth.cardAlreadyRegistered'),
-        wrong_password: t('auth.wrongPassword'),
-        wrong_contact: t('auth.wrongContact'),
-        no_contact_on_file: t('auth.noContactOnFile'),
-        contact_required: t('auth.enterContactOrPassword'),
+    const ERROR_MESSAGES: Record<CardActivationErrorCode, string> = {
+        invalid_card: t('auth.invalidCardNumber'),
         too_many_attempts: t('auth.tooManyAttempts'),
         network_error: t('auth.registrationError'),
         server_error: t('auth.registrationError'),
@@ -39,42 +50,40 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
         e.preventDefault();
         setError('');
 
-        const trimmedCard = cardNumber.trim().replace(/\s+/g, '').toUpperCase();
+        const trimmedCard = cardNumber.trim().replace(/\s+/g, '');
         if (!trimmedCard) {
             setError(t('auth.enterCardNumber'));
             return;
         }
 
-        const trimmedPhoneLast4 = phoneLast4.trim();
-        const trimmedEmail = email.trim();
-        if (!trimmedPhoneLast4 && !trimmedEmail) {
-            setError(t('auth.enterContactOrPassword'));
-            return;
-        }
-
-        // Card + phone-last-4/email are verified server-side (never shipped to
-        // the client bundle) — a mismatch comes back as errorCode 'wrong_contact'.
+        // The server answers identically for every card and only ever e-mails the address on
+        // file — this form cannot confirm that a card exists or log anyone in.
         setLoading(true);
-        const result = await registerCardUser({
-            cardNumber: trimmedCard,
-            phoneLast4: trimmedPhoneLast4 || undefined,
-            email: trimmedEmail || undefined,
-            name: name.trim() || undefined,
-            privacyAcknowledged: true,
-        });
+        const result = await requestCardActivation({ cardNumber: trimmedCard, language });
         setLoading(false);
 
         if (!result.success) {
             setError(result.errorCode ? ERROR_MESSAGES[result.errorCode] : t('auth.registrationError'));
-            if (result.errorCode === 'no_contact_on_file') {
-                onNoContactOnFile?.();
-            }
             return;
         }
-
-        onClose?.();
-        router.push('/account');
+        setSent(true);
     };
+
+    if (sent) {
+        return (
+            <div className="register-form space-y-3 bg-card p-3 rounded-lg">
+                <p className="register-form__notice text-sm text-foreground">{t('auth.cardActivationSent')}</p>
+                <ContactLinks />
+                {onClose && (
+                    <div className="register-form__actions flex gap-2">
+                        <Button type="button" variant="outline" className="register-form__close flex-1" onClick={onClose}>
+                            {t('common.close', 'Закрыть')}
+                        </Button>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <form
@@ -85,20 +94,7 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
                 <p className="register-form__error text-red-600 dark:text-red-400 text-sm">{error}</p>
             )}
 
-            {/* Имя */}
-            <div className="register-form__field">
-                <label htmlFor="register-name" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.name', 'Имя')}
-                </label>
-                <Input
-                    id="register-name"
-                    className="register-form__input bg-card text-foreground border-border"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t('auth.namePlaceholder', 'Ваше имя')}
-                />
-            </div>
+            <p className="register-form__intro text-sm text-muted-foreground">{t('auth.cardActivationIntro')}</p>
 
             {/* Номер карты */}
             <div className="register-form__field">
@@ -120,61 +116,12 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
                 />
             </div>
 
-            {/* Телефон / email — сверяются с данными карты, достаточно одного */}
-            <div className="register-form__field">
-                <label htmlFor="register-phone-last4" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.phoneLast4Label')}
-                </label>
-                <Input
-                    id="register-phone-last4"
-                    className="register-form__input bg-card text-foreground border-border"
-                    type="text"
-                    inputMode="numeric"
-                    value={phoneLast4}
-                    onChange={(e) => setPhoneLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder={t('auth.phoneLast4Placeholder')}
-                    maxLength={4}
-                    autoComplete="off"
-                />
-            </div>
-
-            <div className="register-form__field">
-                <label htmlFor="register-email" className="register-form__label block mb-1 text-sm text-foreground">
-                    {t('auth.email')}
-                </label>
-                <Input
-                    id="register-email"
-                    className="register-form__input bg-card text-foreground border-border"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('auth.emailPlaceholder')}
-                    autoComplete="off"
-                />
-                <p className="text-xs text-muted-foreground mt-1">{t('auth.contactHint')}</p>
-            </div>
-
             <div className="register-form__card-hint space-y-1">
                 <p className="text-xs text-muted-foreground">
                     <span className="text-gray-400 dark:text-gray-500 mr-0.5">*</span>
                     {t('auth.hasCardNoPassword')}
                 </p>
-                <div className="flex gap-2">
-                    <a
-                        href="tel:+37127067730"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
-                    >
-                        <Phone className="w-3 h-3" />
-                        +371 27067730
-                    </a>
-                    <a
-                        href="mailto:office@miksplus.eu"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-gray-700 dark:text-gray-300 hover:border-primary/70 hover:text-primary dark:hover:text-primary/80 transition-colors"
-                    >
-                        <Mail className="w-3 h-3" />
-                        office@miksplus.eu
-                    </a>
-                </div>
+                <ContactLinks />
             </div>
 
             <p className="text-xs text-muted-foreground">
@@ -186,7 +133,7 @@ export default function RegisterForm({ onClose, onNoContactOnFile }: Props): Rea
             </p>
             <div className="register-form__actions flex gap-2">
                 <Button type="submit" className="register-form__submit flex-1" disabled={loading}>
-                    {t('auth.confirm')}
+                    {t('auth.cardActivationSubmit')}
                 </Button>
                 {onClose && (
                     <Button type="button" variant="outline" className="register-form__close" onClick={onClose}>

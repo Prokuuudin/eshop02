@@ -1,11 +1,12 @@
 'use client';
+import { stores } from '@/data/stores';
 
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { Input } from '@/components/ui/input';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
-import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery';
+import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, isLegacyCourierMethod, calcDeliveryFee, type CheckoutDeliveryMethod } from '@/lib/delivery';
 import { calculateOrderEditSummary } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -25,6 +26,9 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
         editAddProduct,
     } = state;
     if (editingOrderId !== order.id) return null;
+    // A historical order may keep its legacy courier method; it is never offered otherwise.
+    const historicalCourier = isLegacyCourierMethod(order.deliveryMethod) ? order.deliveryMethod as CheckoutDeliveryMethod : null;
+    const editableDeliveryMethodIds: readonly CheckoutDeliveryMethod[] = historicalCourier ? [historicalCourier, ...checkoutDeliveryMethodIds] : checkoutDeliveryMethodIds;
 
     return (
 
@@ -67,6 +71,14 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                 </div>
                                             </div>
 
+                                            {editDelivery === 'pickup' && (
+                                                <label>{l('Магазин самовывоза', 'Pickup store', 'Saņemšanas veikals')}
+                                                    <select required value={state.editPickupStoreId} onChange={e => state.setEditPickupStoreId(e.target.value)} className="ml-3 rounded border bg-card p-2">
+                                                        <option value="">{l('Выберите магазин', 'Select store', 'Izvēlieties veikalu')}</option>
+                                                        {stores.map(store => <option key={store.id} value={store.id}>{store.address.lv}</option>)}
+                                                    </select>
+                                                </label>
+                                            )}
                                             {requiresDeliveryLocation(editDelivery) && <DeliveryLocationPicker key={editDelivery + ':' + (editCountry)} method={editDelivery} country={editCountry} value={editDeliveryLocationId} onChange={setEditDeliveryLocationId} />}
                                             {/* Delivery method */}
                                             <div className="space-y-2">
@@ -74,7 +86,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                     {l('Способ доставки', 'Delivery method', 'Piegādes veids')}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {checkoutDeliveryMethodIds.filter(dm => isDeliveryAvailable(dm, editCountry, shippingSettings)).map(
+                                                    {editableDeliveryMethodIds.filter(dm => dm === historicalCourier || isDeliveryConfigured(dm, editCountry, shippingSettings)).map(
                                                         (dm) => (
                                                             <button
                                                                 key={dm}

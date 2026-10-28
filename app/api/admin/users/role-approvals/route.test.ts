@@ -17,6 +17,7 @@ const request = (body: unknown, origin = 'https://shop.test') => new NextRequest
   method: 'POST', body: JSON.stringify(body), headers: { origin },
 })
 const validBody = { requestId: 'r1', currentPassword: 'password', mfaCode: '123456', reason: 'Approved by second admin' }
+const SUPER_REQUESTER = { platformRole: 'admin', teamRole: null, superAdmin: true }
 
 describe('POST /api/admin/users/role-approvals', () => {
   beforeEach(() => {
@@ -49,25 +50,57 @@ describe('POST /api/admin/users/role-approvals', () => {
     expect(await response.json()).toEqual({ error: 'four_eyes_required' })
   })
 
+  it('is gated on staff.manage (Super Admin only)', async () => {
+    permissionMock.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
+    await POST(request(validBody))
+    expect(permissionMock).toHaveBeenCalledWith('staff.manage')
+  })
+
+  it('refuses a request filed by someone who is no longer a Super Admin', async () => {
+    const tx = {
+      adminRoleChangeRequest: { findUnique: vi.fn().mockResolvedValue({
+        id: 'r1', status: 'pending', expiresAt: new Date(Date.now() + 60_000), requestedByUserId: 'admin-1', targetUserId: 'u1',
+      }) },
+      user: { findUnique: vi.fn().mockResolvedValue({ platformRole: 'admin', teamRole: null, superAdmin: false }), updateMany: vi.fn() },
+    }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+    const response = await POST(request(validBody))
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'requester_not_super_admin' })
+    expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
   it('returns the permission gate response without reading credentials', async () => {
     permissionMock.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
     expect((await POST(request(validBody))).status).toBe(403)
     expect(userFindMock).not.toHaveBeenCalled()
   })
 
-  it('rechecks target MFA before approving a pending promotion', async () => {
+  it('approves a promotion for a target without MFA yet and revokes their sessions (enrollment is forced at next login)', async () => {
+    const expectedUpdatedAt = new Date('2026-08-31T07:00:00Z')
     const tx = {
-      adminRoleChangeRequest: { findUnique: vi.fn().mockResolvedValue({
-        id: 'r1', status: 'pending', expiresAt: new Date(Date.now() + 60_000),
-        requestedByUserId: 'admin-1', targetUserId: 'u1', expectedUpdatedAt: new Date('2026-08-31T07:00:00Z'),
-      }) },
-      user: { findUnique: vi.fn().mockResolvedValue({ id: 'u1', mfaEnabled: false }) },
+      adminRoleChangeRequest: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'r1', status: 'pending', expiresAt: new Date(Date.now() + 60_000),
+          requestedByUserId: 'admin-1', targetUserId: 'u1', expectedUpdatedAt,
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      user: {
+        findUnique: vi.fn().mockResolvedValueOnce(SUPER_REQUESTER).mockResolvedValueOnce({
+          id: 'u1', email: 'target@test.com', platformRole: 'customer', mfaEnabled: false, updatedAt: expectedUpdatedAt,
+        }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      session: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
     }
     transactionMock.mockImplementation(async (fn) => fn(tx))
     const response = await POST(request(validBody))
-    expect(response.status).toBe(409)
-    expect(await response.json()).toEqual({ error: 'target_mfa_required' })
-    expect(auditMock).not.toHaveBeenCalled()
+    expect(response.status).toBe(200)
+    expect(tx.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'u1', updatedAt: expectedUpdatedAt }, data: { platformRole: 'admin' },
+    })
+    expect(tx.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } })
   })
 
   it('promotes after independent approval and revokes existing sessions', async () => {
@@ -81,7 +114,7 @@ describe('POST /api/admin/users/role-approvals', () => {
         update: vi.fn().mockResolvedValue({}),
       },
       user: {
-        findUnique: vi.fn().mockResolvedValue({
+        findUnique: vi.fn().mockResolvedValueOnce(SUPER_REQUESTER).mockResolvedValueOnce({
           id: 'u1', email: 'target@test.com', platformRole: 'customer', mfaEnabled: true, updatedAt: expectedUpdatedAt,
         }),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),

@@ -1,6 +1,7 @@
 import { Client } from 'basic-ftp'
 import { Writable } from 'stream'
 import type { TLSSocket } from 'tls'
+import { isRunFileName, normalizeRemoteDir, parseFtpsSourceLayout, selectLatestRunFiles, type RunFilesSelection } from './ftps-run-files'
 
 export interface FtpsConfig {
   host: string
@@ -9,6 +10,10 @@ export interface FtpsConfig {
   remotePath: string
   /** Control-channel port. Omitted → basic-ftp default 21 (explicit TLS). */
   port?: number
+  /** Set only for the exporter's run-files layout; absent = fixed export.xml at remotePath. */
+  layout?: 'run-files'
+  /** run-files only: directory holding export-<runId>.* ("" = login root). */
+  remoteDir?: string
 }
 
 export interface FtpsTlsInfo {
@@ -61,7 +66,11 @@ export function getFtpsConfigForSource(source: FtpsSource, env: NodeJS.ProcessEn
     throw new Error(`${prefix}_HOST, ${prefix}_USER and ${prefix}_PASSWORD must all be set`)
   }
 
-  return { host, user, password, remotePath, ...(port !== undefined && { port }) }
+  const layout = parseFtpsSourceLayout(env[`${prefix}_SOURCE_LAYOUT`], `${prefix}_SOURCE_LAYOUT`)
+  return {
+    host, user, password, remotePath, ...(port !== undefined && { port }),
+    ...(layout === 'run-files' && { layout, remoteDir: normalizeRemoteDir(env[`${prefix}_REMOTE_DIR`], `${prefix}_REMOTE_DIR`) }),
+  }
 }
 
 /** Production source. Scheduled sync, dry-run and backfill read only GRINS_FTPS_*. */
@@ -88,7 +97,7 @@ function readTlsInfo(client: Client): FtpsTlsInfo | undefined {
   }
 }
 
-export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<FtpsDownload> {
+async function connect(config: FtpsConfig): Promise<Client> {
   // basic-ftp has no timeout by default; a hung socket could otherwise stall a sync run
   // indefinitely (compounding with sync-runner's own retry loop — see xml-snapshot-store.ts).
   const client = new Client(FTP_TIMEOUT_MS)
@@ -100,40 +109,202 @@ export async function downloadFtpsFileWithMetadata(config: FtpsConfig): Promise<
       ...(config.port !== undefined && { port: config.port }),
       secure: true, // explicit TLS — confirmed working transport, 2026-07-27
     })
+  } catch (error) {
+    client.close()
+    throw error
+  }
+  return client
+}
 
-    const chunks: Buffer[] = []
-    const sink = new Writable({
-      write(chunk, _encoding, callback) {
-        chunks.push(Buffer.from(chunk))
-        callback()
-      },
-    })
+const QUIT_TIMEOUT_MS = 2_000
 
-    let modifiedAt: string | undefined
-    try {
-      modifiedAt = (await client.lastMod(config.remotePath)).toISOString()
-    } catch {
-      // Some FTPS servers do not support MDTM. Content download remains valid.
-    }
-    let remoteSizeBytes: number | undefined
-    try {
-      remoteSizeBytes = await client.size(config.remotePath)
-    } catch {
-      // SIZE is optional too.
-    }
-    let tls: FtpsTlsInfo | undefined
-    try {
-      tls = readTlsInfo(client)
-    } catch {
-      // Diagnostics only.
-    }
-    await client.downloadTo(sink, config.remotePath)
-    return { content: Buffer.concat(chunks).toString('utf-8'), modifiedAt, remoteSizeBytes, tls }
+/**
+ * QUIT before closing. IIS FTP reset the data channel of the next session after
+ * an abrupt close() (staging, 18.10.2026: three scheduled runs ECONNRESET while
+ * single-session dry-runs passed). A server that drops the link right after 221
+ * or never answers is fine: the socket is closed either way, at most 2 s later.
+ */
+async function closeGracefully(client: Client): Promise<void> {
+  try {
+    const quit = Promise.resolve().then(() => client.send('QUIT')).catch(() => undefined)
+    await Promise.race([quit, new Promise(resolve => setTimeout(resolve, QUIT_TIMEOUT_MS).unref())])
   } finally {
     client.close()
   }
 }
 
+/** run-files layout: newest complete export-<runId>.xml + .manifest.json pair in remoteDir. */
+export async function resolveFtpsRunFiles(config: FtpsConfig): Promise<RunFilesSelection> {
+  if (config.layout !== 'run-files') throw new Error('ftps_source_is_not_run_files_layout')
+  const client = await connect(config)
+  try {
+    return await selectRunFiles(client, config)
+  } finally {
+    await closeGracefully(client)
+  }
+}
+
+async function selectRunFiles(client: Client, config: FtpsConfig): Promise<RunFilesSelection> {
+  const listing = await client.list(config.remoteDir ?? '')
+  return selectLatestRunFiles(listing.filter(entry => entry.isFile).map(entry => entry.name), config.remoteDir ?? '')
+}
+
+function assertMaxBytes(maxBytes: number | undefined): void {
+  if (maxBytes !== undefined && (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)) throw new Error('invalid_ftps_max_bytes')
+}
+
+export async function downloadFtpsFileWithMetadata(config: FtpsConfig, maxBytes?: number): Promise<FtpsDownload> {
+  assertMaxBytes(maxBytes)
+  // A run-files source has no fixed export.xml: callers must first select a run (resolveFtpsRunFiles).
+  // FULL sync, backfill and compare read the fixed path only and therefore fail closed here.
+  if (config.layout === 'run-files' && !isRunFileName(config.remotePath.split('/').pop() ?? '')) {
+    throw new Error('run_files_layout_requires_a_selected_run_file; use --file for this command')
+  }
+  const client = await connect(config)
+  try {
+    return await downloadWithClient(client, config.remotePath, maxBytes)
+  } finally {
+    await closeGracefully(client)
+  }
+}
+
+async function downloadWithClient(client: Client, remotePath: string, maxBytes?: number): Promise<FtpsDownload> {
+  const chunks: Buffer[] = []
+  let downloadedBytes = 0
+  const sink = new Writable({
+    write(chunk, _encoding, callback) {
+      const bytes = Buffer.from(chunk)
+      downloadedBytes += bytes.byteLength
+      if (maxBytes !== undefined && downloadedBytes > maxBytes) {
+        callback(new Error('ftps_file_too_large'))
+        return
+      }
+      chunks.push(bytes)
+      callback()
+    },
+  })
+
+  let modifiedAt: string | undefined
+  try {
+    modifiedAt = (await client.lastMod(remotePath)).toISOString()
+  } catch {
+    // Some FTPS servers do not support MDTM. Content download remains valid.
+  }
+  let remoteSizeBytes: number | undefined
+  try {
+    remoteSizeBytes = await client.size(remotePath)
+  } catch {
+    // SIZE is optional too.
+  }
+  if (maxBytes !== undefined && remoteSizeBytes !== undefined && remoteSizeBytes > maxBytes) {
+    throw new Error('ftps_file_too_large')
+  }
+  let tls: FtpsTlsInfo | undefined
+  try {
+    tls = readTlsInfo(client)
+  } catch {
+    // Diagnostics only.
+  }
+  await client.downloadTo(sink, remotePath)
+  return { content: Buffer.concat(chunks).toString('utf-8'), modifiedAt, remoteSizeBytes, tls }
+}
+
 export async function downloadFtpsFile(config: FtpsConfig): Promise<string> {
   return (await downloadFtpsFileWithMetadata(config)).content
+}
+
+// ─── run-files snapshot: one session, bounded transient retries ─────────────
+
+export type FtpsReadStage = 'selection' | 'xml' | 'manifest'
+
+/** A run-files read that failed at `stage` after `attempts` sessions; message = the last error. */
+export class FtpsReadError extends Error {
+  constructor(readonly stage: FtpsReadStage, readonly attempts: number, readonly original: unknown) {
+    super(original instanceof Error ? original.message : String(original))
+    this.name = 'FtpsReadError'
+  }
+}
+
+export interface RunFilesSnapshot {
+  selection: RunFilesSelection
+  xml: FtpsDownload
+  manifest: FtpsDownload
+  /** Sessions used, 1 = no retry. */
+  attempts: number
+}
+
+export interface RunFilesReadOptions {
+  xmlMaxBytes: number
+  manifestMaxBytes: number
+  /** Total sessions, default 3. */
+  attempts?: number
+  /** Pause before attempt n+1 (the last value repeats), default 2 s, 5 s. */
+  retryDelaysMs?: readonly number[]
+  sleep?: (ms: number) => Promise<void>
+  onRetry?: (event: { attempt: number; stage: FtpsReadStage; error: string; delayMs: number }) => void
+}
+
+const TRANSIENT_ERROR_CODES = new Set(['ECONNRESET', 'ETIMEDOUT', 'EPIPE', 'ECONNABORTED'])
+const TRANSIENT_FTP_REPLIES = new Set([421, 425, 426])
+// basic-ftp reports its own socket timeout / transmission failure without an errno code.
+const BASIC_FTP_TRANSIENT = /^(?:Timeout|Socket closed due to transmission error) \((?:control|data) socket\)$/u
+
+/**
+ * Network-level failure worth one more fresh session. Authentication (530), a
+ * missing file (550), size limits and every content or manifest problem are not.
+ */
+export function isTransientFtpsError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const code = (error as { code?: unknown }).code
+  if (typeof code === 'number') return TRANSIENT_FTP_REPLIES.has(code)
+  if (typeof code === 'string') return TRANSIENT_ERROR_CODES.has(code)
+  return BASIC_FTP_TRANSIENT.test(error.message)
+}
+
+interface StageFailure { stage: FtpsReadStage; error: unknown }
+
+async function readRunFilesOnce(config: FtpsConfig, options: RunFilesReadOptions): Promise<Omit<RunFilesSnapshot, 'attempts'>> {
+  let stage: FtpsReadStage = 'selection'
+  let client: Client | undefined
+  try {
+    client = await connect(config)
+    const selection = await selectRunFiles(client, config)
+    stage = 'xml'
+    const xml = await downloadWithClient(client, selection.xmlPath, options.xmlMaxBytes)
+    stage = 'manifest'
+    const manifest = await downloadWithClient(client, selection.manifestPath, options.manifestMaxBytes)
+    return { selection, xml, manifest }
+  } catch (error) {
+    const failure: StageFailure = { stage, error }
+    throw failure
+  } finally {
+    if (client) await closeGracefully(client)
+  }
+}
+
+/**
+ * LIST → newest complete pair → XML (MDTM/SIZE/RETR) → manifest → QUIT in ONE
+ * session; a transient network failure starts a fresh session (at most
+ * `attempts`). Read-only: callers write nothing before this resolves. Content
+ * checks (SHA, size, manifest contract, freshness) stay with the caller and are
+ * never retried.
+ */
+export async function readFtpsRunFilesSnapshot(config: FtpsConfig, options: RunFilesReadOptions): Promise<RunFilesSnapshot> {
+  if (config.layout !== 'run-files') throw new FtpsReadError('selection', 0, new Error('ftps_source_is_not_run_files_layout'))
+  assertMaxBytes(options.xmlMaxBytes)
+  assertMaxBytes(options.manifestMaxBytes)
+  const attempts = options.attempts ?? 3
+  const delays = options.retryDelaysMs ?? [2_000, 5_000]
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)))
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return { ...(await readRunFilesOnce(config, options)), attempts: attempt }
+    } catch (failure) {
+      const { stage, error } = failure as StageFailure
+      if (attempt >= attempts || !isTransientFtpsError(error)) throw new FtpsReadError(stage, attempt, error)
+      const delayMs = delays[Math.min(attempt - 1, delays.length - 1)] ?? 0
+      options.onRetry?.({ attempt, stage, error: error instanceof Error ? error.message : String(error), delayMs })
+      await sleep(delayMs)
+    }
+  }
 }

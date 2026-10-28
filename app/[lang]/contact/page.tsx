@@ -312,7 +312,7 @@ export default function ContactPage(): React.ReactElement {
             </section>
 
             {/* Contact Form */}
-            <section className="rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
+            <section id="contact-form" className="rounded-2xl border border-gray-100 bg-card p-6 shadow transition-colors dark:border-gray-700">
               <h2 className="mb-3 text-lg font-semibold text-foreground">{t('contact.formTitle')}</h2>
               {submitted ? (
                 <div aria-live="polite" className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 p-4 rounded text-green-700 dark:text-green-200">

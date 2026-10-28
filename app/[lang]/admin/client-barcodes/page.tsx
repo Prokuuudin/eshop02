@@ -307,9 +307,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                 : l('Держателей карт пока нет.', 'There are no cardholders yet.', 'Karšu īpašnieku vēl nav.')}
                         </p>
                     ) : (
-                        <div className={`overflow-x-auto transition-opacity ${cardHoldersLoading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={cardHoldersLoading}>
+                        // On desktop the table gets its own viewport-high scroll box, so its horizontal
+                        // scrollbar stays on screen instead of below 50 rows; the header row stays on top.
+                        <div className={`overflow-x-auto md:max-h-[70vh] md:overflow-y-auto transition-opacity ${cardHoldersLoading ? 'pointer-events-none opacity-60' : 'opacity-100'}`} aria-busy={cardHoldersLoading}>
                             <table className="w-full text-sm">
-                                <thead>
+                                <thead className="sticky top-0 z-20 bg-card">
                                     <tr className="border-b border-border text-left">
                                         <th className="pb-2 pr-4 font-medium">{l('Карта', 'Card', 'Karte')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Имя', 'Name', 'Vārds')}</th>
@@ -323,7 +325,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                         <th className="pb-2 pr-4 font-medium">{l('Банк / IBAN', 'Bank / IBAN', 'Banka / IBAN')}</th>
                                         {!registeredOnly && <th className="pb-2 pr-4 font-medium">{l('Регистрация', 'Registration', 'Reģistrācija')}</th>}
                                         <th className="pb-2 font-medium">{l('Бонусы', 'Bonuses', 'Bonusi')}</th>
-                                        <th className="pb-2 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
+                                        {/* Pinned to the right edge: the table scrolls sideways, «Сохранить» must stay in view (BUG-002). */}
+                                        <th className="sticky right-0 z-10 border-l border-border bg-card pb-2 pl-2 font-medium">{l('Действие', 'Action', 'Darbība')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border">
@@ -444,7 +447,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     {holder.bonusPoints}
                                                     <span className="ml-1 text-xs text-muted-foreground">({formatEuro(pointsToEuros(holder.bonusPoints ?? 0), locale)})</span>
                                                 </td>
-                                                <td className="py-2 pl-2">
+                                                <td className="sticky right-0 z-10 border-l border-border bg-card py-2 pl-2">
                                                     <Button size="sm" variant="outline" disabled={clientSaveBusy === holder.id} onClick={() => void handleSaveClientDetails(holder)}>
                                                         {clientSaveBusy === holder.id ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Сохранить', 'Save', 'Saglabāt')}
                                                     </Button>

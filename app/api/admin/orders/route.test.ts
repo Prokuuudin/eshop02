@@ -1,9 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { txMock } = vi.hoisted(() => ({ txMock: vi.fn() }))
+const { txMock } = vi.hoisted(() => ({
+  txMock: vi.fn(),
+}))
 
-vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
+vi.mock('@/lib/observability', () => ({
+  getCorrelationId: vi.fn(() => 'admin-correlation-id'),
+  logApiError: vi.fn(),
+}))
+// Test-only Riga service area (real list not approved yet).
+vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: vi.fn(async () => {
+  const settings = structuredClone((await import('@/lib/commerce-settings')).DEFAULT_COMMERCE_SETTINGS)
+  settings.delivery.courier_riga.enabled = true
+  settings.delivery.courier_riga.status = 'ready'
+  settings.delivery.courier_riga.serviceAreaCities = ['Riga']
+  return settings
+}) }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
@@ -31,6 +44,7 @@ vi.mock('@/lib/prisma', () => ({
     order: { findMany: vi.fn(), count: vi.fn() },
     orderStatusRecord: { findMany: vi.fn() },
     orderNote: { findMany: vi.fn() },
+    orderOperationalException: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     user: { findFirst: vi.fn() },
     $queryRaw: vi.fn(),
@@ -41,17 +55,18 @@ vi.mock('@/lib/prisma', () => ({
 import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-store'
-import { GET, POST } from './route'
+import { DELETE, GET, POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
 const VALID_BODY = {
+  country: 'LV' as const,
   email: 'customer@example.com',
   firstName: 'Ivan',
   lastName: 'Petrov',
   phone: '+37126000000',
   items: [{ id: 'p1', quantity: 2, unitPrice: 25 }],
-  deliveryMethod: 'courier' as const,
+  deliveryMethod: 'courier_riga' as const,
   address: 'Riga st 1',
   city: 'Riga',
   postalCode: 'LV-1001',
@@ -74,6 +89,7 @@ function makeRequest(body: Record<string, unknown> = VALID_BODY): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.orderOperationalException.findMany).mockResolvedValue([] as never)
   txMock.mockImplementation(async (cb: (tx: unknown) => unknown) => cb({
     orderStatusRecord: { create: vi.fn() },
     orderNote: { create: vi.fn() },
@@ -93,6 +109,10 @@ describe('GET /api/admin/orders', () => {
     vi.mocked(prisma.orderNote.findMany).mockResolvedValue([
       { orderId: 'order-1', note: 'Done' },
     ] as never)
+    vi.mocked(prisma.orderOperationalException.findMany).mockResolvedValue([{
+      orderId: 'order-1', code: 'late_payment_stock_unavailable', productIds: ['p1'],
+      firstSeenAt: new Date('2026-08-01T10:05:00Z'), occurrences: 1,
+    }] as never)
 
     const response = await GET(new NextRequest('http://localhost/api/admin/orders?take=50'))
     const body = await response.json()
@@ -100,6 +120,9 @@ describe('GET /api/admin/orders', () => {
     expect(response.status).toBe(200)
     expect(body.statuses).toEqual({ 'order-1': 'delivered' })
     expect(body.notes).toEqual({ 'order-1': 'Done' })
+    expect(body.orders[0].operationalExceptions).toEqual([expect.objectContaining({
+      code: 'late_payment_stock_unavailable', productIds: ['p1'], occurrences: 1,
+    })])
   })
 
   it('resolves a status filter to an id set before querying orders', async () => {
@@ -140,6 +163,40 @@ describe('GET /api/admin/orders', () => {
 })
 
 describe('POST /api/admin/orders', () => {
+  it.each([undefined, 'fake-store'])('rejects pickup without a valid store (%s)', async pickupStoreId => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    const response = await POST(makeRequest({ ...VALID_BODY, deliveryMethod: 'pickup', pickupStoreId }))
+    expect(response.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { deliveryMethod: 'courier_latvia' },
+    { deliveryMethod: 'courier' },
+    { deliveryMethod: 'courier_riga', city: 'Jelgava' },
+  ])('does not create a new order with a courier outside the Riga area: %j', async destination => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    const response = await POST(makeRequest({ ...VALID_BODY, ...destination }))
+    expect(response.status).toBe(400)
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
+  it('creates pickup with the server store address and no stale locker', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    vi.mocked(prisma.user.findFirst).mockResolvedValue(null)
+    vi.mocked(createServerOrder).mockImplementation(async order => ({ ...order, id: '1048' }))
+    const response = await POST(makeRequest({ ...VALID_BODY, deliveryMethod: 'pickup', pickupStoreId: 'imanta', address: 'forged', deliveryLocationId: '9192' }))
+    expect(response.status).toBe(201)
+    const order = (await response.json()).order
+    expect(order.pickupStoreId).toBe('imanta')
+    expect(order.address).not.toBe('forged')
+    expect(order.deliveryLocation).toBeUndefined()
+    expect(order.total).toBe(50)
+  })
+
   it('rejects non-admins before touching the database', async () => {
     vi.mocked(requireAdminPermission).mockResolvedValue(
       NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -209,6 +266,11 @@ describe('POST /api/admin/orders', () => {
     expect(orderArg.total).toBe(55)
     expect(orderArg.paymentProvider).toBe('manual')
     expect(orderArg.userId).toBeUndefined()
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.any(Object),
+      undefined,
+      expect.objectContaining({ notificationSource: 'admin' }),
+    )
 
     // Status starts 'confirmed' (staff already processed this sale) and it's
     // written in the same transaction as the audit entry.
@@ -279,5 +341,102 @@ describe('POST /api/admin/orders', () => {
     expect(res.status).toBe(201)
     expect(body.order.id).toBe('1045')
     expect(body.warning).toBe('order_saved_status_note_failed')
+    expect(createServerOrder).toHaveBeenCalledWith(
+      expect.any(Object),
+      undefined,
+      expect.objectContaining({ notificationSource: 'admin' }),
+    )
+  })
+})
+
+describe('DELETE /api/admin/orders', () => {
+  function makeDeleteTx(overrides: { status?: string | null; invoices?: number; outboxRows?: number } = {}) {
+    const calls: string[] = []
+    const record = (name: string, result: unknown = { count: 0 }) => vi.fn(async () => { calls.push(name); return result })
+    const tx = {
+      $queryRaw: vi.fn(async () => [{ id: '1043' }]),
+      order: {
+        findUnique: vi.fn(async () => ({ id: '1043', firstName: 'Ivan', lastName: 'Petrov' })),
+        delete: record('order.delete', { id: '1043' }),
+      },
+      orderStatusRecord: {
+        findUnique: vi.fn(async () => (overrides.status === null ? null : { status: overrides.status ?? 'cancelled' })),
+        deleteMany: record('orderStatusRecord.deleteMany'),
+      },
+      invoice: { count: vi.fn(async () => overrides.invoices ?? 0) },
+      returnRequest: { count: vi.fn(async () => 0) },
+      stockAllocation: { count: vi.fn(async () => 0) },
+      promoCodeRedemption: { deleteMany: record('promoCodeRedemption.deleteMany') },
+      bonusTransaction: { updateMany: record('bonusTransaction.updateMany') },
+      orderNote: { deleteMany: record('orderNote.deleteMany') },
+      orderNotificationOutbox: { deleteMany: record('orderNotificationOutbox.deleteMany', { count: overrides.outboxRows ?? 1 }) },
+    }
+    txMock.mockImplementation(async (cb: (client: unknown) => unknown) => cb(tx))
+    return { tx, calls }
+  }
+
+  function makeDeleteRequest(orderId = '1043'): NextRequest {
+    return new NextRequest(`http://localhost/api/admin/orders?orderId=${orderId}`, { method: 'DELETE' })
+  }
+
+  beforeEach(() => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+  })
+
+  it('deletes the outbox row of a cancelled order before the order itself', async () => {
+    const { tx, calls } = makeDeleteTx({ outboxRows: 1 })
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(tx.orderNotificationOutbox.deleteMany).toHaveBeenCalledWith({ where: { orderId: '1043' } })
+    expect(calls.indexOf('orderNotificationOutbox.deleteMany')).toBeLessThan(calls.indexOf('order.delete'))
+    expect(txMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('deletes a cancelled order that has no outbox row', async () => {
+    const { tx } = makeDeleteTx({ outboxRows: 0 })
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(200)
+    expect(tx.order.delete).toHaveBeenCalledWith({ where: { id: '1043' } })
+  })
+
+  it('returns 500 and relies on the single transaction when the order delete fails', async () => {
+    const { tx } = makeDeleteTx()
+    tx.order.delete.mockRejectedValueOnce(Object.assign(new Error('fk'), { code: 'P2003' }))
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(500)
+    expect(txMock).toHaveBeenCalledTimes(1)
+    expect(tx.orderNotificationOutbox.deleteMany).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    { name: 'a not-cancelled order', overrides: { status: 'pending' }, status: 409, error: 'order_must_be_cancelled' },
+    { name: 'an order without a status record', overrides: { status: null }, status: 409, error: 'order_must_be_cancelled' },
+    { name: 'an order with an invoice', overrides: { invoices: 1 }, status: 409, error: 'order_has_related_records' },
+  ])('keeps refusing to delete $name and leaves its outbox row untouched', async ({ overrides, status, error }) => {
+    const { tx } = makeDeleteTx(overrides)
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(status)
+    expect(await res.json()).toEqual({ error })
+    expect(tx.orderNotificationOutbox.deleteMany).not.toHaveBeenCalled()
+    expect(tx.order.delete).not.toHaveBeenCalled()
+  })
+
+  it('returns 404 for a missing order without deleting anything', async () => {
+    const { tx } = makeDeleteTx()
+    tx.order.findUnique.mockResolvedValueOnce(null as never)
+
+    const res = await DELETE(makeDeleteRequest())
+
+    expect(res.status).toBe(404)
+    expect(tx.orderNotificationOutbox.deleteMany).not.toHaveBeenCalled()
   })
 })

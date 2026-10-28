@@ -8,10 +8,19 @@ import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { appendServerAudit } from '@/lib/server-audit'
 import { z } from 'zod'
+import { assertNoAwaitingAllocation, holdOrderStock, releaseOrderStock, StockLedgerError } from '@/lib/stock-ledger'
+import {
+  findOrdersBlockedForShipment,
+  isStockSecuredForShipment,
+  LATE_PAYMENT_STOCK_UNAVAILABLE,
+  ORDER_STOCK_NOT_COMMITTED,
+} from '@/lib/order-operational-exceptions'
 
 const orderStatusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type OrderStatus = z.infer<typeof orderStatusSchema>
-class RestoreInsufficientStockError extends Error {}
+class RestoreInsufficientStockError extends Error {
+  constructor(readonly reason: 'insufficient_stock' | 'awaiting_grins_sync' = 'insufficient_stock') { super(reason) }
+}
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipped', 'cancelled'],
@@ -137,7 +146,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
         const order = await tx.order.findUnique({
           where: { id: orderId },
-          select: { id: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true },
+          select: { id: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true, stockReleasedAt: true },
         })
         if (!order) return { error: 'order_not_found' as const }
         const currentRow = await tx.orderStatusRecord.findUnique({ where: { orderId } })
@@ -148,17 +157,25 @@ export async function POST(req: NextRequest): Promise<Response> {
           return { error: 'invalid_status_transition' as const, current }
         }
         if (current === status) return { current }
+        // Checked under the Order lock above. Only committed stock is safe to ship: expiry
+        // cleanup, payment callbacks and cancellation never release a committed order,
+        // while a reserved hold can still expire and a released order holds nothing.
+        if (status === 'shipped') {
+          if ((await findOrdersBlockedForShipment(tx, [orderId])).length > 0) {
+            return { error: LATE_PAYMENT_STOCK_UNAVAILABLE, current }
+          }
+          if (!isStockSecuredForShipment(order.stockReservationStatus)) {
+            return { error: ORDER_STOCK_NOT_COMMITTED, current, stockReservationStatus: order.stockReservationStatus }
+          }
+        }
         if (status === 'cancelled') {
           if (order.paymentStatus === 'paid') return { error: 'paid_order_requires_refund' as const, current }
           if (order.stockReservationStatus !== 'released') {
-            for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
-              if (item.id && Number.isInteger(item.quantity) && Number(item.quantity) > 0) {
-                await tx.product.updateMany({
-                  where: { id: item.id, isDeleted: false },
-                  data: { stock: { increment: Number(item.quantity) } },
-                })
-              }
-            }
+            await releaseOrderStock(tx, {
+              orderId,
+              items: order.items as Array<{ id: string; quantity: number }>,
+              reason: 'cancelled',
+            })
             await tx.order.update({
               where: { id: orderId },
               data: { stockReservationStatus: 'released', stockReleasedAt: new Date(), stockReservedUntil: null },
@@ -166,13 +183,20 @@ export async function POST(req: NextRequest): Promise<Response> {
           }
         }
         if (current === 'cancelled' && status === 'pending' && order.stockReservationStatus === 'released') {
-          for (const item of order.items as Array<{ id?: string; quantity?: number }>) {
-            if (!item.id || !Number.isInteger(item.quantity) || Number(item.quantity) <= 0) continue
-            const reserved = await tx.product.updateMany({
-              where: { id: item.id, isDeleted: false, stock: { gte: Number(item.quantity) } },
-              data: { stock: { decrement: Number(item.quantity) } },
+          try {
+            await assertNoAwaitingAllocation(tx, orderId)
+            await holdOrderStock(tx, {
+              orderId,
+              items: order.items as Array<{ id: string; quantity: number }>,
+              status: 'committed',
+              eventPrefix: `order:${orderId}:reopened:${order.stockReleasedAt?.toISOString() ?? 'unknown'}`,
+              customerSellability: false,
             })
-            if (reserved.count !== 1) throw new RestoreInsufficientStockError()
+          } catch (error) {
+            if (error instanceof StockLedgerError) {
+              throw new RestoreInsufficientStockError(error.code === 'awaiting_grins_sync' ? 'awaiting_grins_sync' : 'insufficient_stock')
+            }
+            throw error
           }
           await tx.order.update({
             where: { id: orderId },
@@ -225,7 +249,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     return NextResponse.json({ ok: true })
   } catch (e) {
     if (e instanceof RestoreInsufficientStockError) {
-      return NextResponse.json({ error: 'insufficient_stock' }, { status: 409 })
+      return NextResponse.json({ error: e.reason }, { status: 409 })
     }
     logApiError("[admin/order-meta POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

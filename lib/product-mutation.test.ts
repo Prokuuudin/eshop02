@@ -102,4 +102,21 @@ describe('applyProductChanges — partial changes from the edit form', () => {
     await expect(applyProductChanges(tx, 'p1', 2, { titleEn: '' })).rejects.toMatchObject({ status: 409 })
     expect(updateMany).not.toHaveBeenCalled()
   })
+
+  it('keeps the fresh ERP price when an administrator saves a pre-sync form', async () => {
+    const openedRevision = current.revision
+    const { tx, updateMany } = makeTx({ externalId: 'ERP-1', price: 12.5, revision: openedRevision + 1 })
+    await expect(applyProductChanges(tx, 'p1', openedRevision, { price: 10, title: 'Edited title' }))
+      .rejects.toMatchObject({ status: 409 })
+    expect(updateMany).not.toHaveBeenCalled()
+    expect(await tx.product.findUnique({ where: { id: 'p1' } })).toMatchObject({ price: 12.5 })
+  })
+
+  it('rejects ERP changes committed between the row read and the conditional write', async () => {
+    const { tx, updateMany } = makeTx({ externalId: 'ERP-1' })
+    updateMany.mockResolvedValueOnce({ count: 0 })
+    await expect(applyProductChanges(tx, 'p1', 3, { title: 'Edited title' }))
+      .rejects.toMatchObject({ status: 409 })
+    expect(updateMany.mock.calls[0][0].where).toEqual({ id: 'p1', revision: 3 })
+  })
 })

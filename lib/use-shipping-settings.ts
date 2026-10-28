@@ -1,10 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { DEFAULT_COMMERCE_SETTINGS, type CommerceSettings } from './commerce-settings'
-export function useShippingSettings(): CommerceSettings & { shippingReady: boolean; shippingError: boolean } {
+export function useShippingSettings(): CommerceSettings & { shippingReady: boolean; shippingError: boolean; payseraCheckoutEnabled: boolean } {
   const [settings, setSettings] = useState<CommerceSettings>(DEFAULT_COMMERCE_SETTINGS)
   const [shippingReady, setShippingReady] = useState(false)
   const [shippingError, setShippingError] = useState(false)
+  // Hidden until the server says otherwise; a failed fetch keeps Paysera hidden.
+  const [payseraCheckoutEnabled, setPayseraCheckoutEnabled] = useState(false)
   useEffect(() => {
     const controller = new AbortController()
     fetch('/api/shipping', { signal: controller.signal }).then(async response => {
@@ -12,8 +14,9 @@ export function useShippingSettings(): CommerceSettings & { shippingReady: boole
       const payload = await response.json()
       setShippingReady(true)
       setSettings({ ...DEFAULT_COMMERCE_SETTINGS, delivery: payload.delivery })
+      setPayseraCheckoutEnabled(payload.payments?.paysera === true)
     }).catch(() => { if (!controller.signal.aborted) setShippingError(true) })
     return () => controller.abort()
   }, [])
-  return { ...settings, shippingReady, shippingError }
+  return { ...settings, shippingReady, shippingError, payseraCheckoutEnabled }
 }

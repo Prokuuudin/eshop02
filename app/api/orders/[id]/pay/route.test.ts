@@ -8,7 +8,10 @@ vi.mock('@/lib/orders-data-store', () => ({
   updateServerOrderPayment: vi.fn(),
 }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
-vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
+vi.mock('@/lib/paysera', () => {
+  class PayseraOrderNotRetryableError extends Error {}
+  return { createPayseraPaymentForOrder: vi.fn(), PayseraOrderNotRetryableError }
+})
 vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn() }))
 
@@ -29,10 +32,20 @@ const context = { params: Promise.resolve({ id: '1001' }) }
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.unstubAllEnvs()
+  vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'true')
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
 })
 
 describe('POST /api/orders/[id]/pay', () => {
+  it('rejects a released reservation before contacting Paysera', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, stockReservationStatus: 'released' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    const response = await POST(makeRequest(), context)
+    expect(response.status).toBe(409)
+    expect(await response.json()).toEqual({ error: 'stock_reservation_expired' })
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
   it('returns 404 without leaking existence when the caller cannot access the order', async () => {
     vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
     vi.mocked(getServerUser).mockResolvedValue(null)
@@ -69,8 +82,27 @@ describe('POST /api/orders/[id]/pay', () => {
 
     const res = await POST(makeRequest(), context)
 
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'paid' })
     expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
+  })
+
+  it('reconciles a remotely paid existing session instead of creating another Paysera order', async () => {
+    vi.mocked(getServerOrderById).mockResolvedValue({ ...ORDER, paymentSessionId: 'session-1' } as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({
+      payseraOrderId: 'session-1',
+      paidEvidence: { sessionId: 'session-1', amount: 100, amountPaid: 100, currency: 'EUR' },
+    })
+    vi.mocked(updateServerOrderPayment).mockResolvedValue({ ...ORDER, paymentStatus: 'paid', paymentProvider: 'paysera' } as never)
+
+    const res = await POST(makeRequest(), context)
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ status: 'paid', order: { paymentStatus: 'paid' } })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001',
+      { paymentStatus: 'paid', paymentProvider: 'paysera' },
+      { sessionId: 'session-1', amount: 100, amountPaid: 100, currency: 'EUR' })
   })
 
   it('mints a fresh payment link and persists the new session id for an owner-accessible unpaid order', async () => {
@@ -83,7 +115,6 @@ describe('POST /api/orders/[id]/pay', () => {
 
     expect(res.status).toBe(200)
     expect(body).toEqual({ paymentUrl: 'https://bank.paysera.com/pay/9' })
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentSessionId: 'pay-9' })
   })
 
   it('rejects a new PayPal payment attempt while PayPal is unavailable to customers', async () => {
@@ -118,6 +149,19 @@ describe('POST /api/orders/[id]/pay', () => {
     const res = await POST(makeRequest(), context)
 
     expect(res.status).toBe(502)
+  })
+
+  it('rejects a Paysera retry while Paysera is switched off for customers', async () => {
+    vi.unstubAllEnvs()
+    vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
+    vi.mocked(canAccessOrder).mockReturnValue(true)
+
+    const res = await POST(makeRequest(), context)
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'payment_method_unavailable' })
+    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(createPayseraPaymentForOrder).not.toHaveBeenCalled()
   })
 
 })

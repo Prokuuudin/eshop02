@@ -20,7 +20,7 @@ export function pickInviteTemplate<T extends { id: string }>(
   )
 }
 
-// Трёхъязычное письмо ведёт держателя карты в обычную регистрацию.
+// Трёхъязычное письмо ведёт держателя карты по персональной одноразовой ссылке (/auth/invite).
 const INVITE_SUBJECT =
   'Jauns veikals profesionāļiem · Новый магазин для профессионалов · A new store for professionals'
 
@@ -28,30 +28,30 @@ const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
   {
     intro: '<strong>LV</strong> — MIKS PLUS ir atvēris jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:',
     steps: [
-      'Atveriet reģistrācijas lapu un izvēlieties “Man ir klienta karte”.',
-      'Ievadiet MIKS PLUS kartes numuru un e-pastu un/vai tālruņa numura pēdējos 4 ciparus, kas norādīti klientu datubāzē.',
-      'Sistēma pārbaudīs datu atbilstību un uzreiz atvērs jūsu kontu.',
+      'Nospiediet zemāk pogu “Aktivizēt kontu” — saite ir personīga un derīga ierobežotu laiku.',
+      'Iestatiet savu paroli.',
+      'Turpmāk piesakieties ar kartes numuru un šo paroli.',
     ],
   },
   {
     intro: '<strong>RU</strong> — MIKS PLUS открыл новый интернет-магазин для профессионалов индустрии красоты — <strong>hairshoppro.lv</strong>. Напоминаем: у вас есть карта клиента MIKS PLUS № <strong>{{card_number}}</strong>. После регистрации вам будут доступны профессиональные цены, онлайн-заказы, накопление бонусных баллов и их использование при следующих покупках. Как зарегистрироваться:',
     steps: [
-      'Откройте страницу регистрации и выберите «Есть карта клиента».',
-      'Введите номер карты MIKS PLUS и email и/или последние 4 цифры телефона, указанные в клиентской базе.',
-      'Система проверит соответствие данных и сразу откроет ваш аккаунт.',
+      'Нажмите ниже кнопку «Активировать аккаунт» — ссылка персональная и действует ограниченное время.',
+      'Задайте свой пароль.',
+      'Дальше входите по номеру карты и этому паролю.',
     ],
   },
   {
     intro: '<strong>EN</strong> — MIKS PLUS has opened a new online store for beauty professionals — <strong>hairshoppro.lv</strong>. A reminder: you have MIKS PLUS client card No. <strong>{{card_number}}</strong>. Once registered, you can access professional prices, order online, earn bonus points and redeem them on future purchases. How to register:',
     steps: [
-      'Open the registration page and select “I have a client card”.',
-      'Enter your MIKS PLUS card number and the email and/or last 4 digits of the phone number stored in the client database.',
-      'The system will verify the details and open your account immediately.',
+      'Click the “Activate account” button below — the link is personal and valid for a limited time.',
+      'Set your password.',
+      'From then on, log in with your card number and this password.',
     ],
   },
 ]
 
-const INVITE_BUTTON = 'Reģistrēties · Зарегистрироваться · Register'
+const INVITE_BUTTON = 'Aktivizēt kontu · Активировать аккаунт · Activate account'
 const INVITE_LINK_FALLBACK =
   'Ja poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:'
 const RULES_CONTENT: Record<InviteLang, { subject: string; title: string; body1: string; body2: string; button: string }> = {
@@ -96,14 +96,14 @@ export function buildInviteEmail(
   vars: { name: string; cardNumber: string; inviteUrl: string },
   tpl?: Tpl
 ): { subject: string; html: string } {
-  const registrationLink = (() => {
-    try { return `${new URL(vars.inviteUrl).origin}/auth/register` } catch { return '/auth/register' }
-  })()
+  // Card activation happens only through the personal one-time link. A stored template that still
+  // uses the retired {{registration_link}} placeholder gets the same personal link.
+  const activationLink = vars.inviteUrl
   const safe = {
     name: escapeHtml(vars.name),
     card_number: escapeHtml(vars.cardNumber),
-    invite_link: vars.inviteUrl,
-    registration_link: registrationLink,
+    invite_link: activationLink,
+    registration_link: activationLink,
   }
   if (tpl) {
     return { subject: interpolate(tpl.subject, safe), html: interpolate(tpl.body, safe) }
@@ -118,11 +118,11 @@ export function buildInviteEmail(
     ${safe.name ? `<p>${safe.name}</p>` : ''}
     ${blocks.join('\n    ')}
     <p>
-      <a href="${registrationLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
+      <a href="${activationLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
         ${INVITE_BUTTON}
       </a>
     </p>
-    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${registrationLink}">${registrationLink}</a></p>
+    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${activationLink}">${activationLink}</a></p>
   </div>`
   return { subject: INVITE_SUBJECT, html }
 }

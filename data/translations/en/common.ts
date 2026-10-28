@@ -216,7 +216,7 @@ const enCommon: Record<string, string> = {
   'breadcrumb.media': 'Media library',
   'breadcrumb.banners': 'Banners',
   'breadcrumb.config': 'Configuration',
-  'breadcrumb.shipping': 'Delivery and payment',
+  'breadcrumb.shipping': 'Delivery',
   'breadcrumb.bonus': 'Bonus program',
   'breadcrumb.locale': 'Localization',
   'breadcrumb.integrations': 'Integrations',

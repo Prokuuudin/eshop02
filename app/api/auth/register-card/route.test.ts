@@ -1,384 +1,310 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { NextRequest } from 'next/server'
+import { createHash } from 'node:crypto'
 
 const {
-  companyFindFirstMock,
+  afterCallbacks,
   userFindFirstMock,
-  userUpdateMock,
+  tokenDeleteManyMock,
+  tokenCreateMock,
+  tokenUpdateManyMock,
+  activeTokenMock,
+  txActiveTokenMock,
   transactionMock,
-  hashPasswordMock,
-  createSessionMock,
-  verifyPasswordMock,
   checkRateLimitMock,
+  sendEmailMock,
+  afterUnavailable,
 } = vi.hoisted(() => ({
-  companyFindFirstMock: vi.fn(),
+  afterUnavailable: { value: false },
+  afterCallbacks: [] as Array<() => unknown>,
   userFindFirstMock: vi.fn(),
-  userUpdateMock: vi.fn(),
+  tokenDeleteManyMock: vi.fn(),
+  tokenCreateMock: vi.fn(),
+  tokenUpdateManyMock: vi.fn(),
+  activeTokenMock: vi.fn(),
+  txActiveTokenMock: vi.fn(),
   transactionMock: vi.fn(),
-  hashPasswordMock: vi.fn(),
-  createSessionMock: vi.fn(),
-  verifyPasswordMock: vi.fn(),
   checkRateLimitMock: vi.fn(),
+  sendEmailMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    company: { findFirst: companyFindFirstMock },
-    user: { findFirst: userFindFirstMock, update: userUpdateMock },
-    $transaction: transactionMock,
+vi.mock('next/server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('next/server')>()),
+  after: (callback: () => unknown) => {
+    if (afterUnavailable.value) throw new Error('`after()` will not work correctly, because `waitUntil` is not available')
+    afterCallbacks.push(callback)
   },
 }))
-vi.mock('@/lib/server-auth', () => ({
-  hashPassword: hashPasswordMock,
-  createSession: createSessionMock,
-  verifyPassword: verifyPasswordMock,
-  mapDbToServerUser: vi.fn((u: unknown) => u),
-  SESSION_COOKIE: 'eshop_session',
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    user: { findFirst: userFindFirstMock },
+    invitationToken: { updateMany: tokenUpdateManyMock, findFirst: activeTokenMock },
+    $transaction: transactionMock,
+  },
 }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: checkRateLimitMock,
   gcRateLimitStore: vi.fn(),
 }))
-vi.mock('@/lib/mailer', () => ({
-  sendEmail: vi.fn().mockResolvedValue(undefined),
-}))
+vi.mock('@/lib/mailer', () => ({ sendEmail: sendEmailMock }))
+vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/lib/site-url', () => ({ getSiteUrl: () => 'https://shop.test' }))
+vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 
-import { prisma } from '@/lib/prisma'
-import { sendEmail } from '@/lib/mailer'
+import { NextRequest } from 'next/server'
 import { POST } from './route'
+
+const NOT_LIMITED = { limited: false, remaining: 9, resetAt: Date.now() + 60_000 }
+const LIMITED = { limited: true, remaining: 0, resetAt: Date.now() + 60_000 }
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/auth/register-card', {
     method: 'POST',
     body: JSON.stringify({ privacyAcknowledged: true, ...body }),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-forwarded-for': '203.0.113.7' },
   })
 }
 
-const COMPANY = {
-  id: 'company_1',
-  companyName: 'SIA MIKS PLUS',
-  cardNumber: '1234',
-  approvalWorkflowEnabled: false,
-  contactEmail: 'office@example.com',
+async function runAfterResponse(): Promise<void> {
+  const callbacks = afterCallbacks.splice(0)
+  await Promise.all(callbacks.map((callback) => callback()))
 }
 
-const DORMANT_USER = {
-  id: 'user_dormant_1',
-  email: 'master@example.com',
-  phone: '+371 27 654 321',
-  cardNumber: '5678',
+const DORMANT = {
+  id: 'u_dormant',
+  email: 'Salon@Example.lv',
+  name: 'Salon Owner',
+  cardNumber: '4321',
+  platformRole: 'customer',
+  teamRole: null,
+  superAdmin: false,
   mustChangePassword: true,
 }
-
-const DORMANT_USER_NO_CONTACT = {
-  id: 'user_dormant_2',
-  email: `card.5679@client.local`,
-  phone: null,
-  cardNumber: '5679',
-  mustChangePassword: true,
-}
-
-const ACTIVATED_USER = {
-  id: 'user_active_1',
-  email: 'active@example.com',
-  cardNumber: '9012',
-  mustChangePassword: false,
-}
-
-function makeTx() {
-  return {
-    user: {
-      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
-      update: vi.fn(async () => ({ bonusPoints: 500 })),
-    },
-    companyMember: { create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })) },
-    bonusTransaction: { findFirst: vi.fn(async () => null), create: vi.fn() },
-    keyValueSetting: { findUnique: vi.fn(async () => null) },
-  }
-}
-
-// The dormant-cardholder activation branch runs its user update and the
-// welcome-bonus grant in one $transaction — both go through this same
-// tx.user.update mock, so it must keep merging `data` like the plain
-// prisma.user.update it replaced.
-function makeActivationTx() {
-  return {
-    user: { update: userUpdateMock },
-    bonusTransaction: { findFirst: vi.fn(async (): Promise<{ id: string } | null> => null), create: vi.fn() },
-    keyValueSetting: { findUnique: vi.fn(async () => null) },
-  }
-}
-let activationTx: ReturnType<typeof makeActivationTx>
 
 beforeEach(() => {
   vi.clearAllMocks()
-  checkRateLimitMock.mockResolvedValue({ limited: false, resetAt: 0 })
-  hashPasswordMock.mockResolvedValue('hashed')
-  createSessionMock.mockResolvedValue('token')
-  verifyPasswordMock.mockResolvedValue(false)
-  userUpdateMock.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
-    ...DORMANT_USER,
-    ...data,
-    bonusPoints: 500,
-  }))
-  activationTx = makeActivationTx()
-  transactionMock.mockImplementation(async (fn) => fn(activationTx))
+  afterCallbacks.length = 0
+  afterUnavailable.value = false
+  checkRateLimitMock.mockResolvedValue(NOT_LIMITED)
+  sendEmailMock.mockResolvedValue(undefined)
+  tokenDeleteManyMock.mockResolvedValue({ count: 0 })
+  tokenCreateMock.mockResolvedValue({})
+  tokenUpdateManyMock.mockResolvedValue({ count: 1 })
+  activeTokenMock.mockResolvedValue(null)
+  txActiveTokenMock.mockResolvedValue(null)
+  transactionMock.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+    fn({ invitationToken: { deleteMany: tokenDeleteManyMock, create: tokenCreateMock, findFirst: txActiveTokenMock } }))
 })
 
-describe('POST /api/auth/register-card', () => {
-  it('rejects a card number with no matching company or individual cardholder', async () => {
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue(null)
+describe('POST /api/auth/register-card — activation link request', () => {
+  it('mails a one-time invitation to the e-mail on file for a dormant card', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
 
-    const res = await POST(makeRequest({ cardNumber: '9999' }))
+    const res = await POST(makeRequest({ cardNumber: '4321', language: 'ru' }))
+    expect(res.status).toBe(202)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(res.headers.get('set-cookie')).toBeNull()
+    // Nothing is issued or sent before the response is complete.
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
 
-    expect(res.status).toBe(404)
-    expect(await res.json()).toMatchObject({ error: 'card_not_found' })
+    await runAfterResponse()
+
+    expect(tokenDeleteManyMock).toHaveBeenCalledWith({ where: { userId: 'u_dormant', status: { not: 'accepted' } } })
+    expect(tokenCreateMock).toHaveBeenCalledTimes(1)
+    const created = tokenCreateMock.mock.calls[0][0].data
+    expect(created).toMatchObject({ userId: 'u_dormant', email: 'salon@example.lv', cardNumber: '4321', language: 'ru' })
+    const ttlHours = (created.expiresAt.getTime() - Date.now()) / 3_600_000
+    expect(ttlHours).toBeGreaterThan(23.9)
+    expect(ttlHours).toBeLessThanOrEqual(24)
+
+    expect(sendEmailMock).toHaveBeenCalledTimes(1)
+    const [to, , html] = sendEmailMock.mock.calls[0]
+    expect(to).toBe('salon@example.lv')
+    const token = /\/auth\/invite\?token=([0-9a-f]{64})/.exec(html)?.[1]
+    expect(token).toBeDefined()
+    expect(createHash('sha256').update(token!).digest('hex')).toBe(created.tokenHash)
+    expect(html).not.toContain('/auth/register')
   })
 
-  it('rejects when the card belongs to an already-activated individual cardholder', async () => {
-    userFindFirstMock.mockResolvedValue(ACTIVATED_USER)
+  it('never mails an address typed by the visitor', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
 
-    const res = await POST(makeRequest({ cardNumber: '9012' }))
+    const res = await POST(makeRequest({ cardNumber: '4321', email: 'attacker@evil.test', phoneLast4: '1234' }))
+    await runAfterResponse()
 
-    expect(res.status).toBe(409)
-    expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
-    expect(createSessionMock).not.toHaveBeenCalled()
+    expect(res.status).toBe(202)
+    expect(sendEmailMock).toHaveBeenCalledTimes(1)
+    expect(sendEmailMock.mock.calls[0][0]).toBe('salon@example.lv')
   })
 
-  it('rejects a card that already has a registered user (company path, legacy shape)', async () => {
-    userFindFirstMock.mockResolvedValue({ id: 'existing-user' })
-    companyFindFirstMock.mockResolvedValue(COMPANY)
+  it.each([
+    ['an unknown card', null],
+    ['an already activated card', { ...DORMANT, mustChangePassword: false }],
+    ['a card without a usable e-mail (import placeholder)', { ...DORMANT, email: 'card.4321@client.local' }],
+    ['a GDPR-anonymised card', { ...DORMANT, email: 'erased-u_dormant@deleted.invalid' }],
+    ['a platform admin', { ...DORMANT, platformRole: 'admin' }],
+    ['a Super Admin', { ...DORMANT, platformRole: 'admin', superAdmin: true }],
+    ['a staff manager', { ...DORMANT, teamRole: 'manager' }],
+    ['a stray Super Admin flag on a customer', { ...DORMANT, superAdmin: true }],
+  ])('answers %s exactly like an eligible card and issues nothing', async (_label, candidate) => {
+    userFindFirstMock.mockResolvedValue(candidate)
 
-    const res = await POST(makeRequest({ cardNumber: '1234' }))
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
 
-    expect(res.status).toBe(409)
-    expect(await res.json()).toMatchObject({ error: 'card_already_registered' })
+    expect(res.status).toBe(202)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(res.headers.get('set-cookie')).toBeNull()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 
-  it('activates a dormant individual cardholder (ERP import) on the correct phone last-4, without creating a new user', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321' }))
-
-    expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ user: expect.objectContaining({ id: 'user_dormant_1' }) })
-    expect(createSessionMock).toHaveBeenCalledWith('user_dormant_1')
-    expect(prisma.$transaction).toHaveBeenCalled()
-    expect(hashPasswordMock).toHaveBeenCalledWith('4321')
-    expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: 'user_dormant_1' },
-      data: expect.objectContaining({
-        passwordHash: 'hashed',
-        mustChangePassword: true,
-      }),
-    }))
-    const setCookie = res.headers.get('set-cookie')
-    expect(setCookie).toContain('eshop_session=token')
-    expect(sendEmail).toHaveBeenCalledWith(
-      'master@example.com',
-      expect.any(String),
-      expect.any(String)
-    )
-  })
-
-  it('grants the one-time welcome bonus on first card activation', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321' }))
-
-    expect(res.status).toBe(200)
-    expect(activationTx.bonusTransaction.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: 'user_dormant_1', type: 'welcome' } })
-    )
-    expect(activationTx.bonusTransaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ userId: 'user_dormant_1', type: 'welcome', points: 500 }) })
-    )
-  })
-
-  it('does not grant the welcome bonus twice if one was already recorded', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-    activationTx.bonusTransaction.findFirst.mockResolvedValue({ id: 'existing-welcome-tx' })
-
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '4321' }))
-
-    expect(res.status).toBe(200)
-    expect(activationTx.bonusTransaction.create).not.toHaveBeenCalled()
-  })
-
-  it('activates on a matching email alone, without a phone number', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678', email: 'MASTER@example.com' }))
-
-    expect(res.status).toBe(200)
-    expect(createSessionMock).toHaveBeenCalledWith('user_dormant_1')
-    expect(hashPasswordMock).toHaveBeenCalledWith('master@example.com')
-    expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({
-        passwordHash: 'hashed',
-        mustChangePassword: true,
-      }),
-    }))
-  })
-
-  it('uses the matched email as the password when a submitted phone suffix is wrong', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({
-      cardNumber: '5678',
-      phoneLast4: '0000',
-      email: 'MASTER@example.com',
-    }))
-
-    expect(res.status).toBe(200)
-    expect(hashPasswordMock).toHaveBeenCalledWith('master@example.com')
-    expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ passwordHash: 'hashed', mustChangePassword: true }),
-    }))
-  })
-
-  it('reclaims an anonymised account by its retained card and one-way email proof', async () => {
-    const erasedUser = {
-      ...DORMANT_USER,
-      email: 'anon-user_dormant_1@deleted.invalid',
-      phone: null,
-      name: null,
-      cardRecoveryEmailHash: 'email-proof',
-      cardRecoveryPhoneHash: null,
+  it('returns a byte-identical response for eligible, unknown, staff and activated cards', async () => {
+    const bodies: string[] = []
+    for (const candidate of [DORMANT, null, { ...DORMANT, platformRole: 'admin' }, { ...DORMANT, mustChangePassword: false }]) {
+      userFindFirstMock.mockResolvedValueOnce(candidate)
+      const res = await POST(makeRequest({ cardNumber: '4321' }))
+      bodies.push(`${res.status} ${await res.text()}`)
     }
-    userFindFirstMock.mockResolvedValue(erasedUser)
-    verifyPasswordMock.mockImplementation(async (value: string, hash: string) =>
-      value === 'email:master@example.com' && hash === 'email-proof'
-    )
-    userUpdateMock.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({ ...erasedUser, ...data }))
-
-    const res = await POST(makeRequest({ cardNumber: '5678', email: 'MASTER@example.com', name: 'Master' }))
-
-    expect(res.status).toBe(200)
-    expect(verifyPasswordMock).toHaveBeenCalledWith('email:master@example.com', 'email-proof')
-    expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: 'user_dormant_1' },
-      data: expect.objectContaining({
-        email: 'master@example.com',
-        name: 'Master',
-        cardRecoveryEmailHash: null,
-        cardRecoveryPhoneHash: null,
-      }),
-    }))
-    expect(await res.json()).toMatchObject({ user: expect.objectContaining({ email: 'master@example.com' }) })
+    expect(new Set(bodies)).toEqual(new Set(['202 {"ok":true}']))
   })
 
-  it('activates when both phone and email are submitted and only one matches', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
+  it('never cancels a usable link: with an active invitation nothing is issued, sent or counted', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    activeTokenMock.mockResolvedValue({ id: 'staff_invite' })
 
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '0000', email: 'master@example.com' }))
+    const answers: string[] = []
+    for (let i = 0; i < 3; i++) {
+      const res = await POST(makeRequest({ cardNumber: '4321' }))
+      answers.push(`${res.status} ${await res.text()}`)
+    }
+    await runAfterResponse()
 
-    expect(res.status).toBe(200)
-  })
-
-  it('ignores non-digit characters when comparing the phone last 4', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '43-21' }))
-
-    expect(res.status).toBe(200)
-  })
-
-  it('rejects and never matches the synthetic client.local placeholder email', async () => {
-    userFindFirstMock.mockResolvedValue({ ...DORMANT_USER, email: 'card.5678@client.local' })
-
-    const res = await POST(makeRequest({ cardNumber: '5678', email: 'card.5678@client.local' }))
-
-    expect(res.status).toBe(401)
-    expect(await res.json()).toMatchObject({ error: 'wrong_contact' })
-    expect(createSessionMock).not.toHaveBeenCalled()
-  })
-
-  it('does not notify anyone when neither phone nor email match', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678', phoneLast4: '9999', email: 'wrong@example.com' }))
-
-    expect(res.status).toBe(401)
-    expect(await res.json()).toMatchObject({ error: 'wrong_contact' })
-    expect(createSessionMock).not.toHaveBeenCalled()
-    expect(sendEmail).not.toHaveBeenCalled()
-  })
-
-  it('rejects when neither phone nor email is submitted', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER)
-
-    const res = await POST(makeRequest({ cardNumber: '5678' }))
-
-    expect(res.status).toBe(400)
-    expect(await res.json()).toMatchObject({ error: 'contact_required' })
-    expect(createSessionMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects with a distinct error when the card has no usable phone or email on file', async () => {
-    userFindFirstMock.mockResolvedValue(DORMANT_USER_NO_CONTACT)
-
-    const res = await POST(makeRequest({ cardNumber: '5679', phoneLast4: '1234' }))
-
-    expect(res.status).toBe(422)
-    expect(await res.json()).toMatchObject({ error: 'no_contact_on_file' })
-    expect(createSessionMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects when the card number is blank', async () => {
-    const res = await POST(makeRequest({ cardNumber: '   ' }))
-
-    expect(res.status).toBe(400)
-    expect(prisma.user.findFirst).not.toHaveBeenCalled()
-    expect(prisma.company.findFirst).not.toHaveBeenCalled()
-  })
-
-  it('treats leading zeroes as display padding for a short card number', async () => {
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue(null)
-
-    await POST(makeRequest({ cardNumber: '0001' }))
-
-    expect(userFindFirstMock).toHaveBeenCalledWith({
-      where: { cardNumber: { equals: '1', mode: 'insensitive' } },
+    expect(new Set(answers)).toEqual(new Set(['202 {"ok":true}']))
+    expect(activeTokenMock).toHaveBeenCalledWith({
+      where: { userId: 'u_dormant', status: 'sent', acceptedAt: null, expiresAt: { gt: expect.any(Date) } },
+      select: { id: true },
     })
-    expect(companyFindFirstMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(tokenDeleteManyMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(checkRateLimitMock).not.toHaveBeenCalledWith('card-activation-send:u_dormant', expect.anything())
   })
 
-  it('rejects a new card identifier longer than six digits', async () => {
-    const res = await POST(makeRequest({ cardNumber: '1234567' }))
+  it('re-checks inside the serializable transaction: a concurrent winner keeps its link', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    txActiveTokenMock.mockResolvedValue({ id: 'issued_concurrently' })
 
-    expect(res.status).toBe(400)
-    expect(await res.json()).toMatchObject({ error: 'invalid_card' })
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    expect(res.status).toBe(202)
+    expect(transactionMock).toHaveBeenCalledWith(expect.any(Function), { isolationLevel: 'Serializable' })
+    expect(tokenDeleteManyMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('logs and sends nothing when the serializable transaction loses a race', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    transactionMock.mockRejectedValue(Object.assign(new Error('write conflict'), { code: 'P2034' }))
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await expect(runAfterResponse()).resolves.toBeUndefined()
+
+    expect(res.status).toBe(202)
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('replaces only expired or undelivered links: a new link is issued when none is active', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+
+    await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    // replaceInvitation clears non-accepted rows; with no active link these can only be expired/error rows.
+    expect(tokenDeleteManyMock).toHaveBeenCalledWith({ where: { userId: 'u_dormant', status: { not: 'accepted' } } })
+    expect(tokenCreateMock).toHaveBeenCalledTimes(1)
+    expect(sendEmailMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the same answer and still sends when after() is unavailable', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    afterUnavailable.value = true
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+
+    expect(res.status).toBe(202)
+    expect(await res.json()).toEqual({ ok: true })
+    await vi.waitFor(() => expect(sendEmailMock).toHaveBeenCalledTimes(1))
+    expect(sendEmailMock.mock.calls[0][0]).toBe('salon@example.lv')
+  })
+
+  it('caps activation e-mails per card account', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    checkRateLimitMock.mockImplementation(async (key: string) => (key === 'card-activation-send:u_dormant' ? LIMITED : NOT_LIMITED))
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    expect(res.status).toBe(202)
+    expect(checkRateLimitMock).toHaveBeenCalledWith('card-activation-send:u_dormant', { windowMs: 86_400_000, maxAttempts: 3 })
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('retires the token when the e-mail cannot be delivered', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    sendEmailMock.mockRejectedValue(new Error('smtp down'))
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    await runAfterResponse()
+
+    expect(res.status).toBe(202)
+    const tokenHash = tokenCreateMock.mock.calls[0][0].data.tokenHash
+    expect(tokenUpdateManyMock).toHaveBeenCalledWith({ where: { tokenHash, status: 'sent' }, data: { status: 'error' } })
+  })
+
+  it('rate-limits by IP before reading the body or the database', async () => {
+    checkRateLimitMock.mockResolvedValueOnce(LIMITED)
+
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+
+    expect(res.status).toBe(429)
+    expect(checkRateLimitMock).toHaveBeenCalledWith('register-card:203.0.113.7')
     expect(userFindFirstMock).not.toHaveBeenCalled()
   })
 
-  it('rate-limits repeated attempts against the same card number regardless of IP', async () => {
-    // Phone-last-4 is low entropy (10,000 combinations), so a known card
-    // number is most of what stands between an attacker and someone else's
-    // account — cap attempts per card, not just per IP, to slow that down.
-    checkRateLimitMock.mockImplementation(async (key: string) =>
-      key.startsWith('register-card:card:')
-        ? { limited: true, resetAt: Date.now() + 60_000 }
-        : { limited: false, resetAt: 0 }
-    )
-    userFindFirstMock.mockResolvedValue(null)
-    companyFindFirstMock.mockResolvedValue(null)
+  it('rate-limits per card before the lookup, so a limit says nothing about the card', async () => {
+    checkRateLimitMock.mockImplementation(async (key: string) => (key === 'register-card:card:4321' ? LIMITED : NOT_LIMITED))
 
-    const res = await POST(makeRequest({ cardNumber: '1234' }))
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
 
     expect(res.status).toBe(429)
-    expect(prisma.user.findFirst).not.toHaveBeenCalled()
+    expect(checkRateLimitMock).toHaveBeenCalledWith('register-card:card:4321', { windowMs: 3_600_000, maxAttempts: 5 })
+    expect(userFindFirstMock).not.toHaveBeenCalled()
   })
 
-  it('rate-limits repeated attempts from the same IP', async () => {
-    checkRateLimitMock.mockResolvedValue({ limited: true, resetAt: Date.now() + 60_000 })
+  it.each([
+    ['privacy notice not acknowledged', { cardNumber: '4321', privacyAcknowledged: false }, 'privacy_acknowledgement_required'],
+    ['blank card number', { cardNumber: '   ' }, 'card_required'],
+    ['card number longer than six digits', { cardNumber: '1234567' }, 'invalid_card'],
+    ['non-numeric card number', { cardNumber: 'ABC12' }, 'invalid_card'],
+  ])('rejects %s on input alone, without a lookup', async (_label, body, error) => {
+    const res = await POST(makeRequest(body))
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error })
+    expect(userFindFirstMock).not.toHaveBeenCalled()
+  })
 
-    const res = await POST(makeRequest({ cardNumber: '1234' }))
-
-    expect(res.status).toBe(429)
+  it('treats leading zeroes as display padding', async () => {
+    userFindFirstMock.mockResolvedValue(null)
+    await POST(makeRequest({ cardNumber: '0042' }))
+    expect(userFindFirstMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: { cardNumber: { equals: '42', mode: 'insensitive' } },
+    }))
   })
 })

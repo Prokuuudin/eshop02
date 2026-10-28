@@ -1,5 +1,6 @@
 const { createServer, request } = require('node:http')
 const next = require('next')
+const { applyTrustedClientIp } = require('./server-client-ip')
 
 const IMAGE_WARMUP_PATH = '/_next/image?url=%2Fhero.jpg&w=3840&q=90'
 const IMAGE_WARMUP_TIMEOUT_MS = 60_000
@@ -72,6 +73,7 @@ function warmImageOptimizer(server) {
 app.prepare()
     .then(() => {
         const server = createServer((request, response) => {
+            applyTrustedClientIp(request.headers)
             handle(request, response).catch((error) => {
                 console.error('Failed to handle request', error)
 

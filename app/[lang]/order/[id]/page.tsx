@@ -17,15 +17,18 @@ type PageProps = {
     params: Promise<{
         id: string;
     }>;
+    searchParams: Promise<{
+        payment?: string | string[];
+    }>;
 };
 
 import { useOrderPage } from './useOrderPage'
 
-export default function OrderPage({ params }: PageProps): React.ReactElement {
-  const pageState = useOrderPage({ params })
+export default function OrderPage({ params, searchParams }: PageProps): React.ReactElement {
+  const pageState = useOrderPage({ params, searchParams })
   if (React.isValidElement(pageState)) return pageState
   const orderPageState = pageState as Exclude<ReturnType<typeof useOrderPage>, React.ReactElement>
-  const { t, language, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex } = orderPageState
+  const { t, language, order, locale, returnDialogOpen, setReturnDialogOpen, payingNow, handlePayNow, getDeliveryLabel, getPaymentLabel, formatCurrency, getStatusLabel, getStatusClasses, getPaymentStatusLabel, getPaymentStatusClasses, status, timelineSteps, currentStatusIndex, paymentReturnState, paymentReturnBlocksRetry } = orderPageState
   const displayPhone = COMPANY.phone.replace(/^(\+371)(\d{8})$/, '$1 $2')
   const displayAddress = formatOrderAddressLatvian(order)
   const destination = getOrderDeliveryDestination(order)
@@ -178,7 +181,24 @@ return (
                                         {getPaymentStatusLabel(order.paymentStatus)}
                                     </span>
                                 </div>
-                                {order.paymentMethod === 'paysera' && order.paymentStatus !== 'paid' && (
+                                {order.paymentMethod === 'paysera' && paymentReturnState === 'processing' && (
+                                    <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                                        <LoaderCircle className="mt-0.5 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+                                        <span>{t('order.paymentProcessing')}</span>
+                                    </div>
+                                )}
+                                {order.paymentMethod === 'paysera' && paymentReturnState === 'paid' && (
+                                    <div className="mt-3 flex items-start gap-2 rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-900" role="status">
+                                        <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                                        <span>{t('order.paymentConfirmed')}</span>
+                                    </div>
+                                )}
+                                {order.paymentMethod === 'paysera' && paymentReturnState === 'timeout' && (
+                                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                                        {t('order.paymentConfirmationPending')}
+                                    </div>
+                                )}
+                                {order.paymentMethod === 'paysera' && order.paymentStatus !== 'paid' && !paymentReturnBlocksRetry && (
                                     <Button
                                         className="mt-3 w-full sm:w-auto"
                                         onClick={handlePayNow}

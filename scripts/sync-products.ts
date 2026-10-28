@@ -27,11 +27,16 @@ import { config } from 'dotenv'
 import { createHash } from 'crypto'
 import { readFileSync, statSync } from 'fs'
 import { auditGrinsXml, parseGrinsXml } from '@/lib/sync/grins-xml-parser'
-import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv } from '@/lib/sync/ftps-client'
+import { downloadFtpsFileWithMetadata, getFtpsConfigFromEnv, readFtpsRunFilesSnapshot } from '@/lib/sync/ftps-client'
+import { STOCK_MANIFEST_MAX_BYTES, STOCK_XML_MAX_BYTES } from '@/lib/sync/ftps-run-files'
 import { getErpExtraData } from '@/lib/sync/erp-extra-data-store'
 import { buildSyncDryRunReport } from '@/lib/sync/sync-dry-run'
 import { evaluatePreflight, loadPreflightState, structuralFailures } from '@/lib/sync/sync-preflight'
+import { MANUAL_IMPORT_MAX_BYTES } from '@/lib/sync/manual-import'
 
+// The local write-rehearsal mode must never inherit a connection from
+// .env.local or one of Prisma's fallback URL variables.
+const EXPLICIT_DATABASE_URL = process.env.DATABASE_URL
 config({ path: '.env.local' })
 
 function argValue(name: string): string | undefined {
@@ -133,7 +138,108 @@ async function runScheduled(): Promise<number> {
   }
 }
 
+async function runScheduledStocks(): Promise<number> {
+  const { runScheduledStockSync } = await import('@/lib/sync/scheduled-stock-sync')
+  const { sendSyncFailureAlert } = await import('@/lib/sync/sync-alert')
+  let db: import('@/lib/prisma').ExtendedPrismaClient | undefined
+  let config: ReturnType<typeof getFtpsConfigFromEnv> | undefined
+  const stockFtpsConfig = () => (config ??= getFtpsConfigFromEnv())
+  try {
+    const outcome = await runScheduledStockSync({
+      env: process.env,
+      getDb: async () => (db = (await import('@/lib/prisma')).prisma),
+      downloadXml: (remotePath) => downloadFtpsFileWithMetadata(remotePath ? { ...stockFtpsConfig(), remotePath } : stockFtpsConfig(), MANUAL_IMPORT_MAX_BYTES),
+      downloadManifest: (remotePath) => downloadFtpsFileWithMetadata({ ...stockFtpsConfig(), remotePath }, STOCK_MANIFEST_MAX_BYTES),
+      readRunFiles: () => readFtpsRunFilesSnapshot(stockFtpsConfig(), {
+        xmlMaxBytes: STOCK_XML_MAX_BYTES,
+        manifestMaxBytes: STOCK_MANIFEST_MAX_BYTES,
+        onRetry: (retry) => console.log(JSON.stringify({ event: 'grins_stock_ftps_retry', ...retry })),
+      }),
+      sendAlert: sendSyncFailureAlert,
+    })
+    console.log(JSON.stringify({ event: 'stock_sync_complete', ...outcome }))
+    return outcome.exitCode
+  } finally {
+    await db?.$disconnect()
+  }
+}
+
+async function runLocalStocksOnlyRehearsal(): Promise<number> {
+  const required = (name: string): string => {
+    const value = argValue(name)
+    if (!value || value.startsWith('--')) throw new Error(`${name} requires a value`)
+    return value
+  }
+  if (!process.argv.includes('--execute-stocks-only-rehearsal')) {
+    throw new Error('local stocks-only rehearsal requires --execute-stocks-only-rehearsal')
+  }
+  if (process.argv.some(arg => ['--scheduled', '--stocks-only-scheduled', '--execute', '--dry-run', '--manifest'].includes(arg))) {
+    throw new Error('--stocks-only-local-rehearsal cannot be combined with another mode')
+  }
+  if (!EXPLICIT_DATABASE_URL || process.env.DATABASE_URL !== EXPLICIT_DATABASE_URL) {
+    throw new Error('local stocks-only rehearsal requires an explicit DATABASE_URL')
+  }
+  if (required('--target') !== 'staging') throw new Error('local stocks-only rehearsal permits only the staging profile slot')
+
+  const file = required('--file')
+  const manifestFile = required('--manifest-file')
+  const fileStat = statSync(file)
+  const manifestStat = statSync(manifestFile)
+  if (fileStat.size > MANUAL_IMPORT_MAX_BYTES) throw new Error('local stock XML exceeds the configured import size limit')
+  if (manifestStat.size > STOCK_MANIFEST_MAX_BYTES) throw new Error('local stock manifest exceeds the configured size limit')
+
+  const profile = required('--environment-profile')
+  const { resolveGrinsEnvironment, withGrinsEnvironment } = await import('@/lib/grins-operation-environment')
+  const expected = resolveGrinsEnvironment(
+    JSON.parse(readFileSync(profile, 'utf8')),
+    'staging',
+    EXPLICIT_DATABASE_URL,
+  )
+  if (required('--confirm-operation') !== expected.instanceId) throw new Error('operator_confirmation_required')
+  const confirmation = {
+    instanceId: required('--confirm-rehearsal'),
+    branchId: required('--confirm-branch'),
+    endpointId: required('--confirm-endpoint'),
+    catalogFingerprint: required('--expected-catalog-fingerprint'),
+  }
+  const hostname = new URL(EXPLICIT_DATABASE_URL).hostname.toLowerCase()
+  const endpoint = confirmation.endpointId.toLowerCase()
+  if (!(hostname.startsWith(`${endpoint}.`) || hostname.startsWith(`${endpoint}-pooler.`))) {
+    throw new Error('local_stock_rehearsal_endpoint_mismatch')
+  }
+
+  const source = {
+    xml: readFileSync(file, 'utf8'),
+    manifest: readFileSync(manifestFile, 'utf8'),
+    expectedRunId: required('--expected-run-id'),
+    expectedSha256: required('--expected-sha256'),
+  }
+  const { prisma } = await import('@/lib/prisma')
+  const { runLocalFileStockSync, verifyLocalStockRehearsalTarget } = await import('@/lib/sync/local-stock-sync')
+  try {
+    const verifyTarget = async (db: import('@/lib/prisma').ExtendedPrismaClient, at: Date) => {
+      await withGrinsEnvironment(db, expected, tx => verifyLocalStockRehearsalTarget(tx, confirmation, at))
+    }
+    const outcome = await runLocalFileStockSync({ source, getDb: async () => prisma, verifyTarget })
+    console.log(JSON.stringify({ event: 'local_stock_rehearsal_complete', sync: outcome.sync, safety: outcome.safety }))
+    return outcome.sync.exitCode === 0 && outcome.safety.passed ? 0 : 1
+  } finally {
+    await prisma.$disconnect()
+  }
+}
+
 async function main() {
+  if (process.argv.includes('--stocks-only-local-rehearsal')) {
+    process.exitCode = await runLocalStocksOnlyRehearsal()
+    return
+  }
+  if (process.argv.includes('--stocks-only-scheduled')) {
+    if (process.argv.some(arg => ['--scheduled', '--execute', '--dry-run', '--file'].includes(arg))) {
+      throw new Error('--stocks-only-scheduled cannot be combined with another mode')
+    }
+    process.exitCode = await runScheduledStocks()
+    return
+  }
   if (process.argv.includes('--scheduled')) {
     if (process.argv.includes('--execute') || process.argv.includes('--dry-run') || process.argv.includes('--file')) {
       throw new Error('--scheduled cannot be combined with --execute, --dry-run or --file')

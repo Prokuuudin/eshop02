@@ -1,0 +1,223 @@
+{
+  "SourceDatabase": "hairshop_fixture",
+  "Languages": [
+    {
+      "LanguageId": 1,
+      "Name": "Latviešu",
+      "LanguageCulture": "lv-LV",
+      "UniqueSeoCode": "lv",
+      "Published": true,
+      "DisplayOrder": 1
+    },
+    {
+      "LanguageId": 2,
+      "Name": "Русский",
+      "LanguageCulture": "ru-RU",
+      "UniqueSeoCode": "ru",
+      "Published": true,
+      "DisplayOrder": 2
+    },
+    {
+      "LanguageId": 3,
+      "Name": "English",
+      "LanguageCulture": "en-US",
+      "UniqueSeoCode": "en",
+      "Published": true,
+      "DisplayOrder": 3
+    }
+  ],
+  "Products": [
+    {
+      "ProductId": 101,
+      "SKU": "ONKO-001",
+      "EAN": "4750000000101",
+      "Name": "Onko Sensitive\u001c šampūns",
+      "ShortDescription": "Maigs šampūns jutīgai galvas ādai.",
+      "FullDescription": "<p>Latviešu apraksts — testa saturs.</p>",
+      "MetaKeywords": "onko, sensitive",
+      "MetaDescription": "Onko Sensitive Latvijā",
+      "MetaTitle": "Onko Sensitive",
+      "Published": true,
+      "CreatedOnUtc": "2024-01-10T08:00:00Z",
+      "UpdatedOnUtc": "2026-10-20T09:15:00Z"
+    },
+    {
+      "ProductId": 102,
+      "SKU": "CERA-PRO-002",
+      "EAN": "4750000000102",
+      "Name": "Cera Pro Multi Airstyler",
+      "ShortDescription": "Daudzfunkcionāls matu veidošanas fēns.",
+      "FullDescription": "<p>Komplekts ar vairākiem uzgaļiem.</p>",
+      "MetaKeywords": "cera pro, airstyler",
+      "MetaDescription": "Cera Pro Multi Airstyler",
+      "MetaTitle": "Cera Pro Multi Airstyler",
+      "Published": true,
+      "CreatedOnUtc": "2026-09-01T10:00:00Z",
+      "UpdatedOnUtc": "2026-10-21T11:00:00Z"
+    },
+    {
+      "ProductId": 103,
+      "SKU": "DRAFT-003",
+      "EAN": "",
+      "Name": "Nepublicēta prece",
+      "ShortDescription": "Melnraksts",
+      "FullDescription": "",
+      "MetaKeywords": "",
+      "MetaDescription": "",
+      "MetaTitle": "",
+      "Published": false,
+      "CreatedOnUtc": "2026-10-22T12:00:00Z",
+      "UpdatedOnUtc": "2026-10-22T12:00:00Z"
+    }
+  ],
+  "LocalizedValues": [
+    {
+      "EntityId": 101,
+      "LanguageId": 2,
+      "EntityName": "Product",
+      "LocaleKey": "Name",
+      "LocaleValue": "Onko Sensitive шампунь"
+    },
+    {
+      "EntityId": 101,
+      "LanguageId": 3,
+      "EntityName": "Product",
+      "LocaleKey": "Name",
+      "LocaleValue": "Onko Sensitive shampoo"
+    },
+    {
+      "EntityId": 10,
+      "LanguageId": 2,
+      "EntityName": "Category",
+      "LocaleKey": "Name",
+      "LocaleValue": "Шампуни"
+    },
+    {
+      "EntityId": 20,
+      "LanguageId": 2,
+      "EntityName": "Manufacturer",
+      "LocaleKey": "Name",
+      "LocaleValue": "Тестовый бренд"
+    }
+  ],
+  "Categories": [
+    {
+      "CategoryId": 10,
+      "ParentCategoryId": 0,
+      "Name": "Šampūni",
+      "Description": "Matu mazgāšanai",
+      "MetaKeywords": "šampūni",
+      "MetaDescription": "Šampūnu kategorija",
+      "MetaTitle": "Šampūni",
+      "Published": true,
+      "DisplayOrder": 1,
+      "CreatedOnUtc": "2020-01-01T00:00:00Z",
+      "UpdatedOnUtc": "2026-01-01T00:00:00Z"
+    },
+    {
+      "CategoryId": 11,
+      "ParentCategoryId": 0,
+      "Name": "Fēni un veidotāji",
+      "Description": "Matu veidošanas ierīces",
+      "MetaKeywords": "fēni",
+      "MetaDescription": "Matu veidošanas ierīces",
+      "MetaTitle": "Fēni",
+      "Published": true,
+      "DisplayOrder": 2,
+      "CreatedOnUtc": "2020-01-01T00:00:00Z",
+      "UpdatedOnUtc": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "CategoryMappings": [
+    {
+      "ProductId": 101,
+      "CategoryId": 10,
+      "IsFeaturedProduct": false,
+      "DisplayOrder": 1
+    },
+    {
+      "ProductId": 102,
+      "CategoryId": 11,
+      "IsFeaturedProduct": true,
+      "DisplayOrder": 1
+    }
+  ],
+  "Manufacturers": [
+    {
+      "ManufacturerId": 20,
+      "Name": "Testa zīmols",
+      "Description": "Ražotāja apraksts",
+      "MetaKeywords": "zīmols",
+      "MetaDescription": "Testa ražotājs",
+      "MetaTitle": "Testa zīmols",
+      "Published": true,
+      "DisplayOrder": 1,
+      "CreatedOnUtc": "2020-01-01T00:00:00Z",
+      "UpdatedOnUtc": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "ManufacturerMappings": [
+    {
+      "ProductId": 101,
+      "ManufacturerId": 20,
+      "IsFeaturedProduct": false,
+      "DisplayOrder": 1
+    },
+    {
+      "ProductId": 102,
+      "ManufacturerId": 20,
+      "IsFeaturedProduct": false,
+      "DisplayOrder": 1
+    }
+  ],
+  "Pictures": [
+    {
+      "ProductId": 101,
+      "PictureId": 501,
+      "DisplayOrder": 1,
+      "MimeType": "image/jpeg",
+      "SeoFilename": "onko-sensitive",
+      "AltAttribute": "Onko Sensitive šampūns",
+      "TitleAttribute": "Onko Sensitive"
+    },
+    {
+      "ProductId": 102,
+      "PictureId": 502,
+      "DisplayOrder": 1,
+      "MimeType": "image/jpeg",
+      "SeoFilename": "cera-pro-multi-airstyler",
+      "AltAttribute": "Cera Pro Multi Airstyler",
+      "TitleAttribute": "Cera Pro"
+    }
+  ],
+  "Slugs": [
+    {
+      "EntityId": 101,
+      "EntityName": "Product",
+      "LanguageId": 1,
+      "Slug": "onko-sensitive",
+      "IsActive": true
+    },
+    {
+      "EntityId": 102,
+      "EntityName": "Product",
+      "LanguageId": 1,
+      "Slug": "cera-pro-multi-airstyler-daudzfunkcionals-matu-veidosanas-fens",
+      "IsActive": true
+    },
+    {
+      "EntityId": 10,
+      "EntityName": "Category",
+      "LanguageId": 1,
+      "Slug": "sampuni",
+      "IsActive": true
+    },
+    {
+      "EntityId": 20,
+      "EntityName": "Manufacturer",
+      "LanguageId": 1,
+      "Slug": "testa-zimols",
+      "IsActive": true
+    }
+  ]
+}

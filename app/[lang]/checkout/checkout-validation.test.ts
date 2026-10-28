@@ -36,8 +36,10 @@ describe('validateCheckoutForm', () => {
         expect(validateCheckoutForm({ formData: noAddress, deliveryMethod: 'pickup', pickupStoreId: 'imanta', termsAccepted: true }, t)).toEqual({});
     });
     it('requires address, city and postal code for courier', () => {
-        const errors = validateCheckoutForm({ formData: { ...validForm, address: '', city: '', postalCode: '' }, deliveryMethod: 'courier', pickupStoreId: '', termsAccepted: true }, t);
-        expect(Object.keys(errors)).toEqual(expect.arrayContaining(['address', 'city', 'postalCode']));
+        for (const deliveryMethod of ['courier', 'courier_riga', 'courier_latvia'] as const) {
+            const errors = validateCheckoutForm({ formData: { ...validForm, address: '', city: '', postalCode: '' }, deliveryMethod, pickupStoreId: '', termsAccepted: true }, t);
+            expect(Object.keys(errors)).toEqual(expect.arrayContaining(['address', 'city', 'postalCode']));
+        }
     });
     it('accepts a complete individual delivery order', () => {
         expect(validateCheckoutForm({ formData: validForm, deliveryMethod: 'courier', pickupStoreId: '', termsAccepted: true }, t)).toEqual({});

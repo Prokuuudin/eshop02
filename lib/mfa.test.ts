@@ -10,6 +10,7 @@ import {
   consumeBackupCode,
 } from './mfa'
 import { generate } from 'otplib'
+import bcrypt from 'bcryptjs'
 
 vi.mock('server-only', () => ({}))
 
@@ -28,6 +29,32 @@ describe('encryptSecret / decryptSecret', () => {
     const a = encryptSecret('JBSWY3DPEHPK3PXP')
     const b = encryptSecret('JBSWY3DPEHPK3PXP')
     expect(a).not.toBe(b)
+  })
+
+  it('rejects tampered ciphertext, a truncated tag and legacy plaintext — never falls back to plaintext', () => {
+    const [iv, tag, ct] = encryptSecret('JBSWY3DPEHPK3PXP').split('.')
+    const flipped = Buffer.from(ct, 'base64')
+    flipped[0] ^= 1
+    expect(() => decryptSecret([iv, tag, flipped.toString('base64')].join('.'))).toThrow()
+    const shortTag = Buffer.from(tag, 'base64').subarray(0, 4).toString('base64')
+    expect(() => decryptSecret([iv, shortTag, ct].join('.'))).toThrow()
+    expect(() => decryptSecret('JBSWY3DPEHPK3PXP')).toThrow()
+  })
+
+  it('fails closed when the key is missing, the wrong size, or a different key', () => {
+    const encrypted = encryptSecret('JBSWY3DPEHPK3PXP')
+    const original = process.env.MFA_ENCRYPTION_KEY
+    try {
+      delete process.env.MFA_ENCRYPTION_KEY
+      expect(() => encryptSecret('x')).toThrow('MFA_ENCRYPTION_KEY is not configured')
+      expect(() => decryptSecret(encrypted)).toThrow()
+      process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(16, 1).toString('base64')
+      expect(() => encryptSecret('x')).toThrow('exactly 32 bytes')
+      process.env.MFA_ENCRYPTION_KEY = Buffer.alloc(32, 9).toString('base64')
+      expect(() => decryptSecret(encrypted)).toThrow()
+    } finally {
+      process.env.MFA_ENCRYPTION_KEY = original
+    }
   })
 })
 
@@ -90,5 +117,45 @@ describe('backup codes', () => {
     const hashes = await hashBackupCodes(codes)
     const { ok } = await consumeBackupCode(hashes, 'not-a-real-code')
     expect(ok).toBe(false)
+  }, 20000)
+
+  it('issues codes in the documented format: 10 lowercase hex characters', () => {
+    for (const code of generateBackupCodes()) expect(code).toMatch(/^[0-9a-f]{10}$/)
+  })
+
+  it('accepts a code typed with capitals, spaces or a hyphen, still only once', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+    const typed = ` ${code.slice(0, 5).toUpperCase()} - ${code.slice(5).toUpperCase()} `
+
+    const first = await consumeBackupCode(hashes, typed)
+    expect(first.ok).toBe(true)
+    expect(first.remaining).toEqual([])
+
+    const reuse = await consumeBackupCode(first.remaining, code)
+    expect(reuse.ok).toBe(false)
+  }, 20000)
+
+  it('accepts a code pasted from notes with a list bullet and a space', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+
+    const result = await consumeBackupCode(hashes, `• ${code}`)
+    expect(result.ok).toBe(true)
+    expect(result.remaining).toEqual([])
+  }, 20000)
+
+  it('rejects input that cannot be a backup code (e.g. a 6-digit app code) without any bcrypt work', async () => {
+    const [code] = generateBackupCodes()
+    const hashes = await hashBackupCodes([code])
+    const compare = vi.spyOn(bcrypt, 'compare')
+    try {
+      for (const input of ['123456', '', 'zzzzzzzzzz', `${code}0`, 'x'.repeat(100)]) {
+        expect(await consumeBackupCode(hashes, input)).toEqual({ ok: false, remaining: hashes })
+      }
+      expect(compare).not.toHaveBeenCalled()
+    } finally {
+      compare.mockRestore()
+    }
   }, 20000)
 })

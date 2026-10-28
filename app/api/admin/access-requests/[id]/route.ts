@@ -17,7 +17,7 @@ import {
 import { getSiteUrl } from '@/lib/site-url'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { z } from 'zod'
-import { hasAdminPermission } from '@/lib/admin-permissions'
+import { hasAdminPermission, isProtectedStaffAccount } from '@/lib/admin-permissions'
 
 export const runtime = 'nodejs'
 
@@ -91,10 +91,15 @@ export async function PATCH(
         }),
         await prisma.user.findFirst({
           where: { email: { equals: existing.email, mode: 'insensitive' } },
-          select: { id: true, cardNumber: true },
+          select: { id: true, cardNumber: true, platformRole: true, teamRole: true, superAdmin: true },
         }),
       ]
 
+      // The request email is not verified: approving it onto a staff account would attach
+      // the requester's card and force a password change — a takeover path via register-card.
+      if (sameEmail && isProtectedStaffAccount(sameEmail)) {
+        return NextResponse.json({ error: 'staff_account' }, { status: 409 })
+      }
       if (cardOwner && cardOwner.id !== sameEmail?.id) {
         return NextResponse.json({ error: 'card_taken' }, { status: 409 })
       }

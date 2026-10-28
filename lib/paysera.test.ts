@@ -136,4 +136,155 @@ describe('createPayseraPayment', () => {
       successUrl: 's', failureUrl: 'f', callbackUrl: 'c',
     })).rejects.toThrow(FreshConfigError)
   })
+
+  it('reports an existing paid Paysera session for local reconciliation without creating anything', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'session-1', reference: '1001', amount: 100, amount_paid: 100, currency: 'EUR', status: 'paid',
+      }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(resolvePayseraPaymentForOrder({
+      id: '1001', total: 1, language: 'ru', paymentSessionId: 'session-1',
+    })).resolves.toMatchObject({
+      payseraOrderId: 'session-1',
+      paidEvidence: { sessionId: 'session-1', amount: 100, amountPaid: 100, currency: 'EUR' },
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls.some(([url, init]) => url === 'https://api.paysera.com/merchant-order/integration/v1/orders'
+      && (init as RequestInit | undefined)?.method === 'POST')).toBe(false)
+  })
+
+  it('reuses the active link after a failed payment attempt instead of creating a second order', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'session-1', reference: '1001', amount: 100, amount_paid: 0, currency: 'EUR', status: 'pending_payment',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        order_id: 'session-1', amount: 100, currency: 'EUR', status: 'active',
+        expired_at: Math.floor(Date.now() / 1000) + 3600,
+        link: { url: 'https://bank.paysera.com/pay/existing' },
+      }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await resolvePayseraPaymentForOrder({
+      id: '1001', total: 1, language: 'ru', paymentSessionId: 'session-1',
+    })
+
+    expect(result).toEqual({ payseraOrderId: 'session-1', paymentUrl: 'https://bank.paysera.com/pay/existing' })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')).toHaveLength(1)
+  })
+
+  it('creates only a new link on the same pending Paysera order when the prior link expired', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'session-1', reference: '1001', amount: 100, amount_paid: 0, currency: 'EUR', status: 'pending_payment',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        order_id: 'session-1', amount: 100, currency: 'EUR', status: 'expired',
+        expired_at: Math.floor(Date.now() / 1000) - 1,
+        link: { url: 'https://bank.paysera.com/pay/expired' },
+      }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ payment_URL: 'https://bank.paysera.com/pay/retry' }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await resolvePayseraPaymentForOrder({
+      id: '1001', total: 1, language: 'ru', paymentSessionId: 'session-1',
+    })
+
+    expect(result.payseraOrderId).toBe('session-1')
+    const mutationUrls = fetchMock.mock.calls
+      .filter(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+      .map(([url]) => url)
+    expect(mutationUrls).toEqual([
+      'https://api.paysera.com/auth/realms/Paysera/protocol/openid-connect/token',
+      'https://api.paysera.com/checkout-payment-link/integration/v1/payment-links',
+    ])
+    const retryBody = JSON.parse(String(fetchMock.mock.calls[3][1]?.body))
+    expect(retryBody.order_id).toBe('session-1')
+    expect(retryBody.name).toMatch(/^Order 1001 retry-/)
+  })
+
+  it('creates a uniquely named link on the same order when the prior link was canceled', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'session-1', reference: '1001', amount: 100, amount_paid: 0, currency: 'EUR', status: 'pending_payment',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        order_id: 'session-1', amount: 100, currency: 'EUR', status: 'canceled',
+        expired_at: Math.floor(Date.now() / 1000) + 3600,
+        link: { url: 'https://bank.paysera.com/pay/canceled' },
+      }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ payment_URL: 'https://bank.paysera.com/pay/retry' }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await resolvePayseraPaymentForOrder({
+      id: '1001', total: 1, language: 'ru', paymentSessionId: 'session-1',
+    })
+
+    expect(result).toEqual({ payseraOrderId: 'session-1', paymentUrl: 'https://bank.paysera.com/pay/retry' })
+    const retryBody = JSON.parse(String(fetchMock.mock.calls[3][1]?.body))
+    expect(retryBody.order_id).toBe('session-1')
+    expect(retryBody.name).toMatch(/^Order 1001 retry-/)
+  })
+
+  it('retries a duplicate payment-link name once without creating another Paysera order', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'session-1', reference: '1001', amount: 100, amount_paid: 0, currency: 'EUR', status: 'pending_payment',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: 'validation_duplicate_name' }), { status: 409 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ payment_URL: 'https://bank.paysera.com/pay/retry-2' }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await resolvePayseraPaymentForOrder({
+      id: '1001', total: 1, language: 'ru', paymentSessionId: 'session-1',
+    })
+
+    expect(result).toEqual({ payseraOrderId: 'session-1', paymentUrl: 'https://bank.paysera.com/pay/retry-2' })
+    const linkCreates = fetchMock.mock.calls.filter(([url, init]) =>
+      url === 'https://api.paysera.com/checkout-payment-link/integration/v1/payment-links'
+      && (init as RequestInit | undefined)?.method === 'POST')
+    expect(linkCreates).toHaveLength(2)
+    expect(linkCreates.map(([, init]) => JSON.parse(String(init?.body)).order_id)).toEqual(['session-1', 'session-1'])
+    const names = linkCreates.map(([, init]) => JSON.parse(String(init?.body)).name)
+    expect(names[0]).toMatch(/^Order 1001 retry-/)
+    expect(names[1]).toMatch(/^Order 1001 retry-/)
+    expect(names[1]).not.toBe(names[0])
+    expect(fetchMock.mock.calls.some(([url, init]) => url === 'https://api.paysera.com/merchant-order/integration/v1/orders'
+      && (init as RequestInit | undefined)?.method === 'POST')).toBe(false)
+  })
+
+  it('adopts an orphaned pending Paysera order by reference after a partial first-session failure', async () => {
+    const { resolvePayseraPaymentForOrder } = await freshPaysera()
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'tok-1', expires_in: 3600 }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        id: 'orphan-session', reference: '1001', amount: 100, amount_paid: 0, currency: 'EUR', status: 'pending_payment',
+      }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        order_id: 'orphan-session', amount: 100, currency: 'EUR', status: 'active',
+        expired_at: Math.floor(Date.now() / 1000) + 3600,
+        link: { url: 'https://bank.paysera.com/pay/orphan' },
+      }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await resolvePayseraPaymentForOrder({ id: '1001', total: 1, language: 'ru' })
+
+    expect(result).toEqual({ payseraOrderId: 'orphan-session', paymentUrl: 'https://bank.paysera.com/pay/orphan' })
+    expect(fetchMock.mock.calls.some(([url, init]) => url === 'https://api.paysera.com/merchant-order/integration/v1/orders'
+      && (init as RequestInit | undefined)?.method === 'POST')).toBe(false)
+  })
 })

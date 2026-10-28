@@ -217,7 +217,7 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.media': 'Mediju bibliotēka',
   'breadcrumb.banners': 'Baneri',
   'breadcrumb.config': 'Konfigurācija',
-  'breadcrumb.shipping': 'Piegāde un apmaksa',
+  'breadcrumb.shipping': 'Piegāde',
   'breadcrumb.bonus': 'Bonusu programma',
   'breadcrumb.locale': 'Lokalizācija',
   'breadcrumb.integrations': 'Integrācijas',

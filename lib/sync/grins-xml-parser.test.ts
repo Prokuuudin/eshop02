@@ -52,7 +52,14 @@ describe('parseGrinsXml', () => {
     expect(product.price).toBe(0)
     expect(product.stock).toBe(0)
     expect(product.prices).toEqual({ price1: 9, price2: 0, price3: 3, price4: 4 })
-    expect(product.warehouseQuantities).toMatchObject({ '10003': 8, '10004': 7, '10006': 6, '10007': 5, '10010': 4 })
+    expect(product.warehouseQuantities).toEqual({ '10003': 8, '10004': 7, '10006': 6, '10007': 5 })
+  })
+
+  it('ignores warehouse slot 9: it is not Jelgava/10010 and maps to no warehouse', () => {
+    const xml = '<root><item><sku>Y</sku><price1>1</price1><price2>1</price2><price3>1</price3><price4>1</price4><quantity>3</quantity><warehouses><warehouse id="1">3</warehouse><warehouse id="9">5</warehouse></warehouses></item></root>'
+    const [product] = parseGrinsXml(xml)
+    expect(product.warehouseQuantities).toEqual({ '10000': 3 })
+    expect(product.stock).toBe(3)
   })
 
   it('maps the 9 warehouse slots to real ids and preserves the known quantity-vs-sum discrepancy', () => {
@@ -60,9 +67,9 @@ describe('parseGrinsXml', () => {
     const remover = products.find(p => p.externalId === '6580075')
     expect(remover?.warehouseQuantities).toEqual({
       '10000': 22, '10001': 4, '10002': 7, '10003': 2, '10004': 3,
-      '10005': 3, '10006': 5, '10007': 5, '10010': 0,
+      '10005': 3, '10006': 5, '10007': 5,
     })
-    // 22+4+7+2+3+3+5+5+0 = 51, vs stock (quantity) = 53 — the known +2 delta from wholesale (10008), untouched here.
+    // 22+4+7+2+3+3+5+5 = 51, vs legacy quantity = 53 — legacy quantity also counts 10008/10010/2377, untouched here.
     const sum = Object.values(remover!.warehouseQuantities!).reduce((a, b) => a + b, 0)
     expect(sum).toBe(51)
   })

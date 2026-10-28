@@ -1,6 +1,6 @@
 'use client';
 import { useShippingSettings } from '@/lib/use-shipping-settings'
-import { requiresDeliveryLocation, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
+import { requiresDeliveryLocation, isCourierDeliveryMethod, isDeliveryAvailable, calcDeliveryFee } from '@/lib/delivery'
 
 
 import { useEffect, useRef, useState } from 'react';
@@ -86,6 +86,7 @@ function useNewOrderPageState() {
     const [city, setCity] = useState('');
     const [country, setCountry] = useState<import('@/lib/delivery').DeliveryCountry>('LV');
     const [deliveryLocationId, setDeliveryLocationId] = useState('');
+    const [pickupStoreId, setPickupStoreId] = useState('');
     const [postalCode, setPostalCode] = useState('');
 
     // ── Payment
@@ -257,14 +258,14 @@ function useNewOrderPageState() {
 
     const validate = (): string[] => {
         const errs: string[] = [];
-        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, country, shippingSettings)) errs.push(l('\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430', 'Delivery unavailable', 'Pieg\u0101de nav pieejama'));
+        if (!shippingSettings.shippingReady || !isDeliveryAvailable(deliveryMethod, country, shippingSettings, { city })) errs.push(l('\u0414\u043e\u0441\u0442\u0430\u0432\u043a\u0430 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0430', 'Delivery unavailable', 'Pieg\u0101de nav pieejama'));
         if (requiresDeliveryLocation(deliveryMethod) && !deliveryLocationId) errs.push(l('\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043f\u0430\u043a\u043e\u043c\u0430\u0442', 'Select a parcel locker', 'Izv\u0113lieties pakom\u0101tu'));
         if (!email.trim()) errs.push(l('Email покупателя обязателен', 'Customer email is required', 'Klienta e-pasts ir obligāts'));
         if (!firstName.trim()) errs.push(l('Имя покупателя обязательно', 'Customer first name is required', 'Klienta vārds ir obligāts'));
         if (items.length === 0) errs.push(l('Добавьте хотя бы один товар', 'Add at least one product', 'Pievienojiet vismaz vienu preci'));
-        if (deliveryMethod === 'courier' && !address.trim()) errs.push(l('Укажите адрес доставки', 'Enter a delivery address', 'Norādiet piegādes adresi'));
-        if (deliveryMethod === 'courier' && !city.trim()) errs.push(l('Укажите город', 'Enter a city', 'Norādiet pilsētu'));
-        if (deliveryMethod === 'courier' && !postalCode.trim()) errs.push(l('Укажите почтовый индекс', 'Enter a postal code', 'Norādiet pasta indeksu'));
+        if (isCourierDeliveryMethod(deliveryMethod) && !address.trim()) errs.push(l('Укажите адрес доставки', 'Enter a delivery address', 'Norādiet piegādes adresi'));
+        if (isCourierDeliveryMethod(deliveryMethod) && !city.trim()) errs.push(l('Укажите город', 'Enter a city', 'Norādiet pilsētu'));
+        if (isCourierDeliveryMethod(deliveryMethod) && !postalCode.trim()) errs.push(l('Укажите почтовый индекс', 'Enter a postal code', 'Norādiet pasta indeksu'));
         return errs;
     };
 
@@ -293,6 +294,7 @@ function useNewOrderPageState() {
                         quantity: i.quantity,
                         unitPrice: i.unitPrice,
                     })),
+                    pickupStoreId: deliveryMethod === 'pickup' ? pickupStoreId : undefined,
                     deliveryLocationId: deliveryLocationId || undefined,
                     country,
                     deliveryMethod,
@@ -383,6 +385,7 @@ function useNewOrderPageState() {
         setManualDiscountPct,
         deliveryMethod,
         setDeliveryMethod,
+        pickupStoreId, setPickupStoreId,
         deliveryLocationId,
         setDeliveryLocationId,
         country,

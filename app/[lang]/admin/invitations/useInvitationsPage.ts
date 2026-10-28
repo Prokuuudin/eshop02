@@ -339,6 +339,8 @@ function useInvitationsPageState() {
                         ? l('Для нового клиента укажите телефон — это данные активации карты', 'Enter a phone number for a new client — it is the card-activation contact', 'Jaunam klientam norādiet tālruni — tie ir kartes aktivizācijas dati')
                         : err === 'card_taken'
                         ? l('Этот номер карты уже занят', 'This card number is already taken', 'Šis kartes numurs jau ir aizņemts')
+                        : err === 'staff_account'
+                        ? l('Это учётная запись сотрудника — карту назначить нельзя', 'This is a staff account — a card cannot be assigned', 'Šis ir darbinieka konts — karti piešķirt nevar')
                         : err === 'invalid_card'
                         ? l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari')
                         : err === 'invalid_email'

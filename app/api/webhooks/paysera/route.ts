@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 
 type PayseraOrderWebhook = {
   event?: { type?: string; name?: string }
-  order?: { merchant_order_id?: string; status?: string }
+  order?: { merchant_order_id?: string; status?: string; paysera_order_id?: string; amount?: number; amount_paid?: number; currency?: string }
 }
 
 // Paysera Checkout Modern webhook: HMAC-SHA256(raw body, client secret) in X-Paysera-Signature.
@@ -48,14 +48,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    const evidence = {
+      sessionId: payload.order?.paysera_order_id ?? '',
+      amount: payload.order?.amount,
+      amountPaid: payload.order?.amount_paid,
+      currency: payload.order?.currency,
+    }
     if (status === 'paid') {
-      await updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'paysera' })
-    } else if (status === 'canceled') {
-      await updateServerOrderPayment(orderId, { paymentStatus: 'failed', paymentProvider: 'paysera' })
+      const updated = await updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'paysera' }, evidence)
+      if (!updated) throw new Error('order_not_found')
+    } else if (status === 'canceled' || status === 'cancelled') {
+      await updateServerOrderPayment(orderId, { paymentStatus: 'failed', paymentProvider: 'paysera' }, evidence)
     }
   } catch (error) {
     logOperationalEvent({ event: 'paysera_webhook_update_failed', level: 'error', alert: true, orderId }, error)
-    // 5xx — a transient DB error should be retried by Paysera.
+    // Checkout Modern documentation describes retries after 5xx, but this code
+    // neither queues delivery nor proves the merchant's retry configuration.
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 

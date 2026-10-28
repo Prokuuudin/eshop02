@@ -7,6 +7,7 @@ const { queryRawMock, transactionMock, orderFindUniqueMock } = vi.hoisted(() => 
 }))
 
 vi.mock('server-only', () => ({}))
+vi.mock('@/lib/grins-import-maintenance', () => ({ assertGrinsCheckoutOpen: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $queryRaw: queryRawMock,
@@ -15,7 +16,7 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { canAccessOrder, createServerOrder, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
+import { canAccessOrder, createOrderPaymentSession, createServerOrder, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from './orders-data-store'
 import type { ServerUser } from '@/lib/server-auth'
 
 const ORDER: Omit<ServerOrder, 'id'> = {
@@ -41,10 +42,14 @@ const ORDER: Omit<ServerOrder, 'id'> = {
 
 function makeTx() {
   return {
+    $queryRaw: vi.fn().mockResolvedValue([]),
     order: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
     },
-    product: { updateMany: vi.fn(async () => ({ count: 1 })) },
+    product: {
+      findMany: vi.fn().mockResolvedValue([{ id: 'p1', stock: 10, externalId: null, grinsStock: null }]),
+      updateMany: vi.fn(async () => ({ count: 1 })),
+    },
     promoCode: {
       fields: { maxUses: Symbol('maxUses') },
       updateMany: vi.fn(async () => ({ count: 1 })),
@@ -57,6 +62,9 @@ function makeTx() {
       updateMany: vi.fn(),
     },
     keyValueSetting: { findUnique: vi.fn(async () => null) },
+    orderNotificationOutbox: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
+    },
   }
 }
 
@@ -172,6 +180,49 @@ describe('createServerOrder — server-side id generation', () => {
     })
   })
 
+  it.each(['checkout', 'admin', 'api_v1'] as const)(
+    'enqueues the admin notification with source %s in the order transaction',
+    async (source) => {
+      queryRawMock.mockResolvedValue([{ max: 1042n }])
+      const tx = makeTx()
+      transactionMock.mockImplementation(async (fn) => fn(tx))
+
+      await createServerOrder(ORDER, undefined, { notificationSource: source, notificationCorrelationId: 'corr-1' })
+
+      expect(tx.orderNotificationOutbox.create).toHaveBeenCalledTimes(1)
+      expect(tx.orderNotificationOutbox.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          orderId: '1043',
+          notificationType: 'admin_order_created',
+          source,
+          correlationId: 'corr-1',
+        }),
+      })
+    },
+  )
+
+  it('defaults the notification source to checkout', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await createServerOrder(ORDER)
+
+    expect(tx.orderNotificationOutbox.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ orderId: '1043', source: 'checkout' }),
+    })
+  })
+
+  it('does not enqueue a notification when the order fails before commit', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    tx.product.updateMany.mockResolvedValue({ count: 0 })
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await expect(createServerOrder(ORDER)).rejects.toThrow(InsufficientStockError)
+    expect(tx.orderNotificationOutbox.create).not.toHaveBeenCalled()
+  })
+
   it('rejects the whole order when an item has insufficient stock, instead of silently creating it', async () => {
     queryRawMock.mockResolvedValue([{ max: 1042n }])
     const tx = makeTx()
@@ -266,5 +317,73 @@ describe('canAccessOrder — IDOR guard for order/payment endpoints', () => {
   it('denies email match when the order has an owning userId (no downgrade to email guessing)', () => {
     const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
     expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, caller)).toBe(false)
+  })
+})
+
+describe('createOrderPaymentSession - retry serialization', () => {
+  function paymentRow(paymentSessionId: string | null = null) {
+    return {
+      id: '1001', ...ORDER, createdAt: new Date(ORDER.createdAt), paymentMethod: 'paysera',
+      legalDetails: null, deliveryLocation: null, pickupStoreId: null, promoCode: null,
+      trackingNumber: null, trackingUrl: null, labelUrl: null, shipmentCarrier: null,
+      country: 'LV', postalCode: null, bonusSpent: null, bonusEarned: null,
+      paymentStatus: 'unpaid', paymentProvider: 'paysera', paymentSessionId,
+      stockReservationStatus: 'reserved', stockReservedUntil: new Date(Date.now() + 60_000),
+      stockReleasedAt: null, language: 'ru', userId: 'user-1', companyId: null, checkoutKey: null,
+    }
+  }
+
+  it('serializes two concurrent retries so only the first creates a Paysera order', async () => {
+    let storedSession: string | null = null
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      order: {
+        findUnique: vi.fn(async () => paymentRow(storedSession)),
+        update: vi.fn(async ({ data }: { data: { paymentSessionId: string } }) => {
+          storedSession = data.paymentSessionId
+          return paymentRow(storedSession)
+        }),
+      },
+    }
+    let queue = Promise.resolve()
+    transactionMock.mockImplementation((operation) => {
+      const run = queue.then(() => operation(tx))
+      queue = run.then(() => undefined, () => undefined)
+      return run
+    })
+    let created = 0
+    const resolve = vi.fn(async (order: ServerOrder) => {
+      if (order.paymentSessionId) {
+        return { payseraOrderId: order.paymentSessionId, paymentUrl: 'https://pay.test/reused' }
+      }
+      created += 1
+      return { payseraOrderId: 'session-1', paymentUrl: 'https://pay.test/new' }
+    })
+
+    const [first, second] = await Promise.all([
+      createOrderPaymentSession('1001', resolve),
+      createOrderPaymentSession('1001', resolve),
+    ])
+
+    expect(created).toBe(1)
+    expect(first.payseraOrderId).toBe('session-1')
+    expect(second.payseraOrderId).toBe('session-1')
+    expect(resolve.mock.calls[1][0].paymentSessionId).toBe('session-1')
+  })
+
+  it('refuses to overwrite an existing in-flight Paysera session', async () => {
+    const tx = {
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      order: {
+        findUnique: vi.fn(async () => paymentRow('session-1')),
+        update: vi.fn(),
+      },
+    }
+    transactionMock.mockImplementation(async (operation) => operation(tx))
+
+    await expect(createOrderPaymentSession('1001', async () => ({
+      payseraOrderId: 'session-2', paymentUrl: 'https://pay.test/2',
+    }))).rejects.toThrow('payment_session_conflict')
+    expect(tx.order.update).not.toHaveBeenCalled()
   })
 })

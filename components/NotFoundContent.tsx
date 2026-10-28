@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { Product } from '@/data/products';
 import { useTranslation } from '@/lib/use-translation';
-import { formatEuro } from '@/lib/utils';
+import { formatEuroIfFinite } from '@/lib/utils';
 
 export default function NotFoundContent(): React.ReactElement {
     const { t, language } = useTranslation();
@@ -79,7 +79,7 @@ export default function NotFoundContent(): React.ReactElement {
                                     </p>
                                     <div className="flex justify-between items-center mt-2">
                                         <span className="text-primary font-bold">
-                                            {formatEuro(product.price, locale)}
+                                            {formatEuroIfFinite(product.price, locale) ?? t('product.loginToSeePrice', 'Войдите, чтобы увидеть цену')}
                                         </span>
                                         {product.rating > 0 && (
                                             <span className="text-xs text-yellow-500">

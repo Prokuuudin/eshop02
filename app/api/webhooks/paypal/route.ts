@@ -16,7 +16,17 @@ type PaypalCaptureWebhook = {
 // `paid` is auto-confirmed on a verified PAYMENT.CAPTURE.COMPLETED (business decision
 // 2026-09-19, same as Paysera). updateServerOrderPayment is idempotent (paid is terminal),
 // so duplicate deliveries are safe without extra dedup bookkeeping.
+// Release 2026-10-20: PayPal stays disabled and this webhook must not change any order.
+// Unlike Paysera it has no session/amount/currency verification yet, so it is switched off
+// here unconditionally (no flag to flip). 503 lets PayPal retry if an event ever arrives,
+// so nothing is lost before a verified integration is enabled deliberately.
+const PAYPAL_WEBHOOK_ORDER_UPDATES_ENABLED: boolean = false
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!PAYPAL_WEBHOOK_ORDER_UPDATES_ENABLED) {
+    logOperationalEvent({ event: 'paypal_webhook_ignored_disabled', level: 'warn' })
+    return NextResponse.json({ error: 'paypal_disabled' }, { status: 503 })
+  }
   const rawBody = await req.text()
 
   let payload: PaypalCaptureWebhook

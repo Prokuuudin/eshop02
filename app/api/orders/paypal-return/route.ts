@@ -14,7 +14,16 @@ const LANGUAGES = ['ru', 'en', 'lv'] as const
  * page. The webhook (PAYMENT.CAPTURE.COMPLETED), not this redirect, is what marks an order
  * paid — a customer closing the tab before this loads must not leave the charge unrecorded.
  */
+// Release 2026-10-20: PayPal stays disabled. Fail closed before reading any parameter so
+// no request can reach the PayPal API (capture takes real money) or touch an order or
+// payment session. Unconditional on purpose: there is no flag that could re-open it.
+const PAYPAL_RETURN_CAPTURE_ENABLED: boolean = false
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  if (!PAYPAL_RETURN_CAPTURE_ENABLED) {
+    logOperationalEvent({ event: 'paypal_return_ignored_disabled', level: 'warn' })
+    return NextResponse.json({ error: 'paypal_disabled' }, { status: 503 })
+  }
   const params = req.nextUrl.searchParams
   const orderId = params.get('orderId')
   const paypalOrderId = params.get('token')

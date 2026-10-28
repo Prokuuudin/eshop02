@@ -16,6 +16,20 @@ const base = {
 };
 
 describe('calculateCheckoutTotals', () => {
+    it.each([
+        [99.99, 10],
+        [100, 0],
+        [100.01, 0],
+    ])('applies the €100 free-delivery threshold to checkout subtotal %s', (subtotal, deliveryFee) => {
+        const totals = calculateCheckoutTotals({
+            ...base,
+            subtotal,
+            freeShipping: false,
+            deliveryMethod: 'courier_latvia',
+        });
+        expect(totals.deliveryFee).toBe(deliveryFee);
+    });
+
     it('uses the larger campaign discount and honors free shipping', () => {
         const totals = calculateCheckoutTotals({
             ...base,

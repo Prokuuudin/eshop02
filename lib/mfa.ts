@@ -2,6 +2,7 @@ import 'server-only'
 import bcrypt from 'bcryptjs'
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto'
 import { generateSecret, verify, generateURI } from 'otplib'
+import { normalizeRecoveryCode } from './mfa-code-input'
 
 const ISSUER = 'hairshoppro.lv'
 const BACKUP_CODE_COUNT = 8
@@ -26,10 +27,14 @@ export function encryptSecret(secret: string): string {
   return [iv, authTag, ciphertext].map((b) => b.toString('base64')).join('.')
 }
 
+/** Throws on any malformed, tampered or wrong-key input — there is no plaintext fallback. */
 export function decryptSecret(encrypted: string): string {
-  const [ivB64, authTagB64, ciphertextB64] = encrypted.split('.')
+  const parts = encrypted.split('.')
+  if (parts.length !== 3) throw new Error('Malformed MFA secret ciphertext')
+  const [ivB64, authTagB64, ciphertextB64] = parts
   const key = getEncryptionKey()
-  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'))
+  // Pin the full 16-byte tag: Node otherwise accepts truncated GCM tags (down to 4 bytes).
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'), { authTagLength: 16 })
   decipher.setAuthTag(Buffer.from(authTagB64, 'base64'))
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(ciphertextB64, 'base64')),
@@ -61,13 +66,20 @@ export async function hashBackupCodes(codes: string[]): Promise<string[]> {
   return Promise.all(codes.map((code) => bcrypt.hash(code, BACKUP_CODE_BCRYPT_COST)))
 }
 
-/** Single-use: on match, returns the hash list with that entry removed. */
+/**
+ * Single-use: on match, returns the hash list with that entry removed. Input is normalized
+ * (case; spaces, hyphens, list bullets and other non-alphanumerics dropped) to the issued
+ * lowercase form and must then be exactly 10 hex characters; anything that cannot be a backup
+ * code — e.g. a 6-digit app code — is rejected without spending bcrypt work.
+ */
 export async function consumeBackupCode(
   hashes: string[],
   code: string
 ): Promise<{ ok: boolean; remaining: string[] }> {
+  const normalized = normalizeRecoveryCode(code)
+  if (!normalized) return { ok: false, remaining: hashes }
   for (let i = 0; i < hashes.length; i++) {
-    if (await bcrypt.compare(code, hashes[i])) {
+    if (await bcrypt.compare(normalized, hashes[i])) {
       return { ok: true, remaining: [...hashes.slice(0, i), ...hashes.slice(i + 1)] }
     }
   }

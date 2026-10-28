@@ -1,21 +1,20 @@
-import { requiresDeliveryLocation, resolveDeliveryLocation } from '@/lib/delivery-locations'
-import { checkoutDeliveryMethodIds, type DeliveryCountry } from '@/lib/delivery'
+import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { prisma } from '@/lib/prisma'
+import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
-import { isDeliveryAvailable } from '@/lib/delivery'
 import { NextRequest, NextResponse } from 'next/server'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { createServerOrder, releaseExpiredStockReservations, updateServerOrderPayment, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError, type ServerOrder } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
+import { isPayseraCheckoutEnabled } from '@/lib/paysera-checkout'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
-import { translations } from '@/data/translations'
-import { getLocaleConfig } from '@/lib/locale-config-server-store'
-import { formatDateWithPattern } from '@/lib/date-format'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
+import { isCourierDeliveryMethod } from '@/lib/delivery'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
 import { ExistingCheckoutOrderError, type ServerOrderLegalDetails } from '@/lib/orders-data-store'
@@ -23,6 +22,7 @@ import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT } from '@/lib/orders
 import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-variants'
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
+import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
 
 export const runtime = 'nodejs'
 
@@ -103,98 +103,6 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
   await sendEmail(order.email, subjects[lang], html)
 }
 
-const DELIVERY_LABELS_RU: Record<string, string> = {
-  courier: 'Курьер',
-  pickup: 'Самовывоз',
-  post: 'Пакоматы Omniva',
-  unisend: 'Unisend',
-  unisend_courier: 'Unisend courier',
-  venipak_courier: 'Venipak courier',
-  expresspasts: 'Expresspasts',
-  expresspasts_courier: 'Expresspasts courier',
-  venipak: 'Пакоматы Venipak',
-}
-
-async function sendAdminOrderNotificationEmail(order: ServerOrder, pickupStoreLabel?: string): Promise<void> {
-  const adminEmail = process.env.CONTACT_TO
-  if (!adminEmail) return
-
-  // Admin notification is intentionally in Russian regardless of order.language.
-  // Date/time use the admin-configured business timezone + date pattern, not the
-  // Node process's own timezone (which varies by hosting region).
-  const localeConfig = await getLocaleConfig()
-  const orderDate = new Date(order.createdAt)
-  const dateStr = formatDateWithPattern(orderDate, localeConfig.dateFormat, localeConfig.timezone)
-  const timeStr = orderDate.toLocaleTimeString('en-GB', {
-    timeZone: localeConfig.timezone,
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  const date = `${dateStr} ${timeStr}`
-  const items = Array.isArray(order.items) ? order.items : []
-
-  const itemRows = items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding:4px 8px">${escHtml(item.title ?? '—')}</td>
-          <td style="padding:4px 8px;text-align:center">${item.quantity ?? 1}</td>
-          <td style="padding:4px 8px;text-align:right">€${(item.price ?? 0).toFixed(2)}</td>
-          <td style="padding:4px 8px;text-align:right">€${((item.price ?? 0) * (item.quantity ?? 1)).toFixed(2)}</td>
-        </tr>`
-    )
-    .join('')
-
-  const discountRow =
-    order.discount > 0
-      ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Скидка</td><td style="padding:4px 8px;text-align:right">−€${order.discount.toFixed(2)}</td></tr>`
-      : ''
-
-  const html = `<div style="font-family:sans-serif;max-width:640px;margin:0 auto;padding:24px">
-  <h2 style="margin-top:0">Новый заказ №${escHtml(order.id)}</h2>
-  <p style="color:#6b7280;margin-top:-8px">${date}</p>
-
-  <h3>Покупатель</h3>
-  <table style="border-collapse:collapse;width:100%">
-    <tr><td style="padding:4px 8px;color:#6b7280;width:120px">Имя</td><td style="padding:4px 8px">${escHtml(order.firstName ?? '')} ${escHtml(order.lastName ?? '')}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Email</td><td style="padding:4px 8px">${escHtml(order.email ?? '')}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Телефон</td><td style="padding:4px 8px">${escHtml(order.phone ?? '—')}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Адрес</td><td style="padding:4px 8px">${escHtml(order.address ?? '')}, ${escHtml(order.city ?? '')}${order.postalCode ? ', ' + escHtml(order.postalCode) : ''}</td></tr>
-    <tr><td style="padding:4px 8px;color:#6b7280">Доставка</td><td style="padding:4px 8px">${escHtml(DELIVERY_LABELS_RU[order.deliveryMethod] ?? order.deliveryMethod ?? '—')}</td></tr>
-    ${order.deliveryLocation ? `<tr><td style="padding:4px 8px">Pakomāts</td><td style="padding:4px 8px">${escHtml(order.deliveryLocation.name)}, ${escHtml(order.deliveryLocation.address)}, ${escHtml(order.deliveryLocation.city)} (ID: ${escHtml(order.deliveryLocation.id)})</td></tr>` : ''}
-    ${pickupStoreLabel ? `<tr><td style="padding:4px 8px;color:#6b7280">Магазин</td><td style="padding:4px 8px">${escHtml(pickupStoreLabel)}</td></tr>` : ''}
-    <tr><td style="padding:4px 8px;color:#6b7280">Оплата</td><td style="padding:4px 8px">${escHtml(order.paymentMethod ?? '—')}</td></tr>
-  </table>
-
-  <h3>Товары</h3>
-  <table style="border-collapse:collapse;width:100%">
-    <thead>
-      <tr style="background:#f3f4f6">
-        <th style="padding:4px 8px;text-align:left;font-weight:600">Товар</th>
-        <th style="padding:4px 8px;text-align:center;font-weight:600">Кол.</th>
-        <th style="padding:4px 8px;text-align:right;font-weight:600">Цена</th>
-        <th style="padding:4px 8px;text-align:right;font-weight:600">Итого</th>
-      </tr>
-    </thead>
-    <tbody>${itemRows}</tbody>
-    <tfoot>
-      <tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Доставка</td><td style="padding:4px 8px;text-align:right">€${(order.delivery ?? 0).toFixed(2)}</td></tr>
-      ${discountRow}
-      <tr style="font-weight:bold;border-top:2px solid #e5e7eb">
-        <td colspan="3" style="padding:8px 8px 4px;text-align:right">ИТОГО</td>
-        <td style="padding:8px 8px 4px;text-align:right">€${(order.total ?? 0).toFixed(2)}</td>
-      </tr>
-    </tfoot>
-  </table>
-</div>`
-
-  await sendEmail(
-    adminEmail,
-    `Новый заказ №${escHtml(order.id)} — ${escHtml(order.firstName ?? '')} ${escHtml(order.lastName ?? '')} — €${(order.total ?? 0).toFixed(2)}`,
-    html
-  )
-}
-
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const correlationId = getCorrelationId(req)
   try {
@@ -220,7 +128,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const rawItems: unknown[] = Array.isArray(order.items) ? order.items : []
     const email = typeof order.email === 'string' ? order.email.trim().toLowerCase() : ''
-    const deliveryMethod = text(order.deliveryMethod)
+    const deliveryMethod = text(order.deliveryMethod).trim()
     const paymentMethod = text(order.paymentMethod)
     const promoCode = text(order.promoCode).trim() || undefined
     const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
@@ -238,7 +146,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Phone is only required for private customers — the real Hairshop.lv company
     // form doesn't mark it mandatory (companies are reached via the contact email).
-    const requiresHomeAddress = deliveryMethod === 'courier'
+    const requiresHomeAddress = isCourierDeliveryMethod(deliveryMethod)
     const requiredContactFields = isCompanyOrder
       ? [order.firstName, order.lastName, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
       : [order.firstName, order.lastName, order.phone, ...(requiresHomeAddress ? [order.address, order.city, order.postalCode] : [])]
@@ -317,26 +225,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ...(item.selectedVariants?.length ? { selectedVariants: item.selectedVariants } : {}),
       }
     })
-    if (!(checkoutDeliveryMethodIds as readonly string[]).includes(deliveryMethod)) {
-      return NextResponse.json({ error: 'invalid_delivery_method' }, { status: 400 })
-    }
-    if (order.country !== undefined && !['LV', 'LT', 'EE'].includes(order.country as string)) {
-      return NextResponse.json({ error: 'invalid_delivery_country' }, { status: 400 })
-    }
-    const country = (order.country ?? 'LV') as DeliveryCountry
-    if (!isDeliveryAvailable(deliveryMethod, country, await getShippingSettings())) {
-      return NextResponse.json({ error: 'delivery_unavailable' }, { status: 400 })
-    }
-    const deliveryLocation = resolveDeliveryLocation(deliveryMethod, country, text(order.deliveryLocationId))
-    if (requiresDeliveryLocation(deliveryMethod) && !deliveryLocation) {
-      return NextResponse.json({ error: 'invalid_delivery_location' }, { status: 400 })
-    }
-    const pickupStore = deliveryMethod === 'pickup'
-      ? stores.find((store) => store.id === order.pickupStoreId)
-      : undefined
-    if (deliveryMethod === 'pickup' && !pickupStore) {
-      return NextResponse.json({ error: 'invalid_pickup_store' }, { status: 400 })
-    }
+    const destination = validateOrderDelivery(order, await getShippingSettings())
+    const { country } = destination
+    const pickupStore = destination.pickupStoreId ? stores.find(store => store.id === destination.pickupStoreId) : undefined
     // PayPal remains integrated for possible future re-enablement, but customer-initiated
     // payments are temporarily disabled at the public API boundary as well as in the UI.
     if (paymentMethod === 'paypal') {
@@ -346,6 +237,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Paysera (Checkout Modern, sandbox as of 2026-09-07) is the active online gateway.
     if (!['bank', 'cash', 'paysera'].includes(paymentMethod)) {
       return NextResponse.json({ error: 'invalid_payment_method' }, { status: 400 })
+    }
+    // Paysera stays integrated but is switched off for customers until PAYSERA_CHECKOUT_ENABLED=true.
+    if (paymentMethod === 'paysera' && !isPayseraCheckoutEnabled()) {
+      return NextResponse.json({ error: 'payment_method_unavailable' }, { status: 400 })
     }
     if (paymentMethod === 'cash' && (deliveryMethod !== 'pickup' || pickupStore?.id !== 'riga-office')) {
       return NextResponse.json({ error: 'cash_payment_unavailable' }, { status: 400 })
@@ -383,13 +278,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    await assertGrinsCheckoutOpen(prisma)
     await releaseExpiredStockReservations()
-
-    // Самовывоз: в схеме Order нет колонки под магазин, поэтому адресом доставки
-    // становится адрес выбранного магазина (клиентский адрес для pickup не нужен).
-    const pickupAddressPatch = pickupStore
-      ? { address: `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}`, city: pickupStore.city.lv }
-      : {}
 
     // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
     // holds stock for 35 min instead of committing it immediately, same as a guest.
@@ -412,14 +302,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lastName: text(order.lastName),
       email,
       phone: text(order.phone),
-      address: text(order.address),
-      city: text(order.city),
-      postalCode: text(order.postalCode),
-      ...pickupAddressPatch,
-      country,
-      deliveryMethod,
-      deliveryLocation: deliveryLocation ?? undefined,
-      pickupStoreId: pickupStore?.id,
+      ...destination,
       paymentMethod,
       // A new order is unpaid until staff or a verified gateway callback confirms payment;
       // the provider follows from the validated payment method, never from the client.
@@ -436,7 +319,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       stockReservedUntil: reserveStock ? new Date(Date.now() + 35 * 60 * 1000).toISOString() : undefined,
     }
 
-    const created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
+    let created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
       const pricing = await recomputeOrderPricing({
         items: lines.map(({ id, quantity }) => ({ id, quantity })),
         promoCode,
@@ -490,7 +373,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         total: pricing.total,
         promoCode: pricing.promoApplied ? promoCode : undefined,
       }
-    })
+    }, { notificationSource: 'checkout', notificationCorrelationId: correlationId })
 
     logOperationalEvent({
       event: 'order_created',
@@ -506,44 +389,82 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // "success" — if the gateway call fails, fail the local order (releases the stock hold)
     // rather than showing a confirmation screen with no way to actually pay.
     let paymentUrl: string | undefined
+    let payseraPaidEvidenceSeen = false
     if (paymentMethod === 'paysera') {
       try {
         const payment = await createPayseraPaymentForOrder(created)
-        await updateServerOrderPayment(created.id, { paymentSessionId: payment.payseraOrderId })
-        paymentUrl = payment.paymentUrl
+        created = payment.order ?? created
+        payseraPaidEvidenceSeen = Boolean(payment.paidEvidence)
+        if (payment.paidEvidence) {
+          const reconciled = await updateServerOrderPayment(created.id,
+            { paymentStatus: 'paid', paymentProvider: 'paysera' }, payment.paidEvidence)
+          if (!reconciled) throw new Error('order_not_found')
+          created = reconciled
+        } else {
+          if (!payment.paymentUrl) throw new Error('paysera_payment_url_missing')
+          paymentUrl = payment.paymentUrl
+        }
       } catch (error) {
         logOperationalEvent({
           event: `${paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: created.id,
         }, error)
-        await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => {})
+        if (payseraPaidEvidenceSeen) {
+          await setAdminOrderNotificationPaymentStatusOverride(created.id, 'pending').catch((outboxError) => {
+            logOperationalEvent({
+              event: 'order_admin_email_status_hint_failed', level: 'error', alert: true,
+              correlationId, orderId: created.id, paymentStatus: 'pending',
+              errorType: outboxError instanceof Error ? outboxError.name : 'UnknownError',
+            })
+          })
+          return NextResponse.json({ error: 'payment_reconciliation_pending', orderId: created.id }, { status: 409 })
+        }
+        const failedOrder = await updateServerOrderPayment(created.id, { paymentStatus: 'failed' }).catch(() => null)
+        if (!failedOrder) {
+          await setAdminOrderNotificationPaymentStatusOverride(created.id, 'failed').catch((outboxError) => {
+            logOperationalEvent({
+              event: 'order_admin_email_status_hint_failed', level: 'error', alert: true,
+              correlationId, orderId: created.id, paymentStatus: 'failed',
+              errorType: outboxError instanceof Error ? outboxError.name : 'UnknownError',
+            })
+          })
+        }
         return NextResponse.json({ error: 'payment_gateway_error' }, { status: 502 })
       }
     }
 
     sendOrderConfirmationEmail(created).catch((error) => logOperationalEvent({
       event: 'order_customer_email_failed', level: 'error', alert: true, correlationId, orderId: created.id,
-    }, error))
-    sendAdminOrderNotificationEmail(
-      created,
-      pickupStore ? `${translations.lv[`stores.${pickupStore.id}.name`]} — ${pickupStore.address.lv}` : undefined
-    ).catch((error) => logOperationalEvent({
-      event: 'order_admin_email_failed', level: 'error', alert: true, correlationId, orderId: created.id,
-    }, error))
-
+      errorType: error instanceof Error ? error.name : 'UnknownError',
+      responseCode: typeof (error as { responseCode?: unknown } | null)?.responseCode === 'number'
+        ? (error as { responseCode: number }).responseCode
+        : undefined,
+    }))
     if (Math.random() < 0.01) void gcRateLimitStore()
 
-    return NextResponse.json({ success: true, orderId: created.id, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
+    return NextResponse.json({ success: true, orderId: created.id, order: created, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
+    if (error instanceof CheckoutMaintenanceError) return NextResponse.json({ error: 'checkout_maintenance' }, { status: 503 })
+    if (error instanceof OrderDeliveryError) return NextResponse.json({ error: error.message }, { status: 400 })
     if (error instanceof ExistingCheckoutOrderError) {
       const existing = error.order
+      if (existing.stockReservationStatus === 'released' || (existing.stockReservationStatus === 'reserved'
+        && (!existing.stockReservedUntil || new Date(existing.stockReservedUntil) <= new Date()))) {
+        return NextResponse.json({ error: 'stock_reservation_expired' }, { status: 409 })
+      }
       // A resubmit (double-click / network retry before the client got the first response)
-      // hits the same checkoutKey. The original payment link is gone with that response —
-      // mint a fresh one rather than sending the customer back to a dead-end confirmation page.
-      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid') {
+      // hits the same checkoutKey. Resolve the stored Paysera order and reuse its active
+      // link; creating another Paysera order for the same local order is forbidden.
+      if (existing.paymentMethod === 'paysera' && existing.paymentStatus !== 'paid' && isPayseraCheckoutEnabled()) {
         try {
           const payment = await createPayseraPaymentForOrder(existing)
-          await updateServerOrderPayment(existing.id, { paymentSessionId: payment.payseraOrderId })
-          return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
+          if (payment.paidEvidence) {
+            const reconciled = await updateServerOrderPayment(existing.id,
+              { paymentStatus: 'paid', paymentProvider: 'paysera' }, payment.paidEvidence)
+            if (!reconciled) throw new Error('order_not_found')
+            return NextResponse.json({ success: true, orderId: existing.id, order: reconciled, deliveryLocation: existing.deliveryLocation, idempotent: true })
+          }
+          if (!payment.paymentUrl) throw new Error('paysera_payment_url_missing')
+          return NextResponse.json({ success: true, orderId: existing.id, order: payment.order ?? existing, deliveryLocation: existing.deliveryLocation, idempotent: true, paymentUrl: payment.paymentUrl })
         } catch (gatewayError) {
           logOperationalEvent({
             event: `${existing.paymentMethod}_create_payment_failed`, level: 'error', alert: true, correlationId, orderId: existing.id,
@@ -552,7 +473,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           // can retry payment from the order page instead of getting a hard failure here.
         }
       }
-      return NextResponse.json({ success: true, orderId: existing.id, deliveryLocation: existing.deliveryLocation, idempotent: true })
+      return NextResponse.json({ success: true, orderId: existing.id, order: existing, deliveryLocation: existing.deliveryLocation, idempotent: true })
     }
     if (error instanceof ProductUnavailableError) {
       return NextResponse.json({ error: 'product_unavailable', items: error.items }, { status: 409 })

@@ -11,10 +11,14 @@ import {
   canonicalDecimal,
   checkFtpsSource,
   compareExports,
+  manifestPathFor,
+  parseManifestOption,
   parseVerifyTarget,
   sameSourceWarning,
   summarizeComparison,
   verifyExport,
+  verifyExportManifest,
+  sha256,
 } from './ftps-source-verification'
 
 const sampleXml = readFileSync(join(__dirname, '..', '..', 'export_sample.xml'), 'utf-8')
@@ -258,5 +262,51 @@ describe('compareExports', () => {
     const summary = summarizeComparison(compareExports(old, next))
     expect(summary.prices.price2.count).toBe(30)
     expect(summary.prices.price2.sample).toHaveLength(10)
+  })
+})
+
+describe('Hairshop Pro export manifest', () => {
+  const exportXml = xml({ sku: '0021P', warehouses: allWh({ '9': '0' }) }, { sku: 'A1' })
+  const now = new Date('2026-10-06T08:00:00Z')
+  const manifest = (overrides: Record<string, unknown> = {}) => JSON.stringify({
+    schemaVersion: 1, generatedAt: '2026-10-05T17:00:00Z', xmlSha256: sha256(exportXml),
+    xmlSizeBytes: Buffer.byteLength(exportXml, 'utf-8'), productCount: 2, warehousePolicy: '10000-10007',
+    exporterVersion: '1.0.0', ...overrides,
+  })
+
+  it('passes for the matching, fresh export', () => {
+    const result = verifyExportManifest(exportXml, manifest(), now)
+    expect(result.verdict).toBe('PASS')
+    expect(result.ageHours).toBe(15)
+  })
+
+  it('fails when the export was not regenerated (stale): yesterday file downloaded again', () => {
+    const result = verifyExportManifest(exportXml, manifest({ generatedAt: '2026-10-04T17:00:00Z' }), now)
+    expect(result.verdict).toBe('FAIL')
+    expect(result.failures.join()).toMatch(/stale/u)
+  })
+
+  it('fails when export.xml and manifest belong to different runs', () => {
+    const result = verifyExportManifest(exportXml, manifest({ xmlSha256: 'f'.repeat(64), productCount: 3 }), now)
+    expect(result.failures).toEqual(expect.arrayContaining([
+      'manifest xmlSha256 does not match the downloaded export.xml',
+      'manifest productCount 3 != 2 items in export.xml',
+    ]))
+  })
+
+  it('rejects non-UTC timestamps, future timestamps, wrong policy and invalid JSON', () => {
+    expect(verifyExportManifest(exportXml, manifest({ generatedAt: '2026-10-05T20:00:00+03:00' }), now).verdict).toBe('FAIL')
+    expect(verifyExportManifest(exportXml, manifest({ generatedAt: '2026-10-06T09:00:00Z' }), now).failures).toContain('manifest generatedAt is in the future')
+    expect(verifyExportManifest(exportXml, manifest({ warehousePolicy: 'all' }), now).verdict).toBe('FAIL')
+    expect(verifyExportManifest(exportXml, '{', now).failures).toEqual(['manifest is not valid JSON'])
+  })
+
+  it('locates the manifest next to the export and parses the CLI option', () => {
+    expect(manifestPathFor('export.xml')).toBe('export.manifest.json')
+    expect(manifestPathFor('/pro/feed/export.xml')).toBe('/pro/feed/export.manifest.json')
+    expect(parseManifestOption(['--source', 'candidate', '--manifest'])).toEqual({ kind: 'remote' })
+    expect(parseManifestOption(['--file', 'a.xml', '--manifest-file', 'm.json'])).toEqual({ kind: 'file', path: 'm.json' })
+    expect(parseManifestOption(['--file', 'a.xml'])).toEqual({ kind: 'none' })
+    expect(() => parseManifestOption(['--manifest-file'])).toThrow()
   })
 })

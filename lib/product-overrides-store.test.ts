@@ -744,6 +744,7 @@ describe('bounded public product reads', () => {
     expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
       select: {
         id: true, title: true, titleEn: true, titleLv: true, brand: true,
+        sku: true, barcode: true,
         price: true, oldPrice: true, rating: true, badges: true, category: true, stock: true,
         createdAt: true, externalId: true, erpPriceMissing: true,
         manualPriceApproved: true, manualApprovedPrice: true,

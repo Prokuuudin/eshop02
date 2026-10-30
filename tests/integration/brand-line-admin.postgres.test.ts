@@ -99,6 +99,9 @@ describe('BrandLine administration (isolated Postgres)', () => {
   })
 
   it('never classifies a brand-versus-line conflict on its own and applies only the administrator decision', async () => {
+    // AuditLog is append-only and review ids are deterministic, so audit rows of earlier
+    // runs share these entity ids; count only the rows written by this test.
+    const started = new Date()
     const conflict = await prisma.brandLineReviewItem.findUniqueOrThrow({ where: { source_reason_subjectKey: { source: 'nop390', reason: 'brand_vs_line_conflict', subjectKey: '9104' } } })
     expect(conflict.status).toBe('open')
     await bootstrap()
@@ -120,6 +123,6 @@ describe('BrandLine administration (isolated Postgres)', () => {
     expect(rerun.plan.links.create.map(link => [link.productId, link.lineKey])).toEqual([[fixture.products[3], `${fixture.brandKey}/it-urban`]])
     expect(rerun.plan.reviews.some(item => item.subjectKey === '9103' || item.subjectKey === '9104')).toBe(false)
     expect(await prisma.brandLineReviewItem.findUniqueOrThrow({ where: { id: unknownRoot.id } })).toMatchObject({ status: 'dismissed' })
-    expect(await prisma.auditLog.count({ where: { action: { in: ['catalog.brand_line_review_confirm_line', 'catalog.brand_line_review_reject'] }, entityId: { in: [conflict.id, unknownRoot.id] } } })).toBe(2)
+    expect(await prisma.auditLog.count({ where: { action: { in: ['catalog.brand_line_review_confirm_line', 'catalog.brand_line_review_reject'] }, entityId: { in: [conflict.id, unknownRoot.id] }, at: { gte: started } } })).toBe(2)
   })
 })

@@ -1,4 +1,5 @@
 import { prisma, type ExtendedPrismaClient, type ExtendedTransactionClient } from '@/lib/prisma'
+import { lockTaxonomySource } from '@/lib/sync/hairshop-taxonomy-persistence'
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store'
 import {
   planBrandLines,
@@ -74,7 +75,7 @@ export type BrandLineApplyResult = {
   reviewsSeenAgain: number
 }
 
-async function applyPlan(tx: ExtendedTransactionClient, plan: BrandLinePlan, snapshotId: string): Promise<BrandLineApplyResult> {
+export async function applyPlan(tx: ExtendedTransactionClient, plan: BrandLinePlan, snapshotId: string): Promise<BrandLineApplyResult> {
   if (plan.manufacturerMappings.length) {
     await tx.catalogSourceManufacturerBrand.createMany({
       data: plan.manufacturerMappings.map(row => ({ source: SOURCE, sourceManufacturerId: row.sourceManufacturerId, brandKey: row.brandKey, status: 'confirmed', origin: row.origin })),
@@ -161,15 +162,29 @@ export async function runBrandLineBootstrap(options: {
 }): Promise<{ plan: BrandLinePlan; applied: BrandLineApplyResult | null }> {
   const db = options.db ?? prisma
   if (options.mode === 'dry-run') {
-    const input = await loadBrandLinePlanInput(db, options.seeds, options.aliases)
-    return { plan: planBrandLines(input), applied: null }
+    // One REPEATABLE READ snapshot: every table is read as of the same moment,
+    // without blocking a concurrent finalize.
+    return db.$transaction(async tx => {
+      const input = await loadBrandLinePlanInput(tx, options.seeds, options.aliases)
+      return { plan: planBrandLines(input), applied: null }
+    }, { isolationLevel: 'RepeatableRead', maxWait: 30_000, timeout: 300_000 })
   }
   return db.$transaction(async tx => {
-    // One bootstrap at a time; the plan is recomputed under the lock so a
-    // concurrent run can never apply a stale plan.
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('hairshop-brand-line-bootstrap'))`
+    await lockBrandLineBootstrap(tx)
     const input = await loadBrandLinePlanInput(tx, options.seeds, options.aliases)
     const plan = planBrandLines(input)
     return { plan, applied: await applyPlan(tx, plan, input.snapshotId) }
   }, { maxWait: 30_000, timeout: 300_000 })
+}
+
+/**
+ * Lock order shared by every writer: taxonomy source lock (also held by taxonomy
+ * finalize and pruning), then the BrandLine lock (also held by admin edits). Nobody
+ * takes them in the opposite order, so they cannot deadlock. Holding the source lock
+ * means no finalize can commit while the bootstrap reads the mirror, so each READ
+ * COMMITTED statement afterwards sees the same mirror.
+ */
+export async function lockBrandLineBootstrap(tx: ExtendedTransactionClient): Promise<void> {
+  await lockTaxonomySource(tx)
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('hairshop-brand-line-bootstrap'))`
 }

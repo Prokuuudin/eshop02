@@ -25,6 +25,7 @@ export default defineConfig({
       'tests/integration/hairshop-catalog-sync-v1-lock.postgres.test.ts',
       'tests/integration/brand-line-bootstrap.postgres.test.ts',
       'tests/integration/brand-line-admin.postgres.test.ts',
+      'tests/integration/brand-line-release-locks.postgres.test.ts',
     ],
     env: { DATABASE_URL: candidate },
     environment: 'node', pool: 'forks', fileParallelism: false, maxWorkers: 1,

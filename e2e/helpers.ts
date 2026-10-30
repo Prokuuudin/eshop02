@@ -59,23 +59,36 @@ export const E2E_CUSTOMER: E2eUserFixture = {
   platformRole: 'customer'
 }
 
+/**
+ * The development server can reset a reused keep-alive socket after an aborted request
+ * of the previous test. Only such transport resets are retried once; every HTTP status
+ * is still asserted by the caller.
+ */
+const withTransportRetry = async <T>(send: () => Promise<T>): Promise<T> => {
+  try {
+    return await send()
+  } catch (error) {
+    if (!/ECONNRESET|socket hang up/u.test(String((error as Error).message))) throw error
+    return send()
+  }
+}
+
 /** Настоящая серверная сессия: кука eshop_session сохраняется в контексте. */
 export const loginAs = async (page: Page, fixture: E2eUserFixture): Promise<void> => {
   if (requiresMfa(fixture)) {
     const identifier = fixture.platformRole === 'admin' ? fixture.email : fixture.cardNumber
-    const login = await page.request.post('/api/auth/login', { data: { identifier, password: fixture.password } })
+    const login = await withTransportRetry(() => page.request.post('/api/auth/login', { data: { identifier, password: fixture.password } }))
     expect(login.ok(), `auth/login failed for ${fixture.email}: ${login.status()}`).toBeTruthy()
     const { challengeToken, enrollmentRequired } = (await login.json()) as { challengeToken?: string; enrollmentRequired?: boolean }
     expect(challengeToken && !enrollmentRequired, 'fixture must be MFA-enrolled by global-setup').toBeTruthy()
-    const verify = await page.request.post('/api/auth/mfa/verify', {
-      data: { challengeToken, code: await generate({ secret: E2E_TOTP_SECRET }) },
-    })
+    const code = await generate({ secret: E2E_TOTP_SECRET })
+    const verify = await withTransportRetry(() => page.request.post('/api/auth/mfa/verify', { data: { challengeToken, code } }))
     expect(verify.ok(), `auth/mfa/verify failed for ${fixture.email}: ${verify.status()}`).toBeTruthy()
     return
   }
-  const response = await page.request.post('/api/auth/sync', {
+  const response = await withTransportRetry(() => page.request.post('/api/auth/sync', {
     data: { id: fixture.id, email: fixture.email, password: fixture.password }
-  })
+  }))
   expect(response.ok(), `auth/sync failed for ${fixture.email}: ${response.status()}`).toBeTruthy()
 }
 
@@ -97,3 +110,12 @@ const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\
 /** Регэксп по тайтлу, устойчивый к нормализации пробелов в DOM. */
 export const titlePattern = (title: string): RegExp =>
   new RegExp(title.trim().split(/\s+/).map(escapeRegExp).join('\\s+'), 'i')
+
+/**
+ * Choose the UI language explicitly. Unprefixed URLs otherwise follow the site's
+ * configured default language (lib/i18n-context.tsx redirects to it).
+ */
+export const setUiLanguage = async (page: Page, language: 'ru' | 'lv' | 'en'): Promise<void> => {
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3005'
+  await page.context().addCookies([{ name: 'eshop_language', value: language, url: baseURL }])
+}

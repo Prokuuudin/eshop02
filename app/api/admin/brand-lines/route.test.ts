@@ -28,6 +28,8 @@ vi.mock('@/lib/brand-lines/brand-line-admin', async importOriginal => {
   }
 })
 vi.mock('@/lib/prisma', () => ({ prisma: {} }))
+const { revalidateTag } = vi.hoisted(() => ({ revalidateTag: vi.fn() }))
+vi.mock('next/cache', () => ({ revalidateTag }))
 vi.mock('server-only', () => ({}))
 
 import * as linesRoute from './route'
@@ -51,7 +53,7 @@ const calls: Array<{ name: string; permission: AdminPermission; run: () => Promi
   { name: 'POST review', permission: 'catalog.update', run: () => reviewRoute.POST(req('POST', { action: 'resolve' }), { params: Promise.resolve({ id: 'r1' }) }) },
 ]
 
-beforeEach(() => { state.requested = [] })
+beforeEach(() => { state.requested = []; revalidateTag.mockClear() })
 
 describe('BrandLine admin API authorization', () => {
   it.each(calls)('$name requires $permission', async ({ run, permission }) => {
@@ -92,5 +94,29 @@ describe('BrandLine admin page permission', () => {
   it('maps the admin page to catalog.read in every language', async () => {
     const { permissionForAdminPath } = await import('@/lib/admin-permissions')
     for (const path of ['/admin/brand-lines', '/ru/admin/brand-lines', '/lv/admin/brand-lines', '/en/admin/brand-lines']) expect(permissionForAdminPath(path)).toBe('catalog.read')
+  })
+})
+
+describe('BrandLine storefront revalidation', () => {
+  const admin = { id: 'a1', email: 'admin@example.test', platformRole: 'admin' }
+
+  it('revalidates sale and bestseller caches only after a committed membership or line change', async () => {
+    state.user = admin
+    expect((await lineRoute.PATCH(req('PATCH', { slug: 'y' }), params)).status).toBe(200)
+    expect((await productsRoute.POST(req('POST', { product: 'p1', action: 'exclude' }), params)).status).toBe(200)
+    expect(revalidateTag.mock.calls.map(call => call[0]).sort()).toEqual(['storefront-bestsellers', 'storefront-bestsellers', 'storefront-sale-products', 'storefront-sale-products'])
+  })
+
+  it('does not revalidate when the change fails, is forbidden or only reads', async () => {
+    const admin_ = await import('@/lib/brand-lines/brand-line-admin')
+    state.user = admin
+    vi.mocked(admin_.setProductMembership).mockRejectedValueOnce(new BrandLineAdminError('product_brand_mismatch', 422))
+    expect((await productsRoute.POST(req('POST', { product: 'p1', action: 'include' }), params)).status).toBe(422)
+    vi.mocked(admin_.updateBrandLine).mockRejectedValueOnce(new BrandLineAdminError('line_cycle', 422))
+    expect((await lineRoute.PATCH(req('PATCH', { parentId: 'x' }), params)).status).toBe(422)
+    await lineRoute.GET(req('GET'), params)
+    state.user = { id: 'm1', email: 'manager@example.test', platformRole: 'user', teamRole: 'manager' } as never
+    expect((await lineRoute.PATCH(req('PATCH', { slug: 'y' }), params)).status).toBe(403)
+    expect(revalidateTag).not.toHaveBeenCalled()
   })
 })

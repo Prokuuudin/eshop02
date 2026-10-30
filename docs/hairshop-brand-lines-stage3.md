@@ -65,3 +65,26 @@ brand, a depth beyond the limit, a move that would change the depth of a subtree
 a product of another brand and a product already linked to a parent or child line. `confirm_line` accepts a source
 category only for the brand its source hierarchy belongs to. Products of a confirmed line are linked by the next
 synchronization; administrator links and exclusions are kept.
+
+## Production release bootstrap (stage 7)
+
+`scripts/brand-lines-bootstrap.ts --apply` stays limited to isolated branches. Production uses
+`scripts/brand-lines-release.ts` (library `lib/brand-lines/brand-line-release.ts`), in two phases:
+
+1. `plan` (read-only, REPEATABLE READ): checks that `DATABASE_URL` is the endpoint named by `--expect-endpoint` and that
+   the Neon API (`NEON_API_KEY`) reports it under `--expect-project` / `--expect-branch`; requires the stage-2/3
+   migrations, a completed applied taxonomy snapshot and no receiving taxonomy session in the last 6 hours. Writes a plan
+   file with the snapshot, seed hash, counts (lines, mappings, links create/refresh/missing, reviews new/existing),
+   preserved administrator overrides, the mass-change guard and the plan hash.
+2. `apply`: needs `BRANDLINE_RELEASE_APPLY_ENDPOINT=<endpoint>`, `--approve <plan hash>` and `--operator <platform
+   admin e-mail>`. Inside one transaction it takes the shared locks, re-checks snapshot and sync state, recomputes the
+   plan and refuses unless its hash equals the approved one (so a replay or any data change is refused), refuses more
+   missing marks than max(5, 2 % of active synchronized links) unless `--allow-mass-missing <exact count>`, applies,
+   and writes `catalog.brand_line_bootstrap_applied` to the audit log. Any error rolls everything back.
+3. After the commit only, `--revalidate-base-url <site>` calls `POST /api/internal/hairshop-catalog-sync/storefront-revalidate`
+   (catalog-sync key; accepted only for an audited bootstrap) to drop `storefront-sale-products` and
+   `storefront-bestsellers`. Exit code 3 means committed but not revalidated; then use the admin
+   `POST /api/admin/storefront-cache/revalidate`.
+
+Lock order everywhere: taxonomy source lock (finalize, prune, bootstrap) → BrandLine lock (bootstrap, admin edits).
+Admin route handlers revalidate the two storefront tags after a committed line or membership change.

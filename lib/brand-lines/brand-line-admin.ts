@@ -1,5 +1,4 @@
 import type { NextRequest } from 'next/server'
-import { revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import { getBrandsConfigFromStore } from '@/lib/brands-server-store'
@@ -67,11 +66,6 @@ const CATEGORY_LINE_REASONS = new Set(['unknown_root_line', 'brand_vs_line_confl
 
 type Tx = ExtendedTransactionClient
 type Actor = ServerUser
-
-function revalidatePromotionCatalog(): void {
-  revalidateTag('storefront-sale-products', { expire: 0 })
-  revalidateTag('storefront-bestsellers', { expire: 0 })
-}
 
 async function lockBrandLines(tx: Tx): Promise<void> {
   // Same lock as the bootstrap, so a synchronization never interleaves with an admin edit.
@@ -252,7 +246,6 @@ export async function updateBrandLine(request: NextRequest, actor: Actor, id: st
     const after = { names: updated.names, slug: updated.slug, kind: updated.kind, status: updated.status, parentId: updated.parentId, adminLocked: true }
     return { result: { id }, audit: { action: 'catalog.brand_line_updated', entityType: 'brand_line', entityId: id, entityTitle: line.key, before, after } }
   })
-  revalidatePromotionCatalog()
   return result
 }
 
@@ -293,7 +286,6 @@ export async function setProductMembership(request: NextRequest, actor: Actor, l
       },
     }
   })
-  revalidatePromotionCatalog()
   return result
 }
 

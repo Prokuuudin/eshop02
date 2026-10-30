@@ -137,3 +137,23 @@ changes in the database, all stage-5 changes stay uncommitted until the owner sa
 
 Production Neon read-only; no nopCommerce changes; no Plesk sync; no push/merge/deploy; no production env changes;
 keep the test branch; no second discount engine; do not change GrinS rules; do not alter existing promotions.
+
+## Stage 7 (pre-release blockers) — DONE IN THE WORKING TREE, UNCOMMITTED
+
+Base commit `b2d32a16` (stage 5). Stage 6 audit was BLOCKED (3 × P1, 2 × P2); all five are fixed here:
+
+- P1 production bootstrap: `scripts/brand-lines-release.ts` + `lib/brand-lines/brand-line-release.ts` (plan/approve/apply,
+  Neon identity check, plan hash, mass-change guard, audit, rollback) — see `docs/hairshop-brand-lines-stage3.md`.
+  Never run against production without the owner.
+- P1 lock race: `lockTaxonomySource` exported from `lib/sync/hairshop-taxonomy-persistence.ts`; `lockBrandLineBootstrap`
+  (source → BrandLine) used by the bootstrap and the release apply; dry runs read in one REPEATABLE READ snapshot.
+- P1 failing integration tests: `revalidateTag` moved out of `lib/brand-lines/brand-line-admin.ts` into the route handlers
+  (`lib/brand-lines/brand-line-cache.ts`); the audit-count assertion in `brand-line-admin.postgres.test.ts` now counts only
+  rows written by the test (AuditLog is append-only, review ids are deterministic). Not an occurrences bug.
+- P2 cache: route handlers revalidate after commit; CLI uses `/api/internal/hairshop-catalog-sync/storefront-revalidate`.
+- P2 RBAC E2E: `e2e/admin-rbac.spec.ts` updated to current UI/routing (explicit language cookie, real denial screens,
+  `customers.read` is a manager permission); new `e2e/brand-lines-rbac.spec.ts`; `e2e/helpers.ts` (`setUiLanguage`,
+  transport-reset retry). Run with `PLAYWRIGHT_BASE_URL`, `PLAYWRIGHT_SKIP_WEB_SERVER=1`, `DATABASE_URL`, `MFA_ENCRYPTION_KEY`
+  against `next dev --webpack -p 3110` on the test branch; the login rate limit (10 / 15 min / IP) allows ~2 runs in a row.
+
+Results: integration 30/30 (23 previous + 7 new), discount integration 1/1, RBAC E2E 8/8 (twice).

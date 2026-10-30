@@ -93,8 +93,9 @@ async function lockRun(db: DatabaseClient, runId: string): Promise<void> {
 }
 
 // Serializes finalize (and pruning) across all runs of the source, so two
-// snapshots can never be promoted into the mirror concurrently.
-async function lockSource(db: DatabaseClient): Promise<void> {
+// snapshots can never be promoted into the mirror concurrently. The BrandLine
+// bootstrap takes it too, so it never reads a mirror that a finalize is rewriting.
+export async function lockTaxonomySource(db: DatabaseClient): Promise<void> {
   await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${'hairshop-taxonomy:' + SOURCE + ':finalize'}, 0))`
 }
 
@@ -416,7 +417,7 @@ export async function persistTaxonomyFinalize(
   assertManifestLimits(request.manifest)
   try {
     return await db.$transaction(async tx => {
-      await lockSource(tx)
+      await lockTaxonomySource(tx)
       await lockRun(tx, request.runId)
       const session = await tx.taxonomySnapshotSession.findUnique({
         where: { source_runId: { source: SOURCE, runId: request.runId } },
@@ -496,7 +497,7 @@ export async function pruneTaxonomyStaging(
 ): Promise<{ expiredSessions: number; deletedBatches: number }> {
   const cutoff = new Date(now.getTime() - TAXONOMY_STAGING_RETENTION_DAYS * 24 * 60 * 60 * 1000)
   return db.$transaction(async tx => {
-    await lockSource(tx)
+    await lockTaxonomySource(tx)
     const expired = await tx.taxonomySnapshotSession.updateMany({
       where: { source: SOURCE, status: 'receiving', createdAt: { lt: cutoff } },
       data: { status: 'expired', lastErrorCode: 'SESSION_EXPIRED', lastErrorAt: now },

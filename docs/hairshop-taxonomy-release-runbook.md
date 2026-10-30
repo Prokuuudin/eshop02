@@ -1,20 +1,38 @@
 # Release runbook — Taxonomy Sync v2, BrandLine, line promotions (Windows Plesk + Neon)
 
-Scope: commits `922a7922` (taxonomy v2, v1 lock fix), `7dd6a183` (BrandLine bootstrap), `3ba86286` (BrandLine admin),
-`b2d32a16` (line promotions), `72fda299` (release bootstrap, shared locks, cache) and the stage-8 hardening (release CLI
-revalidation retry/command). Three additive migrations: `20261030170000_taxonomy_snapshot_staging`,
-`20261030200000_brand_line_bootstrap`, `20261030230000_promo_code_brand_lines` (rehearsed on an isolated branch; no
-existing column or row is changed).
+| Item | Value (verified 2026-10-31, read-only) |
+|---|---|
+| Production application | `a056e854` — public fingerprints: chunk `2178-5153e8ea9a56b8cd.js` contains "Не сохранено", pages reference `5147-6dbdd902ed4373d8.js`, `/api/internal/hairshop-catalog-sync` GET 405 / POST without key 401, new routes absent (404 fallback) |
+| Plesk branch | **presumed** `fix/2026-10-30-client-email-save` (= `a056e854`; the only origin branch at that commit, matches the owner's deploy record). Plesk itself was not inspected — **must be confirmed directly in Plesk** (Git settings / `git rev-parse HEAD` in the application directory) before the deploy |
+| origin/main | `5cb33783` = `a056e854` + `dda7e3cf`; no other branch moved since 2026-10-30 |
+| Release branch | `release/2026-10-31-taxonomy-brand-lines` on origin (published 2026-10-31, not deployed): stage 1–8 commits `922a7922`…`ae5e68a5` plus this runbook update, on top of `5cb33783` |
+| Application rollback target | `a056e854` (presumed branch `fix/2026-10-30-client-email-save`) |
+| Production migrations pending | exactly three: `20261030170000_taxonomy_snapshot_staging`, `20261030200000_brand_line_bootstrap`, `20261030230000_promo_code_brand_lines` |
+| Taxonomy write gate | `HAIRSHOP_TAXONOMY_SYNC_WRITE_ENABLED` stays **unset (off)** during and after the deploy |
+| C1 / C2 | conditions of the **separate** taxonomy activation (section 6), not of this deploy |
+
+Content difference production → release: the stage 1–8 feature files, `dda7e3cf` (manual-import refactor, already on
+`main`, CI green) and the offline script `scripts/repair-client-name-encoding.ts`. Other `main`-only history is
+already in production under other hashes (identical content). No GrinS, stock, order, payment, cart or checkout file
+changes; `package.json`/`package-lock.json` are identical to production.
+
+Schema change production → release (introspected): 11 new tables with their indexes, foreign keys and one trigger on
+`BrandLine`, plus `ALTER TABLE "PromoCode" ADD COLUMN "brandLineIds" TEXT[] DEFAULT ARRAY[]::TEXT[]`. Nothing is dropped,
+altered or rewritten. The production (`a056e854`) Prisma client was run against the migrated schema: promo-code
+read/create/update, products, orders, sync runs and campaigns all work, and new promo rows get `brandLineIds = []` —
+so rolling back only the application is safe.
 
 Every step is done by the owner/operator. Nothing here runs automatically. A STOP means: do not continue, keep the
 current production as it is, report.
 
 ## 0. Preconditions
 
-- Production code on Plesk is `a056e854` (confirm by the usual fingerprints: deployed chunks, `/api/internal/hairshop-catalog-sync` → 401 without key).
-  **STOP** if production runs anything else: the release base must be the code actually running.
+- Re-check the fingerprints above immediately before the release. **STOP** if production is not `a056e854` or a
+  branch other than the ones above changed: re-run the divergence analysis first.
+- Confirm in Plesk itself which branch and commit the application directory runs. **STOP** if it is not `a056e854`
+  (the rollback target and the migration baseline above assume it).
 - Neon production project `lively-resonance-45595963`, branch `br-late-cherry-aqvszfzq`, endpoint `ep-long-glitter-aq88pk3t`.
-- No other release, ERP backfill or migration is in progress. GrinS hourly sync healthy at the last run.
+- No other release, ERP backfill or migration is in progress. The last GrinS hourly sync succeeded.
 
 ## 1. Backup and restore drill
 
@@ -27,40 +45,62 @@ current production as it is, report.
 
 ## 2. Release branch
 
-1. From the reviewed feature head: `git switch -c release/<date>-taxonomy-brand-lines feature/2026-10-30-taxonomy-sync-v2-staging`.
-2. Verify `git merge-base --is-ancestor a056e854 HEAD` succeeds (production commit included) and `git log a056e854..HEAD` lists only the commits above plus `dda7e3cf`/`5cb33783` (already on `main`).
+1. `release/2026-10-31-taxonomy-brand-lines` is on origin (published 2026-10-31; nothing deployed).
+2. Before the deploy verify: `git merge-base --is-ancestor a056e854 release/2026-10-31-taxonomy-brand-lines` succeeds and
+   `git diff --stat a056e854 release/2026-10-31-taxonomy-brand-lines -- package.json package-lock.json` is empty.
 3. CI on the release branch: lint, typecheck, `audit:security`, `audit:architecture`, `check:encoding`, unit, `build`.
 
-**STOP** if `a056e854` is not an ancestor, unexpected commits appear, or CI is red (the 37 Windows CRLF allowlist failures do not occur on Linux CI).
+**STOP** if `a056e854` is not an ancestor, the package files differ, or CI is red (the 37 Windows CRLF allowlist
+failures do not occur on Linux CI).
 
-## 3. Prisma migrations (production, explicit)
+## 3–4. Plesk deployment with migrations first (`docs/deploy-plesk.md`, unchanged workflow)
 
-1. `npx prisma migrate status` against production. Expected: exactly the three migrations above pending (plus the known historical note about `20260802170000_add_admin_mfa`).
-2. `npm run db:migrate:deploy` (uses the direct host via `prisma.config.ts`).
-3. `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` → must print an empty migration.
+Order on the Plesk server, in the application directory:
 
-Migrations must be applied **before** the new code starts: the new Prisma client reads `PromoCode.brandLineIds`.
-**STOP** if status shows any other pending/failed migration, if deploy fails (then nothing else changes: the old code
-ignores the new tables and column), or if the diff is not empty.
+1. Switch the deployed branch to `release/2026-10-31-taxonomy-brand-lines` and `git pull`. Do **not** restart yet.
+2. `npm ci` (lockfile is identical to production).
+3. `npx prisma migrate status` → exactly the three migrations above pending (plus the known historical rows of
+   `20260802170000_add_admin_mfa` / `20260802200000_harden_product_mutations`).
+4. `npm run db:migrate:deploy`, in a quiet window (no running ERP sync, no bulk admin edits). The first two files
+   run in their own transaction with `lock_timeout = 5s`; the `ProductBrandLine → Product` foreign key briefly locks
+   `Product` (writes wait, reads continue). The third file is a metadata-only `ADD COLUMN` on `PromoCode` without a
+   lock timeout: it is instant, but waits behind any long transaction holding `PromoCode` (and queues promo reads
+   meanwhile). **STOP** and cancel it if it does not finish within a few seconds.
+5. `npx prisma migrate status` → nothing pending; `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` → empty migration.
+6. `npm run build`, then Plesk → Node.js → Restart App.
+7. Environment: keep `HAIRSHOP_TAXONOMY_SYNC_WRITE_ENABLED` **unset** (the v2 endpoint answers 403). No other env change.
 
-## 4. Deploy through the existing Plesk workflow (`docs/deploy-plesk.md`)
+The new code must not start before step 5 passes: it reads `PromoCode.brandLineIds`, and promo-code validation
+(and therefore checkout with a promo code) would fail without the column. Until step 6 the old process keeps serving
+and is fully compatible with the migrated schema.
 
-1. Plesk: switch the deployed branch to the release branch, `git pull`, `npm ci`, `npm run build`, Restart App.
-2. Environment: keep `HAIRSHOP_TAXONOMY_SYNC_WRITE_ENABLED` **unset** (the v2 endpoint answers 403). No other env change.
+**STOP** before step 6 if step 3 shows anything else pending/failed, or step 4/5 fails. On a migration failure do
+**not** run any corrective command (`prisma migrate resolve`, a re-run of `migrate deploy`, manual SQL). Keep the old
+application running (it is compatible with every subset of these additive migrations) and only diagnose, read-only:
+- `npx prisma migrate status` — which migration failed and which are applied;
+- the `_prisma_migrations` row of the failed migration (`finished_at`, `rolled_back_at`, `logs`);
+- in PostgreSQL, which objects of that migration exist (tables, indexes, foreign keys, the `BrandLine` trigger, the
+  `PromoCode.brandLineIds` column) — the first two files run in a transaction, the third is a single statement;
+- `pg_stat_activity` / `pg_locks` for the blocking or long-running transaction (lock timeout).
 
-**STOP / roll back the app** (redeploy the previous Plesk branch `fix/2026-10-30-client-email-save` = `a056e854`) if the build fails or the app does not start.
+Report the findings. Any corrective action is a separate owner decision after this diagnosis. Never start the new
+code on a partial schema.
+**Roll back the application** to `a056e854` (`fix/2026-10-30-client-email-save`: git checkout, `npm ci`,
+`npm run build`, Restart App) if the build fails or the app does not start. Leave the migrations in place.
 
 ## 5. Smoke tests (production, read-only)
 
 - `/`, `/lv`, `/lv/catalog`, `/lv/cart`, `/lv/checkout` → 200; health → db ok; guest sees no prices (`/api/products`, `/api/search`).
-- `/api/internal/hairshop-catalog-sync` without key → 401; `/api/internal/hairshop-catalog-sync/taxonomy` with key → 403 (write disabled), without key → 401.
-- `/api/internal/hairshop-catalog-sync/storefront-revalidate` without key → 401.
-- Admin: `/lv/admin/brand-lines` opens and is empty; `/lv/admin/marketing/discounts` and `/campaigns` open; existing promo codes and campaigns unchanged.
-- Manager account: `/api/admin/brand-lines` → 403. Paysera webhook GET → 405. Next GrinS hourly run completes without errors.
+- `/api/internal/hairshop-catalog-sync` GET → 405, POST without key → 401; `/api/internal/hairshop-catalog-sync/taxonomy`
+  POST without key → 401 and with the key → 403 (`taxonomy_sync_write_disabled`).
+- `/api/internal/hairshop-catalog-sync/storefront-revalidate` POST without key → 401.
+- Admin: `/lv/admin/brand-lines` opens and is empty; `/lv/admin/marketing/discounts` and `/campaigns` open; existing
+  promo codes and campaigns unchanged; validating an existing promo code in the cart still works.
+- Manager account: `/api/admin/brand-lines` → 403. Paysera webhook GET → 405. The next GrinS hourly run completes without errors.
 
-**STOP / roll back the app** if any check fails. The new tables can stay (unused by the old code).
+**STOP / roll back the application** to `a056e854` if any check fails. The new tables and column stay (the old code ignores them).
 
-## 6. Controlled taxonomy snapshot load — CONDITIONS NOT MET YET
+## 6. Controlled taxonomy snapshot load — separate activation, CONDITIONS C1/C2 NOT MET
 
 Required before this step can run:
 - **C1** a read-only MSSQL principal on the live nopCommerce database (`tools/hairshop-catalog-exporter/sql/provision-catalog-reader.sql`, executed by the database administrator); the exporter refuses any other principal.
@@ -115,7 +155,7 @@ checkout and promo validation are always computed live.
 - First hour: application errors, `hairshop_taxonomy_sync_v2_*` and `brand_line_storefront_revalidated` events, admin
   `/lv/admin/brand-lines` (32 lines, review queue open), one guest and one customer checkout, the next GrinS run.
 - AuditLog: one `catalog.brand_line_bootstrap_applied` row per apply, `storefront.cache_revalidated` rows.
-- Application rollback: redeploy the previous Plesk branch; the additive tables/column stay and are ignored by the old code.
+- Application rollback: redeploy `a056e854` (`fix/2026-10-30-client-email-save`); the additive tables/column stay and are ignored by the old code (verified with the production Prisma client).
 - BrandLine data: never delete in a hurry. Promotions only use lines an administrator selects; to neutralise a mistake,
   archive the line or exclude products in `/admin/brand-lines`. A full data rollback (emptying the BrandLine tables) needs
   a separate owner decision and a fresh backup.

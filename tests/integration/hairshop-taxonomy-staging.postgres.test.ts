@@ -179,7 +179,7 @@ beforeAll(() => {
 })
 
 beforeEach(async () => {
-  await prisma.$executeRaw`TRUNCATE "CatalogSourceProductCategory", "CatalogSourceProductManufacturer", "CatalogSourceCategory", "CatalogSourceManufacturer", "TaxonomySnapshotBatch", "TaxonomySnapshotSession"`
+  await prisma.$executeRaw`TRUNCATE "ProductBrandLine", "CatalogSourceCategoryMapping", "CatalogSourceManufacturerBrand", "BrandLineReviewItem", "BrandLine", "CatalogSourceProductCategory", "CatalogSourceProductManufacturer", "CatalogSourceCategory", "CatalogSourceManufacturer", "TaxonomySnapshotBatch", "TaxonomySnapshotSession"`
 })
 
 describe('taxonomy sync v2 persistent staging (isolated Postgres)', () => {

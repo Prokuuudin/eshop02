@@ -439,6 +439,7 @@ model Product {
   manualApprovedPrice Decimal? @db.Decimal(12, 2)
   stockAllocations    StockAllocation[]
   stockSnapshotEntries StockSnapshotEntry[]
+  brandLines           ProductBrandLine[]
   grinsStockRun       SyncRun? @relation("ProductGrinsStockRun", fields: [grinsStockRunId], references: [id], onDelete: Restrict)
 
   @@index([isDeleted])
@@ -886,6 +887,7 @@ model CatalogSourceCategory {
   lastSeenSnapshot         TaxonomySnapshotSession @relation("CategoryLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
   missingSinceSnapshot     TaxonomySnapshotSession? @relation("CategoryMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
   productMappings          CatalogSourceProductCategory[]
+  targetMapping            CatalogSourceCategoryMapping?
 
   @@id([source, sourceCategoryId])
   @@index([source, parentSourceCategoryId])
@@ -914,6 +916,7 @@ model CatalogSourceManufacturer {
   lastSeenSnapshot         TaxonomySnapshotSession @relation("ManufacturerLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
   missingSinceSnapshot     TaxonomySnapshotSession? @relation("ManufacturerMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
   productMappings          CatalogSourceProductManufacturer[]
+  brandMapping             CatalogSourceManufacturerBrand?
 
   @@id([source, sourceManufacturerId])
   @@index([source, isPresent])
@@ -1077,4 +1080,117 @@ model WebhookDeliveryLog {
 
   @@index([companyId])
   @@index([createdAt])
+}
+
+// Stage 3: product lines / series inside a Hairshop Pro brand. brandKey is the
+// brands-config id (KeyValueSetting "brands-config"); a line never changes brand.
+// Hierarchy integrity (no cycles, same brand as the parent, depth) is enforced by
+// the BrandLine_hierarchy_guard trigger.
+model BrandLine {
+  id         String   @id @default(cuid())
+  // Stable identifier "<brandKey>/<path>" fixed at creation, e.g.
+  // "black-professional/premium-line/jade". It is not rewritten when the line is re-parented.
+  key        String   @unique
+  brandKey   String
+  parentId   String?
+  slug       String
+  names      Json
+  // line | series | subbrand
+  kind       String
+  // active | archived
+  status     String   @default("active")
+  // source_sync | admin
+  origin     String
+  // An administrator edited this line: synchronization must not change it.
+  adminLocked Boolean @default(false)
+  depth      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  parent     BrandLine?  @relation("BrandLineHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children   BrandLine[] @relation("BrandLineHierarchy")
+  products   ProductBrandLine[]
+  categoryMappings CatalogSourceCategoryMapping[]
+
+  @@index([brandKey, status])
+  @@index([parentId])
+}
+
+// Direct membership only: a product is linked to the deepest line it belongs to;
+// membership of ancestor lines is derived through BrandLine.parentId.
+model ProductBrandLine {
+  productId            String
+  brandLineId          String
+  // source_sync | admin
+  origin               String
+  // active | excluded (an administrator removed it; synchronization must not re-add it)
+  status               String   @default("active")
+  sourceCategoryId     String?
+  isPresentInSource    Boolean  @default(true)
+  missingSnapshotCount Int      @default(0)
+  lastSeenSnapshotId   String?
+  // Snapshot that last evaluated this link; a miss is counted once per snapshot.
+  lastCheckedSnapshotId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  product              Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  brandLine            BrandLine @relation(fields: [brandLineId], references: [id], onDelete: Restrict)
+
+  @@id([productId, brandLineId])
+  @@index([brandLineId, status])
+}
+
+model CatalogSourceManufacturerBrand {
+  source               String
+  sourceManufacturerId String
+  brandKey             String?
+  // confirmed | rejected
+  status               String
+  // exact_name | alias | admin
+  origin               String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  manufacturer         CatalogSourceManufacturer @relation(fields: [source, sourceManufacturerId], references: [source, sourceManufacturerId], onDelete: Restrict)
+
+  @@id([source, sourceManufacturerId])
+  @@index([brandKey])
+}
+
+model CatalogSourceCategoryMapping {
+  source           String
+  sourceCategoryId String
+  // brand | brand_line | ignore
+  targetType       String
+  brandKey         String?
+  brandLineId      String?
+  // confirmed | rejected
+  status           String
+  // exact_name | alias | audit_seed | auto_child_series | admin
+  origin           String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  category         CatalogSourceCategory @relation(fields: [source, sourceCategoryId], references: [source, sourceCategoryId], onDelete: Restrict)
+  brandLine        BrandLine? @relation(fields: [brandLineId], references: [id], onDelete: Restrict)
+
+  @@id([source, sourceCategoryId])
+  @@index([brandLineId])
+  @@index([brandKey])
+}
+
+// Manual review queue. A rerun updates the existing open item instead of adding one.
+model BrandLineReviewItem {
+  id          String    @id @default(cuid())
+  source      String
+  reason      String
+  subjectKey  String
+  // open | resolved | dismissed
+  status      String    @default("open")
+  details     Json
+  occurrences Int       @default(1)
+  firstSeenAt DateTime  @default(now())
+  lastSeenAt  DateTime  @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?
+
+  @@unique([source, reason, subjectKey])
+  @@index([status, reason])
 }

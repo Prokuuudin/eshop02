@@ -226,6 +226,13 @@ function ConvertTo-HairshopNewProductCandidates {
 function Get-TaxonomyJsonSha256 {
     param([Parameter(Mandatory = $true)]$Value)
     $json = $Value | ConvertTo-Json -Depth 15 -Compress
+    # Windows PowerShell 5.1 writes ' & < > as ' & < >. The contract
+    # hashes the JSON.stringify form, which writes them literally. An escaped backslash
+    # (\\u0027 is the literal text "'") is left alone.
+    $json = [regex]::Replace($json, '(?<!\\)((?:\\\\)*)\\u00(27|26|3c|3e)', [Text.RegularExpressions.MatchEvaluator]{
+        param($match)
+        $match.Groups[1].Value + [string][char][Convert]::ToInt32($match.Groups[2].Value, 16)
+    }, [Text.RegularExpressions.RegexOptions]::IgnoreCase)
     $bytes = $script:Utf8NoBom.GetBytes($json)
     $sha = [Security.Cryptography.SHA256]::Create()
     try { return (($sha.ComputeHash($bytes) | ForEach-Object { $_.ToString('x2') }) -join '') }
@@ -355,38 +362,58 @@ function ConvertTo-HairshopTaxonomySnapshot {
 
     $productCategories = New-Object Collections.ArrayList
     $categoryEdges = @{}
+    $collapsedCategoryMappings = 0
     foreach ($mapping in @($Data.CategoryMappings)) {
         $productId = [string](Get-SyncValue $mapping 'ProductId' '')
         $categoryId = [string](Get-SyncValue $mapping 'CategoryId' '')
         if (-not $productIds.ContainsKey($productId)) { throw "Category mapping references missing ProductId $productId." }
         if (-not $categoryIds.ContainsKey($categoryId)) { throw "Category mapping references missing CategoryId $categoryId." }
         $edge = "$productId|$categoryId"
-        if ($categoryEdges.ContainsKey($edge)) { throw "Duplicate Product-Category mapping $edge." }
-        $categoryEdges[$edge] = $true
-        [void]$productCategories.Add([pscustomobject][ordered]@{
+        $displayOrder = [int](Get-SyncValue $mapping 'DisplayOrder' 0)
+        $isFeatured = ConvertTo-SyncBoolean (Get-SyncValue $mapping 'IsFeaturedProduct' $false)
+        if ($categoryEdges.ContainsKey($edge)) {
+            # nopCommerce has no unique key on the mapping table: an exact repeat
+            # carries no information and is collapsed; a conflicting repeat is not.
+            $first = $categoryEdges[$edge]
+            if ($first.displayOrder -ne $displayOrder -or $first.isFeaturedProduct -ne $isFeatured) { throw "Conflicting duplicate Product-Category mapping $edge." }
+            $collapsedCategoryMappings++
+            continue
+        }
+        $row = [pscustomobject][ordered]@{
             productId = $productId
             categoryId = $categoryId
-            displayOrder = [int](Get-SyncValue $mapping 'DisplayOrder' 0)
-            isFeaturedProduct = ConvertTo-SyncBoolean (Get-SyncValue $mapping 'IsFeaturedProduct' $false)
-        })
+            displayOrder = $displayOrder
+            isFeaturedProduct = $isFeatured
+        }
+        $categoryEdges[$edge] = $row
+        [void]$productCategories.Add($row)
     }
 
     $productManufacturers = New-Object Collections.ArrayList
     $manufacturerEdges = @{}
+    $collapsedManufacturerMappings = 0
     foreach ($mapping in @($Data.ManufacturerMappings)) {
         $productId = [string](Get-SyncValue $mapping 'ProductId' '')
         $manufacturerId = [string](Get-SyncValue $mapping 'ManufacturerId' '')
         if (-not $productIds.ContainsKey($productId)) { throw "Manufacturer mapping references missing ProductId $productId." }
         if (-not $manufacturerIds.ContainsKey($manufacturerId)) { throw "Manufacturer mapping references missing ManufacturerId $manufacturerId." }
         $edge = "$productId|$manufacturerId"
-        if ($manufacturerEdges.ContainsKey($edge)) { throw "Duplicate Product-Manufacturer mapping $edge." }
-        $manufacturerEdges[$edge] = $true
-        [void]$productManufacturers.Add([pscustomobject][ordered]@{
+        $displayOrder = [int](Get-SyncValue $mapping 'DisplayOrder' 0)
+        $isFeatured = ConvertTo-SyncBoolean (Get-SyncValue $mapping 'IsFeaturedProduct' $false)
+        if ($manufacturerEdges.ContainsKey($edge)) {
+            $first = $manufacturerEdges[$edge]
+            if ($first.displayOrder -ne $displayOrder -or $first.isFeaturedProduct -ne $isFeatured) { throw "Conflicting duplicate Product-Manufacturer mapping $edge." }
+            $collapsedManufacturerMappings++
+            continue
+        }
+        $row = [pscustomobject][ordered]@{
             productId = $productId
             manufacturerId = $manufacturerId
-            displayOrder = [int](Get-SyncValue $mapping 'DisplayOrder' 0)
-            isFeaturedProduct = ConvertTo-SyncBoolean (Get-SyncValue $mapping 'IsFeaturedProduct' $false)
-        })
+            displayOrder = $displayOrder
+            isFeaturedProduct = $isFeatured
+        }
+        $manufacturerEdges[$edge] = $row
+        [void]$productManufacturers.Add($row)
     }
 
     $snapshotData = [pscustomobject][ordered]@{
@@ -406,6 +433,10 @@ function ConvertTo-HairshopTaxonomySnapshot {
             productManufacturerMappings = @($snapshotData.productManufacturers).Count
         }
         snapshotSha256 = Get-TaxonomyJsonSha256 -Value $snapshotData
+        collapsedDuplicateMappings = [pscustomobject][ordered]@{
+            productCategories = $collapsedCategoryMappings
+            productManufacturers = $collapsedManufacturerMappings
+        }
     }
 }
 

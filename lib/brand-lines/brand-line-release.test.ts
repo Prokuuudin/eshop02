@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/prisma', () => ({ prisma: {} }))
 vi.mock('server-only', () => ({}))
 
-import { endpointFromDatabaseUrl, massChangeGuard, planHash, verifyDatabaseIdentity } from './brand-line-release'
+import { endpointFromDatabaseUrl, massChangeGuard, planHash, requestStorefrontRevalidation, verifyDatabaseIdentity } from './brand-line-release'
 import type { BrandLinePlan } from './brand-line-plan'
 
 const expected = { projectId: 'proj-1', branchId: 'br-test', endpointId: 'ep-test-123' }
@@ -54,5 +54,35 @@ describe('BrandLine release safety', () => {
     expect(massChangeGuard(many, 100)).toMatchObject({ markMissing: 6, markMissingLimit: 5, exceeded: true })
     expect(massChangeGuard(many, 1000)).toMatchObject({ markMissingLimit: 20, exceeded: false })
     expect(massChangeGuard(plan(), 0)).toMatchObject({ markMissing: 0, exceeded: false })
+  })
+})
+
+describe('storefront revalidation after a committed bootstrap', () => {
+  const base = { baseUrl: 'https://shop.example', secret: 's'.repeat(40), snapshotId: 'snap-1', planSha256: 'a'.repeat(64), delayMs: 1 }
+  const reply = (status: number) => new Response('{}', { status })
+
+  it('succeeds on the first answer and sends the audited bootstrap identity', async () => {
+    const fetchImpl = vi.fn(async () => reply(200))
+    expect(await requestStorefrontRevalidation({ ...base, fetchImpl })).toEqual({ ok: true, status: 200, attempts: 1 })
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [URL, RequestInit]
+    expect(String(url)).toBe('https://shop.example/api/internal/hairshop-catalog-sync/storefront-revalidate')
+    expect(JSON.parse(String(init.body))).toEqual({ reason: 'brand_line_bootstrap', snapshotId: 'snap-1', planSha256: 'a'.repeat(64) })
+  })
+
+  it('retries network errors and 5xx answers, then reports the last status', async () => {
+    const flaky = vi.fn().mockRejectedValueOnce(new Error('ECONNRESET')).mockResolvedValueOnce(reply(502)).mockResolvedValueOnce(reply(200))
+    expect(await requestStorefrontRevalidation({ ...base, fetchImpl: flaky })).toEqual({ ok: true, status: 200, attempts: 3 })
+    const down = vi.fn(async () => reply(503))
+    expect(await requestStorefrontRevalidation({ ...base, fetchImpl: down, attempts: 3 })).toEqual({ ok: false, status: 503, attempts: 3 })
+    const offline = vi.fn(async () => { throw new Error('ENOTFOUND') })
+    expect(await requestStorefrontRevalidation({ ...base, fetchImpl: offline, attempts: 2 })).toEqual({ ok: false, status: null, attempts: 2 })
+  })
+
+  it('does not retry a refusal (wrong key or unknown bootstrap)', async () => {
+    for (const status of [401, 404]) {
+      const fetchImpl = vi.fn(async () => reply(status))
+      expect(await requestStorefrontRevalidation({ ...base, fetchImpl })).toEqual({ ok: false, status, attempts: 1 })
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+    }
   })
 })

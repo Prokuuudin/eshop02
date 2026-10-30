@@ -130,6 +130,39 @@ describe('BrandLine release bootstrap (isolated Postgres)', () => {
   })
 })
 
+describe('BrandLine release apply scope (isolated Postgres)', () => {
+  const UNTOUCHED = ['User', 'Session', 'RateLimit', 'Product', 'Order', 'PromoCode', 'PromoCodeRedemption', 'KeyValueSetting'] as const
+  async function untouchedFingerprint(): Promise<Record<string, string>> {
+    const out: Record<string, string> = {}
+    for (const table of UNTOUCHED) {
+      const rows = await prisma.$queryRawUnsafe<Array<{ n: number; h: string | null }>>(`SELECT count(*)::int AS n, md5(string_agg(md5(x::text), '' ORDER BY md5(x::text))) AS h FROM "${table}" x`)
+      out[table] = `${rows[0].n}:${rows[0].h ?? ''}`
+    }
+    return out
+  }
+
+  it('keeps administrator overrides and never writes users, sessions, rate limits, products, orders, prices, stock or promotions', async () => {
+    await runBrandLineBootstrap({ mode: 'apply', ...seeds() })
+    const series = await prisma.brandLine.findUniqueOrThrow({ where: { key: `${fixture.brandKey}/it-line/it-series-a` } })
+    const line = await prisma.brandLine.findUniqueOrThrow({ where: { key: `${fixture.brandKey}/it-line` } })
+    await setProductMembership(request(), actor, series.id, { product: fixture.products[0], action: 'exclude' })
+    await setProductMembership(request(), actor, line.id, { product: fixture.products[4], action: 'include' })
+    await prisma.catalogSourceCategoryMapping.create({ data: { source: 'nop390', sourceCategoryId: '9103', targetType: 'ignore', status: 'rejected', origin: 'admin' } })
+    await applySnapshot(fixture.data, '2026-10-30T11:00:00.000Z')
+
+    const before = await untouchedFingerprint()
+    const { release } = await buildReleasePlan(prisma, { identity: IDENTITY, ...seeds() })
+    expect(release.summary.preserved).toEqual({ adminLockedLines: 0, adminLinks: 1, excludedLinks: 1, adminMappings: 1 })
+    expect(release.summary).toMatchObject({ linksCreate: 0, linksMarkMissing: 0, linksSuppressedByAdmin: 1 })
+    await applyReleasePlan(prisma, { approved: release, approvedHash: release.planSha256, identity: IDENTITY, ...seeds(), actor, request: request() })
+
+    expect(await prisma.productBrandLine.findUniqueOrThrow({ where: { productId_brandLineId: { productId: fixture.products[0], brandLineId: series.id } } })).toMatchObject({ status: 'excluded' })
+    expect(await prisma.productBrandLine.findUniqueOrThrow({ where: { productId_brandLineId: { productId: fixture.products[4], brandLineId: line.id } } })).toMatchObject({ origin: 'admin', status: 'active' })
+    expect(await prisma.catalogSourceCategoryMapping.findFirstOrThrow({ where: { sourceCategoryId: '9103' } })).toMatchObject({ targetType: 'ignore', origin: 'admin' })
+    expect(await untouchedFingerprint()).toEqual(before)
+  })
+})
+
 describe('Taxonomy finalize and BrandLine bootstrap coordination (isolated Postgres)', () => {
   it('a bootstrap waits for a finalize in progress, and a finalize waits for a running bootstrap', async () => {
     const finalizing = await holdLocks(tx => lockTaxonomySource(tx))

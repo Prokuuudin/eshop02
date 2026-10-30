@@ -12,6 +12,9 @@
  *      --operator <admin e-mail> --expect-project ... --expect-branch ... --expect-endpoint ... \
  *      --seed <inventory.json> [--allow-mass-missing <n>] [--revalidate-base-url https://hairshoppro.lv]
  *
+ * 3. Re-run only the storefront revalidation of an applied plan (idempotent, no database access):
+ *    HAIRSHOP_CATALOG_SYNC_SECRET=... node --conditions=react-server --import tsx  *      scripts/brand-lines-release.ts revalidate --plan <plan.json> --revalidate-base-url https://hairshoppro.lv
+ *
  * Both phases verify through the Neon API (NEON_API_KEY) that DATABASE_URL is the named
  * project/branch/endpoint. Apply additionally needs the endpoint repeated in
  * BRANDLINE_RELEASE_APPLY_ENDPOINT, the plan hash typed by the operator and an existing
@@ -36,7 +39,15 @@ function required(name: string): string {
 
 async function main(): Promise<number> {
   const command = process.argv[2]
-  if (command !== 'plan' && command !== 'apply') throw Object.assign(new Error('usage: brand-lines-release.ts plan|apply ...'), { exitCode: 1 })
+  if (command !== 'plan' && command !== 'apply' && command !== 'revalidate') throw Object.assign(new Error('usage: brand-lines-release.ts plan|apply|revalidate ...'), { exitCode: 1 })
+  if (command === 'revalidate') {
+    const { requestStorefrontRevalidation } = await import('@/lib/brand-lines/brand-line-release')
+    const plan = JSON.parse(readFileSync(required('--plan'), 'utf8')) as { kind?: string; planSha256?: string; snapshot?: { id?: string } }
+    if (plan.kind !== 'brand-line-release-plan' || !plan.planSha256 || !plan.snapshot?.id) throw Object.assign(new Error('not a BrandLine release plan file'), { exitCode: 1 })
+    const outcome = await requestStorefrontRevalidation({ baseUrl: required('--revalidate-base-url'), secret: process.env.HAIRSHOP_CATALOG_SYNC_SECRET ?? '', snapshotId: plan.snapshot.id, planSha256: plan.planSha256 })
+    console.log(JSON.stringify(outcome))
+    return outcome.ok ? 0 : 3
+  }
   const databaseUrl = process.env.DATABASE_URL ?? ''
   const apiKey = process.env.NEON_API_KEY ?? ''
   if (!databaseUrl || !apiKey) throw Object.assign(new Error('DATABASE_URL and NEON_API_KEY are required'), { exitCode: 1 })
@@ -85,7 +96,9 @@ async function main(): Promise<number> {
       })
     } catch (error) {
       const code = (error as { code?: string }).code
-      throw Object.assign(new Error(`apply rolled back${code ? ` (${code})` : ''}: ${(error as Error).message}`), { exitCode: code && code !== 'PLAN_CHANGED' && code !== 'MASS_CHANGE' && code !== 'SNAPSHOT_CHANGED' ? 2 : 1 })
+      // Known release refusals happen before or instead of any write (exit 1); anything
+      // else is an unexpected failure of the transaction, which rolled back (exit 2).
+      throw Object.assign(new Error(`apply rolled back${code ? ` (${code})` : ''}: ${(error as Error).message}`), { exitCode: error instanceof release.BrandLineReleaseError ? 1 : 2 })
     }
     console.log(JSON.stringify({ applied: result.applied, planSha256: result.planSha256, snapshotId: result.snapshotId }, null, 2))
 
@@ -94,14 +107,9 @@ async function main(): Promise<number> {
       console.log('Committed. Storefront caches were NOT revalidated: run POST /api/admin/storefront-cache/revalidate as an admin, or re-run the revalidation with --revalidate-base-url.')
       return 0
     }
-    const secret = process.env.HAIRSHOP_CATALOG_SYNC_SECRET ?? ''
-    const response = await fetch(new URL('/api/internal/hairshop-catalog-sync/storefront-revalidate', baseUrl), {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-hairshop-catalog-sync-key': secret },
-      body: JSON.stringify({ reason: 'brand_line_bootstrap', snapshotId: result.snapshotId, planSha256: result.planSha256 }),
-    }).catch(() => null)
-    if (!response?.ok) {
-      console.error(`Committed, but storefront revalidation failed (${response?.status ?? 'no response'}). Caches expire within 10 minutes; run POST /api/admin/storefront-cache/revalidate as an admin to refresh now.`)
+    const outcome = await release.requestStorefrontRevalidation({ baseUrl, secret: process.env.HAIRSHOP_CATALOG_SYNC_SECRET ?? '', snapshotId: result.snapshotId, planSha256: result.planSha256 })
+    if (!outcome.ok) {
+      console.error(`Committed, but storefront revalidation failed after ${outcome.attempts} attempt(s) (${outcome.status ?? 'no response'}). Caches expire within 10 minutes; re-run "brand-lines-release.ts revalidate --plan <plan.json> --revalidate-base-url ${baseUrl}" to refresh now.`)
       return 3
     }
     console.log('Committed and storefront caches revalidated.')

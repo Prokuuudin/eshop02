@@ -235,3 +235,41 @@ export async function applyReleasePlan(db: ExtendedPrismaClient, options: {
     return { applied, planSha256: hash, snapshotId }
   }, { maxWait: 30_000, timeout: 300_000 })
 }
+
+export type RevalidationOutcome = { ok: boolean; status: number | null; attempts: number }
+
+/**
+ * Asks the running application to drop the storefront caches of an audited bootstrap.
+ * Network errors and 5xx answers are retried; 4xx answers are final (wrong key, unknown
+ * bootstrap). Idempotent: repeating it only revalidates again. Caches also expire on
+ * their own (sale products 300 s, bestsellers 600 s), so a lost call means bounded staleness.
+ */
+export async function requestStorefrontRevalidation(options: {
+  baseUrl: string
+  secret: string
+  snapshotId: string
+  planSha256: string
+  fetchImpl?: typeof fetch
+  attempts?: number
+  delayMs?: number
+}): Promise<RevalidationOutcome> {
+  const fetchImpl = options.fetchImpl ?? fetch
+  const attempts = Math.max(1, options.attempts ?? 4)
+  let status: number | null = null
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await fetchImpl(new URL('/api/internal/hairshop-catalog-sync/storefront-revalidate', options.baseUrl), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-hairshop-catalog-sync-key': options.secret },
+        body: JSON.stringify({ reason: 'brand_line_bootstrap', snapshotId: options.snapshotId, planSha256: options.planSha256 }),
+      })
+      status = response.status
+      if (response.ok) return { ok: true, status, attempts: attempt }
+      if (status < 500) return { ok: false, status, attempts: attempt }
+    } catch {
+      status = null
+    }
+    if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, (options.delayMs ?? 1_000) * 2 ** (attempt - 1)))
+  }
+  return { ok: false, status, attempts }
+}

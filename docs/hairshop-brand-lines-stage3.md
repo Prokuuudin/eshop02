@@ -49,3 +49,19 @@ DATABASE_URL=<isolated branch> node --conditions=react-server --import tsx scrip
 
 `--apply` refuses the production database. The report lists planned lines, links, new series, review items and
 a per-node comparison with the inventory.
+
+## Administration (stage 4)
+
+Page `/admin/brand-lines` (admin menu: Catalog → Product lines), permission `catalog.read`; every change needs
+`catalog.update`, which only platform administrators hold (staff managers and customers get 403).
+
+API (`app/api/admin/brand-lines/…`): `GET /` tree, `POST /` create, `GET|PATCH /[id]` detail and edit,
+`POST /[id]/products` include or exclude a product (`{ product: <id or SKU>, action }`), `GET /review?status=`
+queue, `POST /review/[id]` with `resolve`, `dismiss`, `reject`, `confirm_brand` or `confirm_line`.
+
+Every mutation runs in one transaction under the bootstrap advisory lock and writes an `AuditLog` row
+(`catalog.brand_line_*`). Edits set `adminLocked`; keys never change. The server rejects cycles, a parent of another
+brand, a depth beyond the limit, a move that would change the depth of a subtree, a duplicate slug among siblings,
+a product of another brand and a product already linked to a parent or child line. `confirm_line` accepts a source
+category only for the brand its source hierarchy belongs to. Products of a confirmed line are linked by the next
+synchronization; administrator links and exclusions are kept.

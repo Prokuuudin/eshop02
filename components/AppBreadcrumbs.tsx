@@ -59,6 +59,7 @@ const segmentLabelKeys: Record<string, string> = {
     // Admin — catalog
     products: 'admin.products',
     brands: 'nav.brands',
+    'brand-lines': 'breadcrumb.brandLines',
     import: 'breadcrumb.import',
     reviews: 'breadcrumb.reviews',
     'stock-alerts': 'breadcrumb.stockAlerts',

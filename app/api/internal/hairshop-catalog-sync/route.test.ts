@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { findMany, create, queryRaw, transaction } = vi.hoisted(() => {
+const { findMany, create, executeRaw, transaction } = vi.hoisted(() => {
   const findMany = vi.fn()
   const create = vi.fn()
-  const queryRaw = vi.fn()
+  const executeRaw = vi.fn()
+  // The transaction client deliberately has no $queryRaw: the lock must be taken
+  // with $executeRaw because pg_advisory_xact_lock returns void (P2010 on Neon).
   const transaction = vi.fn(async (callback: (tx: unknown) => unknown) => callback({
     product: { findMany, create },
-    $queryRaw: queryRaw,
+    $executeRaw: executeRaw,
   }))
-  return { findMany, create, queryRaw, transaction }
+  return { findMany, create, executeRaw, transaction }
 })
 
 vi.mock('@/lib/prisma', () => ({
@@ -54,7 +56,7 @@ beforeEach(() => {
   delete process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED
   findMany.mockResolvedValue([])
   create.mockResolvedValue({ id: 'nop390-9001' })
-  queryRaw.mockResolvedValue([{ pg_advisory_xact_lock: null }])
+  executeRaw.mockResolvedValue(1)
 })
 
 describe('POST /api/internal/hairshop-catalog-sync', () => {
@@ -79,7 +81,7 @@ describe('POST /api/internal/hairshop-catalog-sync', () => {
     expect(response.status).toBe(403)
     expect(findMany).not.toHaveBeenCalled()
     expect(transaction).not.toHaveBeenCalled()
-    expect(queryRaw).not.toHaveBeenCalled()
+    expect(executeRaw).not.toHaveBeenCalled()
     expect(create).not.toHaveBeenCalled()
   })
 
@@ -111,5 +113,61 @@ describe('POST /api/internal/hairshop-catalog-sync', () => {
     expect(response.status).toBe(200)
     expect(json.metrics).toMatchObject({ created: 0, alreadyExists: 1, databaseWrites: 0 })
     expect(create).not.toHaveBeenCalled()
+  })
+
+  it('takes the new-product advisory lock inside the serializable transaction before reading or creating', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    const response = await POST(request(body('apply')))
+    expect(response.status).toBe(200)
+    expect(executeRaw).toHaveBeenCalledTimes(1)
+    expect((executeRaw.mock.calls[0][0] as TemplateStringsArray).join('?'))
+      .toBe("SELECT pg_advisory_xact_lock(hashtext('hairshop-catalog-new-products'))")
+    expect(executeRaw.mock.invocationCallOrder[0]).toBeLessThan(findMany.mock.invocationCallOrder[0])
+    expect(executeRaw.mock.invocationCallOrder[0]).toBeLessThan(create.mock.invocationCallOrder[0])
+    expect((transaction.mock.calls[0] as unknown[])[1]).toMatchObject({ isolationLevel: 'Serializable' })
+  })
+
+  it('propagates a failure inside the locked transaction without reporting a created product', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    create.mockRejectedValueOnce(new Error('insert failed'))
+    await expect(POST(request(body('apply')))).rejects.toThrow('insert failed')
+    expect(executeRaw).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails closed when the lock cannot be taken', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    executeRaw.mockRejectedValueOnce(new Error('lock timeout'))
+    await expect(POST(request(body('apply')))).rejects.toThrow('lock timeout')
+    expect(findMany).not.toHaveBeenCalled()
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('re-runs the whole transaction after a serialization conflict and then reports the existing product', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    create.mockRejectedValueOnce(Object.assign(new Error('write conflict'), { code: 'P2034' }))
+    findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 'nop390-9001', externalId: 'NEW-9001', sku: 'NEW-9001', barcode: '4750000009001', isDeleted: false }])
+    const response = await POST(request(body('apply')))
+    const json = await response.json()
+    expect(response.status).toBe(200)
+    expect(json.results[0]).toMatchObject({ status: 'already_exists' })
+    expect(transaction).toHaveBeenCalledTimes(2)
+    expect(executeRaw).toHaveBeenCalledTimes(2)
+    expect(create).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives up after three serialization conflicts instead of retrying forever', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    create.mockRejectedValue(Object.assign(new Error('write conflict'), { code: 'P2034' }))
+    await expect(POST(request(body('apply')))).rejects.toMatchObject({ code: 'P2034' })
+    expect(transaction).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not retry non-serialization failures', async () => {
+    process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
+    create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }))
+    await expect(POST(request(body('apply')))).rejects.toMatchObject({ code: 'P2002' })
+    expect(transaction).toHaveBeenCalledTimes(1)
   })
 })

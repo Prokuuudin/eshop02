@@ -803,6 +803,178 @@ model SyncRun {
   @@index([mode, sourceRunStartedAt])
 }
 
+// Hairshop.lv taxonomy sync v2: persistent staging of a begin/batch/finalize
+// snapshot. Only a fully verified snapshot is promoted into the
+// CatalogSource* mirror. None of these tables touch products, prices, stock,
+// promotions or orders.
+model TaxonomySnapshotSession {
+  id                 String    @id @default(cuid())
+  source             String
+  runId              String
+  mode               String
+  // receiving -> completed | rejected | expired
+  status             String    @default("receiving")
+  manifest           Json
+  snapshotSha256     String
+  expectedBatchCount Int
+  generatedAtUtc     DateTime
+  finalizedAt        DateTime?
+  // Set in the same transaction that promotes the snapshot into the mirror;
+  // the latest appliedAt is the active snapshot.
+  appliedAt          DateTime?
+  rejectedAt         DateTime?
+  lastErrorCode      String?
+  lastErrorAt        DateTime?
+  errorCount         Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  batches            TaxonomySnapshotBatch[]
+  categoriesLastSeen CatalogSourceCategory[] @relation("CategoryLastSeenSnapshot")
+  categoriesMissingSince CatalogSourceCategory[] @relation("CategoryMissingSinceSnapshot")
+  manufacturersLastSeen CatalogSourceManufacturer[] @relation("ManufacturerLastSeenSnapshot")
+  manufacturersMissingSince CatalogSourceManufacturer[] @relation("ManufacturerMissingSinceSnapshot")
+  productCategoriesLastSeen CatalogSourceProductCategory[] @relation("ProductCategoryLastSeenSnapshot")
+  productCategoriesMissingSince CatalogSourceProductCategory[] @relation("ProductCategoryMissingSinceSnapshot")
+  productManufacturersLastSeen CatalogSourceProductManufacturer[] @relation("ProductManufacturerLastSeenSnapshot")
+  productManufacturersMissingSince CatalogSourceProductManufacturer[] @relation("ProductManufacturerMissingSinceSnapshot")
+
+  @@unique([source, runId])
+  @@index([source, status, createdAt])
+  @@index([source, appliedAt])
+}
+
+model TaxonomySnapshotBatch {
+  id            String   @id @default(cuid())
+  sessionId     String
+  batchId       String
+  type          String
+  batchIndex    Int
+  batchTotal    Int
+  checksum      String
+  itemCount     Int
+  payload       Json
+  createdAt     DateTime @default(now())
+  session       TaxonomySnapshotSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, batchId])
+  @@unique([sessionId, type, batchIndex])
+}
+
+// Mirror rows are never deleted. A row absent from an applied snapshot keeps
+// its data, gets isPresent=false and increments missingSnapshotCount, so a
+// single torn (READ COMMITTED) source read is not mistaken for a deletion.
+model CatalogSourceCategory {
+  source                   String
+  sourceCategoryId         String
+  parentSourceCategoryId   String?
+  names                    Json
+  slugs                    Json
+  published                Boolean
+  sourceCreatedAt          DateTime
+  sourceUpdatedAt          DateTime
+  isPresent                Boolean  @default(true)
+  missingSnapshotCount     Int      @default(0)
+  firstSeenAt              DateTime @default(now())
+  lastSeenAt               DateTime
+  lastSeenSnapshotId       String
+  missingSinceAt           DateTime?
+  missingSinceSnapshotId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  parent                   CatalogSourceCategory? @relation("CatalogSourceCategoryHierarchy", fields: [source, parentSourceCategoryId], references: [source, sourceCategoryId], onDelete: Restrict)
+  children                 CatalogSourceCategory[] @relation("CatalogSourceCategoryHierarchy")
+  lastSeenSnapshot         TaxonomySnapshotSession @relation("CategoryLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
+  missingSinceSnapshot     TaxonomySnapshotSession? @relation("CategoryMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
+  productMappings          CatalogSourceProductCategory[]
+
+  @@id([source, sourceCategoryId])
+  @@index([source, parentSourceCategoryId])
+  @@index([source, isPresent])
+  @@index([lastSeenSnapshotId])
+  @@index([missingSinceSnapshotId])
+}
+
+model CatalogSourceManufacturer {
+  source                   String
+  sourceManufacturerId     String
+  names                    Json
+  slugs                    Json
+  published                Boolean
+  sourceCreatedAt          DateTime
+  sourceUpdatedAt          DateTime
+  isPresent                Boolean  @default(true)
+  missingSnapshotCount     Int      @default(0)
+  firstSeenAt              DateTime @default(now())
+  lastSeenAt               DateTime
+  lastSeenSnapshotId       String
+  missingSinceAt           DateTime?
+  missingSinceSnapshotId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  lastSeenSnapshot         TaxonomySnapshotSession @relation("ManufacturerLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
+  missingSinceSnapshot     TaxonomySnapshotSession? @relation("ManufacturerMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
+  productMappings          CatalogSourceProductManufacturer[]
+
+  @@id([source, sourceManufacturerId])
+  @@index([source, isPresent])
+  @@index([lastSeenSnapshotId])
+  @@index([missingSinceSnapshotId])
+}
+
+// legacyProductId is the nopCommerce Product.Id. It deliberately has no
+// foreign key to Product: the source has products that Hairshop Pro does not.
+model CatalogSourceProductCategory {
+  source                   String
+  legacyProductId          String
+  sourceCategoryId         String
+  displayOrder             Int
+  isFeaturedProduct        Boolean
+  isPresent                Boolean  @default(true)
+  missingSnapshotCount     Int      @default(0)
+  firstSeenAt              DateTime @default(now())
+  lastSeenAt               DateTime
+  lastSeenSnapshotId       String
+  missingSinceAt           DateTime?
+  missingSinceSnapshotId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  category                 CatalogSourceCategory @relation(fields: [source, sourceCategoryId], references: [source, sourceCategoryId], onDelete: Restrict)
+  lastSeenSnapshot         TaxonomySnapshotSession @relation("ProductCategoryLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
+  missingSinceSnapshot     TaxonomySnapshotSession? @relation("ProductCategoryMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
+
+  @@id([source, legacyProductId, sourceCategoryId])
+  @@index([source, sourceCategoryId])
+  @@index([source, legacyProductId, isPresent])
+  @@index([lastSeenSnapshotId])
+  @@index([missingSinceSnapshotId])
+}
+
+model CatalogSourceProductManufacturer {
+  source                   String
+  legacyProductId          String
+  sourceManufacturerId     String
+  displayOrder             Int
+  isFeaturedProduct        Boolean
+  isPresent                Boolean  @default(true)
+  missingSnapshotCount     Int      @default(0)
+  firstSeenAt              DateTime @default(now())
+  lastSeenAt               DateTime
+  lastSeenSnapshotId       String
+  missingSinceAt           DateTime?
+  missingSinceSnapshotId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  manufacturer             CatalogSourceManufacturer @relation(fields: [source, sourceManufacturerId], references: [source, sourceManufacturerId], onDelete: Restrict)
+  lastSeenSnapshot         TaxonomySnapshotSession @relation("ProductManufacturerLastSeenSnapshot", fields: [lastSeenSnapshotId], references: [id], onDelete: Restrict)
+  missingSinceSnapshot     TaxonomySnapshotSession? @relation("ProductManufacturerMissingSinceSnapshot", fields: [missingSinceSnapshotId], references: [id], onDelete: Restrict)
+
+  @@id([source, legacyProductId, sourceManufacturerId])
+  @@index([source, sourceManufacturerId])
+  @@index([source, legacyProductId, isPresent])
+  @@index([lastSeenSnapshotId])
+  @@index([missingSinceSnapshotId])
+}
+
 model UserNotification {
   id           String   @id @default(cuid())
   userId       String

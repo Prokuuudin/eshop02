@@ -55,9 +55,17 @@ failures do not occur on Linux CI).
 
 ## 3–4. Plesk deployment with migrations first (`docs/deploy-plesk.md`, unchanged workflow)
 
+**Mandatory order, no step may be skipped or moved:** backup (section 1) → restore check (section 1) → Prisma
+migrations (steps 3–5) → Prisma Client generation (step 6) → Plesk build (step 6) → production checks (section 5).
+
+**Never build the new release before the required migrations have been applied** (no `npm run prisma:generate`,
+`npm run build` or `npm run build:plesk` before step 5 passes). On Windows Plesk, not pressing Restart App does **not**
+keep the old version running: on 2026-10-31 `npm run build:plesk` alone made production serve the new code on the
+old schema, and promo-code validation returned 500 until the migrations were applied.
+
 Order on the Plesk server, in the application directory:
 
-1. Switch the deployed branch to `release/2026-10-31-taxonomy-brand-lines` and `git pull`. Do **not** restart yet.
+1. Switch the deployed branch to `release/2026-10-31-taxonomy-brand-lines` and `git pull`. Do **not** build or restart yet.
 2. `npm ci` (lockfile is identical to production).
 3. `npx prisma migrate status` → exactly the three migrations above pending (plus the known historical rows of
    `20260802170000_add_admin_mfa` / `20260802200000_harden_product_mutations`).
@@ -67,12 +75,13 @@ Order on the Plesk server, in the application directory:
    lock timeout: it is instant, but waits behind any long transaction holding `PromoCode` (and queues promo reads
    meanwhile). **STOP** and cancel it if it does not finish within a few seconds.
 5. `npx prisma migrate status` → nothing pending; `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` → empty migration.
-6. `npm run build`, then Plesk → Node.js → Restart App.
+6. Only after step 5: `npm run prisma:generate`, then `npm run build:plesk`, then Plesk → Node.js → Restart App.
+   Assume the new code may already be live as soon as the build finishes; go to section 5 immediately.
 7. Environment: keep `HAIRSHOP_TAXONOMY_SYNC_WRITE_ENABLED` **unset** (the v2 endpoint answers 403). No other env change.
 
 The new code must not start before step 5 passes: it reads `PromoCode.brandLineIds`, and promo-code validation
-(and therefore checkout with a promo code) would fail without the column. Until step 6 the old process keeps serving
-and is fully compatible with the migrated schema.
+(and therefore checkout with a promo code) would fail without the column. The old process is fully compatible with
+the migrated schema, but it is only guaranteed to keep serving while nothing of the new release has been built.
 
 **STOP** before step 6 if step 3 shows anything else pending/failed, or step 4/5 fails. On a migration failure do
 **not** run any corrective command (`prisma migrate resolve`, a re-run of `migrate deploy`, manual SQL). Keep the old

@@ -35,6 +35,8 @@ function txFor(before: Record<string, unknown>, superAdminCount = 1) {
       count: vi.fn().mockImplementation(async ({ where }) => (where.superAdmin ? superAdminCount : 2)),
     },
     session: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    invitationToken: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    passwordResetToken: { deleteMany: vi.fn().mockResolvedValue({ count: 0 }) },
   }
   transactionMock.mockImplementation((callback) => callback(tx))
   return tx
@@ -106,6 +108,18 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect(response.status).toBe(200)
     expect(verifyPasswordMock).not.toHaveBeenCalled()
     expect(tx.session.deleteMany).not.toHaveBeenCalled()
+    expect(tx.invitationToken.deleteMany).not.toHaveBeenCalled()
+    expect(tx.passwordResetToken.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it('revokes pending invitation and reset links when a customer email is corrected', async () => {
+    permissionMock.mockResolvedValue(REGULAR_ADMIN)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    const tx = txFor(row({ ...CUSTOMER_TARGET, email: 'buyer@gamil.com', cardNumber: '111' }))
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, email: 'buyer@gmail.com' })
+    expect(response.status).toBe(200)
+    expect(tx.invitationToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1', status: { not: 'accepted' } } })
+    expect(tx.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } })
   })
 
   it('refuses when the target became staff after the pre-check', async () => {

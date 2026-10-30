@@ -32,7 +32,13 @@ async function findValid(token: string | null) {
   if (invitation.expiresAt < new Date()) {
     return { ok: false as const, res: NextResponse.json({ ok: false, error: 'token_expired' }, { status: 410 }) }
   }
-  return { ok: true as const, invitation }
+  // The link is bound to the address it was mailed to: once the account email changes (e.g. an admin
+  // corrects a typo), a link already sent to the old — possibly someone else's — mailbox is void.
+  const user = await prisma.user.findUnique({ where: { id: invitation.userId } })
+  if (!user || user.email.trim().toLowerCase() !== invitation.email.trim().toLowerCase()) {
+    return { ok: false as const, res: NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 }) }
+  }
+  return { ok: true as const, invitation, user }
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -40,8 +46,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const found = await findValid(req.nextUrl.searchParams.get('token'))
     if (!found.ok) return found.res
     const inv = found.invitation
-    const user = await prisma.user.findUnique({ where: { id: inv.userId }, select: { name: true } })
-    return NextResponse.json({ ok: true, email: inv.email, name: user?.name ?? '', cardNumber: inv.cardNumber })
+    return NextResponse.json({ ok: true, email: inv.email, name: found.user.name ?? '', cardNumber: inv.cardNumber })
   } catch (error) {
     logApiError("[auth/invite GET]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
@@ -73,9 +78,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const found = await findValid(body.token ?? null)
     if (!found.ok) return found.res
-    const inv = found.invitation
-    const user = await prisma.user.findUnique({ where: { id: inv.userId } })
-    if (!user) return NextResponse.json({ ok: false, error: 'user_not_found' }, { status: 404 })
+    const { invitation: inv, user } = found
     // Card activation rewrites password, card and teamRole — never on a staff account.
     if (isProtectedStaffAccount(user)) {
       return NextResponse.json({ ok: false, error: 'staff_account' }, { status: 409 })

@@ -303,6 +303,12 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       if (privilegesChanged) await tx.session.deleteMany({ where: { userId: id } })
 
       const emailChanged = before.email !== after.email
+      // Activation and reset links already mailed to the old address must not outlive the change
+      // (the old address may be a typo someone else receives); accepted invitations stay as history.
+      if (emailChanged) {
+        await tx.invitationToken.deleteMany({ where: { userId: id, status: { not: 'accepted' } } })
+        await tx.passwordResetToken.deleteMany({ where: { userId: id } })
+      }
       await appendServerAudit(tx, req, caller, {
           action: privilegesChanged ? 'user.privileges_changed' : 'user.updated', entityType: 'user', entityId: id, entityTitle: before.email,
           before: {

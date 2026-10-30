@@ -218,6 +218,8 @@ model PromoCode {
   brands      String[] @default([])
   categories  String[] @default([])
   subcategories String[] @default([])
+  // Product lines (BrandLine ids); a selected line covers its whole subtree.
+  brandLineIds String[] @default([])
   excludedProductIds String[] @default([])
   excludeSaleItems Boolean @default(false)
   firstOrderOnly Boolean @default(false)

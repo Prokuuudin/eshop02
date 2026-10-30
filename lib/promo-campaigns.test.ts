@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { attachCampaignOffers, evaluatePromoCampaigns, type PromoCampaign } from './promo-campaigns'
+import { attachCampaignOffers, attachCampaignOffersFromDb, evaluatePromoCampaigns, type PromoCampaign } from './promo-campaigns'
 import type { Product } from '@/data/products'
 
 const item = (category: string, price = 100) => ({
@@ -10,11 +10,35 @@ const item = (category: string, price = 100) => ({
   bonusRate: 0, fromCatalog: true,
 })
 
-function db(value: unknown) {
-  return { keyValueSetting: { findUnique: vi.fn().mockResolvedValue({ value }) } } as never
+function db(value: unknown, lines: unknown[] = [], links: unknown[] = []) {
+  return {
+    keyValueSetting: { findUnique: vi.fn().mockResolvedValue({ value }) },
+    brandLine: { findMany: vi.fn().mockResolvedValue(lines) },
+    productBrandLine: { findMany: vi.fn().mockResolvedValue(links) },
+  } as never
 }
 
 describe('evaluatePromoCampaigns', () => {
+  it('targets a parent line through child membership in checkout and storefront offers', async () => {
+    const campaign: PromoCampaign = {
+      id: 'line-sale', name: 'Line sale', description: '', type: 'discount', discountPercent: 15,
+      startDate: '2026-01-01', endDate: '', active: true, targetCategories: [], targetSubcategories: [], targetBrands: [],
+      targetBrandLineIds: ['parent'], minOrderAmount: 0, createdAt: '', updatedAt: '',
+    }
+    const database = db([campaign], [{ id: 'parent', parentId: null }, { id: 'child', parentId: 'parent' }], [
+      { productId: 'p1', brandLineId: 'child', status: 'active' },
+    ])
+    const result = await evaluatePromoCampaigns([
+      { id: 'p1', quantity: 1, price: 100, bonusRate: 0, fromCatalog: true },
+      { id: 'p2', quantity: 1, price: 200, bonusRate: 0, fromCatalog: true },
+    ], database, new Date('2026-08-23T12:00:00Z'))
+    expect(result).toMatchObject({ campaignId: 'line-sale', eligibleAmount: 100, discount: 15 })
+
+    const products = [{ id: 'p1', title: 'One', price: 100, category: 'hair', brand: 'Acme', rating: 0, stock: 1 }] as Product[]
+    const [decorated] = await attachCampaignOffersFromDb(database, products, [campaign], new Date('2026-08-23T12:00:00Z'))
+    expect(decorated.campaignOffers).toEqual([{ id: 'line-sale', name: 'Line sale', discountPercent: 15, minOrderAmount: 0 }])
+  })
+
   it('shows BEAUTY IMAGE offers without changing the price used for order calculations', async () => {
     const campaign: PromoCampaign = {
       id: 'beauty', name: 'Beauty', description: '', type: 'discount', discountPercent: 20,

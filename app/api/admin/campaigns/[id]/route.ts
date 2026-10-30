@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
+import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-line-membership'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
@@ -19,6 +20,7 @@ type PromoCampaign = {
   targetCategories: string[]
   targetSubcategories: string[]
   targetBrands: string[]
+  targetBrandLineIds?: string[]
   minOrderAmount: number
   createdAt: string
   updatedAt: string
@@ -63,6 +65,12 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
     if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
     if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
+    const targetBrandLineIds = brandLineIdList(merged.targetBrandLineIds)
+    // Only newly submitted ids are checked: a line archived later must not block unrelated edits.
+    if (body.targetBrandLineIds !== undefined) {
+      const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
+      if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
+    }
     const now = new Date().toISOString()
     data[idx] = {
       ...data[idx], ...body, id, name, type, startDate, endDate,
@@ -73,6 +81,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
       targetCategories: Array.isArray(merged.targetCategories) ? [...new Set(merged.targetCategories.map(String).filter(Boolean))] : [],
       targetSubcategories: Array.isArray(merged.targetSubcategories) ? [...new Set(merged.targetSubcategories.map(String).filter(Boolean))] : [],
       targetBrands: Array.isArray(merged.targetBrands) ? [...new Set(merged.targetBrands.map(String).filter(Boolean))] : [],
+      targetBrandLineIds,
       updatedAt: now,
     }
     await writeData(data)

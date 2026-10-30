@@ -4,10 +4,14 @@ const {
   productFindManyMock,
   promoCodeFindFirstMock,
   keyValueSettingFindUniqueMock,
+  brandLineFindManyMock,
+  productBrandLineFindManyMock,
 } = vi.hoisted(() => ({
   productFindManyMock: vi.fn(),
   promoCodeFindFirstMock: vi.fn(),
   keyValueSettingFindUniqueMock: vi.fn(),
+  brandLineFindManyMock: vi.fn(),
+  productBrandLineFindManyMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
@@ -16,6 +20,8 @@ vi.mock('@/lib/prisma', () => ({
     product: { findMany: productFindManyMock },
     promoCode: { findFirst: promoCodeFindFirstMock },
     keyValueSetting: { findUnique: keyValueSettingFindUniqueMock },
+    brandLine: { findMany: brandLineFindManyMock },
+    productBrandLine: { findMany: productBrandLineFindManyMock },
   },
 }))
 
@@ -27,7 +33,11 @@ import {
   ProductUnavailableError,
 } from './server-pricing'
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  brandLineFindManyMock.mockResolvedValue([])
+  productBrandLineFindManyMock.mockResolvedValue([])
+})
 
 describe('resolveLineItems', () => {
   it('uses catalog price and ignores client-supplied price', async () => {
@@ -321,6 +331,45 @@ describe('recomputeOrderPricing', () => {
 })
 
 describe('evaluatePromoCode targeting', () => {
+  it('applies a parent-line promo to products linked to a child series', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-line', code: 'LINE20', active: true, discount: 20, discountValue: 20,
+      discountType: 'percentage', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'brand_lines', brandLineIds: ['parent'],
+      brands: [], categories: [], subcategories: [], productIds: [], excludedProductIds: [], excludeSaleItems: false,
+    })
+    brandLineFindManyMock.mockResolvedValue([{ id: 'parent', parentId: null }, { id: 'child', parentId: 'parent' }])
+    productBrandLineFindManyMock.mockResolvedValue([{ productId: 'p1', brandLineId: 'child', status: 'active' }])
+    const result = await evaluatePromoCode('LINE20', [
+      { id: 'p1', price: 100, quantity: 1, brand: 'Acme', category: 'hair', bonusRate: 0, fromCatalog: true },
+      { id: 'p2', price: 200, quantity: 1, brand: 'Acme', category: 'hair', bonusRate: 0, fromCatalog: true },
+    ])
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 100, discount: 20 })
+  })
+
+  it('ANDs product-line membership with the other rule dimensions and honors exclusions', async () => {
+    promoCodeFindFirstMock.mockResolvedValue({
+      id: 'promo-rules-line', code: 'ACME-LINE', active: true, discount: 10, discountValue: 10,
+      discountType: 'percentage', maxDiscount: null, minOrder: 0, minEligibleAmount: 0,
+      maxUses: null, usedCount: 0, startsAt: null, expiresAt: null, perUserLimit: null,
+      firstOrderOnly: false, appliesTo: 'rules', brandLineIds: ['parent'], brands: ['Acme'],
+      categories: [], subcategories: [], productIds: [], excludedProductIds: ['excluded'], excludeSaleItems: false,
+    })
+    brandLineFindManyMock.mockResolvedValue([{ id: 'parent', parentId: null }, { id: 'child', parentId: 'parent' }])
+    productBrandLineFindManyMock.mockResolvedValue([
+      { productId: 'eligible', brandLineId: 'child', status: 'active' },
+      { productId: 'wrong-brand', brandLineId: 'child', status: 'active' },
+      { productId: 'excluded', brandLineId: 'child', status: 'active' },
+    ])
+    const result = await evaluatePromoCode('ACME-LINE', [
+      { id: 'eligible', price: 100, quantity: 1, brand: 'Acme', category: 'hair', bonusRate: 0, fromCatalog: true },
+      { id: 'wrong-brand', price: 200, quantity: 1, brand: 'Other', category: 'hair', bonusRate: 0, fromCatalog: true },
+      { id: 'excluded', price: 300, quantity: 1, brand: 'Acme', category: 'hair', bonusRate: 0, fromCatalog: true },
+    ])
+    expect(result).toMatchObject({ valid: true, eligibleAmount: 100, discount: 10 })
+  })
+
   it('ignores stale hidden filters after scope is changed to the entire cart', async () => {
     promoCodeFindFirstMock.mockResolvedValue({
       id: 'promo-all', code: 'ALL10', active: true, discount: 10, discountValue: 10,

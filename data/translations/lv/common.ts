@@ -240,6 +240,7 @@ const lvCommon: Record<string, string> = {
   'breadcrumb.support': 'Atbalsts',
   'breadcrumb.analytics': 'Analītika',
   'breadcrumb.stockAlerts': 'Krājumu brīdinājumi',
+  'breadcrumb.brandLines': 'Produktu līnijas',
   'breadcrumb.bulkPrice': 'Masveida cenas',
   'breadcrumb.priceGroups': 'Cenu saraksti',
   'breadcrumb.emailTemplates': 'E-pasta veidnes',

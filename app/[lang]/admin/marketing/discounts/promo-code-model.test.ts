@@ -9,6 +9,7 @@ describe('promo code model', () => {
     expect(promo.discountValue).toBe(15)
     expect(promo.appliesTo).toBe('all')
     expect(promo.productIds).toEqual([])
+    expect(promo.brandLineIds).toEqual([])
     expect(promo.excludeSaleItems).toBe(false)
   })
 
@@ -24,6 +25,9 @@ describe('promo code model', () => {
     expect(isPromoScopeEmpty(form)).toBe(false)
     expect(isPromoScopeEmpty({ ...form, appliesTo: 'products' })).toBe(true)
     expect(isPromoScopeEmpty({ ...form, appliesTo: 'products', productIds: ['product-1'] })).toBe(false)
+    expect(isPromoScopeEmpty({ ...form, appliesTo: 'brand_lines' })).toBe(true)
+    expect(isPromoScopeEmpty({ ...form, appliesTo: 'brand_lines', brandLineIds: ['line-1'] })).toBe(false)
     expect(isPromoScopeEmpty({ ...form, appliesTo: 'rules', brands: ['Brand'] })).toBe(false)
+    expect(isPromoScopeEmpty({ ...form, appliesTo: 'rules', brandLineIds: ['line-1'] })).toBe(false)
   })
 })

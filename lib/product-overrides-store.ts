@@ -2,7 +2,7 @@ import { cache } from 'react';
 import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
-import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns';
+import { attachCampaignOffersFromDb, readPromoCampaigns } from '@/lib/promo-campaigns';
 import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
 import {
     mapDbToProduct,
@@ -64,7 +64,7 @@ async function normalizeMergedRows(
         readPromoCampaigns(prisma),
     ]);
     const merged = mergeProductsWithOverrides(rows.map(mapDbToProduct), resolvedOverrides);
-    return attachCampaignOffers(merged, campaigns);
+    return attachCampaignOffersFromDb(prisma, merged, campaigns);
 }
 
 async function normalizeStorefrontRows(
@@ -83,7 +83,7 @@ async function normalizeStorefrontCardRows(
         readPromoCampaigns(prisma),
     ]);
     const products = rows.map(mapStorefrontCardRow);
-    return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
+    return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, mergeProductsWithOverrides(products, overrides), campaigns));
 }
 
 function normalizeStorefrontFilterIndexRows(
@@ -302,7 +302,7 @@ export const getStorefrontFacetProducts = cache(async (): Promise<Product[]> => 
         readPromoCampaigns(prisma),
     ]);
     const products = rows.map(mapStorefrontFacetRow);
-    return toStorefrontProducts(attachCampaignOffers(mergeProductsWithOverrides(products, overrides), campaigns));
+    return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, mergeProductsWithOverrides(products, overrides), campaigns));
 });
 
 export async function getStorefrontBrandNames(): Promise<string[]> {

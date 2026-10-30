@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
+import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-line-membership'
 
 export const runtime = 'nodejs'
 
@@ -36,13 +37,16 @@ export async function POST(request: NextRequest): Promise<Response> {
       discountType?: string; discountValue?: number; maxDiscount?: number | null; minEligibleAmount?: number;
       perUserLimit?: number | null; startsAt?: string | null; appliesTo?: string; productIds?: string[];
       brands?: string[]; categories?: string[]; excludedProductIds?: string[]; excludeSaleItems?: boolean; firstOrderOnly?: boolean
-      subcategories?: string[]
+      subcategories?: string[]; brandLineIds?: string[]
     }
     const code = (body.code ?? '').toUpperCase().trim()
     if (!code) return NextResponse.json({ error: 'code_required' }, { status: 400 })
-    const scope = ['all', 'products', 'brands', 'categories', 'rules'].includes(body.appliesTo ?? '') ? body.appliesTo! : 'all'
-    const scopeValues = scope === 'products' ? stringList(body.productIds) : scope === 'brands' ? stringList(body.brands) : scope === 'categories' ? stringList(body.categories) : scope === 'rules' ? [...stringList(body.brands), ...stringList(body.categories), ...stringList(body.subcategories)] : ['all']
+    const scope = ['all', 'products', 'brands', 'categories', 'rules', 'brand_lines'].includes(body.appliesTo ?? '') ? body.appliesTo! : 'all'
+    const brandLineIds = brandLineIdList(body.brandLineIds)
+    const scopeValues = scope === 'products' ? stringList(body.productIds) : scope === 'brands' ? stringList(body.brands) : scope === 'categories' ? stringList(body.categories) : scope === 'rules' ? [...stringList(body.brands), ...stringList(body.categories), ...stringList(body.subcategories), ...brandLineIds] : scope === 'brand_lines' ? brandLineIds : ['all']
     if (scopeValues.length === 0) return NextResponse.json({ error: 'scope_required' }, { status: 400 })
+    const invalidLines = await invalidBrandLineIds(prisma, brandLineIds)
+    if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
 
     const existing = await prisma.promoCode.findUnique({ where: { code } })
     if (existing) return NextResponse.json({ error: 'duplicate_code' }, { status: 409 })
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
         appliesTo: scope,
         productIds: stringList(body.productIds), brands: stringList(body.brands), categories: stringList(body.categories), subcategories: stringList(body.subcategories),
+        brandLineIds,
         excludedProductIds: stringList(body.excludedProductIds), excludeSaleItems: body.excludeSaleItems ?? false,
         firstOrderOnly: body.firstOrderOnly ?? false,
         active: body.active ?? true,

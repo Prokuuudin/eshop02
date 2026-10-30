@@ -14,7 +14,7 @@ import { getProductSubcategory } from '@/lib/product-overrides-mapping'
 import type { Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
-import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns'
+import { attachCampaignOffersFromDb, readPromoCampaigns } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
 import { toStorefrontProducts } from '@/lib/product-sellability'
 
@@ -82,7 +82,7 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
     const product = byId.get(id)
     return product ? [mapDbToProduct(product)] : []
   }).slice(0, 16)
-  return toStorefrontProducts(attachCampaignOffers(mapped, await readPromoCampaigns(prisma)))
+  return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, mapped, await readPromoCampaigns(prisma)))
 }, ['storefront-bestsellers-v3'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
 export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
@@ -98,7 +98,7 @@ export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]>
     readPromoCampaigns(prisma),
   ])
   const products = mergeProductsWithOverrides(rows.map(mapStorefrontCardRow), overrides)
-  return toStorefrontProducts(attachCampaignOffers(products, campaigns))
+  return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, products, campaigns))
     .filter((product) => !product.priceUnavailable && product.stock > 0 && (
       product.campaignOffers?.length || product.badges?.includes('sale')
       || getValidOldPrice(product.price, product.oldPrice) !== undefined

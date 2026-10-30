@@ -25,6 +25,7 @@ type PromoCampaign = {
   targetCategories: string[]
   targetSubcategories: string[]
   targetBrands: string[]
+  targetBrandLineIds: string[]
   minOrderAmount: number
   createdAt: string
   updatedAt: string
@@ -42,6 +43,7 @@ const emptyForm = (): Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'> => (
   targetCategories: [],
   targetSubcategories: [],
   targetBrands: [],
+  targetBrandLineIds: [],
   minOrderAmount: 0
 })
 
@@ -118,6 +120,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
       targetCategories: item.targetCategories ?? [],
       targetSubcategories: item.targetSubcategories ?? [],
       targetBrands: item.targetBrands ?? [],
+      targetBrandLineIds: item.targetBrandLineIds ?? [],
       minOrderAmount: item.minOrderAmount
     })
     setFormCollapsed(false)
@@ -310,9 +313,10 @@ export default function AdminCampaignsPage(): React.ReactElement {
                   <PromoMultiSelect label={l('Категории', 'Categories', 'Kategorijas')} options={catalogOptions.categories} selected={form.targetCategories} onChange={(targetCategories) => setForm((f) => ({ ...f, targetCategories }))} placeholder={l('Найти категорию…', 'Find category…', 'Meklēt kategoriju…')} />
                   <PromoMultiSelect label={l('Подкатегории', 'Subcategories', 'Apakškategorijas')} options={catalogOptions.subcategories} selected={form.targetSubcategories} onChange={(targetSubcategories) => setForm((f) => ({ ...f, targetSubcategories }))} placeholder={l('Найти подкатегорию…', 'Find subcategory…', 'Meklēt apakškategoriju…')} />
                   <PromoMultiSelect label={l('Бренды', 'Brands', 'Zīmoli')} options={catalogOptions.brands} selected={form.targetBrands} onChange={(targetBrands) => setForm((f) => ({ ...f, targetBrands }))} placeholder={l('Найти бренд…', 'Find brand…', 'Meklēt zīmolu…')} />
+                  <PromoMultiSelect label={l('Товарные линейки и серии', 'Product lines and series', 'Produktu līnijas un sērijas')} options={catalogOptions.brandLines} selected={form.targetBrandLineIds} onChange={(targetBrandLineIds) => setForm((f) => ({ ...f, targetBrandLineIds }))} placeholder={l('Найти линейку или серию…', 'Find a line or series…', 'Meklēt līniju vai sēriju…')} />
                 </div>
               </div>
-              <PromoProductsPreview categories={form.targetCategories} subcategories={form.targetSubcategories} brands={form.targetBrands} />
+              <PromoProductsPreview appliesTo="rules" categories={form.targetCategories} subcategories={form.targetSubcategories} brands={form.targetBrands} brandLineIds={form.targetBrandLineIds} />
             </div>
             </div>
             </div>
@@ -358,6 +362,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
                         {(item.targetCategories?.length ?? 0) > 0 && <span>{l('Категории:', 'Categories:', 'Kategorijas:')} {item.targetCategories.map((value) => catalogOptions.categories.find((option) => option.value === value)?.label ?? value).join(', ')}</span>}
                         {(item.targetSubcategories?.length ?? 0) > 0 && <span>{l('Подкатегории:', 'Subcategories:', 'Apakškategorijas:')} {item.targetSubcategories.map((value) => catalogOptions.subcategories.find((option) => option.value === value)?.label ?? value).join(', ')}</span>}
                         {(item.targetBrands?.length ?? 0) > 0 && <span>{l('Бренды:', 'Brands:', 'Zīmoli:')} {item.targetBrands.join(', ')}</span>}
+                        {(item.targetBrandLineIds?.length ?? 0) > 0 && <span>{l('Линейки:', 'Lines:', 'Līnijas:')} {item.targetBrandLineIds.map((value) => catalogOptions.brandLines.find((option) => option.value === value)?.label ?? value).join(', ')}</span>}
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap sm:flex-nowrap">

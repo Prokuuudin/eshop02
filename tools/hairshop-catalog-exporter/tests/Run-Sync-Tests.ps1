@@ -41,6 +41,70 @@ try {
     Assert-Equal 'https://hairshop.lv/content/images/thumbs/0000501_onko-sensitive.jpeg' $first.images[0] 'safe image reference mapping'
     Write-Host 'PASS: published candidate mapping includes translations, category, manufacturer and image references'
 
+    $taxonomyData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
+    $taxonomyData.Categories[1].ParentCategoryId = 10
+    $taxonomy = ConvertTo-HairshopTaxonomySnapshot -Data $taxonomyData -GeneratedAtUtc ([DateTime]'2026-10-30T15:00:00Z')
+    Assert-Equal 2 $taxonomy.counts.categories 'taxonomy category count'
+    Assert-Equal 1 $taxonomy.counts.manufacturers 'taxonomy manufacturer count'
+    Assert-Equal 2 $taxonomy.counts.productCategoryMappings 'all Product-Category mappings are preserved'
+    Assert-Equal 2 $taxonomy.counts.productManufacturerMappings 'all Product-Manufacturer mappings are preserved'
+    Assert-Equal 64 $taxonomy.snapshotSha256.Length 'taxonomy snapshot SHA-256 length'
+    $childCategory = $taxonomy.data.categories | Where-Object categoryId -eq '11'
+    Assert-Equal '10' $childCategory.parentCategoryId 'parent category ID is serialized as a string'
+    $localizedCategory = $taxonomy.data.categories | Where-Object categoryId -eq '10'
+    $expectedCategoryRu = ($taxonomyData.LocalizedValues | Where-Object { $_.EntityName -eq 'Category' -and $_.EntityId -eq 10 -and $_.LanguageId -eq 2 }).LocaleValue
+    Assert-Equal $expectedCategoryRu $localizedCategory.names.ru 'localized category name'
+    Assert-Equal 'sampuni' $localizedCategory.slugs.lv 'localized category slug'
+    Assert-Equal '20' $taxonomy.data.manufacturers[0].manufacturerId 'manufacturer ID is serialized as a string'
+    Assert-Equal 'testa-zimols' $taxonomy.data.manufacturers[0].slugs.lv 'localized manufacturer slug'
+    $protocol = New-HairshopTaxonomySyncRequests -Snapshot $taxonomy -RunId 'taxonomy-test-0001' -BatchSize 1
+    Assert-Equal 'begin' $protocol.Requests[0].operation 'protocol starts with begin'
+    Assert-Equal 'finalize' $protocol.Requests[-1].operation 'protocol ends with finalize'
+    Assert-Equal 7 $protocol.Manifest.expectedBatchCount 'manifest expected batch count'
+    Assert-Equal 9 $protocol.Requests.Count 'begin, seven batches and finalize are emitted'
+    Assert-Equal $taxonomy.snapshotSha256 $protocol.Manifest.snapshotSha256 'manifest snapshot checksum'
+    Assert-True (@($protocol.Batches | Where-Object { $_.payloadSha256.Length -ne 64 }).Count -eq 0) 'every batch has SHA-256'
+    Write-Host 'PASS: taxonomy v2 preserves hierarchy, localized IDs, all mappings, counts and deterministic checksums'
+
+    $repeatData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
+    $repeatData.Categories[1].ParentCategoryId = 10
+    $repeatData.CategoryMappings = @($repeatData.CategoryMappings) + @($repeatData.CategoryMappings[0] | Select-Object *)
+    $repeated = ConvertTo-HairshopTaxonomySnapshot -Data $repeatData -GeneratedAtUtc ([DateTime]'2026-10-30T15:00:00Z')
+    Assert-Equal 2 $repeated.counts.productCategoryMappings 'an exact repeated mapping row is collapsed'
+    Assert-Equal 1 $repeated.collapsedDuplicateMappings.productCategories 'collapsed repeats are reported'
+    Assert-Equal $taxonomy.snapshotSha256 $repeated.snapshotSha256 'collapsing a repeat does not change the snapshot'
+    $conflict = @($repeatData.CategoryMappings[0] | Select-Object *)
+    $conflict[0].DisplayOrder = [int]$conflict[0].DisplayOrder + 7
+    $repeatData.CategoryMappings = @($repeatData.CategoryMappings[0..($repeatData.CategoryMappings.Count - 2)]) + $conflict
+    $conflictRejected = $false
+    try { [void](ConvertTo-HairshopTaxonomySnapshot -Data $repeatData) } catch { $conflictRejected = $_.Exception.Message -like 'Conflicting duplicate Product-Category mapping*' }
+    Assert-True $conflictRejected 'a repeated mapping with different attributes is rejected'
+    Write-Host 'PASS: exact repeated source mappings are collapsed, conflicting repeats are rejected'
+
+    # Expected value is sha256(JSON.stringify(payload)) as the TypeScript server computes it.
+    $escapeName = "L'OREAL & <Co> " + [char]92 + 'u0027x'
+    $escapeSnapshot = [pscustomobject]@{
+        snapshotSha256 = 'a' * 64
+        generatedAtUtc = '2026-01-01T00:00:00.0000000Z'
+        counts = [pscustomobject]@{ categories = 0; manufacturers = 1; productCategoryMappings = 0; productManufacturerMappings = 0 }
+        data = [pscustomobject][ordered]@{
+            categories = @()
+            manufacturers = @([pscustomobject][ordered]@{
+                manufacturerId = '1'
+                names = [pscustomobject][ordered]@{ default = $escapeName }
+                slugs = [pscustomobject][ordered]@{}
+                published = $true
+                createdOnUtc = '2026-01-01T00:00:00.000Z'
+                updatedOnUtc = '2026-01-01T00:00:00.000Z'
+            })
+            productCategories = @()
+            productManufacturers = @()
+        }
+    }
+    $escapeProtocol = New-HairshopTaxonomySyncRequests -Snapshot $escapeSnapshot -RunId 'taxonomy-escape-0001'
+    Assert-Equal 'd0a65633a2ab0f1868a29dc37ede5c560b9a674f59aa2ebc6492f5191dd7bb1c' $escapeProtocol.Batches[0].payloadSha256 "batch hash matches JSON.stringify for ' & < > and a literal backslash-u"
+    Write-Host 'PASS: taxonomy hashes match the TypeScript contract for characters Windows PowerShell escapes'
+
     $duplicateData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
     $duplicateData.Products[1].SKU = $duplicateData.Products[0].SKU
     $duplicates = ConvertTo-HairshopNewProductCandidates -Data $duplicateData
@@ -92,7 +156,7 @@ try {
     $reports = @(Get-ChildItem -LiteralPath $config.ReportDirectory -Filter '*.json' -File)
     Assert-Equal 4 $reports.Count 'one journal report per run'
     Write-Host 'PASS: every run has a JSON journal and no secret is logged'
-    Write-Host 'ALL SYNC TESTS PASSED: 5'
+    Write-Host 'ALL SYNC TESTS PASSED: 8'
     exit 0
 }
 catch {

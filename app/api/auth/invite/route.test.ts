@@ -68,7 +68,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
   it('atomically consumes an invitation and establishes a new session', async () => {
     const invitation = { status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' }
     invitationFindMock.mockResolvedValue(invitation)
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: 'company-a' })
     const tx = {
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
@@ -108,10 +108,34 @@ describe('/api/auth/invite validation and abuse protection', () => {
     expect(createSessionMock).not.toHaveBeenCalled()
   })
 
+  it('voids a link mailed to an address the account no longer has (e.g. admin-corrected typo)', async () => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@gamil.com', cardNumber: '111' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@gmail.com', name: 'Buyer', companyId: null })
+
+    const preview = await GET(new NextRequest('https://shop.test/api/auth/invite?token=token'))
+    expect(preview.status).toBe(404)
+    expect(await preview.json()).toEqual({ ok: false, error: 'invalid_token' })
+
+    const response = await post({ token: 'token', password: 'valid-password' })
+    expect(response.status).toBe(404)
+    expect(await response.json()).toEqual({ ok: false, error: 'invalid_token' })
+    expect(hashPasswordMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('matches the invitation address case-insensitively', async () => {
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '111' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'Buyer@Test.com', name: 'Buyer', companyId: null })
+    const response = await GET(new NextRequest('https://shop.test/api/auth/invite?token=token'))
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ ok: true, name: 'Buyer', cardNumber: '111' })
+  })
+
   it('grants the one-time welcome bonus on invitation acceptance', async () => {
     const invitation = { status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' }
     invitationFindMock.mockResolvedValue(invitation)
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: 'company-a' })
     const tx = {
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
       user: { update: vi.fn().mockResolvedValue({ bonusPoints: 500 }) }, session: { deleteMany: vi.fn() },
@@ -130,7 +154,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
 
   it('maps a concurrent consume loss to already_used and creates no session', async () => {
     invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234567890' })
-    userFindMock.mockResolvedValue({ id: 'u1', name: 'Buyer', companyId: 'company-a' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: 'company-a' })
     transactionMock.mockImplementation(async (fn) => fn({
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     }))
@@ -145,7 +169,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
     ['staff manager', { platformRole: 'customer', teamRole: 'manager', superAdmin: false }],
   ])('refuses to activate an invitation on a %s account: token, password, role and sessions untouched', async (_label, roles) => {
     invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 's1', email: 'staff@test.com', cardNumber: '1234' })
-    userFindMock.mockResolvedValue({ id: 's1', name: 'Staff', companyId: null, mfaEnabled: true, ...roles })
+    userFindMock.mockResolvedValue({ id: 's1', email: 'staff@test.com', name: 'Staff', companyId: null, mfaEnabled: true, ...roles })
     const response = await post({ token: 'token', password: 'valid-password' })
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ ok: false, error: 'staff_account' })

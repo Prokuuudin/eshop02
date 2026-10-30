@@ -36,6 +36,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         cardHoldersError,
         setClientEdits,
         clientSaveBusy,
+        clientRowErrors,
         getClientEdit,
         handleSaveClientDetails,
         noCardRequests,
@@ -451,6 +452,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     <Button size="sm" variant="outline" disabled={clientSaveBusy === holder.id} onClick={() => void handleSaveClientDetails(holder)}>
                                                         {clientSaveBusy === holder.id ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Сохранить', 'Save', 'Saglabāt')}
                                                     </Button>
+                                                    {clientRowErrors[holder.id] && (
+                                                        <p role="alert" className="mt-1 w-48 whitespace-normal text-xs text-red-600 dark:text-red-400">
+                                                            {clientRowErrors[holder.id]}
+                                                        </p>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );

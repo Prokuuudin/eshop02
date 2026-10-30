@@ -54,6 +54,9 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [cardHoldersError, setCardHoldersError] = useState('');
     const [clientEdits, setClientEdits] = useState<Record<string, { name: string; email: string; phone: string; customerType: 'individual' | 'company'; registrationNumber: string }>>({});
     const [clientSaveBusy, setClientSaveBusy] = useState<string | null>(null);
+    // Save errors are shown next to the row: the page-level banner is often scrolled out of view,
+    // and the edited value stays in the input, so a failed save looked like a successful one.
+    const [clientRowErrors, setClientRowErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
         const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
@@ -194,13 +197,42 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
 
     const getClientEdit = (holder: CardHolder) => clientEdits[holder.id] ?? getCardHolderEdit(holder);
 
+    const setClientRowError = (holderId: string, error: string) =>
+        setClientRowErrors((prev) => {
+            const next = { ...prev };
+            if (error) next[holderId] = error;
+            else delete next[holderId];
+            return next;
+        });
+
+    const clientSaveErrorText = (code: string) => {
+        switch (code) {
+            case 'email_taken':
+                return l('Не сохранено: этот email уже есть у другого клиента. Найдите его поиском по email.', 'Not saved: this email already belongs to another customer. Search by email to find them.', 'Nav saglabāts: šis e-pasts jau pieder citam klientam. Atrodiet to, meklējot pēc e-pasta.');
+            case 'invalid_request':
+                return l('Не сохранено: проверьте данные (например, формат email).', 'Not saved: check the entered data (e.g. the email format).', 'Nav saglabāts: pārbaudiet ievadītos datus (piem., e-pasta formātu).');
+            case 'optimistic_conflict':
+            case 'concurrent_update':
+                return l('Не сохранено: данные клиента только что изменились. Обновите страницу и повторите.', 'Not saved: the customer was just changed. Reload the page and try again.', 'Nav saglabāts: klienta dati tikko mainījās. Pārlādējiet lapu un mēģiniet vēlreiz.');
+            case 'forbidden':
+            case 'super_admin_required':
+            case 'reauthentication_required':
+                return l('Не сохранено: недостаточно прав для изменения этого аккаунта.', 'Not saved: insufficient permission to edit this account.', 'Nav saglabāts: nepietiek tiesību šī konta labošanai.');
+            default:
+                return l('Не сохранено: не удалось обновить клиента.', 'Not saved: failed to update the customer.', 'Nav saglabāts: neizdevās atjaunināt klienta datus.');
+        }
+    };
+
     const handleSaveClientDetails = async (holder: CardHolder) => {
         const edit = getClientEdit(holder);
         const registrationNumber = normalizeRegistrationNumber(edit.registrationNumber);
         if (edit.customerType === 'company' && registrationNumber.length !== 11) {
-            setFormError(l('Регистрационный номер юрлица должен содержать 11 цифр.', 'The company registration number must contain 11 digits.', 'Uzņēmuma reģistrācijas numurā jābūt 11 cipariem.'));
+            const error = l('Регистрационный номер юрлица должен содержать 11 цифр.', 'The company registration number must contain 11 digits.', 'Uzņēmuma reģistrācijas numurā jābūt 11 cipariem.');
+            setFormError(error);
+            setClientRowError(holder.id, error);
             return;
         }
+        setClientRowError(holder.id, '');
         setClientSaveBusy(holder.id);
         try {
             const response = await fetch('/api/admin/users', {
@@ -216,12 +248,21 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 }),
             });
             const payload = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(payload?.error ?? 'client_update_failed');
+            if (!response.ok) throw new Error(typeof payload?.error === 'string' ? payload.error : 'client_update_failed');
             setMessage(l('Данные клиента обновлены.', 'Customer details updated.', 'Klienta dati atjaunināti.'));
             setFormError('');
+            // Drop the draft so the row shows what the server actually stored.
+            setClientEdits((prev) => {
+                const next = { ...prev };
+                delete next[holder.id];
+                return next;
+            });
             await loadCardHolders();
         } catch (cause) {
-            setFormError(cause instanceof Error ? cause.message : l('Не удалось обновить клиента.', 'Failed to update the customer.', 'Neizdevās atjaunināt klienta datus.'));
+            const error = clientSaveErrorText(cause instanceof Error ? cause.message : '');
+            setFormError(error);
+            setMessage('');
+            setClientRowError(holder.id, error);
         } finally {
             setClientSaveBusy(null);
         }
@@ -259,7 +300,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

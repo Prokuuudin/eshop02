@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useAdminLocale } from '@/lib/use-admin-locale'
+import { currentPromoPreviewResult, promoPreviewPayloadKey } from '@/lib/promo-products-preview-state'
 
 type PreviewProduct = { id: string; title: string; brand: string; image: string | null; isActive: boolean }
 
@@ -17,12 +18,11 @@ export function PromoProductsPreview({ appliesTo = 'all', categories = [], subca
   excludeSaleItems?: boolean
 }): React.ReactElement {
   const { l } = useAdminLocale()
-  const payload = useMemo(() => ({ appliesTo, categories, subcategories, brands, brandLineIds, productIds, excludedProductIds, excludeSaleItems }), [appliesTo, categories, subcategories, brands, brandLineIds, productIds, excludedProductIds, excludeSaleItems])
-  const payloadKey = useMemo(() => JSON.stringify(payload), [payload])
+  const payloadKey = promoPreviewPayloadKey({ appliesTo, categories, subcategories, brands, brandLineIds, productIds, excludedProductIds, excludeSaleItems })
   const requestSequence = useRef(0)
   const [result, setResult] = useState<{ payloadKey: string; total: number; products: PreviewProduct[] } | null>(null)
   const [loading, setLoading] = useState(true)
-  const currentResult = result?.payloadKey === payloadKey ? result : null
+  const currentResult = currentPromoPreviewResult(result, payloadKey)
 
   useEffect(() => {
     const sequence = ++requestSequence.current
@@ -30,7 +30,7 @@ export function PromoProductsPreview({ appliesTo = 'all', categories = [], subca
     const timer = window.setTimeout(() => {
       setLoading(true)
       fetch('/api/admin/promo-products-preview', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payloadKey, signal: controller.signal,
       }).then(async (response) => {
         if (!response.ok) throw new Error('preview_failed')
         return response.json() as Promise<{ total: number; products: PreviewProduct[] }>
@@ -43,7 +43,7 @@ export function PromoProductsPreview({ appliesTo = 'all', categories = [], subca
       })
     }, 250)
     return () => { window.clearTimeout(timer); controller.abort() }
-  }, [payload, payloadKey])
+  }, [payloadKey])
 
   return <section className="sm:col-span-2 lg:col-span-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
     <div className="flex items-center justify-between gap-3">

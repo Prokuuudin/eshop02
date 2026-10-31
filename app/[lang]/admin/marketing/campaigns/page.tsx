@@ -309,7 +309,7 @@ export default function AdminCampaignsPage(): React.ReactElement {
               </label>
               <div className="sm:col-span-2 lg:col-span-4 rounded-lg border border-border p-4">
                 <p className="mb-3 text-sm text-muted-foreground">{l('Объекты акции (если ничего не выбрано — вся корзина). Условия разных групп применяются одновременно.', 'Promotion targets (if none are selected, the whole cart). Conditions from different groups apply together.', 'Akcijas objekti (ja nekas nav atlasīts — viss grozs). Dažādu grupu nosacījumi tiek piemēroti vienlaikus.')}</p>
-                <div className="space-y-4">
+                <div className="grid min-w-0 grid-cols-1 gap-4 sm:[&>*]:col-span-1 md:grid-cols-3 md:[&>*:last-child]:col-span-3">
                   <PromoMultiSelect label={l('Категории', 'Categories', 'Kategorijas')} options={catalogOptions.categories} selected={form.targetCategories} onChange={(targetCategories) => setForm((f) => ({ ...f, targetCategories }))} placeholder={l('Найти категорию…', 'Find category…', 'Meklēt kategoriju…')} />
                   <PromoMultiSelect label={l('Подкатегории', 'Subcategories', 'Apakškategorijas')} options={catalogOptions.subcategories} selected={form.targetSubcategories} onChange={(targetSubcategories) => setForm((f) => ({ ...f, targetSubcategories }))} placeholder={l('Найти подкатегорию…', 'Find subcategory…', 'Meklēt apakškategoriju…')} />
                   <PromoMultiSelect label={l('Бренды', 'Brands', 'Zīmoli')} options={catalogOptions.brands} selected={form.targetBrands} onChange={(targetBrands) => setForm((f) => ({ ...f, targetBrands }))} placeholder={l('Найти бренд…', 'Find brand…', 'Meklēt zīmolu…')} />

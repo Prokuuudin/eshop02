@@ -19,6 +19,24 @@ function db(value: unknown, lines: unknown[] = [], links: unknown[] = []) {
 }
 
 describe('evaluatePromoCampaigns', () => {
+  it('applies a 10% line campaign only to its one directly linked product', async () => {
+    const campaign: PromoCampaign = {
+      id: 'keratin-10', name: 'Keratin 10%', description: '', type: 'discount', discountPercent: 10,
+      startDate: '2026-01-01', endDate: '', active: true, targetCategories: [], targetSubcategories: [], targetBrands: [],
+      targetBrandLineIds: ['keratin'], minOrderAmount: 0, createdAt: '', updatedAt: '',
+    }
+    const database = db([campaign], [{ id: 'keratin', parentId: null }], [
+      { productId: '19490', brandLineId: 'keratin', status: 'active' },
+    ])
+
+    const result = await evaluatePromoCampaigns([
+      { id: '19490', quantity: 1, price: 100, bonusRate: 0, fromCatalog: true },
+      { id: 'other-brand', quantity: 1, price: 200, bonusRate: 0, fromCatalog: true },
+    ], database, new Date('2026-10-31T00:00:00Z'))
+
+    expect(result).toMatchObject({ campaignId: 'keratin-10', eligibleAmount: 100, discount: 10 })
+  })
+
   it('targets a parent line through child membership in checkout and storefront offers', async () => {
     const campaign: PromoCampaign = {
       id: 'line-sale', name: 'Line sale', description: '', type: 'discount', discountPercent: 15,

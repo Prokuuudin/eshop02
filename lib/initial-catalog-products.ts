@@ -31,6 +31,25 @@ function matchesSubcategories(product: Product, subcategories: string[]): boolea
   return subcategories.length === 0 || (product.subcategory !== undefined && subcategories.includes(product.subcategory))
 }
 
+const PRICE_ORDERS = new Set(['price-asc', 'price-desc'])
+
+/**
+ * Guests must not learn B2B prices, not even indirectly: a price range filter (result
+ * membership, totals, facet counts) or a price ordering is an oracle for the hidden price.
+ * For guests these inputs are dropped server-side, whatever the request carries.
+ */
+function guestPriceGuard(
+  canSeePrices: boolean,
+  filters: { minPrice?: number; maxPrice?: number; order?: string },
+): { minPrice?: number; maxPrice?: number; order?: string } {
+  if (canSeePrices) return filters
+  return {
+    minPrice: undefined,
+    maxPrice: undefined,
+    order: filters.order && PRICE_ORDERS.has(filters.order) ? undefined : filters.order,
+  }
+}
+
 function sortProducts(products: Product[], order: string | undefined, language: Language, hasBrandFilter: boolean): Product[] {
   if (!order) return hasBrandFilter ? sortBrandProductsNewestFirst(products) : products
   // Not-for-sale products carry no price (see lib/product-sellability.ts) and sort last.
@@ -76,6 +95,10 @@ export async function getInitialCatalogProducts({
   // Reuse the narrow facet index to order the entire filtered result by availability.
   // Full product rows are fetched only for the selected page.
   const [products, user] = await Promise.all([getStorefrontFacetProducts(), getServerUser()])
+  const guard = guestPriceGuard(Boolean(user), { minPrice, maxPrice, order })
+  minPrice = guard.minPrice
+  maxPrice = guard.maxPrice
+  order = guard.order
   const searchQuery = parseProductSearchQuery(search)
 
   const filtered = products.filter((product) => {
@@ -139,7 +162,10 @@ export async function getCatalogFacets({
   maxPrice,
   onSale = false,
 }: CatalogFacetFilters): Promise<CatalogFacets> {
-  const products = await getStorefrontFacetProducts()
+  const [products, user] = await Promise.all([getStorefrontFacetProducts(), getServerUser()])
+  const guard = guestPriceGuard(Boolean(user), { minPrice, maxPrice })
+  minPrice = guard.minPrice
+  maxPrice = guard.maxPrice
   const searchQuery = parseProductSearchQuery(search)
 
   const matchesSearch = (product: Product): boolean =>

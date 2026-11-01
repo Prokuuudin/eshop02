@@ -23,10 +23,11 @@ export default async function AboutSection({ language }: { language: Language })
 
         <div className="relative mx-auto min-h-[240px] w-full max-w-[240px] self-stretch sm:min-h-[320px] sm:max-w-[300px]">
           <Image
-            src="/girl4-about.png"
+            src="/girl4-about-v2.png"
             alt=""
             fill
             sizes="(min-width: 640px) 300px, 240px"
+            quality={90}
             className="object-contain object-bottom"
           />
         </div>
@@ -63,11 +64,12 @@ export default async function AboutSection({ language }: { language: Language })
 
         <div className="relative ml-auto h-[140px] w-full max-w-[180px] self-end sm:h-[174px] sm:max-w-[216px] lg:h-[112px] lg:max-w-[230px]">
           <Image
-            src="/girl3.png"
+            src="/girl3-v2.png"
             alt=""
             width={216}
             height={194}
             sizes="(min-width: 1024px) 216px, min(194px, 100vw)"
+            quality={90}
             className="absolute right-0 bottom-0 h-[140px] w-auto max-w-none object-contain object-bottom sm:h-[174px] lg:-right-12 lg:h-[194px]"
           />
         </div>

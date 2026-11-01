@@ -64,7 +64,7 @@ export default function Newsletter({ compact = false, embedded = false, registra
     <div
       className={
         showcase
-          ? `newsletter__inner newsletter__inner--showcase relative flex min-h-[176px] h-full flex-col justify-center gap-4 bg-emerald-600 px-5 py-6 pr-[148px] sm:min-h-[152px] sm:px-8 sm:pr-[210px] lg:min-h-[136px] lg:gap-5 dark:bg-emerald-700 ${embedded ? 'lg:items-start lg:px-7 lg:pr-[180px]' : 'lg:flex-row lg:items-center lg:px-9 lg:pr-[250px]'} ${embedded ? '' : 'rounded-xl'}`
+          ? `newsletter__inner newsletter__inner--showcase relative flex min-h-[176px] h-full flex-col justify-center gap-4 bg-emerald-600 px-5 py-6 pl-[160px] sm:min-h-[152px] sm:px-8 sm:pl-[190px] lg:min-h-[136px] lg:gap-5 dark:bg-emerald-700 ${embedded ? 'lg:items-start lg:px-7' : 'lg:flex-row lg:items-center lg:pl-[250px] lg:pr-9'} ${embedded ? '' : 'rounded-xl'}`
           : compact
           ? `newsletter__inner newsletter__inner--compact h-full bg-white p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${embedded ? '' : 'rounded-lg border'}`
           : 'newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6'

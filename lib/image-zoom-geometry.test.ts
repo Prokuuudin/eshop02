@@ -106,19 +106,30 @@ describe('paneImageLayout', () => {
     const box = { left: 0, top: 100, width: 400, height: 200 };
 
     it('масштабирует картинку ровно в zoomFactor и сдвигает под линзу', () => {
-        const layout = paneImageLayout({ x: 150, y: 150 }, box, 2);
+        const layout = paneImageLayout({ x: 150, y: 150 }, box, { width: 400, height: 400 }, 2);
         expect(layout).toEqual({ width: 800, height: 400, x: -300, y: -100 });
     });
 
     it('линза в углу картинки — нулевой сдвиг', () => {
-        const layout = paneImageLayout({ x: 0, y: 100 }, box, 3);
-        expect(layout).toEqual({ width: 1200, height: 600, x: -0, y: -0 });
+        const layout = paneImageLayout({ x: 0, y: 100 }, box, { width: 400, height: 400 }, 3);
+        expect(layout).toEqual({ width: 1200, height: 600, x: 0, y: 0 });
+    });
+
+    it('центрирует узкую увеличенную картинку внутри широкой панели', () => {
+        const portraitBox = { left: 100, top: 0, width: 100, height: 400 };
+        const layout = paneImageLayout(
+            { x: 100, y: 80 },
+            portraitBox,
+            { width: 448, height: 448 },
+            2.5,
+        );
+        expect(layout).toEqual({ width: 250, height: 1000, x: 99, y: -200 });
     });
 
     it('фрагмент под линзой не выходит за пределы увеличенной картинки', () => {
         const lens = { width: 100, height: 100 };
         const pos = clampLensTopLeft({ x: 1000, y: 1000 }, lens, box);
-        const layout = paneImageLayout(pos, box, 2);
+        const layout = paneImageLayout(pos, box, { width: 200, height: 200 }, 2);
         expect((pos.x - box.left + lens.width) * 2).toBeLessThanOrEqual(layout.width);
         expect((pos.y - box.top + lens.height) * 2).toBeLessThanOrEqual(layout.height);
     });

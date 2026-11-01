@@ -29,8 +29,23 @@ export type PromoCampaign = {
 
 type CampaignDb = Pick<ExtendedTransactionClient, 'keyValueSetting'> & BrandLineMembershipDb
 
+/** Calendar day (YYYY-MM-DD) in the server's local time, the time zone campaign dates are read in. */
+function localDay(now: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+/**
+ * A campaign whose start date is still ahead is scheduled and always armed: it goes live
+ * by its dates without anyone switching it on. Pausing applies once it has started.
+ */
+export function campaignActiveFlag(startDate: string, requested: unknown, now = new Date()): boolean {
+  return startDate.slice(0, 10) > localDay(now) || requested !== false
+}
+
 export function isCampaignActive(campaign: PromoCampaign, now = new Date()): boolean {
-  const start = new Date(campaign.startDate)
+  // Both ends are local calendar days: the campaign runs from 00:00 of startDate to the end of endDate.
+  const start = new Date(`${String(campaign.startDate ?? '').slice(0, 10)}T00:00:00`)
   const end = campaign.endDate ? new Date(`${campaign.endDate.slice(0, 10)}T23:59:59.999`) : null
   return !!campaign.active && Number.isFinite(start.getTime()) && now >= start
     && (!end || (Number.isFinite(end.getTime()) && now <= end))

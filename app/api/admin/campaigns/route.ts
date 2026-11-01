@@ -4,6 +4,7 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { campaignActiveFlag } from '@/lib/promo-campaigns'
 
 export const runtime = 'nodejs'
 
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(body.discountPercent) || 0)) : 0,
       startDate,
       endDate,
-      active: body.active ?? true,
+      active: campaignActiveFlag(startDate, body.active),
       targetCategories: Array.isArray(body.targetCategories) ? [...new Set(body.targetCategories.map(String).filter(Boolean))] : [],
       targetSubcategories: Array.isArray(body.targetSubcategories) ? [...new Set(body.targetSubcategories.map(String).filter(Boolean))] : [],
       targetBrands: Array.isArray(body.targetBrands) ? [...new Set(body.targetBrands.map(String).filter(Boolean))] : [],

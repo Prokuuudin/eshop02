@@ -49,13 +49,23 @@ const emptyForm = (): Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'> => (
 
 type Localize = (ru: string, en: string, lv: string) => string
 
+// Campaign dates are local calendar days: from 00:00 of the start day to the end of the end day.
+function localToday(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+/** A future start date arms the campaign: the server keeps it on and it starts by itself. */
+function isScheduled(startDate: string): boolean {
+  return startDate.slice(0, 10) > localToday()
+}
+
 function getCampaignStatus(campaign: PromoCampaign, l: Localize): { label: string; cls: string } {
   if (!campaign.active) return { label: l('Неактивна', 'Inactive', 'Neaktīva'), cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
-  const now = new Date()
-  const start = new Date(campaign.startDate)
-  const end = campaign.endDate ? new Date(campaign.endDate) : null
-  if (now < start) return { label: l('Предстоящая', 'Upcoming', 'Gaidāma'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' }
-  if (end && now > end) return { label: l('Завершена', 'Completed', 'Pabeigta'), cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
+  const today = localToday()
+  const end = campaign.endDate ? campaign.endDate.slice(0, 10) : ''
+  if (isScheduled(campaign.startDate)) return { label: l('Запланирована — включится автоматически', 'Scheduled — starts automatically', 'Ieplānota — sāksies automātiski'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' }
+  if (end && end < today) return { label: l('Завершена', 'Completed', 'Pabeigta'), cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
   return { label: l('Активна', 'Active', 'Aktīva'), cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' }
 }
 
@@ -295,18 +305,27 @@ export default function AdminCampaignsPage(): React.ReactElement {
                   onChange={(e) => setForm((f) => ({ ...f, minOrderAmount: Number(e.target.value) }))}
                 />
               </label>
-              <label htmlFor="admin-campaign-field-8" className="space-y-1">
-                <span className="text-sm text-muted-foreground">{l('Статус', 'Status', 'Statuss')}</span>
-                <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
-                  <SelectTrigger id="admin-campaign-field-8" className={selectCls}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">{l('Активна', 'Active', 'Aktīva')}</SelectItem>
-                    <SelectItem value="false">{l('Неактивна', 'Inactive', 'Neaktīva')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </label>
+              {isScheduled(form.startDate) ? (
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">{l('Статус', 'Status', 'Statuss')}</span>
+                  <p className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">
+                    {l('Запланирована — включится автоматически в дату начала', 'Scheduled — starts automatically on the start date', 'Ieplānota — sāksies automātiski sākuma datumā')}
+                  </p>
+                </div>
+              ) : (
+                <label htmlFor="admin-campaign-field-8" className="space-y-1">
+                  <span className="text-sm text-muted-foreground">{l('Статус', 'Status', 'Statuss')}</span>
+                  <Select value={form.active ? 'true' : 'false'} onValueChange={(v) => setForm((f) => ({ ...f, active: v === 'true' }))}>
+                    <SelectTrigger id="admin-campaign-field-8" className={selectCls}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">{l('Активна', 'Active', 'Aktīva')}</SelectItem>
+                      <SelectItem value="false">{l('Неактивна', 'Inactive', 'Neaktīva')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </label>
+              )}
               <div className="sm:col-span-2 lg:col-span-4 rounded-lg border border-border p-4">
                 <p className="mb-3 text-sm text-muted-foreground">{l('Объекты акции (если ничего не выбрано — вся корзина). Условия разных групп применяются одновременно.', 'Promotion targets (if none are selected, the whole cart). Conditions from different groups apply together.', 'Akcijas objekti (ja nekas nav atlasīts — viss grozs). Dažādu grupu nosacījumi tiek piemēroti vienlaikus.')}</p>
                 <div className="grid min-w-0 grid-cols-1 gap-4 sm:[&>*]:col-span-1 md:grid-cols-3 md:[&>*:last-child]:col-span-3">
@@ -367,14 +386,16 @@ export default function AdminCampaignsPage(): React.ReactElement {
                     </div>
                     <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       <Button size="sm" variant="outline" onClick={() => openEdit(item)}>{l('Изменить', 'Edit', 'Rediģēt')}</Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleToggle(item)}
-                        className={item.active ? 'text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-900/20' : 'text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20'}
-                      >
-                        {item.active ? l('Деактивировать', 'Deactivate', 'Deaktivizēt') : l('Активировать', 'Activate', 'Aktivizēt')}
-                      </Button>
+                      {!(item.active && isScheduled(item.startDate)) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleToggle(item)}
+                          className={item.active ? 'text-amber-600 border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:border-amber-700 dark:hover:bg-amber-900/20' : 'text-green-600 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-700 dark:hover:bg-green-900/20'}
+                        >
+                          {item.active ? l('Деактивировать', 'Deactivate', 'Deaktivizēt') : l('Активировать', 'Activate', 'Aktivizēt')}
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"

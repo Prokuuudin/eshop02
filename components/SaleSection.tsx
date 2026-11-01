@@ -18,25 +18,25 @@ export default function SaleSection({ products, banners }: { products: Product[]
     const restBanners = banners.filter((item) => item !== banner);
     const { listBanners, carouselBanners } = splitBannersByPlacement(restBanners);
 
-    // The decorative girl belongs to the subscription form: wherever the form renders, she renders too.
     const subscriptionBlock = (
-        <div className="sale-section__feature-wrap relative pt-8 mb-6">
+        <div className="sale-section__feature-wrap relative mb-6 pt-24 sm:pt-28">
             <Image
                 src="/girl1.png"
                 alt=""
                 aria-hidden="true"
-                width={483}
-                height={176}
-                className="sale-section__girl pointer-events-none absolute bottom-0 -left-36 z-10 hidden h-44 w-auto max-w-none select-none md:block"
+                width={2400}
+                height={874}
+                sizes="(min-width: 1024px) 320px, 240px"
+                className="sale-section__girl pointer-events-none absolute -right-[275px] bottom-0 z-10 h-[220px] w-auto max-w-none select-none sm:-right-[345px] sm:h-[270px] lg:-right-[410px] lg:h-[320px]"
             />
-            <div className="sale-section__feature-row grid items-stretch md:min-h-36 overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
+            <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                 {banner && (
                     <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
                         <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40" />
                     </div>
                 )}
-                <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'md:pl-40 lg:col-span-2'}`}>
-                    <Newsletter compact embedded registration />
+                <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>
+                    <Newsletter compact embedded={Boolean(banner)} registration showcase />
                 </div>
             </div>
         </div>

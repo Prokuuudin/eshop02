@@ -45,4 +45,18 @@ describe('POST /api/promo/validate', () => {
     expect(await response.json()).toEqual({ valid: false, error: 'code_required' })
     expect(resolveLineItemsMock).not.toHaveBeenCalled()
   })
+
+  it('rejects guests before resolving any catalog price, even with a valid code', async () => {
+    getServerUserMock.mockResolvedValue(null)
+    const response = await POST(new Request('http://localhost/api/promo/validate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ code: 'LINE20', email: 'guest@example.com', items: [{ id: 'p1', quantity: 1 }] }),
+    }) as never)
+    expect(response.status).toBe(401)
+    const body = await response.json()
+    expect(body).toEqual({ valid: false, error: 'unauthorized' })
+    expect(resolveLineItemsMock).not.toHaveBeenCalled()
+    expect(evaluatePromoCodeMock).not.toHaveBeenCalled()
+  })
 })

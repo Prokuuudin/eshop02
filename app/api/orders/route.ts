@@ -10,10 +10,10 @@ import { isPayseraCheckoutEnabled } from '@/lib/paysera-checkout'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
+import { canPlaceOrders } from '@/lib/auth-access'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
-import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { isCourierDeliveryMethod } from '@/lib/delivery'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
@@ -106,21 +106,23 @@ async function sendOrderConfirmationEmail(order: ServerOrder): Promise<void> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const correlationId = getCorrelationId(req)
   try {
-    let captchaRequired: boolean
-    try {
-      captchaRequired = isTurnstileRequired()
-    } catch (error) {
-      if (error instanceof TurnstileConfigurationError) {
-        return NextResponse.json({ error: 'captcha_not_configured' }, { status: 503 })
-      }
-      throw error
-    }
+    // Orders are for authenticated B2B customers only. A guest order would reveal restricted
+    // B2B prices (response totals/line prices and the confirmation email), and guests have no
+    // storefront path to checkout (prices hidden, add-to-cart gated, cart scoped per user).
+    // Forced-password-change and MFA-pending sessions resolve to null here as well.
+    // Authorize before any validation, pricing or persistence.
+    const caller = await getServerUser()
+    if (!caller) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    // Same rule the cart/checkout UI applies: company viewer/manager may not order. The role
+    // is read from the DB on every request (getServerUser), so the UI cannot be bypassed.
+    if (!canPlaceOrders(caller)) return NextResponse.json({ error: 'forbidden_role' }, { status: 403 })
+
     const contentLength = Number(req.headers.get('content-length') ?? 0)
     if (contentLength > 65_536) {
       return NextResponse.json({ error: 'payload_too_large' }, { status: 413 })
     }
 
-    const { order, turnstileToken } = (await req.json()) as { order?: CheckoutOrderInput; turnstileToken?: string }
+    const { order } = (await req.json()) as { order?: CheckoutOrderInput }
 
     if (!order || typeof order !== 'object') {
       return NextResponse.json({ error: 'order payload is required' }, { status: 400 })
@@ -247,19 +249,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Recompute all money fields from the authoritative DB catalog — never trust client prices/totals.
-    // Bonus can only be spent by an authenticated user and is capped by their real DB balance.
-    const caller = await getServerUser()
+    // Bonus spending is capped by the caller's real DB balance.
     const ip = req.headers.get('cf-connecting-ip')?.trim()
       || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || req.headers.get('x-real-ip')?.trim()
       || 'unknown'
-    const ORDER_LIMIT = caller
-      ? { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
-      : { windowMs: 60 * 60 * 1000, maxAttempts: 3 }
+    const ORDER_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
     const limits = await Promise.all([
       checkRateLimit(`order-create:ip:${ip}`, ORDER_LIMIT),
       checkRateLimit(`order-create:email:${email}`, ORDER_LIMIT),
-      ...(caller ? [checkRateLimit(`order-create:session:${caller.id}`, ORDER_LIMIT)] : []),
+      checkRateLimit(`order-create:session:${caller.id}`, ORDER_LIMIT),
     ])
     const limited = limits.find((item) => item.limited)
     if (limited) {
@@ -269,21 +268,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       })
     }
 
-    if (!caller) {
-      if (captchaRequired) {
-        if (!turnstileToken?.trim()) return NextResponse.json({ error: 'captcha_required' }, { status: 400 })
-        if (!(await verifyTurnstile(turnstileToken, ip))) {
-          return NextResponse.json({ error: 'captcha_failed' }, { status: 400 })
-        }
-      }
-    }
-
     await assertGrinsCheckoutOpen(prisma)
     await releaseExpiredStockReservations()
 
     // Online payment pending confirmation ('card' is legacy/unused; Paysera is live)
-    // holds stock for 35 min instead of committing it immediately, same as a guest.
-    const reserveStock = !caller || ['card', 'paysera'].includes(paymentMethod)
+    // holds stock for 35 min instead of committing it immediately.
+    const reserveStock = ['card', 'paysera'].includes(paymentMethod)
 
     // Explicit whitelist. The order id (server-generated: client counters collide and would
     // overwrite foreign orders), payment state, ownership, timestamps and all money fields
@@ -310,10 +300,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       paymentProvider: paymentMethod === 'paysera' ? 'paysera' : 'manual',
       language: ['ru', 'en', 'lv'].includes(order.language as string) ? order.language as string : 'ru',
       // Bind the order to the authenticated user/company at creation for reliable ownership checks.
-      userId: caller?.id,
-      companyId: caller?.companyId,
+      userId: caller.id,
+      companyId: caller.companyId,
       checkoutKey: idempotencyKey
-        ? createHash('sha256').update(`${caller?.id ?? email}:${idempotencyKey}`).digest('hex')
+        ? createHash('sha256').update(`${caller.id}:${idempotencyKey}`).digest('hex')
         : undefined,
       stockReservationStatus: reserveStock ? 'reserved' : 'committed',
       stockReservedUntil: reserveStock ? new Date(Date.now() + 35 * 60 * 1000).toISOString() : undefined,
@@ -327,7 +317,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         deliveryMethod,
         bonusSpent: typeof order.bonusSpent === 'number' ? order.bonusSpent : null,
         userBonusBalance: currentBonusBalance,
-        userId: caller?.id,
+        userId: caller.id,
         email,
       }, tx)
       // Same transaction as pricing and the stock guard: the snapshot describes exactly the

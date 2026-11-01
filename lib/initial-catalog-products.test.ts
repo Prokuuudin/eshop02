@@ -14,7 +14,8 @@ import {
   getMergedProductsByIds,
   getStorefrontFacetProducts,
 } from '@/lib/product-overrides-store'
-import { getInitialCatalogProducts } from '@/lib/initial-catalog-products'
+import { getServerUser } from '@/lib/server-auth'
+import { getCatalogFacets, getInitialCatalogProducts } from '@/lib/initial-catalog-products'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -66,5 +67,68 @@ describe('getInitialCatalogProducts query bounds', () => {
     expect(getDbProductsPaginated).not.toHaveBeenCalled()
     expect(getMergedProductsByIds).toHaveBeenCalledWith(['sale-1'])
     expect(result.products.map((product) => product.id)).toEqual(['sale-1'])
+  })
+})
+
+describe('guest price oracle (B2B prices must not be inferable)', () => {
+  // Storage order differs from both price orders, so an applied price sort is observable.
+  const catalog = [
+    { id: 'dear', title: 'C dear', brand: 'Brand', price: 50, rating: 0, category: 'hair' as const, stock: 1 },
+    { id: 'cheap', title: 'A cheap', brand: 'Brand', price: 5, rating: 0, category: 'hair' as const, stock: 1 },
+    { id: 'mid', title: 'B mid', brand: 'Brand', price: 20, rating: 0, category: 'hair' as const, stock: 1 },
+  ]
+  const asGuest = (): void => { vi.mocked(getServerUser).mockResolvedValue(null) }
+  const asCustomer = (): void => { vi.mocked(getServerUser).mockResolvedValue({ id: 'user-1' } as never) }
+
+  beforeEach(() => {
+    vi.mocked(getStorefrontFacetProducts).mockResolvedValue(catalog)
+    vi.mocked(getMergedProductsByIds).mockImplementation(async (ids: string[]) =>
+      ids.map((id) => catalog.find((product) => product.id === id)!))
+  })
+
+  it('ignores minPrice/maxPrice for guests: membership and totals stay price-independent', async () => {
+    asGuest()
+    const result = await getInitialCatalogProducts({ language: 'lv', minPrice: 19.99, maxPrice: 20.01 })
+    expect(result.totalProducts).toBe(3)
+    expect(getMergedProductsByIds).toHaveBeenCalledWith(['dear', 'cheap', 'mid'])
+  })
+
+  it('never returns prices to guests', async () => {
+    asGuest()
+    const result = await getInitialCatalogProducts({ language: 'en' })
+    for (const product of result.products) expect(product).not.toHaveProperty('price')
+  })
+
+  it.each(['price-asc', 'price-desc'])('ignores %s ordering for guests', async (order) => {
+    asGuest()
+    await getInitialCatalogProducts({ language: 'ru', order })
+    expect(getMergedProductsByIds).toHaveBeenCalledWith(['dear', 'cheap', 'mid'])
+  })
+
+  it('keeps non-price ordering for guests', async () => {
+    asGuest()
+    await getInitialCatalogProducts({ language: 'en', order: 'name-desc' })
+    expect(getMergedProductsByIds).toHaveBeenCalledWith(['dear', 'mid', 'cheap'])
+  })
+
+  it('ignores the price range in guest facet counts', async () => {
+    asGuest()
+    const facets = await getCatalogFacets({ language: 'lv', minPrice: 19.99, maxPrice: 20.01 })
+    expect(facets.groupCounts['']).toBe(3)
+    expect(facets.brandCounts).toEqual({ brand: 3 })
+  })
+
+  it('keeps price filters, ordering and facet counts for authenticated customers', async () => {
+    asCustomer()
+    const filtered = await getInitialCatalogProducts({ language: 'lv', minPrice: 19.99, maxPrice: 20.01 })
+    expect(filtered.totalProducts).toBe(1)
+    expect(filtered.products[0]).toMatchObject({ id: 'mid', price: 20 })
+
+    vi.mocked(getMergedProductsByIds).mockClear()
+    await getInitialCatalogProducts({ language: 'lv', order: 'price-desc' })
+    expect(getMergedProductsByIds).toHaveBeenCalledWith(['dear', 'mid', 'cheap'])
+
+    const facets = await getCatalogFacets({ language: 'lv', minPrice: 19.99, maxPrice: 20.01 })
+    expect(facets.groupCounts['']).toBe(1)
   })
 })

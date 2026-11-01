@@ -427,8 +427,37 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['viewer', 'viewer'],
+    ['manager', 'manager'],
+    ['a company member without a team role', null],
+  ])('rejects a company %s with 403 before pricing, persistence or email', async (_label, teamRole) => {
+    vi.mocked(getServerUser).mockResolvedValue({ ...CUSTOMER, companyId: 'c1', teamRole } as never)
+    const res = await POST(makeRequest(VALID_ORDER, 'role-check-0001'))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body).toEqual({ error: 'forbidden_role' })
+    expect(body).not.toHaveProperty('order')
+    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(recomputeOrderPricing).not.toHaveBeenCalled()
+    expect(createServerOrder).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['company buyer', { companyId: 'c1', teamRole: 'buyer' }],
+    ['company admin', { companyId: 'c1', teamRole: 'admin' }],
+    ['individual customer without a company', { companyId: undefined, teamRole: undefined }],
+  ])('lets a %s place an order', async (_label, role) => {
+    vi.mocked(getServerUser).mockResolvedValue({ ...CUSTOMER, ...role } as never)
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+    expect(createServerOrder).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(createServerOrder).mock.calls[0][0]).toMatchObject({ userId: 'u1', companyId: role.companyId })
+  })
+
   it('binds the order to the authenticated customer and company', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ ...CUSTOMER, companyId: 'c1' } as never)
+    vi.mocked(getServerUser).mockResolvedValue({ ...CUSTOMER, companyId: 'c1', teamRole: 'buyer' } as never)
     const res = await POST(makeRequest())
     expect(res.status).toBe(200)
     const persisted = vi.mocked(createServerOrder).mock.calls[0][0]

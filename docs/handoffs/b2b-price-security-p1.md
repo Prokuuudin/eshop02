@@ -4,7 +4,18 @@
 сверить `git status`, ветку и HEAD с записями ниже, продолжить с первого незавершённого шага.
 Факты репозитория и результаты тестов приоритетнее записей этого файла.
 
-## Текущий статус: IN PROGRESS — финальный релиз (этап A PASS; этапы B–C в работе)
+## Текущий статус: IN PROGRESS — финальный релиз (этапы A, B PASS; этап C в работе)
+
+**Каноничная копия handoff — в релизной ветке `release/2026-11-02-b2b-price-security`.**
+Копия в P1-ветке заморожена на этапе A.
+
+- Релизная ветка: `release/2026-11-02-b2b-price-security` (запушена), worktree
+  `C:\Users\User\eshop02-work\worktrees\eshop02-release-b2b-price`
+- Состав (поверх `bb55516e`, cherry-pick `-x`):
+  1. `8c7a1503` ← `0f4db4d8` stop guests inferring B2B prices
+  2. `de485ca4` ← `ab655cce` reject guest orders before pricing
+  3. `cb4e4d40` ← `ae1a0be2` enforce company ordering role on the server
+  4. docs-коммиты handoff (HEAD — `git log -1`)
 
 ### Решения владельца (2026-11-02)
 
@@ -19,7 +30,7 @@
 | Этап | Статус |
 |---|---|
 | A. Серверная проверка роли в `POST /api/orders` | PASS — `ae1a0be2` в P1-ветке |
-| B. Релизная ветка от `bb55516e` + cherry-pick `0f4db4d8`, `ab655cce`, `ae1a0be2` | TODO |
+| B. Релизная ветка от `bb55516e` + cherry-pick `0f4db4d8`, `ab655cce`, `ae1a0be2` | PASS — без конфликтов |
 | C. Проверки на релизной ветке | TODO |
 | D. Handoff | обновляется по этапам |
 
@@ -35,6 +46,20 @@
   `teamRole=admin`; сессия получает `apiAccess=false` → 403); `/api/admin/orders` — персонал, `orders.update`.
 - Тесты: viewer / manager / член компании без роли → 403 без лимитов/цен/записи/писем; buyer / company admin /
   клиент без компании → 200. Red: 3 теста запрета падают без проверки. Целевые наборы 134/134, tsc 0, eslint 0.
+
+### Этап B — итог
+
+- `git worktree add -b release/2026-11-02-b2b-price-security … bb55516e`, затем
+  `git cherry-pick -x 0f4db4d8 ab655cce ae1a0be2` — без конфликтов.
+- Проверка состава: `git diff bb55516e HEAD` (без handoff) побайтно совпадает с `git diff 2871240e ae1a0be2`
+  (без handoff) — посторонних изменений нет. `bb55516e` — предок; image zoom `a1ea3f3f` — НЕ предок.
+- 12 файлов: `.gitattributes`, `app/api/orders/route.ts` (+test), `app/api/promo/campaigns/evaluate/route.ts` (+test),
+  `app/api/promo/validate/route.ts` (+test), `components/ProductFilter.tsx`, `lib/auth-access.ts`,
+  `lib/initial-catalog-products.ts` (+test), `docs/handoffs/b2b-price-security-p1.md`.
+- Windows: worktree, извлечённый до правила `*.json eol=lf`, держит JSON с CRLF. После checkout релиза
+  переизвлечь JSON (`git ls-files -z -- '*.json' | xargs -0 rm -f && git checkout -- $(git ls-files -- '*.json')`),
+  иначе SHA-тесты `lib/sync/*wave*` падают. Индекс не меняется — только рабочие копии.
+- Примечание: docs-коммит `9e755f95` записал handoff без этого раздела (сбой скрипта); исправлено следующим коммитом.
 
 ---
 

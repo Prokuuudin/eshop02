@@ -22,6 +22,7 @@ import { useTranslation } from '@/lib/use-translation'
 import { useCategoriesConfig } from '@/lib/use-categories-config'
 import { useBrandsConfig } from '@/lib/use-brands-config'
 import { brandSlug } from '@/lib/brand-slug'
+import { useAuthStore } from '@/lib/auth-store'
 import type { CatalogFacets } from '@/lib/initial-catalog-products'
 
 const getBrandName = (brandId: string, brands: Array<{ id: string; name: string }>): string => {
@@ -64,6 +65,8 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products,
       return { min: Math.min(...prices), max: Math.max(...prices) };
     }, [sourceProducts]);
   const { t, language } = useTranslation();
+  // Guests get no price data; the server ignores price filters/ordering for them anyway.
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { categories } = useCategoriesConfig()
   const { brands: configuredBrands } = useBrandsConfig()
   const availableBrands = React.useMemo(() => {
@@ -176,7 +179,7 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products,
       onRemove: () => onFilter({ group, subcat, onSale, brands: brands.filter((id) => id !== brandId), minPrice, maxPrice, order })
     });
   });
-  if (minPrice || maxPrice) {
+  if (isAuthenticated && (minPrice || maxPrice)) {
     const priceLabel = minPrice && maxPrice
       ? `€${Number(minPrice).toLocaleString()} – €${Number(maxPrice).toLocaleString()}`
       : minPrice
@@ -199,8 +202,12 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products,
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="default">{t('catalog.filters.orderBy.default', 'По умолчанию')}</SelectItem>
-            <SelectItem value="price-asc">{t('catalog.filters.orderBy.priceAsc', 'Сначала дешёвые')}</SelectItem>
-            <SelectItem value="price-desc">{t('catalog.filters.orderBy.priceDesc', 'Сначала дорогие')}</SelectItem>
+            {isAuthenticated && (
+              <>
+                <SelectItem value="price-asc">{t('catalog.filters.orderBy.priceAsc', 'Сначала дешёвые')}</SelectItem>
+                <SelectItem value="price-desc">{t('catalog.filters.orderBy.priceDesc', 'Сначала дорогие')}</SelectItem>
+              </>
+            )}
             <SelectItem value="name-asc">{t('catalog.filters.orderBy.nameAsc', 'По названию A-Я')}</SelectItem>
             <SelectItem value="name-desc">{t('catalog.filters.orderBy.nameDesc', 'По названию Я-A')}</SelectItem>
           </SelectContent>
@@ -288,13 +295,15 @@ export default function ProductFilter({ onFilter, initialFilters = {}, products,
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div>
-        <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>
-        <div className="flex gap-2">
-          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice: e.target.value, maxPrice, order })} />
-          <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice, maxPrice: e.target.value, order })} />
+      {isAuthenticated && (
+        <div>
+          <label className="block text-sm mb-1 text-foreground">{t('product.price')}</label>
+          <div className="flex gap-2">
+            <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.min ? `${t('common.min')} ${priceRange.min}` : t('common.min')} value={minPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice: e.target.value, maxPrice, order })} />
+            <Input type="number" className="w-full bg-card text-foreground border-border" placeholder={priceRange.max ? `${t('common.max')} ${priceRange.max}` : t('common.max')} value={maxPrice} onChange={e => onFilter({ group, subcat, onSale, brands, minPrice, maxPrice: e.target.value, order })} />
+          </div>
         </div>
-      </div>
+      )}
       {activeFilters.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-semibold text-foreground">

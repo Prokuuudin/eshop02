@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { attachCampaignOffers, attachCampaignOffersFromDb, evaluatePromoCampaigns, type PromoCampaign } from './promo-campaigns'
+import { attachCampaignOffers, attachCampaignOffersFromDb, campaignActiveFlag, evaluatePromoCampaigns, isCampaignActive, type PromoCampaign } from './promo-campaigns'
 import type { Product } from '@/data/products'
 
 const item = (category: string, price = 100) => ({
@@ -123,5 +123,29 @@ describe('evaluatePromoCampaigns', () => {
       targetSubcategories: ['shampoo'], targetBrands: ['ACME'], minOrderAmount: 0, createdAt: '', updatedAt: '',
     }]), new Date('2026-08-23T12:00:00Z'))
     expect(result).toMatchObject({ eligibleAmount: 100, discount: 10 })
+  })
+})
+
+describe('campaign dates', () => {
+  const dated = (startDate: string, endDate: string, active = true) => ({
+    id: 'c', name: 'c', description: '', type: 'discount', discountPercent: 10, startDate, endDate, active,
+    targetCategories: [], targetSubcategories: [], targetBrands: [], minOrderAmount: 0, createdAt: '', updatedAt: '',
+  }) as PromoCampaign
+
+  it('runs from local 00:00 of the start day to the end of the end day', () => {
+    const campaign = dated('2026-11-01', '2026-11-30')
+    expect(isCampaignActive(campaign, new Date(2026, 9, 31, 23, 59, 59))).toBe(false)
+    expect(isCampaignActive(campaign, new Date(2026, 10, 1, 0, 0, 0))).toBe(true)
+    expect(isCampaignActive(campaign, new Date(2026, 10, 30, 23, 59, 59))).toBe(true)
+    expect(isCampaignActive(campaign, new Date(2026, 11, 1, 0, 0, 0))).toBe(false)
+    expect(isCampaignActive(dated('2026-11-01', '2026-11-30', false), new Date(2026, 10, 5))).toBe(false)
+  })
+
+  it('keeps scheduled campaigns armed and leaves the pause switch to started ones', () => {
+    const now = new Date(2026, 9, 30, 15, 0)
+    expect(campaignActiveFlag('2026-11-01', false, now)).toBe(true)
+    expect(campaignActiveFlag('2026-10-30', false, now)).toBe(false)
+    expect(campaignActiveFlag('2026-10-30', undefined, now)).toBe(true)
+    expect(campaignActiveFlag('2026-10-01', true, now)).toBe(true)
   })
 })

@@ -4,6 +4,7 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { campaignActiveFlag } from '@/lib/promo-campaigns'
 
 export const runtime = 'nodejs'
 
@@ -74,6 +75,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     const now = new Date().toISOString()
     data[idx] = {
       ...data[idx], ...body, id, name, type, startDate, endDate,
+      active: campaignActiveFlag(startDate, merged.active),
       description: String(merged.description ?? '').trim(),
       showOldPrice: merged.showOldPrice !== false,
       discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(merged.discountPercent) || 0)) : 0,

@@ -27,12 +27,12 @@ export default function SaleSection({ products, banners }: { products: Product[]
                 width={2400}
                 height={874}
                 sizes="(min-width: 1024px) 320px, 240px"
-                className="sale-section__girl pointer-events-none absolute -right-[160px] bottom-0 z-10 h-[165px] w-auto max-w-none select-none sm:-right-[170px] sm:h-[203px] lg:-right-[200px] lg:h-[240px]"
+                className="sale-section__girl pointer-events-none absolute -left-[118px] bottom-0 z-10 h-[165px] w-auto max-w-none select-none sm:-left-[135px] sm:h-[203px] lg:-left-[150px] lg:h-[240px]"
             />
             <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                 {banner && (
                     <div className="sale-section__banner relative h-full [&_.sale-banner]:h-full [&_.sale-banner]:rounded-none [&_.sale-banner]:border-0 [&_.sale-banner]:shadow-none">
-                        <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40" />
+                        <SaleBanner banner={{ ...banner, link: isAuthenticated ? banner.link : '/auth/register' }} contentClassName="md:pl-40 lg:pl-56" />
                     </div>
                 )}
                 <div className={`sale-section__newsletter h-full ${banner ? 'border-t-2 border-border lg:border-l-2 lg:border-t-0' : 'lg:col-span-2'}`}>

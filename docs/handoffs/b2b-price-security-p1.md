@@ -4,87 +4,316 @@
 сверить `git status`, ветку и HEAD с записями ниже, продолжить с первого незавершённого шага.
 Факты репозитория и результаты тестов приоритетнее записей этого файла.
 
-## Текущий статус: PASS (запушено, ждёт решения владельца о merge/deploy)
+## Текущий статус: синхронизация с `main` — ветка готова, PR ожидает создания (gh не авторизован)
+
+**Каноничная копия handoff — в ветке `fix/2026-11-02-b2b-price-security-main`** (после merge — в `main`).
+Копия в релизной ветке заморожена на post-deploy проверке.
+
+### Синхронизация P1 с `main` (2026-11-02)
+
+- База: `origin/main` = `001d7e71`. Ветка: `fix/2026-11-02-b2b-price-security-main` (запушена), worktree
+  `C:\Users\User\eshop02-work\worktrees\eshop02-main-b2b-price`.
+- `git cherry-pick -x` по порядку, без конфликтов:
+  1. `09f6f7a4` ← `8c7a1503` stop guests inferring B2B prices
+  2. `74ddacfc` ← `de485ca4` reject guest orders before pricing
+  3. `53bc0f76` ← `cb4e4d40` enforce company ordering role on the server
+  4. docs: этот handoff
+- Состав: код `git diff origin/main HEAD` (без handoff) побайтно совпадает с `git diff bb55516e cb4e4d40`;
+  `git patch-id --stable` всех трёх коммитов совпадает с релизными. Image zoom не включён; `package.json`/lock не менялись.
+  Вся релизная ветка НЕ переносилась (прод-линия `2871240e`/`bb55516e` в `main` не попадает).
+- Проверки (без БД, фиктивный недоступный `DATABASE_URL`): `tsc` 0; `eslint` 0 ошибок / 63 warnings;
+  vitest unit 355 файлов **2841/2841**; целевые (orders, promo, каталог, auth-access, checkout, wave-SHA) 207/207;
+  `check:prisma`, `audit:security`, `audit:architecture`, `check:encoding` — PASS; `test:integration` 13 pass / 11 skipped
+  (Postgres-наборы требуют изолированной БД — как в CI без секрета); `test:erp:performance` PASS.
+  `next build` локально не запускался (код идентичен собранному на Plesk релизу; build — в CI).
+- Блокер: `gh` не авторизован в этой среде → PR и GitHub checks не созданы/не проверены.
+  Создать PR: https://github.com/Prokuuudin/eshop02/compare/main...fix/2026-11-02-b2b-price-security-main
+  (или `gh auth login`, затем `gh pr create --base main --head fix/2026-11-02-b2b-price-security-main`).
+- Merge в `main` — только после зелёных checks и подтверждения владельца.
+
+## Предыдущий статус: DEPLOYED + post-deploy PASS (внешняя проверка 2026-11-02)
+
+Владелец задеплоил `release/2026-11-02-b2b-price-security` @ `2256909f` на Plesk (сборка + рестарт).
+Этот и последующие docs-коммиты в ветке меняют только handoff; **развёрнутый код = `2256909f`**.
+
+### Post-deploy проверка production (только внешние безопасные запросы)
+
+- SHA: **извне не подтверждается** — приложение не отдаёт версию (нет заголовка/эндпоинта).
+  Поведенческие отпечатки всех частей релиза совпали:
+  - `bb55516e` (hero): в HTML `/lv` есть `hero__cta group xl:mt-11`;
+  - `8c7a1503`/`de485ca4`: гостевые POST с телами, которые старый код отклонил бы валидацией
+    (`/api/orders` `{}` → было 400; `/api/promo/campaigns/evaluate` `{"items":[]}` → было 200; `/api/promo/validate` `{}` → было 200),
+    теперь все → **401** (до валидации и расчётов). Заказы не создавались, промокоды не использовались;
+  - UI: ценовой фильтр в гостевом SSR каталога без числовых полей.
+  - `cb4e4d40` (роли компании) извне не проверяем — нужны тестовые аккаунты viewer/buyer (не использовались).
+- Доступность: `/`, `/lv`, `/en` → 200; `/ru` → 308 на `/` (ожидаемо); `/api/health` → `{"status":"ok","db":"ok"}`.
+- Каталог RU/LV/EN: 24 карточки на странице, 0 ценовых полей и 0 сумм в €; с `minPrice=0.01&maxPrice=0.02`,
+  `minPrice=10000`, `order=price-asc|price-desc` — фасеты (полный объект, все счётчики) и первая страница идентичны базовым.
+  Позитивный контроль: `order=name-desc` меняет выдачу, `brands=matrix` — фасеты (2 товара), т.е. параметры читаются,
+  а ценовые сервер игнорирует.
+- Страницы товара RU/LV/EN (22516, 22273): 200, 0 ценовых полей, в JSON-LD нет `offers`.
+- Корзина, checkout, вход (RU/LV/EN), кабинет → 200, без данных пользователя; `/lv/admin*` → серверный
+  `NEXT_REDIRECT` на `/auth/login?admin=1` (стрим 200 + meta refresh), без админ-данных.
+- Публичные страницы (blog, contact, terms, privacy, delivery-payment, return-policy, cookies, sitemap.xml,
+  robots.txt, llms.txt) → 200, без ошибок приложения.
+
+### Замечания, не связанные с релизом (существовали до него; не исправлялись)
+
+1. Несуществующий URL отдаёт not-found со статусом 200 (`noindex`) — soft-404 из-за стриминга; SEO-мелочь.
+2. Данные: RU-название товара 22273 содержит буквальный U+FFFD (`balino\uFFFDais`, байты `EF BF BD`);
+   у 22516 на LV/EN показывается русское название. Следующий шаг — read-only аудит переводов товаров на U+FFFD
+   и пустые LV/EN (отдельная задача, с разрешения владельца).
+3. `/lv/brands`, `/lv/account/orders` — общий `<title>` (нет своей metadata).
+
+**Каноничная копия handoff — в релизной ветке `release/2026-11-02-b2b-price-security`.**
+Копия в P1-ветке заморожена на этапе A.
+
+- Релизная ветка: `release/2026-11-02-b2b-price-security` (запушена), worktree
+  `C:\Users\User\eshop02-work\worktrees\eshop02-release-b2b-price`
+- Состав (поверх `bb55516e`, cherry-pick `-x`):
+  1. `8c7a1503` ← `0f4db4d8` stop guests inferring B2B prices
+  2. `de485ca4` ← `ab655cce` reject guest orders before pricing
+  3. `cb4e4d40` ← `ae1a0be2` enforce company ordering role on the server
+  4. docs-коммиты handoff (HEAD — `git log -1`)
+
+### Решения владельца (2026-11-02)
+
+1. Гостевые заказы запрещены (подтверждает `ab655cce`).
+2. Заказывают только авторизованные пользователи с правами.
+3. Роли компании `viewer` и `manager` не должны обходить UI-запрет через API.
+4. Production Neon и Plesk не трогать. База релиза — `bb55516e`; image zoom `a1ea3f3f` НЕ включать.
+   Merge в `main` и deploy — только после отдельного подтверждения.
+
+### Этапы финального релиза
+
+| Этап | Статус |
+|---|---|
+| A. Серверная проверка роли в `POST /api/orders` | PASS — `ae1a0be2` в P1-ветке |
+| B. Релизная ветка от `bb55516e` + cherry-pick `0f4db4d8`, `ab655cce`, `ae1a0be2` | PASS — без конфликтов |
+| C. Проверки на релизной ветке | PASS |
+| D. Handoff | PASS |
+
+### Этап A — итог
+
+- Модель: роль сотрудника компании — `User.teamRole` (`viewer`/`buyer`/`manager`/`admin`) + `User.companyId`;
+  правило UI — `canPlaceOrders` (`lib/auth-access.ts`): с компанией — только `buyer`/`admin`; без компании — можно.
+  Внимание: `teamRole='manager'` также даёт доступ персонала к админ-панели (`lib/admin-permissions.ts`).
+- Реализация: тот же `canPlaceOrders` (тип параметра расширен до структурного, общий для `User` и `ServerUser`)
+  вызывается в `POST /api/orders` сразу после 401-проверки, до rate-limit, цен, записи и писем; отказ → `403 {error:'forbidden_role'}`.
+  Роль читается из БД при каждом запросе (`getServerUser`). Права в БД не менялись.
+- Другие пути создания заказов: `/api/v1/orders` — запись только по API-ключу компании (ключ выпускает лишь
+  `teamRole=admin`; сессия получает `apiAccess=false` → 403); `/api/admin/orders` — персонал, `orders.update`.
+- Тесты: viewer / manager / член компании без роли → 403 без лимитов/цен/записи/писем; buyer / company admin /
+  клиент без компании → 200. Red: 3 теста запрета падают без проверки. Целевые наборы 134/134, tsc 0, eslint 0.
+
+### Этап B — итог
+
+- `git worktree add -b release/2026-11-02-b2b-price-security … bb55516e`, затем
+  `git cherry-pick -x 0f4db4d8 ab655cce ae1a0be2` — без конфликтов.
+- Проверка состава: `git diff bb55516e HEAD` (без handoff) побайтно совпадает с `git diff 2871240e ae1a0be2`
+  (без handoff) — посторонних изменений нет. `bb55516e` — предок; image zoom `a1ea3f3f` — НЕ предок.
+- 12 файлов: `.gitattributes`, `app/api/orders/route.ts` (+test), `app/api/promo/campaigns/evaluate/route.ts` (+test),
+  `app/api/promo/validate/route.ts` (+test), `components/ProductFilter.tsx`, `lib/auth-access.ts`,
+  `lib/initial-catalog-products.ts` (+test), `docs/handoffs/b2b-price-security-p1.md`.
+- Windows: worktree, извлечённый до правила `*.json eol=lf`, держит JSON с CRLF. После checkout релиза
+  переизвлечь JSON (`git ls-files -z -- '*.json' | xargs -0 rm -f && git checkout -- $(git ls-files -- '*.json')`),
+  иначе SHA-тесты `lib/sync/*wave*` падают. Индекс не меняется — только рабочие копии.
+- Примечание: docs-коммит `9e755f95` записал handoff без этого раздела (сбой скрипта); исправлено следующим коммитом.
+
+### Этап C — итог (на релизной ветке, код = `cb4e4d40`)
+
+Окружение: worktree релиза, `node_modules` — junction на основное дерево (lockfile идентичен `bb55516e`,
+релиз зависимостей не меняет), `prisma generate` с фиктивным URL, без `.env.local`. Живые проверки —
+`next dev` + одноразовый Docker `postgres:17-alpine` (`prisma db push`). Production Neon/Plesk не затрагивались,
+миграции не запускались.
+
+| Проверка | Результат |
+|---|---|
+| `tsc --noEmit` | 0 ошибок |
+| `eslint .` | 0 ошибок, 63 warnings (как в `bb55516e`) |
+| vitest unit, полный набор | 355 файлов, **2841/2841 pass** |
+| Гость: `POST /api/orders`, `/api/promo/campaigns/evaluate`, `/api/promo/validate` | 401 / 401 / 401 |
+| Гость: каталог RU/LV/EN с `minPrice=19&maxPrice=21&order=price-desc` | все 3 товара, порядок по умолчанию; 0 полей `price` в HTML |
+| Клиент без компании | заказ 200, цена с сервера 20 € (клиентская 0.01 проигнорирована), total 40 |
+| Компания: `buyer` / `admin` | 200 / 200, `companyId` из сессии |
+| Компания: `viewer` | 403 `forbidden_role` |
+| Компания: `manager` (MFA-подтверждённая сессия) | 403 `forbidden_role` (без MFA сессия даёт 401 — как и раньше) |
+| Идемпотентность: повтор buyer с тем же `Idempotency-Key` | тот же заказ, `idempotent: true` |
+| Клиент: promo evaluate; каталог с фильтром/`price-desc` | 200; фильтр и сортировка работают |
+| БД после прогона | 3 заказа (individual, buyer, company admin); от viewer/manager — ни одного |
+| `git merge-tree` с `2871240e`, `bb55516e` (оба — предки), `origin/staging` `3afab567`, `origin/main` `001d7e71` | без конфликтов |
+| Dry-run cherry-pick 3 fix-коммитов на `origin/main` (`merge-tree` + `commit-tree`, без изменения ссылок) | без конфликтов |
+
+## Готовность к production deployment
+
+Готово к деплою на Plesk после подтверждения владельца.
+
+- Деплоить: `release/2026-11-02-b2b-price-security` (HEAD — `git log -1`; код = `cb4e4d40`).
+- Миграций и изменений схемы нет; зависимостей нет. `build` в этой линии не вызывает `prisma migrate deploy`.
+- Откат: передеплой `bb55516e` (или текущего прода `2871240e`). Данные не меняются.
+- Post-deploy smoke:
+  1. гость: `POST /api/orders` → 401; `POST /api/promo/campaigns/evaluate` и `/api/promo/validate` → 401;
+  2. гость: `/lv/catalog?minPrice=1&maxPrice=2` — полный каталог, без цен; нет ценового фильтра и price-сортировки;
+  3. клиент (buyer или без компании): цены видны, фильтр работает, тестовый заказ проходит;
+  4. company viewer → 403 `forbidden_role` (если есть тестовый аккаунт).
+- Изменения поведения, о которых стоит предупредить персонал:
+  - гостевые заказы через API больше невозможны (в UI их и так не было);
+  - company `viewer`/`manager` (и член компании без роли) не могут заказать даже через API (в UI уже было запрещено);
+  - чекаут авторизованных больше не зависит от конфигурации Turnstile.
+
+## Перенос в `main` (НЕ выполнялось — после подтверждения)
+
+`git cherry-pick -x 8c7a1503 de485ca4 cb4e4d40` поверх `origin/main` (dry-run чистый). Не мержить релизную ветку целиком:
+она принесла бы в `main` прод-линию `2871240e` и `bb55516e`, а это отдельное решение о синхронизации `main` с Plesk.
+
+## Оставшиеся риски
+
+- `User.approvalRequired` (workflow одобрения заказов компании) хранится, но сервером не применяется — вне scope, нужна отдельная задача.
+- `teamRole='manager'` одновременно роль компании и роль персонала (доступ к админ-панели) — модель двусмысленна;
+  запрет заказа для него соответствует решению владельца.
+- `canPlaceOrders(null)` по-прежнему `true` только ради UI (гость без корзины); сервер отвечает гостю 401 до этой проверки.
+- Клиентский код Turnstile в чекауте — мёртвый, сервером игнорируется.
+- Фильтр `onSale` для гостя раскрывает факт акции, но не цену.
+- Не обновлённые зависимости из аудита 11-01 (next 16.3.3, nodemailer, zod, sharp) — отдельный релиз.
+
+## Следующий шаг
+
+После деплоя (выполнен): по желанию — smoke ролей тестовыми аккаунтами viewer/buyer; затем cherry-pick в `main` (см. выше) по подтверждению.
+
+Историческое: владелец: подтвердить деплой `release/2026-11-02-b2b-price-security` на Plesk; затем smoke по списку выше;
+затем отдельно — cherry-pick в `main`.
+
+---
+
+## Предыдущий статус (этапы 1–2): PASS
 
 - Ветка: `fix/2026-11-01-b2b-price-security-p1` (запушена в origin)
 - База: production SHA `2871240e` (`release/2026-11-01-plesk-combined`)
 - Worktree: `C:\Users\User\eshop02-work\worktrees\eshop02-b2b-price-p1`
-- HEAD: коммит `fix(security): stop guests inferring B2B prices` — точный SHA: `git log -1` в ветке
-  (SHA коммита не может содержаться в самом коммите)
+- Коммиты поверх `2871240e`:
+  1. `0f4db4d8` fix(security): stop guests inferring B2B prices — этап 1 (promo-API, каталог, `.gitattributes`)
+  2. `ab655cce` fix(security): reject guest orders before pricing — этап 2 (`POST /api/orders`)
+  3. docs: этот handoff (HEAD; точный SHA — `git log -1`, SHA коммита не может быть записан в нём самом)
 
 ## Ограничения
 
 - Production Neon, Plesk, GrinS — не трогать. В worktree нет `.env.local`.
-- `npm run build` не запускался. Зависимости не обновлялись. Merge и deploy запрещены без владельца.
+- `npm run build` и миграции не запускались. Зависимости не обновлялись.
+- Merge и deploy запрещены без отдельного разрешения владельца.
 
-## Найденные векторы и исправления
+## Этап 1 (PASS, `0f4db4d8`) — кратко
 
 | # | Вектор | Исправление |
 |---|---|---|
-| A1 | `POST /api/promo/campaigns/evaluate` без авторизации: `eligibleAmount` = цена × qty, `discount` = % от цены | `getServerUser()` до расчётов, гость → `401 {error:'unauthorized'}` |
-| A2 | `POST /api/promo/validate` без авторизации: с известным кодом `discount`/`eligibleAmount` раскрывают цену | то же, гость → `401 {valid:false,error:'unauthorized'}` |
-| B1 | `/[lang]/catalog?minPrice=&maxPrice=` (гость): состав выдачи / `totalProducts` → бинпоиск цены | `guestPriceGuard` в `getInitialCatalogProducts`: гость → min/max игнорируются |
-| B2 | `getCatalogFacets` с min/max (гость): счётчики по реальной цене | `getCatalogFacets` сам определяет пользователя; гость → min/max игнорируются |
-| B3 | `order=price-asc/price-desc` (гость): относительный порядок цен | гость → ценовая сортировка сбрасывается к default (name-* сохраняется) |
-| UI | гость видел ценовой фильтр и price-сортировку, которые теперь не действуют | `ProductFilter` скрывает их при `!isAuthenticated` (только UX; сервер авторитетен) |
+| A1 | `POST /api/promo/campaigns/evaluate` гостю отдавал `eligibleAmount`/`discount` | 401 до расчётов |
+| A2 | `POST /api/promo/validate` с известным кодом | 401 до расчётов |
+| B1–B3 | каталог/фасеты: `minPrice`/`maxPrice`/`price-*` для гостя — ценовой оракул | гостю игнорируются на сервере; `ProductFilter` скрывает контролы |
+| C | CRLF → SHA drift в 37 тестах `lib/sync/*wave*` | `*.json text eol=lf` |
 
-Проверены и не уязвимы: `/api/products` (min/max не принимает, цены редактируются), `/api/v1/products`
-(API-key), `/api/search` (без цен), страница товара (redact + JSON-LD под `canSeePrices`),
-клиентская фильтрация `Products.tsx` (учитывает `priceHidden`).
-Гость не может добавить товар в корзину (`AddToCartButton` → auth gate), поэтому 401 на promo-API
-не меняет пользовательский сценарий; клиент `checkout-promo-api.ts` при `!ok` возвращает `null`.
+## Этап 2 (PASS, `ab655cce`) — гостевые заказы
 
-## Этапы
+### Факты (до исправления, `2871240e`)
 
-| Этап | Статус |
-|---|---|
-| 1. Git-состояние, worktree от `2871240e` | PASS |
-| 2. Фикс A (promo evaluate + validate) | PASS |
-| 3. Фикс B (каталог + фасеты + UI-контролы) | PASS |
-| 4. Фикс C (`.gitattributes`: `*.json text eol=lf`) + 37 тестов `lib/sync/*wave*` | PASS |
-| 5. Регрессионные тесты | PASS |
-| 6. tsc / eslint / vitest без БД + живая проверка на локальном Docker Postgres | PASS |
-| 7. Коммит + push | PASS |
+- Гость **мог** создать заказ прямым `POST /api/orders`: Turnstile (если настроен) + лимит 3/час.
+- Ответ отдавал полный заказ: `order.items[].price`, `subtotal`, `discount`, `delivery`, `total`;
+  плюс письмо-подтверждение с суммой на любой указанный email → точная B2B-цена.
+- Сессии с `mustChangePassword` и admin без MFA → `getServerUser()` = null → считались гостями
+  и тоже могли заказывать (противоречит CLAUDE.md: onboarding/forced-password-change без доступа к защищённым операциям).
+- Гость не мог оплатить свой Paysera-заказ: `/api/orders/[id]/pay` требует пользователя (`canAccessOrder(null)` = false).
 
-## Изменённые файлы
+### Вывод: гостевые заказы бизнес-правилами НЕ предусмотрены
 
-- `app/api/promo/campaigns/evaluate/route.ts` (+ `route.test.ts`)
-- `app/api/promo/validate/route.ts` (+ `route.test.ts`)
-- `lib/initial-catalog-products.ts` (+ `lib/initial-catalog-products.test.ts`)
+- Правило магазина (владелец): гости смотрят каталог без цен, «ни прямо, ни косвенно»; гостевой заказ
+  неизбежно раскрывает цену (ответ, письмо, счёт).
+- Витрина с 06-14 не даёт гостю корзину: `AddToCartButton` → auth gate; все прочие входы в корзину
+  (`account/templates`, reorder, wishlist, repeat) — только в аккаунте; корзина привязана к пользователю
+  (`cart-store`: без `ownerId` → `items: []`). Путь гостя к чекауту существовал только через прямой API.
+- Против: клиентский хелпер `canPlaceOrders(null) = true` с тестом «keeps guest checkout available» (08-31),
+  гостевая капча/лимиты на сервере. Это инженерные остатки без документированного решения владельца;
+  в UI недостижимы.
+
+### Исправление
+
+- `app/api/orders/route.ts`: `getServerUser()` — первым действием; гость → `401 {error:'unauthorized'}`
+  до валидации, rate-limit, цен, записи и писем.
+- Удалены ставшие недостижимыми гостевые ветки: Turnstile (проверка конфигурации + токен), гостевой
+  тир лимита (3/час), гостевая резервация стока. Для авторизованных без изменений: лимит 10/час
+  (ip + email + session), `checkoutKey = sha256(userId:key)`, `userId`/`companyId` из сессии,
+  резерв только для `paysera`/`card`.
+- Побочный эффект: неверная конфигурация Turnstile больше не роняет чекаут авторизованных в 503.
+- `canPlaceOrders` (клиент) не менялся: при `false` гость увидел бы текст «для роли менеджера»;
+  чекаут гостю и так недостижим.
+- Связанные endpoints проверены — уже требуют пользователя: `orders/[id]/pay`, `orders/[id]/repeat`,
+  `orders/my`, `invoices`, `returns`, `rfq`; `v1/orders` — API-key.
+- Откат решения (если владелец всё же хочет гостевые заказы): `git revert ab655cce`; этап 1 от него не зависит.
+
+## Изменённые файлы (вся ветка относительно `2871240e`)
+
+- `app/api/promo/campaigns/evaluate/route.ts` (+ test)
+- `app/api/promo/validate/route.ts` (+ test)
+- `lib/initial-catalog-products.ts` (+ test)
 - `components/ProductFilter.tsx`
+- `app/api/orders/route.ts` (+ `route.test.ts`)
 - `.gitattributes`
 - `docs/handoffs/b2b-price-security-p1.md`
 
-Хэши allowlist и эталонные JSON не менялись (`git diff 2871240e -- '*.json'` пуст).
+Хэши allowlist и эталонные JSON не менялись.
 
 ## Проверки
 
-- `tsc --noEmit`: 0 ошибок.
-- `eslint .`: 0 ошибок, 63 warnings (как на `2871240e`, новых нет).
-- vitest unit, полный прогон: 2834 pass / 1 fail. Упал `lib/sync/manual-price-query.test.ts`
-  по таймауту 5 с (PGlite под нагрузкой полного прогона; плюс известный vitest
-  `Timeout calling "onTaskUpdate"`, он был и на `2871240e`). Отдельно файл проходит 11/11. С изменениями не связан.
-- 9 новых регрессионных тестов (7 каталог, 2 promo-API). На исходниках `2871240e` падают 6:
-  4 теста оракула каталога (min/max, price-asc, price-desc, фасеты) и 2 guest-теста promo-API (red);
-  на фиксе проходят все (green). Остальные 3 — защитные (гость без цен, name-сортировка, клиент без изменений).
-- 9 файлов `lib/sync/*wave*` (ранее 37 падений из-за CRLF → SHA drift): 133/133 pass.
-- Живая проверка: `next dev` на :3107 + одноразовый Docker `postgres:17-alpine` (`prisma db push`,
-  3 тестовых товара 5/20/50 €, 1 клиент). Production Neon не использовался.
-  - гость: evaluate → 401, validate → 401; клиент: оба → 200.
-  - RU/LV/EN, гость: `?minPrice=19&maxPrice=21` → все 3 товара; `?order=price-desc` → порядок по умолчанию.
-  - RU/LV/EN, клиент: диапазон → только товар за 20 €; `price-desc` → 50/20/5.
-  - гостевой HTML каталога не содержит полей `price`; у клиента — 50/20/5.
+Этап 1 — см. коммит `0f4db4d8` (tsc/eslint/vitest + живая проверка каталога и promo-API в RU/LV/EN).
 
-## Риски / блокеры
+Этап 2:
+- `tsc --noEmit`: 0 ошибок. `eslint .`: 0 ошибок, 63 warnings (без изменений с `2871240e`).
+- vitest unit, полный прогон: **355 файлов, 2835/2835 pass** (флак `manual-price-query` в этот раз не проявился).
+- Тесты заказа: 65/65 в `app/api/orders/route.test.ts`. Новые: гость → 401 без rate-limit/цен/записи/писем;
+  привязка заказа к пользователю и компании. Обновлены (смысл сохранён): поля владения из тела игнорируются,
+  `userId` берётся из сессии; гостевые тесты Turnstile/лимита заменены. Red-проверка: гостевой тест
+  падает на `route.ts` из `0f4db4d8`, проходит на `ab655cce`.
+- Смежные наборы: checkout (клиент), `auth-access`, `orders-data-store` — 152/152 в целевом прогоне.
+- Живая проверка: `next dev` + одноразовый Docker `postgres:17-alpine` (`prisma db push`, тестовые товары,
+  1 клиент, GrinS-гейт открыт только в этой БД). Production Neon не использовался.
+  - гость: `POST /api/orders` → 401 (и с поддельным `turnstileToken`, и при открытом гейте).
+  - клиент: заказ `pickup`/`bank`, 2 × товар за 20 € с клиентской ценой 0.01 → 200, `items[].price` = 20,
+    `total` = 40 (цена с сервера), `userId` = клиент, `unpaid`, `committed`; повтор с тем же
+    `Idempotency-Key` → тот же заказ (`idempotent: true`); `/api/orders/my` показывает заказ.
+- `git merge-tree` (без изменения дерева): HEAD сливается без конфликтов с
+  `origin/hotfix/2026-11-01-hero-cta-on-combined` (`bb55516e`), `origin/release/2026-11-01-product-image-zoom`
+  (`a1ea3f3f`) и `origin/main` (`001d7e71`). Файлы P1 ни одной из этих линий не затронуты.
 
-- Остаточный (вне scope, не исправлено): `POST /api/orders` принимает гостевые заказы
-  (captcha + 3/час), ответ содержит `total`. Способ дорогой и заметный персоналу (создаётся реальный заказ),
-  но формально раскрывает цену. Решение — за владельцем.
-- Фильтр `onSale` для гостя сохранён: раскрывает факт акции (price < oldPrice), но не значение цены.
-- `getCatalogFacets` теперь делает собственный запрос сессии (+1 индексированный запрос на рендер каталога).
-- Ветка основана на `2871240e`; хотфикс `bb55516e` (hero CTA) и `origin/main` её не содержат — при релизе
-  нужен cherry-pick/merge в актуальную релизную линию.
+## Перенос в релиз (НЕ выполнялось — на согласование)
+
+Состояние на 2026-11-02:
+- Прод Plesk: `2871240e` (по последним данным; доступа к Plesk нет).
+- `origin/hotfix/2026-11-01-hero-cta-on-combined` = `bb55516e` = `2871240e` + hero CTA (ждёт деплоя).
+- `origin/staging` = `origin/release/2026-11-01-plesk-pre-product-image-zoom` = `3afab567` (`bb55516e` + staging-chore).
+- `origin/release/2026-11-01-product-image-zoom` = `a1ea3f3f` (+ image zoom; статус деплоя неизвестен).
+- `origin/main` = `001d7e71`: 7 коммитов прод-линии `2871240e` в `main` отсутствуют, 3 коммита `main` — не в проде.
+
+Рекомендуемый безопасный способ:
+1. Релизная ветка от `bb55516e` (сохраняет hero CTA и всё из `2871240e`):
+   `git switch -c release/2026-11-02-b2b-price-security origin/hotfix/2026-11-01-hero-cta-on-combined`
+   затем `git cherry-pick 0f4db4d8 ab655cce <handoff-commit>` (или `git merge --no-ff fix/2026-11-01-b2b-price-security-p1`
+   — ветка основана на `2871240e`, предке `bb55516e`, поэтому merge приносит только P1).
+   Если релизом должен стать image zoom — та же операция поверх `a1ea3f3f` (merge-tree тоже чистый).
+2. На релизной ветке: tsc, eslint, `vitest run --config vitest.config.ts`; staging/preview по рецепту без прод-БД.
+3. Plesk-деплой — только по решению владельца; post-deploy smoke: гость → 401 на
+   `/api/orders`, `/api/promo/*`; каталог гостя без цен; клиент оформляет заказ.
+4. `main`: **cherry-pick** `0f4db4d8` и `ab655cce`, а не merge ветки. Merge принёс бы в `main` ещё и 7 коммитов
+   прод-линии `2871240e` — это отдельное решение о синхронизации `main` с Plesk.
+
+## Риски / открытые вопросы
+
+- Если владелец всё же хочет гостевые заказы: `git revert ab655cce` → риск этапа 2 возвращается.
+  Тогда минимальная альтернатива — гостевой заказ без цен в ответе и письме, с подтверждением цены
+  менеджером, но это изменение бизнес-процесса.
+- Отдельная находка (не исправлялась, вне scope): сервер не проверяет `teamRole` компании при заказе.
+  `canPlaceOrders` запрещает заказ ролям `viewer`/`manager` только в UI; через API они могут заказывать.
+  Это вопрос авторизации внутри компании, к утечке цен не относится. Нужно решение владельца.
+- Клиентский код Turnstile в чекауте (`turnstileToken`) остался и сервером игнорируется — безвредный мёртвый код.
+- Фильтр `onSale` для гостя раскрывает факт акции, но не цену (без изменений с этапа 1).
 
 ## Следующий шаг
 
-Владелец: ревью ветки и решение о релизе. Деплой и merge не выполнялись.
+Владелец: подтвердить вывод «гостевые заказы не предусмотрены» и выбрать релизную базу
+(`bb55516e` или `a1ea3f3f`). После этого — релизная ветка по плану выше, проверки, деплой по отдельному разрешению.

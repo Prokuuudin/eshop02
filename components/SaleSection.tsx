@@ -27,7 +27,7 @@ export default function SaleSection({ products, banners }: { products: Product[]
                 width={2400}
                 height={874}
                 sizes="(min-width: 1024px) 320px, 240px"
-                className="sale-section__girl pointer-events-none absolute -left-[118px] bottom-0 z-10 h-[165px] w-auto max-w-none select-none sm:-left-[135px] sm:h-[203px] lg:-left-[150px] lg:h-[240px]"
+                className="sale-section__girl pointer-events-none absolute -left-[138px] bottom-0 z-10 h-[165px] w-auto max-w-none select-none sm:-left-[165px] sm:h-[203px] lg:-left-[190px] lg:h-[240px]"
             />
             <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                 {banner && (

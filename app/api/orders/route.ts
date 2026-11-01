@@ -10,6 +10,7 @@ import { isPayseraCheckoutEnabled } from '@/lib/paysera-checkout'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
+import { canPlaceOrders } from '@/lib/auth-access'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
@@ -112,6 +113,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Authorize before any validation, pricing or persistence.
     const caller = await getServerUser()
     if (!caller) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+    // Same rule the cart/checkout UI applies: company viewer/manager may not order. The role
+    // is read from the DB on every request (getServerUser), so the UI cannot be bypassed.
+    if (!canPlaceOrders(caller)) return NextResponse.json({ error: 'forbidden_role' }, { status: 403 })
 
     const contentLength = Number(req.headers.get('content-length') ?? 0)
     if (contentLength > 65_536) {

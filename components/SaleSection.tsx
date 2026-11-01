@@ -21,13 +21,13 @@ export default function SaleSection({ products, banners }: { products: Product[]
     const subscriptionBlock = (
         <div className="sale-section__feature-wrap relative mb-6 pt-24 sm:pt-28">
             <Image
-                src="/girl1.png"
+                src="/girl1-v2.png"
                 alt=""
                 aria-hidden="true"
-                width={2400}
-                height={874}
-                sizes="(min-width: 1024px) 320px, 240px"
-                className="sale-section__girl pointer-events-none absolute -left-[138px] bottom-0 z-10 h-[165px] w-auto max-w-none select-none sm:-left-[165px] sm:h-[203px] lg:-left-[190px] lg:h-[240px]"
+                width={1305}
+                height={1205}
+                sizes="(min-width: 1024px) 232px, (min-width: 640px) 195px, 160px"
+                className="sale-section__girl pointer-events-none absolute -left-3 bottom-0 z-10 h-[147px] w-auto max-w-none select-none sm:h-[180px] lg:left-0 lg:h-[213px]"
             />
             <div className="sale-section__feature-row grid items-stretch overflow-hidden rounded-2xl border border-border bg-white shadow-sm lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]">
                 {banner && (

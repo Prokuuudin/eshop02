@@ -13,6 +13,7 @@ import productSubcategories from '@/data/product-subcategories.json'
 import { evaluatePromoCampaigns } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
 import { isPurchasable, PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
+import { loadEffectiveBrandLines, selectionMatches } from '@/lib/brand-lines/brand-line-membership'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -73,7 +74,7 @@ export class ProductUnavailableError extends Error {
  * Fetch authoritative catalog prices for a set of product ids. Only purchasable products
  * (see lib/product-sellability.ts) are returned — anything else has no sale price.
  */
-type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting' | 'order' | 'promoCodeRedemption'>
+type PricingDb = Pick<ExtendedTransactionClient, 'product' | 'promoCode' | 'keyValueSetting' | 'order' | 'promoCodeRedemption' | 'brandLine' | 'productBrandLine'>
 
 export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): Promise<Map<string, CatalogPrice>> {
   const uniqueIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))]
@@ -201,6 +202,9 @@ export async function evaluatePromoCode(
   const brands = scope === 'brands' || scope === 'rules' ? promo.brands ?? [] : []
   const categories = scope === 'categories' || scope === 'rules' ? promo.categories ?? [] : []
   const subcategories = scope === 'rules' ? promo.subcategories ?? [] : []
+  // Product lines: effective membership (active links, subtree of the selected lines).
+  const brandLineIds = scope === 'brand_lines' || scope === 'rules' ? promo.brandLineIds ?? [] : []
+  const brandLines = brandLineIds.length > 0 ? await loadEffectiveBrandLines(db, items.map((item) => item.id)) : null
   const selected = items.filter((item) => {
     if (!item.fromCatalog || excludedProductIds.includes(item.id)) return false
     if (promo.excludeSaleItems && item.oldPrice != null && item.oldPrice > item.price) return false
@@ -208,7 +212,8 @@ export async function evaluatePromoCode(
     if (brands.length > 0 && !brands.some((b) => b.toLowerCase() === (item.brand ?? '').toLowerCase())) return false
     if (categories.length > 0 && !categories.includes(item.category ?? '')) return false
     if (subcategories.length > 0 && !subcategories.includes(item.subcategory ?? '')) return false
-    return scope === 'all' || productIds.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0
+    if (brandLines && !selectionMatches(brandLineIds, brandLines.get(item.id))) return false
+    return scope === 'all' || productIds.length > 0 || brands.length > 0 || categories.length > 0 || subcategories.length > 0 || brandLineIds.length > 0
   })
   const eligibleAmount = Math.round(selected.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
   if (eligibleAmount <= 0) return { valid: false, discount: 0, eligibleAmount, reason: 'no_eligible_items' }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { attachCampaignOffers, evaluatePromoCampaigns, type PromoCampaign } from './promo-campaigns'
+import { attachCampaignOffers, attachCampaignOffersFromDb, campaignActiveFlag, evaluatePromoCampaigns, isCampaignActive, type PromoCampaign } from './promo-campaigns'
 import type { Product } from '@/data/products'
 
 const item = (category: string, price = 100) => ({
@@ -10,11 +10,53 @@ const item = (category: string, price = 100) => ({
   bonusRate: 0, fromCatalog: true,
 })
 
-function db(value: unknown) {
-  return { keyValueSetting: { findUnique: vi.fn().mockResolvedValue({ value }) } } as never
+function db(value: unknown, lines: unknown[] = [], links: unknown[] = []) {
+  return {
+    keyValueSetting: { findUnique: vi.fn().mockResolvedValue({ value }) },
+    brandLine: { findMany: vi.fn().mockResolvedValue(lines) },
+    productBrandLine: { findMany: vi.fn().mockResolvedValue(links) },
+  } as never
 }
 
 describe('evaluatePromoCampaigns', () => {
+  it('applies a 10% line campaign only to its one directly linked product', async () => {
+    const campaign: PromoCampaign = {
+      id: 'keratin-10', name: 'Keratin 10%', description: '', type: 'discount', discountPercent: 10,
+      startDate: '2026-01-01', endDate: '', active: true, targetCategories: [], targetSubcategories: [], targetBrands: [],
+      targetBrandLineIds: ['keratin'], minOrderAmount: 0, createdAt: '', updatedAt: '',
+    }
+    const database = db([campaign], [{ id: 'keratin', parentId: null }], [
+      { productId: '19490', brandLineId: 'keratin', status: 'active' },
+    ])
+
+    const result = await evaluatePromoCampaigns([
+      { id: '19490', quantity: 1, price: 100, bonusRate: 0, fromCatalog: true },
+      { id: 'other-brand', quantity: 1, price: 200, bonusRate: 0, fromCatalog: true },
+    ], database, new Date('2026-10-31T00:00:00Z'))
+
+    expect(result).toMatchObject({ campaignId: 'keratin-10', eligibleAmount: 100, discount: 10 })
+  })
+
+  it('targets a parent line through child membership in checkout and storefront offers', async () => {
+    const campaign: PromoCampaign = {
+      id: 'line-sale', name: 'Line sale', description: '', type: 'discount', discountPercent: 15,
+      startDate: '2026-01-01', endDate: '', active: true, targetCategories: [], targetSubcategories: [], targetBrands: [],
+      targetBrandLineIds: ['parent'], minOrderAmount: 0, createdAt: '', updatedAt: '',
+    }
+    const database = db([campaign], [{ id: 'parent', parentId: null }, { id: 'child', parentId: 'parent' }], [
+      { productId: 'p1', brandLineId: 'child', status: 'active' },
+    ])
+    const result = await evaluatePromoCampaigns([
+      { id: 'p1', quantity: 1, price: 100, bonusRate: 0, fromCatalog: true },
+      { id: 'p2', quantity: 1, price: 200, bonusRate: 0, fromCatalog: true },
+    ], database, new Date('2026-08-23T12:00:00Z'))
+    expect(result).toMatchObject({ campaignId: 'line-sale', eligibleAmount: 100, discount: 15 })
+
+    const products = [{ id: 'p1', title: 'One', price: 100, category: 'hair', brand: 'Acme', rating: 0, stock: 1 }] as Product[]
+    const [decorated] = await attachCampaignOffersFromDb(database, products, [campaign], new Date('2026-08-23T12:00:00Z'))
+    expect(decorated.campaignOffers).toEqual([{ id: 'line-sale', name: 'Line sale', discountPercent: 15, minOrderAmount: 0 }])
+  })
+
   it('shows BEAUTY IMAGE offers without changing the price used for order calculations', async () => {
     const campaign: PromoCampaign = {
       id: 'beauty', name: 'Beauty', description: '', type: 'discount', discountPercent: 20,
@@ -81,5 +123,29 @@ describe('evaluatePromoCampaigns', () => {
       targetSubcategories: ['shampoo'], targetBrands: ['ACME'], minOrderAmount: 0, createdAt: '', updatedAt: '',
     }]), new Date('2026-08-23T12:00:00Z'))
     expect(result).toMatchObject({ eligibleAmount: 100, discount: 10 })
+  })
+})
+
+describe('campaign dates', () => {
+  const dated = (startDate: string, endDate: string, active = true) => ({
+    id: 'c', name: 'c', description: '', type: 'discount', discountPercent: 10, startDate, endDate, active,
+    targetCategories: [], targetSubcategories: [], targetBrands: [], minOrderAmount: 0, createdAt: '', updatedAt: '',
+  }) as PromoCampaign
+
+  it('runs from local 00:00 of the start day to the end of the end day', () => {
+    const campaign = dated('2026-11-01', '2026-11-30')
+    expect(isCampaignActive(campaign, new Date(2026, 9, 31, 23, 59, 59))).toBe(false)
+    expect(isCampaignActive(campaign, new Date(2026, 10, 1, 0, 0, 0))).toBe(true)
+    expect(isCampaignActive(campaign, new Date(2026, 10, 30, 23, 59, 59))).toBe(true)
+    expect(isCampaignActive(campaign, new Date(2026, 11, 1, 0, 0, 0))).toBe(false)
+    expect(isCampaignActive(dated('2026-11-01', '2026-11-30', false), new Date(2026, 10, 5))).toBe(false)
+  })
+
+  it('keeps scheduled campaigns armed and leaves the pause switch to started ones', () => {
+    const now = new Date(2026, 9, 30, 15, 0)
+    expect(campaignActiveFlag('2026-11-01', false, now)).toBe(true)
+    expect(campaignActiveFlag('2026-10-30', false, now)).toBe(false)
+    expect(campaignActiveFlag('2026-10-30', undefined, now)).toBe(true)
+    expect(campaignActiveFlag('2026-10-01', true, now)).toBe(true)
   })
 })

@@ -239,6 +239,7 @@ const enCommon: Record<string, string> = {
   'breadcrumb.support': 'Support',
   'breadcrumb.analytics': 'Analytics',
   'breadcrumb.stockAlerts': 'Stock alerts',
+  'breadcrumb.brandLines': 'Product lines',
   'breadcrumb.bulkPrice': 'Bulk pricing',
   'breadcrumb.priceGroups': 'Price lists',
   'breadcrumb.emailTemplates': 'Email templates',

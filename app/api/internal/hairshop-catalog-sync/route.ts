@@ -35,6 +35,20 @@ async function loadExistingIdentities(db: typeof prisma | ExtendedTransactionCli
   return db.product.findMany({ select: IDENTITY_SELECT })
 }
 
+// The Serializable snapshot is taken when the lock statement starts, i.e. before it
+// waits. A request that waited behind a concurrent writer therefore plans from a
+// stale snapshot and is aborted with P2034 on write; the whole transaction is
+// rolled back, so re-running it re-plans from a fresh snapshot (same as returns).
+async function withSerializableRetry<T>(operation: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      if ((error as { code?: string })?.code !== 'P2034' || attempt >= 2) throw error
+    }
+  }
+}
+
 function response(decisions: HairshopSyncDecision[], mode: 'dry-run' | 'apply', runId: string): NextResponse {
   return NextResponse.json({
     schemaVersion: 1,
@@ -75,8 +89,10 @@ export async function POST(request: NextRequest): Promise<Response> {
     return response(plan.decisions, mode, runId)
   }
 
-  const decisions = await prisma.$transaction(async tx => {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('hairshop-catalog-new-products'))`
+  const decisions = await withSerializableRetry(() => prisma.$transaction(async tx => {
+    // $executeRaw, not $queryRaw: the lock function returns void, which the Neon
+    // driver adapter cannot deserialize as a result column (P2010).
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('hairshop-catalog-new-products'))`
     const plan = planHairshopNewProducts(products, await loadExistingIdentities(tx))
     const createdIds = new Set<string>()
     for (const candidate of plan.insertable) {
@@ -86,7 +102,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     return plan.decisions.map(decision => decision.status === 'would_create' && createdIds.has(decision.targetProductId)
       ? { ...decision, status: 'created' as const, reasons: ['CREATED_NEW_PRODUCT'] }
       : decision)
-  }, { isolationLevel: 'Serializable', maxWait: 10_000, timeout: 60_000 })
+  }, { isolationLevel: 'Serializable', maxWait: 10_000, timeout: 60_000 }))
 
   if (decisions.some(decision => decision.status === 'created')) {
     revalidateTag('storefront-bestsellers', { expire: 0 })

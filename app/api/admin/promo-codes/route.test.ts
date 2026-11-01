@@ -8,6 +8,7 @@ vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     promoCode: { findMany: vi.fn(), findUnique: vi.fn() },
+    brandLine: { findMany: vi.fn() },
     $transaction: txMock,
   },
 }))
@@ -79,5 +80,19 @@ describe('POST /api/admin/promo-codes', () => {
     const res = await POST(makeRequest({ code: 'DUP', discount: 10 }))
 
     expect(res.status).toBe(409)
+  })
+
+  it('rejects unknown BrandLine ids and preserves valid stable ids', async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.promoCode.findUnique).mockResolvedValue(null as never)
+    vi.mocked(prisma.brandLine.findMany).mockResolvedValue([] as never)
+    const invalid = await POST(makeRequest({ code: 'LINE10', discount: 10, appliesTo: 'brand_lines', brandLineIds: ['missing'] }))
+    expect(invalid.status).toBe(422)
+    await expect(invalid.json()).resolves.toEqual({ error: 'invalid_brand_lines', ids: ['missing'] })
+
+    vi.mocked(prisma.brandLine.findMany).mockResolvedValue([{ id: 'stable-line-id' }] as never)
+    const valid = await POST(makeRequest({ code: 'LINE10', discount: 10, appliesTo: 'brand_lines', brandLineIds: ['stable-line-id'] }))
+    expect(valid.status).toBe(201)
+    await expect(valid.json()).resolves.toMatchObject({ brandLineIds: ['stable-line-id'] })
   })
 })

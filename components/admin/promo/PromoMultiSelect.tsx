@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAdminLocale } from '@/lib/use-admin-locale';
+import {
+    localizeBrandLineOptions,
+    type PromoBrandLineOption,
+} from '@/lib/brand-lines/brand-line-promo-options';
 
 export type PromoOption = { value: string; label: string };
-
 export function PromoMultiSelect({
     label,
     options,
@@ -100,10 +103,13 @@ export function usePromoCatalogOptions(): {
     brands: PromoOption[];
     categories: PromoOption[];
     subcategories: PromoOption[];
+    brandLines: PromoOption[];
 } {
+    const { language, locale } = useAdminLocale();
     const [brands, setBrands] = useState<PromoOption[]>([]);
     const [categories, setCategories] = useState<PromoOption[]>([]);
     const [subcategories, setSubcategories] = useState<PromoOption[]>([]);
+    const [brandLineRows, setBrandLineRows] = useState<PromoBrandLineOption[]>([]);
     useEffect(() => {
         fetch('/api/admin/promo-options')
             .then((response) => response.json())
@@ -111,8 +117,13 @@ export function usePromoCatalogOptions(): {
                 setBrands(data.brands ?? []);
                 setCategories(data.categories ?? []);
                 setSubcategories(data.subcategories ?? []);
+                setBrandLineRows(data.brandLines ?? []);
             })
             .catch(() => undefined);
     }, []);
-    return { brands, categories, subcategories };
+    const brandLines = useMemo(
+        () => localizeBrandLineOptions(brandLineRows, language, locale),
+        [brandLineRows, language, locale]
+    );
+    return { brands, categories, subcategories, brandLines };
 }

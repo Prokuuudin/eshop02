@@ -3,6 +3,7 @@ import { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/server-auth'
 import productSubcategories from '@/data/product-subcategories.json'
+import { brandLineIdList, productIdsInBrandLines } from '@/lib/brand-lines/brand-line-membership'
 
 export const runtime = 'nodejs'
 
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     const body = await request.json() as Record<string, unknown>
-    const appliesTo = ['all', 'products', 'brands', 'categories', 'rules'].includes(String(body.appliesTo))
+    const appliesTo = ['all', 'products', 'brands', 'categories', 'rules', 'brand_lines'].includes(String(body.appliesTo))
       ? String(body.appliesTo)
       : 'all'
     const categories = appliesTo === 'categories' || appliesTo === 'rules' ? list(body.categories) : []
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest): Promise<Response> {
     const brands = appliesTo === 'brands' || appliesTo === 'rules' ? list(body.brands) : []
     const productIds = appliesTo === 'products' ? list(body.productIds) : []
     const excludedProductIds = list(body.excludedProductIds)
+    const brandLineIds = appliesTo === 'brand_lines' || appliesTo === 'rules' ? brandLineIdList(body.brandLineIds) : []
+    if (appliesTo === 'brand_lines' && brandLineIds.length === 0) {
+      return NextResponse.json({ total: 0, products: [] })
+    }
+    const brandLineProductIds = brandLineIds.length > 0 ? await productIdsInBrandLines(prisma, brandLineIds) : []
+    if (brandLineIds.length > 0 && brandLineProductIds.length === 0) {
+      return NextResponse.json({ total: 0, products: [] })
+    }
     const subcategoryProductIds = subcategories.length > 0
       ? Object.entries(SUBCATEGORY_BY_PRODUCT_ID).filter(([, value]) => subcategories.includes(value)).map(([id]) => id)
       : []
@@ -39,7 +48,10 @@ export async function POST(request: NextRequest): Promise<Response> {
       ...(categories.length > 0 ? { category: { in: categories } } : {}),
       ...(brands.length > 0 ? { brand: { in: brands, mode: 'insensitive' } } : {}),
       ...(productIds.length > 0 ? { id: { in: productIds } } : {}),
-      ...(subcategoryProductIds.length > 0 ? { AND: [{ id: { in: subcategoryProductIds } }] } : {}),
+      ...(subcategoryProductIds.length > 0 || brandLineProductIds.length > 0 ? { AND: [
+        ...(subcategoryProductIds.length > 0 ? [{ id: { in: subcategoryProductIds } }] : []),
+        ...(brandLineProductIds.length > 0 ? [{ id: { in: brandLineProductIds } }] : []),
+      ] } : {}),
       ...(excludedProductIds.length > 0 ? { NOT: { id: { in: excludedProductIds } } } : {}),
       ...(body.excludeSaleItems === true ? { OR: [{ oldPrice: null }, { oldPrice: { lte: prisma.product.fields.price } }] } : {}),
     }

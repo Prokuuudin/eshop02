@@ -12,11 +12,12 @@ export type PromoCodeItem = {
   expiresAt: string | null
   startsAt: string | null
   perUserLimit: number | null
-  appliesTo: 'all' | 'products' | 'brands' | 'categories' | 'rules'
+  appliesTo: 'all' | 'products' | 'brands' | 'brand_lines' | 'categories' | 'rules'
   productIds: string[]
   brands: string[]
   categories: string[]
   subcategories: string[]
+  brandLineIds: string[]
   excludedProductIds: string[]
   excludeSaleItems: boolean
   firstOrderOnly: boolean
@@ -30,7 +31,7 @@ export const emptyPromoForm = (): PromoCodeForm => ({
   code: '', discount: 10, discountType: 'percentage', discountValue: 10, maxDiscount: null,
   minOrder: 0, minEligibleAmount: 0, maxUses: null, usedCount: 0, expiresAt: null,
   startsAt: null, perUserLimit: null, appliesTo: 'all', productIds: [], brands: [],
-  categories: [], subcategories: [], excludedProductIds: [], excludeSaleItems: false,
+  categories: [], subcategories: [], brandLineIds: [], excludedProductIds: [], excludeSaleItems: false,
   firstOrderOnly: false, active: true, description: '',
 })
 
@@ -45,6 +46,7 @@ export function normalizePromoCodeItem(item: Partial<PromoCodeItem>): PromoCodeI
     brands: item.brands ?? [],
     categories: item.categories ?? [],
     subcategories: item.subcategories ?? [],
+    brandLineIds: item.brandLineIds ?? [],
     excludedProductIds: item.excludedProductIds ?? [],
     excludeSaleItems: item.excludeSaleItems ?? false,
     firstOrderOnly: item.firstOrderOnly ?? false,
@@ -60,6 +62,7 @@ export function isPromoScopeEmpty(form: PromoCodeForm): boolean {
   if (form.appliesTo === 'products') return form.productIds.length === 0
   if (form.appliesTo === 'brands') return form.brands.length === 0
   if (form.appliesTo === 'categories') return form.categories.length === 0
-  if (form.appliesTo === 'rules') return form.brands.length + form.categories.length + form.subcategories.length === 0
+  if (form.appliesTo === 'brand_lines') return form.brandLineIds.length === 0
+  if (form.appliesTo === 'rules') return form.brands.length + form.categories.length + form.subcategories.length + form.brandLineIds.length === 0
   return false
 }

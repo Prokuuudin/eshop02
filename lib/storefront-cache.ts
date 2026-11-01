@@ -14,7 +14,7 @@ import { getProductSubcategory } from '@/lib/product-overrides-mapping'
 import type { Product } from '@/data/products'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
-import { attachCampaignOffers, readPromoCampaigns } from '@/lib/promo-campaigns'
+import { attachCampaignOffersFromDb, isCampaignActive, readPromoCampaigns, type PromoCampaign } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
 import { toStorefrontProducts } from '@/lib/product-sellability'
 
@@ -63,7 +63,17 @@ export const getCachedSaleBanners = unstable_cache(async (): Promise<Banner[]> =
     .map((banner) => ({ ...banner, link: sanitizeStoredLink(banner.link) }))
 }, ['storefront-sale-banners-v1'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.banners] })
 
-export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> => {
+/**
+ * Campaigns active right now. Resolved on every request, outside the data cache, and
+ * passed to the cached loaders as an argument (arguments are part of the cache key):
+ * a campaign starting or ending by date switches to a fresh entry instead of waiting
+ * for time-based revalidation of an entry computed with the previous campaign set.
+ */
+async function readActiveCampaigns(now = new Date()): Promise<PromoCampaign[]> {
+  return (await readPromoCampaigns(prisma)).filter((campaign) => isCampaignActive(campaign, now))
+}
+
+const loadBestsellers = unstable_cache(async (campaigns: PromoCampaign[]): Promise<Product[]> => {
   const rows = await prisma.$queryRaw<{ product_id: string }[]>`
     SELECT item->>'id' AS product_id
     FROM "Order", jsonb_array_elements(items::jsonb) AS item
@@ -82,23 +92,26 @@ export const getCachedBestsellers = unstable_cache(async (): Promise<Product[]> 
     const product = byId.get(id)
     return product ? [mapDbToProduct(product)] : []
   }).slice(0, 16)
-  return toStorefrontProducts(attachCampaignOffers(mapped, await readPromoCampaigns(prisma)))
-}, ['storefront-bestsellers-v3'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
+  return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, mapped, campaigns))
+}, ['storefront-bestsellers-v4'], { revalidate: 600, tags: [STOREFRONT_CACHE_TAGS.bestsellers] })
 
-export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]> => {
+export async function getCachedBestsellers(): Promise<Product[]> {
+  return loadBestsellers(await readActiveCampaigns())
+}
+
+const loadSaleProducts = unstable_cache(async (campaigns: PromoCampaign[]): Promise<Product[]> => {
   // Apply the same overrides as the catalog before checking discounts and stock.
   // SQL price/stock/campaign filters would miss products changed by an override.
-  const [rows, overrides, campaigns] = await Promise.all([
+  const [rows, overrides] = await Promise.all([
     prisma.product.findMany({
       where: { isActive: true, isDeleted: false },
       orderBy: { id: 'asc' },
       select: STOREFRONT_CARD_SELECT,
     }),
     getProductOverrides(),
-    readPromoCampaigns(prisma),
   ])
   const products = mergeProductsWithOverrides(rows.map(mapStorefrontCardRow), overrides)
-  return toStorefrontProducts(attachCampaignOffers(products, campaigns))
+  return toStorefrontProducts(await attachCampaignOffersFromDb(prisma, products, campaigns))
     .filter((product) => !product.priceUnavailable && product.stock > 0 && (
       product.campaignOffers?.length || product.badges?.includes('sale')
       || getValidOldPrice(product.price, product.oldPrice) !== undefined
@@ -107,7 +120,11 @@ export const getCachedSaleProducts = unstable_cache(async (): Promise<Product[]>
       const discount = (product: Product) => product.campaignOffers?.[0]?.discountPercent ?? 0
       return discount(b) - discount(a)
     })
-}, ['storefront-sale-products-v6'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
+}, ['storefront-sale-products-v7'], { revalidate: 300, tags: [STOREFRONT_CACHE_TAGS.saleProducts] })
+
+export async function getCachedSaleProducts(): Promise<Product[]> {
+  return loadSaleProducts(await readActiveCampaigns())
+}
 
 export const getCachedLocaleConfig = unstable_cache(getLocaleConfig, ['storefront-locale-v1'], {
   revalidate: 600,

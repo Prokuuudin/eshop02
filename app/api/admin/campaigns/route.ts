@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
+import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-line-membership'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { campaignActiveFlag } from '@/lib/promo-campaigns'
 
 export const runtime = 'nodejs'
 
@@ -19,6 +21,7 @@ type PromoCampaign = {
   targetCategories: string[]
   targetSubcategories: string[]
   targetBrands: string[]
+  targetBrandLineIds?: string[]
   minOrderAmount: number
   createdAt: string
   updatedAt: string
@@ -68,6 +71,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
     if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
     if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
+    const targetBrandLineIds = brandLineIdList(body.targetBrandLineIds)
+    const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
+    if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
     const data = await readData()
     const now = new Date().toISOString()
     const item: PromoCampaign = {
@@ -79,10 +85,11 @@ export async function POST(request: NextRequest): Promise<Response> {
       discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(body.discountPercent) || 0)) : 0,
       startDate,
       endDate,
-      active: body.active ?? true,
+      active: campaignActiveFlag(startDate, body.active),
       targetCategories: Array.isArray(body.targetCategories) ? [...new Set(body.targetCategories.map(String).filter(Boolean))] : [],
       targetSubcategories: Array.isArray(body.targetSubcategories) ? [...new Set(body.targetSubcategories.map(String).filter(Boolean))] : [],
       targetBrands: Array.isArray(body.targetBrands) ? [...new Set(body.targetBrands.map(String).filter(Boolean))] : [],
+      targetBrandLineIds,
       minOrderAmount: Math.max(0, Number(body.minOrderAmount) || 0),
       createdAt: now,
       updatedAt: now,

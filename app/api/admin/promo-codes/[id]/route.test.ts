@@ -8,6 +8,7 @@ vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     promoCode: { findUnique: vi.fn() },
+    brandLine: { findMany: vi.fn() },
     $transaction: txMock,
   },
 }))
@@ -17,7 +18,7 @@ import { prisma } from '@/lib/prisma'
 import { PUT, DELETE } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
-const EXISTING = { id: 'pc-1', code: 'WELCOME10', discount: 10, minOrder: 0, maxUses: null, usedCount: 0, active: true, description: '' }
+const EXISTING = { id: 'pc-1', code: 'WELCOME10', discount: 10, minOrder: 0, maxUses: null, usedCount: 0, active: true, description: '', appliesTo: 'all', productIds: [], brands: [], categories: [], subcategories: [], brandLineIds: [] }
 
 function makeRequest(method: 'PUT' | 'DELETE', body?: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/admin/promo-codes/pc-1', {
@@ -62,6 +63,15 @@ describe('PUT /api/admin/promo-codes/[id]', () => {
 
     expect(res.status).toBe(200)
     expect(body.discount).toBe(100)
+  })
+
+  it('validates BrandLine ids when editing a promo code', async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.promoCode.findUnique).mockResolvedValue(EXISTING as never)
+    vi.mocked(prisma.brandLine.findMany).mockResolvedValue([] as never)
+    const res = await PUT(makeRequest('PUT', { appliesTo: 'brand_lines', brandLineIds: ['missing'] }), params)
+    expect(res.status).toBe(422)
+    await expect(res.json()).resolves.toEqual({ error: 'invalid_brand_lines', ids: ['missing'] })
   })
 })
 

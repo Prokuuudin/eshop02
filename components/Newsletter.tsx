@@ -8,14 +8,7 @@ import { localizePath } from '@/lib/i18n-routing'
 import { useAuthStore } from '@/lib/auth-store'
 import { useNotificationsStore } from '@/lib/notifications-store'
 
-type NewsletterProps = {
-  compact?: boolean
-  embedded?: boolean
-  registration?: boolean
-  showcase?: boolean
-}
-
-export default function Newsletter({ compact = false, embedded = false, registration = false, showcase = false }: NewsletterProps): React.ReactElement {
+export default function Newsletter({ compact = false, embedded = false, registration = false }: { compact?: boolean; embedded?: boolean; registration?: boolean }): React.ReactElement {
   const { t, language } = useTranslation()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const isSubscribedToStoreNotifications = useNotificationsStore((state) => state.isSubscribed)
@@ -63,25 +56,19 @@ export default function Newsletter({ compact = false, embedded = false, registra
   const inner = (
     <div
       className={
-        showcase
-          ? `newsletter__inner newsletter__inner--showcase relative flex min-h-[176px] h-full flex-col justify-center gap-4 bg-emerald-600 px-5 py-6 pl-[160px] sm:min-h-[152px] sm:px-8 sm:pl-[190px] lg:min-h-[136px] lg:gap-5 dark:bg-emerald-700 ${embedded ? 'lg:items-start lg:px-7' : 'lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] lg:items-center lg:pl-[250px] lg:pr-9'} ${embedded ? '' : 'rounded-xl'}`
-          : compact
+        compact
           ? `newsletter__inner newsletter__inner--compact h-full bg-white p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6 ${embedded ? '' : 'rounded-lg border'}`
           : 'newsletter__inner bg-white rounded-lg p-6 border flex flex-col md:flex-row md:items-center gap-6'
       }
     >
-      <div className={`newsletter__info relative z-20 ${showcase ? 'min-w-0 flex-1' : 'md:flex-1'}`}>
-        <h3 className={`newsletter__title ${showcase ? 'text-xl font-bold leading-tight text-amber-300 sm:text-2xl' : `font-semibold text-gray-900 ${compact ? 'text-base' : 'text-lg'}`}`}>{t('newsletter.title')}</h3>
-        <p className={`newsletter__desc ${showcase ? 'mt-1 text-sm leading-snug text-white/90 sm:text-base' : `text-gray-600 ${compact ? 'text-xs' : 'text-sm'}`}`}>{t('newsletter.subtitle')}</p>
+      <div className="newsletter__info md:flex-1">
+        <h3 className={`newsletter__title font-semibold text-gray-900 ${compact ? 'text-base' : 'text-lg'}`}>{t('newsletter.title')}</h3>
+        <p className={`newsletter__desc text-gray-600 ${compact ? 'text-xs' : 'text-sm'}`}>{t('newsletter.subtitle')}</p>
       </div>
 
-      <div className={`newsletter__action relative z-20 ${showcase ? `shrink-0 ${embedded ? '' : 'lg:justify-self-center'}` : 'md:flex-1'}`}>
+      <div className="newsletter__action md:flex-1">
         {registration ? (
-          <Button
-            asChild
-            variant={showcase ? 'outline' : 'default'}
-            className={showcase ? 'w-full rounded-full border-white bg-transparent px-7 uppercase tracking-wide text-white shadow-none hover:bg-white/10 hover:text-white sm:w-auto' : 'w-full'}
-          >
+          <Button asChild className="w-full">
             {isAuthenticated ? (
               <Link
                 href={`${localizePath('/account', language)}#store-notifications`}

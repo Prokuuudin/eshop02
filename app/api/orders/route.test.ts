@@ -39,11 +39,6 @@ vi.mock('@/lib/order-admin-notification-outbox', () => ({
 }))
 vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
-vi.mock('@/lib/turnstile-server', () => ({
-  verifyTurnstile: vi.fn(),
-  isTurnstileRequired: vi.fn(),
-  TurnstileConfigurationError: class TurnstileConfigurationError extends Error {},
-}))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: vi.fn(),
@@ -63,7 +58,6 @@ import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
 import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
@@ -116,6 +110,8 @@ const DB_PRODUCT_P1 = {
     ]),
   },
 }
+// Orders are authenticated-only; the default caller is a plain B2B customer.
+const CUSTOMER = { id: 'u1', email: 'ivan@example.com', platformRole: 'customer' }
 const dbProducts = vi.fn(async () => [DB_PRODUCT_P1])
 const fakeTx = { product: { findMany: dbProducts } }
 
@@ -130,8 +126,7 @@ function makeRequest(order: Record<string, unknown> = VALID_ORDER, idempotencyKe
 describe('POST /api/orders — admin notification', () => {
 it('rejects a released idempotent checkout instead of clearing the customer cart with success', async () => {
   vi.mocked(createServerOrder).mockRejectedValueOnce(new ExistingCheckoutOrderError({ id: '1001', stockReservationStatus: 'released' } as never))
-  vi.mocked(isTurnstileRequired).mockReturnValue(false)
-  vi.mocked(getServerUser).mockResolvedValue(null)
+  vi.mocked(getServerUser).mockResolvedValue(CUSTOMER as never)
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
   const response = await POST(makeRequest(VALID_ORDER, 'released-checkout-123'))
   expect(response.status).toBe(409)
@@ -144,7 +139,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     vi.stubEnv('PAYSERA_CHECKOUT_ENABLED', 'true')
     dbProducts.mockImplementation(async () => [DB_PRODUCT_P1])
     vi.mocked(getShippingSettings).mockResolvedValue(rigaCourierSettings())
-    vi.mocked(getServerUser).mockResolvedValue(null)
+    vi.mocked(getServerUser).mockResolvedValue(CUSTOMER as never)
     // Server assigns the canonical id — echo the payload back under a generated id
     vi.mocked(createServerOrder).mockImplementation(async (order, prepare) => ({
       ...((prepare ? await prepare(fakeTx as never, null) : order) as object),
@@ -165,8 +160,6 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     vi.mocked(sendEmail).mockResolvedValue(undefined)
     vi.mocked(releaseExpiredStockReservations).mockResolvedValue(0)
     vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 2, resetAt: Date.now() + 60_000 })
-    vi.mocked(verifyTurnstile).mockResolvedValue(true)
-    vi.mocked(isTurnstileRequired).mockReturnValue(false)
     vi.mocked(getLocaleConfig).mockResolvedValue({
       defaultLanguage: 'ru',
       dateFormat: 'DD.MM.YYYY',
@@ -412,7 +405,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
-  it('rate-limits a guest by IP and normalized email before reserving stock', async () => {
+  it('rate-limits a customer by IP, normalized email and session before reserving stock', async () => {
     vi.mocked(checkRateLimit).mockResolvedValueOnce({ limited: true, remaining: 0, resetAt: Date.now() + 60_000 })
     const res = await POST(makeRequest({ ...VALID_ORDER, email: ' Buyer@Example.com ' }))
     expect(res.status).toBe(429)
@@ -420,21 +413,27 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
-  it('requires Turnstile for guests when it is configured', async () => {
-    vi.mocked(isTurnstileRequired).mockReturnValue(true)
+  it('rejects a guest (incl. forced-password-change / MFA-pending sessions) before pricing, persistence or email', async () => {
+    // getServerUser resolves to null for anonymous callers and for restricted sessions alike.
+    vi.mocked(getServerUser).mockResolvedValue(null)
     const res = await POST(makeRequest())
-    expect(res.status).toBe(400)
-    expect((await res.json()).error).toBe('captcha_required')
-    expect(createServerOrder).not.toHaveBeenCalled()
-  })
-
-  it('fails closed before reserving stock when Turnstile is not configured', async () => {
-    vi.mocked(isTurnstileRequired).mockImplementation(() => { throw new TurnstileConfigurationError() })
-    const res = await POST(makeRequest())
-    expect(res.status).toBe(503)
-    expect((await res.json()).error).toBe('captcha_not_configured')
+    expect(res.status).toBe(401)
+    const body = await res.json()
+    expect(body).toEqual({ error: 'unauthorized' })
+    expect(body).not.toHaveProperty('order')
+    expect(checkRateLimit).not.toHaveBeenCalled()
+    expect(recomputeOrderPricing).not.toHaveBeenCalled()
     expect(createServerOrder).not.toHaveBeenCalled()
     expect(sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('binds the order to the authenticated customer and company', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ ...CUSTOMER, companyId: 'c1' } as never)
+    const res = await POST(makeRequest())
+    expect(res.status).toBe(200)
+    const persisted = vi.mocked(createServerOrder).mock.calls[0][0]
+    expect(persisted).toMatchObject({ userId: 'u1', companyId: 'c1', stockReservationStatus: 'committed' })
+    expect(recomputeOrderPricing).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1' }), expect.anything())
   })
 
   it('rejects oversized contact fields and item lists before DB work', async () => {
@@ -606,11 +605,12 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
       trackingNumber: 'TRACK', language: 'xx',
     }))
     const persisted = await persistedOrder()
-    expect(persisted.userId).toBeUndefined()
+    // Ownership comes from the session, never from the body.
+    expect(persisted.userId).toBe('u1')
     expect(persisted.companyId).toBeUndefined()
     expect(persisted.checkoutKey).toBeUndefined()
     expect(persisted.bonusEarned).toBeUndefined()
-    expect(persisted.stockReservationStatus).toBe('reserved')
+    expect(persisted.stockReservationStatus).toBe('committed')
     expect(persisted.stockReleasedAt).toBeUndefined()
     expect(persisted).not.toHaveProperty('status')
     expect(persisted).not.toHaveProperty('trackingNumber')

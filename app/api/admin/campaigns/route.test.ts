@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
+vi.mock('server-only', () => ({}))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
@@ -61,5 +62,44 @@ describe('BrandLine campaign admin API', () => {
       { params: Promise.resolve({ id: 'campaign-1' }) },
     )
     expect(response.status).toBe(422)
+  })
+})
+
+describe('scheduled campaigns', () => {
+  const stored = (extra: Record<string, unknown>) => ({
+    ...base, id: 'campaign-1', description: '', showOldPrice: true, targetBrandLineIds: [], createdAt: '', updatedAt: '', ...extra,
+  })
+  const saved = () => (vi.mocked(prisma.keyValueSetting.upsert).mock.calls[0][0] as unknown as { update: { value: Array<{ active: boolean }> } }).update.value[0]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 9, 30, 15, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('arms a campaign created with a future start date even when sent as inactive', async () => {
+    const response = await POST(request('http://localhost/api/admin/campaigns', { ...base, startDate: '2026-11-01', active: false }))
+    expect(response.status).toBe(201)
+    await expect(response.json()).resolves.toMatchObject({ active: true, startDate: '2026-11-01' })
+  })
+
+  it('arms a paused campaign when its dates are moved into the future', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({ value: [stored({ active: false, startDate: '2026-09-01', endDate: '2026-09-30' })] } as never)
+    const response = await PUT(
+      request('http://localhost/api/admin/campaigns/campaign-1', { startDate: '2026-11-01', endDate: '2026-11-30', active: false }),
+      { params: Promise.resolve({ id: 'campaign-1' }) },
+    )
+    expect(response.status).toBe(200)
+    expect(saved().active).toBe(true)
+  })
+
+  it('still lets an admin pause a campaign that has already started', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({ value: [stored({ active: true, startDate: '2026-10-30' })] } as never)
+    const response = await PUT(
+      request('http://localhost/api/admin/campaigns/campaign-1', { active: false }),
+      { params: Promise.resolve({ id: 'campaign-1' }) },
+    )
+    expect(response.status).toBe(200)
+    expect(saved().active).toBe(false)
   })
 })

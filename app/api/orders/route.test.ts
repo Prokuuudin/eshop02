@@ -471,6 +471,32 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
+  it('trims and persists the optional customer comment with the order', async () => {
+    const res = await POST(makeRequest({
+      ...VALID_ORDER,
+      customerComment: '  Call before delivery.\nUse the side entrance.  ',
+    }))
+
+    expect(res.status).toBe(200)
+    expect(vi.mocked(createServerOrder).mock.calls[0][0].customerComment)
+      .toBe('Call before delivery.\nUse the side entrance.')
+  })
+
+  it('stores an empty customer comment as no value', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, customerComment: '   \n  ' }))
+
+    expect(res.status).toBe(200)
+    expect(vi.mocked(createServerOrder).mock.calls[0][0].customerComment).toBeUndefined()
+  })
+
+  it('rejects an oversized customer comment before DB work', async () => {
+    const res = await POST(makeRequest({ ...VALID_ORDER, customerComment: 'x'.repeat(2001) }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'customer_comment_too_long' })
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
   it('accepts an individual order with no personal code at all — the invoice code is optional', async () => {
     const { legalDetails: omitted, ...orderWithoutLegalDetails } = VALID_ORDER
     void omitted

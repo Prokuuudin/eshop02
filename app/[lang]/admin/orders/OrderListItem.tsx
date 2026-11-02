@@ -22,6 +22,7 @@ import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
 import { useToast } from '@/lib/toast-context';
 import { StockAcknowledgment } from './StockAcknowledgment';
+import { MessageSquareText } from 'lucide-react';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
@@ -64,6 +65,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                     const payStatus = order.paymentStatus ?? 'unpaid';
                     const isStatusSaving = statusSavingIds.has(order.id);
                     const destination = getOrderDeliveryDestination(order);
+                    const customerComment = order.customerComment?.trim();
                     const rowRef = React.useRef<HTMLDivElement>(null);
 
                     React.useEffect(() => {
@@ -121,6 +123,12 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 {DELIVERY_LABELS[order.deliveryMethod] ??
                                                     order.deliveryMethod}
                                             </span>
+                                            {customerComment && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                                                    <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
+                                                    {l('Комментарий покупателя', 'Customer comment', 'Klienta komentārs')}
+                                                </span>
+                                            )}
                                             {order.operationalExceptions?.some((exception) => exception.code === 'late_payment_stock_unavailable') && (
                                                 <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:bg-red-950 dark:text-red-200">
                                                     {l('Оплата получена — товара недостаточно', 'Payment received — stock unavailable', 'Maksājums saņemts — prece nav pieejama')}
@@ -149,6 +157,15 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
 
                             {isExpanded && (
                                 <div className="border-t border-border px-4 py-4 space-y-3">
+                                    {customerComment && (
+                                        <section className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-50" aria-labelledby={`customer-comment-${order.id}`}>
+                                            <h3 id={`customer-comment-${order.id}`} className="flex items-center gap-2 text-sm font-bold">
+                                                <MessageSquareText className="h-4 w-4" aria-hidden="true" />
+                                                {l('Комментарий покупателя', 'Customer comment', 'Klienta komentārs')}
+                                            </h3>
+                                            <p className="mt-2 whitespace-pre-wrap break-words text-sm">{customerComment}</p>
+                                        </section>
+                                    )}
                                     <OrderQuickActions order={order} state={state} status={status} />
 
                                     <StockAcknowledgment orderId={order.id} />

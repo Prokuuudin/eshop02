@@ -5,6 +5,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { ClipboardCheck, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,6 +26,7 @@ const DELIVERY_OPTIONS = checkoutDeliveryMethodIds.map(id => ({ id, labelKey: DE
 
 import { useCheckoutPage } from './useCheckoutPage';
 import { CheckoutSummary } from './CheckoutSummary';
+import { ORDER_CUSTOMER_COMMENT_MAX_LENGTH } from '@/lib/order-customer-comment';
 export default function CheckoutPage(): React.ReactElement {
     const checkoutPage = useCheckoutPage();
     if (React.isValidElement(checkoutPage)) return checkoutPage;
@@ -96,6 +98,28 @@ export default function CheckoutPage(): React.ReactElement {
                         showPrefillHint={!!currentUser}
                         deliveryMethod={deliveryMethod}
                     />
+                    <section className="checkout__section rounded-lg border-2 border-primary/40 bg-primary/5 p-6 dark:border-primary/50 dark:bg-primary/10">
+                        <label htmlFor="checkout-customer-comment" className="block text-lg font-bold text-foreground">
+                            {t('checkout.customerComment.label')}
+                        </label>
+                        <p id="checkout-customer-comment-hint" className="mt-1 text-sm text-muted-foreground">
+                            {t('checkout.customerComment.hint')}
+                        </p>
+                        <Textarea
+                            id="checkout-customer-comment"
+                            name="customerComment"
+                            value={formData.customerComment}
+                            onChange={(event) => setFormData((previous) => ({ ...previous, customerComment: event.target.value }))}
+                            placeholder={t('checkout.customerComment.placeholder')}
+                            maxLength={ORDER_CUSTOMER_COMMENT_MAX_LENGTH}
+                            rows={4}
+                            className="mt-3 min-h-28 resize-y border-primary/30 bg-card"
+                            aria-describedby="checkout-customer-comment-hint checkout-customer-comment-counter"
+                        />
+                        <p id="checkout-customer-comment-counter" className="mt-1 text-right text-xs text-muted-foreground" aria-live="polite">
+                            {formData.customerComment.length}/{ORDER_CUSTOMER_COMMENT_MAX_LENGTH}
+                        </p>
+                    </section>
                     {formData.customerType === 'individual' && (
                         <section className="checkout__section rounded-lg border-2 border-primary/30 bg-primary/5 p-6 dark:border-primary/40 dark:bg-primary/10">
                             <h2 className="mb-2 text-lg font-bold">{t('order.invoiceCodeTitle')}</h2>

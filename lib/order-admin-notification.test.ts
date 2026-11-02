@@ -77,6 +77,20 @@ describe('admin order notification', () => {
     expect(html).not.toContain('>paysera<')
   })
 
+  it('renders a separate escaped customer-comment block only when a comment exists', async () => {
+    const { html } = await buildAdminOrderNotificationEmail({
+      ...ORDER,
+      customerComment: 'Call before delivery.\n<script>alert("x")</script>',
+    })
+
+    expect(html).toContain('Комментарий покупателя')
+    expect(html).toContain('Call before delivery.\n&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;')
+    expect(html).not.toContain('<script>alert')
+
+    const withoutComment = await buildAdminOrderNotificationEmail({ ...ORDER, customerComment: '   ' })
+    expect(withoutComment.html).not.toContain('Комментарий покупателя')
+  })
+
   it('reads the recipient from CONTACT_TO and logs a PII-free success event', async () => {
     await expect(sendAdminOrderNotificationEmail(ORDER, {
       source: 'checkout', correlationId: 'correlation-1201',

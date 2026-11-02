@@ -23,6 +23,7 @@ import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
+import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
 
 export const runtime = 'nodejs'
 
@@ -35,6 +36,7 @@ type CheckoutOrderInput = {
   lastName?: unknown
   email?: unknown
   phone?: unknown
+  customerComment?: unknown
   address?: unknown
   city?: unknown
   postalCode?: unknown
@@ -133,6 +135,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const deliveryMethod = text(order.deliveryMethod).trim()
     const paymentMethod = text(order.paymentMethod)
     const promoCode = text(order.promoCode).trim() || undefined
+    const parsedCustomerComment = parseOrderCustomerComment(order.customerComment)
+    if (!parsedCustomerComment.ok) {
+      return NextResponse.json({ error: parsedCustomerComment.error }, { status: 400 })
+    }
     const idempotencyKey = req.headers.get('idempotency-key')?.trim() ?? ''
     if (idempotencyKey && (idempotencyKey.length < 8 || idempotencyKey.length > 200)) {
       return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
@@ -292,6 +298,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       lastName: text(order.lastName),
       email,
       phone: text(order.phone),
+      customerComment: parsedCustomerComment.value,
       ...destination,
       paymentMethod,
       // A new order is unpaid until staff or a verified gateway callback confirms payment;

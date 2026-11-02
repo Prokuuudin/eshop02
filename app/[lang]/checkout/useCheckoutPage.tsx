@@ -72,6 +72,7 @@ function useCheckoutPageState() {
         lastName: searchParams.get('lastName') ?? '',
         email: searchParams.get('email') ?? '',
         phone: searchParams.get('phone') ?? '',
+        customerComment: '',
         address: searchParams.get('address') ?? '',
         city: searchParams.get('city') ?? '',
         country: 'LV',

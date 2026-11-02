@@ -22,6 +22,7 @@ export type CheckoutFormData = {
   lastName: string
   email: string
   phone: string
+  customerComment: string
   address: string
   city: string
   country?: import('@/lib/delivery').DeliveryCountry

@@ -14,6 +14,7 @@ const validForm: CheckoutFormData = {
     lastName: 'Bērziņa',
     email: 'anna@example.com',
     phone: '+37120000000',
+    customerComment: '',
     address: 'Brīvības iela 1',
     city: 'Rīga',
     postalCode: 'LV-1001',

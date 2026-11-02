@@ -146,6 +146,25 @@ describe('/api/v1/orders', () => {
     )
   })
 
+  it('persists legacy API notes as the customer comment, not an internal admin note', async () => {
+    pricingMock.mockResolvedValue({
+      items: [{ id: 'p1', quantity: 1, price: 50 }], subtotal: 50, tax: 8.68, delivery: 0,
+      discount: 0, total: 50, promoApplied: false,
+    })
+    productFindMock.mockResolvedValue([{ id: 'p1', title: 'Trusted title', brand: 'Brand', image: null, category: 'hair', rating: 5, stock: 8 }])
+
+    const response = await POST(request('POST', {
+      items: [{ productId: 'p1', quantity: 1 }],
+      deliveryMethod: 'courier_riga',
+      address: { firstName: 'A', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001', country: 'LV' },
+      notes: '  Call before delivery.  ',
+    }))
+
+    expect(response.status).toBe(201)
+    expect(persistMock.mock.calls[0][0]).toMatchObject({ customerComment: 'Call before delivery.' })
+    expect((await response.json()).data.notes).toBe('Call before delivery.')
+  })
+
   it('maps stock conflicts to 409 without hiding the affected products', async () => {
     pricingMock.mockRejectedValue(new InsufficientStockError(['p1']))
     const response = await POST(request('POST', { items: [{ productId: 'p1', quantity: 5 }], deliveryMethod: 'courier_riga', address: { country: 'LV', address: 'Street 1', city: 'Riga', postalCode: 'LV-1001' } }))

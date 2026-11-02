@@ -7,7 +7,7 @@ import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import { Input } from '@/components/ui/input';
 import { useShippingSettings } from '@/lib/use-shipping-settings';
 import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDeliveryLocation, isDeliveryConfigured, isLegacyCourierMethod, calcDeliveryFee, type CheckoutDeliveryMethod } from '@/lib/delivery';
-import { calculateOrderEditSummary } from './order-edit-summary';
+import { calculateOrderEditSummary, willRecalculateSecondItemDiscount } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import { localizeVariantLabel } from '@/lib/variant-group-label';
@@ -281,6 +281,15 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                                         €{newTotal.toFixed(2)}
                                                                     </span>
                                                                 </div>
+                                                                {willRecalculateSecondItemDiscount(order, editItems) && (
+                                                                    <p role="status" className="order-edit-summary__second-item-note max-w-[260px] text-xs text-amber-700 dark:text-amber-400">
+                                                                        {l(
+                                                                            'Скидка «2-й товар» будет пересчитана при сохранении — скидка и итог могут измениться.',
+                                                                            'The second-item discount is recalculated on save — the discount and total may change.',
+                                                                            'Otrās preces atlaide tiks pārrēķināta saglabājot — atlaide un kopsumma var mainīties.'
+                                                                        )}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );

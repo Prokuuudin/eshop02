@@ -137,8 +137,13 @@ export async function loadCampaignBrandLines(
   return needed ? loadEffectiveBrandLines(db, productIds) : undefined
 }
 
-function isSecondItemCampaign(campaign: PromoCampaign): campaign is PromoCampaign & SecondItemSettings {
+export function isSecondItemCampaign(campaign: PromoCampaign): campaign is PromoCampaign & SecondItemSettings {
   return campaign?.type === SECOND_ITEM_DISCOUNT_TYPE
+}
+
+/** Deterministic order in which second-item campaigns claim cart lines. */
+export function sortSecondItemCampaigns<T extends PromoCampaign>(campaigns: T[]): T[] {
+  return [...campaigns].sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')) || a.id.localeCompare(b.id))
 }
 
 /** Campaign offers are display metadata; catalog/cart prices stay authoritative. */
@@ -232,10 +237,9 @@ export async function evaluatePromoCampaigns(
 
   // Second-item campaigns of different brands add up; together they compete with the best
   // percentage campaign (and, in server-pricing, with the promo code) as one discount.
-  const secondItemCampaigns = campaigns
+  const secondItemCampaigns = sortSecondItemCampaigns(campaigns
     .filter((campaign) => isSecondItemCampaign(campaign) && isCampaignActive(campaign, now)
-      && subtotal >= Math.max(0, Number(campaign.minOrderAmount) || 0))
-    .sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')) || a.id.localeCompare(b.id))
+      && subtotal >= Math.max(0, Number(campaign.minOrderAmount) || 0)))
   if (secondItemCampaigns.length > 0) {
     const secondItem = calculateSecondItemCampaigns(secondItemCampaigns, items)
     if (secondItem.discountCents / 100 > best.discount) {

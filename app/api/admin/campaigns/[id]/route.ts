@@ -4,7 +4,7 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag, parseCampaignType, SECOND_ITEM_ONLY_FIELDS, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
+import { campaignActiveFlag, parseCampaignType, secondItemProductsOutsideBrand, SECOND_ITEM_ONLY_FIELDS, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
 import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
 
 export const runtime = 'nodejs'
@@ -52,6 +52,11 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     if (type === SECOND_ITEM_DISCOUNT_TYPE) {
       const checked = validateSecondItemCampaignInput(merged as Record<string, unknown>, data, { id, startDate, endDate })
       if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
+      // Like brand lines: only a submitted brand/product list is checked, so a product that
+      // later changed brand cannot block an unrelated edit such as pausing the campaign.
+      const listsSubmitted = body.targetBrands !== undefined || body.productIds !== undefined || body.excludedProductIds !== undefined
+      const outsideBrand = listsSubmitted ? await secondItemProductsOutsideBrand(prisma, checked.fields) : []
+      if (outsideBrand.length > 0) return NextResponse.json({ error: 'products_not_in_brand', ids: outsideBrand }, { status: 422 })
       secondItem = checked.fields
     }
     const targetBrandLineIds = secondItem ? [] : brandLineIdList(merged.targetBrandLineIds)

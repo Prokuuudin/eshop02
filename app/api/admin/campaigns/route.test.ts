@@ -7,6 +7,7 @@ vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     brandLine: { findMany: vi.fn() },
+    product: { findMany: vi.fn() },
     keyValueSetting: { findUnique: vi.fn(), upsert: vi.fn() },
   },
 }))
@@ -31,6 +32,8 @@ beforeEach(() => {
   vi.mocked(requireAdmin).mockResolvedValue(ADMIN as never)
   vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null as never)
   vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+  vi.mocked(prisma.product.findMany).mockImplementation((async ({ where }: { where: { id: { in: string[] } } }) =>
+    where.id.in.map((id) => ({ id, brand: id.startsWith('other') ? 'Other' : 'KEMON' }))) as never)
 })
 
 describe('BrandLine campaign admin API', () => {
@@ -159,7 +162,7 @@ describe('second_item_discount admin API', () => {
   it('allows another brand or non-overlapping dates', async () => {
     vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({ value: [stored({ startDate: '2026-10-01', endDate: '2026-10-31' })] } as never)
     expect((await POST(request('http://localhost/api/admin/campaigns', secondItem))).status).toBe(201)
-    expect((await POST(request('http://localhost/api/admin/campaigns', { ...secondItem, targetBrands: ['Other'], startDate: '2026-10-15' }))).status).toBe(201)
+    expect((await POST(request('http://localhost/api/admin/campaigns', { ...secondItem, targetBrands: ['Other'], productIds: [], excludedProductIds: [], startDate: '2026-10-15' }))).status).toBe(201)
   })
 
   it('validates edits, ignores the campaign itself and blocks an overlap introduced by an edit', async () => {
@@ -174,6 +177,22 @@ describe('second_item_discount admin API', () => {
     expect(overlap.status).toBe(409)
     expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
     expect((await put('existing', { discountPercent: 101 })).status).toBe(400)
+  })
+
+  it('rejects selected or excluded products of another brand', async () => {
+    const selected = await POST(request('http://localhost/api/admin/campaigns', { ...secondItem, productIds: ['p1', 'other-1'] }))
+    expect(selected.status).toBe(422)
+    await expect(selected.json()).resolves.toEqual({ error: 'products_not_in_brand', ids: ['other-1'] })
+    const excluded = await POST(request('http://localhost/api/admin/campaigns', { ...secondItem, excludedProductIds: ['other-2'] }))
+    expect(excluded.status).toBe(422)
+    expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('does not re-check stored product lists on an unrelated edit such as pausing', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({ value: [stored({ startDate: '2020-01-01', productIds: ['other-legacy'] })] } as never)
+    expect((await put('existing', { active: false })).status).toBe(200)
+    expect(prisma.product.findMany).not.toHaveBeenCalled()
+    expect((await put('existing', { productIds: ['other-legacy'] })).status).toBe(422)
   })
 
   it('pausing a second-item campaign still works', async () => {

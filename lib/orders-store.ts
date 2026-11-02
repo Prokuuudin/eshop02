@@ -38,6 +38,8 @@ export interface Order {
   lastName: string
   email: string
   phone: string
+  /** Comment entered by the customer during checkout; distinct from the manager's OrderNote. */
+  customerComment?: string
   address: string
   city: string
   country?: import('./delivery').DeliveryCountry

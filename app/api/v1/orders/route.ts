@@ -8,6 +8,7 @@ import { authenticateRequest, successResponse, errorResponse, parsePagination } 
 import { prisma } from '@/lib/prisma'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
+import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
 
 export const runtime = 'nodejs'
 
@@ -101,11 +102,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
 
     const body = await req.json()
-    const { items, address, payment, notes } = body as {
+    const { items, address, payment, notes, customerComment } = body as {
       items?: Array<{ productId?: string; quantity?: number }>
       address?: Record<string, string>
       payment?: string
       notes?: string
+      customerComment?: string
     }
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -114,6 +116,10 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!address) {
       return errorResponse('Address is required', 400)
     }
+    // `notes` is the legacy public API name for the buyer's comment. It is not
+    // the internal manager note stored in OrderNote.
+    const parsedCustomerComment = parseOrderCustomerComment(customerComment ?? notes)
+    if (!parsedCustomerComment.ok) return errorResponse(parsedCustomerComment.error, 400)
 
     const normalizedItems = items
       .filter((i) => typeof i.productId === 'string' && i.productId.length > 0)
@@ -165,6 +171,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       lastName: address.lastName || 'User',
       email: customerEmail,
       phone: address.phone || '',
+      customerComment: parsedCustomerComment.value,
       ...destination,
       paymentStatus: 'unpaid',
       paymentProvider: payment === 'paysera' ? 'paysera' : 'manual',
@@ -212,7 +219,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         total: created.total,
         order: created,
         createdAt: created.createdAt,
-        notes,
+        notes: created.customerComment,
         message: 'Order created successfully',
       },
       201

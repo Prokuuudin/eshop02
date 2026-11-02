@@ -53,6 +53,8 @@ export type ServerOrder = {
   lastName: string
   email: string
   phone: string
+  /** Customer-supplied checkout comment. Never use this for internal admin notes. */
+  customerComment?: string
   address: string
   city: string
   country?: import('./delivery').DeliveryCountry

@@ -1,4 +1,7 @@
 const ruCheckout: Record<string, string> = {
+  'checkout.customerComment.label': 'Комментарий к заказу (необязательно)',
+  'checkout.customerComment.hint': 'Укажите пожелания по заказу или доставке. Комментарий увидит администратор.',
+  'checkout.customerComment.placeholder': 'Например: позвоните перед доставкой',
   'checkout.errors.maintenance': 'Оформление заказов временно недоступно. Корзина сохранена. Попробуйте позже.',
   "checkout.delivery.omnivaCourier": "Курьер",
   "checkout.delivery.courierRiga": "Курьер по Риге и окрестностям",

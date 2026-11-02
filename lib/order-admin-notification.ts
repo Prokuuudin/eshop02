@@ -109,10 +109,19 @@ export async function buildAdminOrderNotificationEmail(order: ServerOrder): Prom
     ? `<tr><td colspan="3" style="padding:4px 8px;text-align:right;color:#6b7280">Списано бонусов: ${bonusSpent}</td><td style="padding:4px 8px;text-align:right">−${money(pointsToEuros(bonusSpent))}</td></tr>`
     : ''
   const storeLabel = pickupStoreLabel(order)
+  const customerComment = order.customerComment?.trim()
+  const customerCommentBlock = customerComment
+    ? `<section style="margin:16px 0;padding:14px 16px;border:2px solid #f59e0b;background:#fffbeb;border-radius:8px">
+      <h3 style="margin:0 0 8px">Комментарий покупателя</h3>
+      <div style="white-space:pre-wrap;overflow-wrap:anywhere">${escHtml(customerComment)}</div>
+    </section>`
+    : ''
 
   const html = `<div style="font-family:sans-serif;max-width:640px;margin:0 auto;padding:24px">
   <h2 style="margin-top:0">Новый заказ №${escHtml(order.id)}</h2>
   <p style="color:#6b7280;margin-top:-8px">${date}</p>
+
+  ${customerCommentBlock}
 
   <h3>Покупатель</h3>
   <table style="border-collapse:collapse;width:100%">

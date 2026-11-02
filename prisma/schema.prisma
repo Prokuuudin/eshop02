@@ -476,6 +476,7 @@ model Order {
   lastName         String
   email            String
   phone            String
+  customerComment  String?
   address          String
   city             String
   postalCode       String?

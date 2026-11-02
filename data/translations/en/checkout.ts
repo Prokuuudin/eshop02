@@ -1,4 +1,7 @@
 const enCheckout: Record<string, string> = {
+  'checkout.customerComment.label': 'Order comment (optional)',
+  'checkout.customerComment.hint': 'Add any order or delivery instructions. An administrator will see this comment.',
+  'checkout.customerComment.placeholder': 'For example: call before delivery',
   'checkout.errors.maintenance': 'Checkout is temporarily unavailable. Your cart is saved. Please try again later.',
   "checkout.delivery.omnivaCourier": "Courier",
   "checkout.delivery.courierRiga": "Courier in Riga and surroundings",

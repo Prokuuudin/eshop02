@@ -4,6 +4,15 @@ import type { ResolvedLineItem } from '@/lib/server-pricing'
 import { calculateDiscount } from '@/lib/promo-codes'
 import type { Product } from '@/data/products'
 import { loadEffectiveBrandLines, selectionMatches, type BrandLineMembershipDb, type EffectiveBrandLines } from '@/lib/brand-lines/brand-line-membership'
+import {
+  calculateSecondItemCampaigns,
+  findOverlappingSecondItemCampaign,
+  isSecondItemCampaignActive,
+  normalizeSecondItemSettings,
+  isSecondItemProductEligible,
+  SECOND_ITEM_DISCOUNT_TYPE,
+  type SecondItemSettings,
+} from '@/lib/second-item-discount'
 
 export const PROMO_CAMPAIGNS_KEY = 'promo-campaigns'
 
@@ -11,7 +20,7 @@ export type PromoCampaign = {
   id: string
   name: string
   description: string
-  type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
+  type: 'discount' | 'gift' | 'bundle' | 'free_shipping' | typeof SECOND_ITEM_DISCOUNT_TYPE
   discountPercent: number
   showOldPrice?: boolean
   startDate: string
@@ -23,6 +32,11 @@ export type PromoCampaign = {
   /** Product lines (BrandLine ids); a selected line covers its whole subtree. */
   targetBrandLineIds?: string[]
   minOrderAmount: number
+  /** second_item_discount only (see lib/second-item-discount.ts). */
+  productIds?: string[]
+  excludedProductIds?: string[]
+  excludeSaleItems?: boolean
+  maxPairs?: number | null
   createdAt: string
   updatedAt: string
 }
@@ -44,6 +58,8 @@ export function campaignActiveFlag(startDate: string, requested: unknown, now = 
 }
 
 export function isCampaignActive(campaign: PromoCampaign, now = new Date()): boolean {
+  // Second-item campaigns are dated in Europe/Riga regardless of the server time zone.
+  if (campaign.type === SECOND_ITEM_DISCOUNT_TYPE) return isSecondItemCampaignActive(campaign, now)
   // Both ends are local calendar days: the campaign runs from 00:00 of startDate to the end of endDate.
   const start = new Date(`${String(campaign.startDate ?? '').slice(0, 10)}T00:00:00`)
   const end = campaign.endDate ? new Date(`${campaign.endDate.slice(0, 10)}T23:59:59.999`) : null
@@ -71,6 +87,37 @@ export function campaignMatchesProduct(
     && (!brands.length || brands.some((brand) => normalizeBrand(brand) === normalizeBrand(product.brand ?? '')))
 }
 
+export type SavableCampaignType = 'discount' | 'free_shipping' | typeof SECOND_ITEM_DISCOUNT_TYPE
+
+/** Campaign types the admin API can create or edit (gift/bundle are not implemented). */
+export function parseCampaignType(value: unknown): SavableCampaignType | null {
+  return value === 'discount' || value === 'free_shipping' || value === SECOND_ITEM_DISCOUNT_TYPE ? value : null
+}
+
+/** Fields a saved campaign keeps only while it is a second-item campaign. */
+export const SECOND_ITEM_ONLY_FIELDS = { productIds: undefined, excludedProductIds: undefined, excludeSaleItems: undefined, maxPairs: undefined }
+
+/**
+ * Validates admin input for a second-item campaign against the other saved campaigns.
+ * The returned fields replace every targeting field: only one brand and product lists apply.
+ */
+export function validateSecondItemCampaignInput(
+  input: Record<string, unknown>,
+  campaigns: readonly PromoCampaign[],
+  candidate: { id?: string; startDate: string; endDate: string },
+):
+  | { ok: true; fields: Pick<PromoCampaign, 'targetBrands' | 'discountPercent' | 'productIds' | 'excludedProductIds' | 'excludeSaleItems' | 'maxPairs' | 'targetCategories' | 'targetSubcategories' | 'targetBrandLineIds' | 'showOldPrice'> }
+  | { ok: false; status: number; body: Record<string, unknown> } {
+  const settings = normalizeSecondItemSettings(input)
+  if (!settings.ok) return { ok: false, status: 400, body: { error: settings.error } }
+  const overlap = findOverlappingSecondItemCampaign(campaigns, { ...candidate, targetBrands: settings.value.targetBrands })
+  if (overlap) return { ok: false, status: 409, body: { error: 'overlapping_second_item_campaign', id: overlap.id, name: overlap.name } }
+  return {
+    ok: true,
+    fields: { ...settings.value, targetCategories: [], targetSubcategories: [], targetBrandLineIds: [], showOldPrice: false },
+  }
+}
+
 export async function readPromoCampaigns(db: CampaignDb): Promise<PromoCampaign[]> {
   const row = await db.keyValueSetting.findUnique({ where: { key: PROMO_CAMPAIGNS_KEY } })
   return Array.isArray(row?.value) ? row.value as unknown as PromoCampaign[] : []
@@ -90,12 +137,27 @@ export async function loadCampaignBrandLines(
   return needed ? loadEffectiveBrandLines(db, productIds) : undefined
 }
 
+function isSecondItemCampaign(campaign: PromoCampaign): campaign is PromoCampaign & SecondItemSettings {
+  return campaign?.type === SECOND_ITEM_DISCOUNT_TYPE
+}
+
 /** Campaign offers are display metadata; catalog/cart prices stay authoritative. */
 export function attachCampaignOffers(products: Product[], campaigns: PromoCampaign[], now = new Date(), brandLines?: EffectiveBrandLines): Product[] {
   const active = campaigns.filter((campaign) => isCampaignActive(campaign, now)
     && campaign.type === 'discount' && Number.isFinite(campaign.discountPercent) && campaign.discountPercent > 0)
+  const secondItem = campaigns.filter((campaign) => isSecondItemCampaign(campaign) && isCampaignActive(campaign, now)
+    && Number.isInteger(campaign.discountPercent) && campaign.discountPercent >= 1 && campaign.discountPercent <= 100)
   return products.map((product) => ({
     ...product,
+    // A badge only: the product price never changes, the discount is applied to the cart.
+    ...(secondItem.length > 0 ? {
+      secondItemOffers: secondItem.filter((campaign) => isSecondItemProductEligible(campaign, product)).map((campaign) => ({
+        id: campaign.id,
+        discountPercent: campaign.discountPercent,
+        minOrderAmount: Math.max(0, Number(campaign.minOrderAmount) || 0),
+        ...(campaign.name ? { name: campaign.name } : {}),
+      })),
+    } : {}),
     campaignOffers: active.filter((campaign) => campaignMatchesProduct(campaign, product, brandLines?.get(product.id))).map((campaign) => ({
       id: campaign.id,
       discountPercent: Math.min(100, campaign.discountPercent),
@@ -111,12 +173,23 @@ export async function attachCampaignOffersFromDb(db: BrandLineMembershipDb, prod
   return attachCampaignOffers(products, campaigns, now, await loadCampaignBrandLines(db, campaigns, products.map((product) => product.id), now))
 }
 
+export type CampaignLineDiscount = {
+  /** Index into the evaluated item list. */
+  index: number
+  campaignId: string
+  discountedUnits: number
+  /** Euros, exact cents. */
+  discount: number
+}
+
 export type CampaignResult = {
   campaignId?: string
   campaignName?: string
   discount: number
   eligibleAmount: number
   freeShipping: boolean
+  /** Per-line split; only second-item campaigns produce one. */
+  lineDiscounts?: CampaignLineDiscount[]
 }
 
 export async function evaluatePromoCampaigns(
@@ -153,6 +226,32 @@ export async function evaluatePromoCampaigns(
         campaignName: best.campaignName ?? campaign.name,
         eligibleAmount: Math.max(best.eligibleAmount, eligibleAmount),
         freeShipping: true,
+      }
+    }
+  }
+
+  // Second-item campaigns of different brands add up; together they compete with the best
+  // percentage campaign (and, in server-pricing, with the promo code) as one discount.
+  const secondItemCampaigns = campaigns
+    .filter((campaign) => isSecondItemCampaign(campaign) && isCampaignActive(campaign, now)
+      && subtotal >= Math.max(0, Number(campaign.minOrderAmount) || 0))
+    .sort((a, b) => String(a.createdAt ?? '').localeCompare(String(b.createdAt ?? '')) || a.id.localeCompare(b.id))
+  if (secondItemCampaigns.length > 0) {
+    const secondItem = calculateSecondItemCampaigns(secondItemCampaigns, items)
+    if (secondItem.discountCents / 100 > best.discount) {
+      const applied = secondItemCampaigns.filter((campaign) => secondItem.campaignIds.includes(campaign.id))
+      best = {
+        ...best,
+        campaignId: applied[0].id,
+        campaignName: applied.map((campaign) => campaign.name).filter(Boolean).join(', ') || undefined,
+        discount: secondItem.discountCents / 100,
+        eligibleAmount: secondItem.eligibleCents / 100,
+        lineDiscounts: secondItem.lines.map((line) => ({
+          index: line.index,
+          campaignId: line.campaignId,
+          discountedUnits: line.discountedUnits,
+          discount: line.discountCents / 100,
+        })),
       }
     }
   }

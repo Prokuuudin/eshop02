@@ -4,28 +4,10 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag } from '@/lib/promo-campaigns'
+import { campaignActiveFlag, parseCampaignType, SECOND_ITEM_ONLY_FIELDS, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
+import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
 
 export const runtime = 'nodejs'
-
-type PromoCampaign = {
-  id: string
-  name: string
-  description: string
-  type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
-  discountPercent: number
-  showOldPrice?: boolean
-  startDate: string
-  endDate: string
-  active: boolean
-  targetCategories: string[]
-  targetSubcategories: string[]
-  targetBrands: string[]
-  targetBrandLineIds?: string[]
-  minOrderAmount: number
-  createdAt: string
-  updatedAt: string
-}
 
 const KV_KEY = 'promo-campaigns'
 
@@ -60,15 +42,21 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
     if (idx === -1) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     const merged = { ...data[idx], ...body }
     const name = String(merged.name ?? '').trim()
-    const type = merged.type === 'free_shipping' ? 'free_shipping' : merged.type === 'discount' ? 'discount' : null
+    const type = parseCampaignType(merged.type)
     const startDate = String(merged.startDate ?? '').slice(0, 10)
     const endDate = String(merged.endDate ?? '').slice(0, 10)
     if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
     if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
     if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
-    const targetBrandLineIds = brandLineIdList(merged.targetBrandLineIds)
+    let secondItem: Extract<ReturnType<typeof validateSecondItemCampaignInput>, { ok: true }>['fields'] | undefined
+    if (type === SECOND_ITEM_DISCOUNT_TYPE) {
+      const checked = validateSecondItemCampaignInput(merged as Record<string, unknown>, data, { id, startDate, endDate })
+      if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
+      secondItem = checked.fields
+    }
+    const targetBrandLineIds = secondItem ? [] : brandLineIdList(merged.targetBrandLineIds)
     // Only newly submitted ids are checked: a line archived later must not block unrelated edits.
-    if (body.targetBrandLineIds !== undefined) {
+    if (!secondItem && body.targetBrandLineIds !== undefined) {
       const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
       if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
     }
@@ -84,6 +72,7 @@ export async function PUT(request: NextRequest, { params }: Params): Promise<Res
       targetSubcategories: Array.isArray(merged.targetSubcategories) ? [...new Set(merged.targetSubcategories.map(String).filter(Boolean))] : [],
       targetBrands: Array.isArray(merged.targetBrands) ? [...new Set(merged.targetBrands.map(String).filter(Boolean))] : [],
       targetBrandLineIds,
+      ...(secondItem ?? SECOND_ITEM_ONLY_FIELDS),
       updatedAt: now,
     }
     await writeData(data)

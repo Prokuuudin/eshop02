@@ -169,6 +169,34 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     process.env.CONTACT_TO = 'admin@shop.com'
   })
 
+  it('persists the server second-item split and charges Paysera exactly the order total', async () => {
+    vi.mocked(recomputeOrderPricing).mockResolvedValue({
+      items: [{ id: 'p1', price: 25, quantity: 2, bonusRate: 0, fromCatalog: true }],
+      subtotal: 50,
+      discount: 12.5,
+      tax: 6.51,
+      delivery: 5,
+      bonusSpent: 0,
+      bonusEarned: 0,
+      total: 42.5,
+      promoApplied: false,
+      campaignApplied: true,
+      campaignName: 'Brand 2nd',
+      lineDiscounts: [{ index: 0, campaignId: 'brand-2nd', discountedUnits: 1, discount: 12.5 }],
+    })
+    vi.mocked(createPayseraPaymentForOrder).mockResolvedValue({ payseraOrderId: 'pay-1', paymentUrl: 'https://bank.paysera.com/pay/1' })
+    // Client-side totals and line discounts are ignored.
+    const tampered = {
+      ...VALID_ORDER, paymentMethod: 'paysera', discount: 49, total: 1,
+      items: [{ ...VALID_ORDER.items[0], promotionDiscount: 49, promotionId: 'forged' }],
+    }
+    const res = await POST(makeRequest(tampered))
+    expect(res.status).toBe(200)
+    const charged = vi.mocked(createPayseraPaymentForOrder).mock.calls[0][0] as unknown as { total: number; discount: number; items: unknown[] }
+    expect(charged).toMatchObject({ discount: 12.5, total: 42.5 })
+    expect(charged.items).toEqual([expect.objectContaining({ promotionDiscount: 12.5, promotionDiscountedUnits: 1, promotionId: 'brand-2nd' })])
+  })
+
   it('rejects unsupported countries before creating an order', async () => {
     expect((await POST(makeRequest({ ...VALID_ORDER, country: 'DE' }))).status).toBe(400)
     expect(createServerOrder).not.toHaveBeenCalled()

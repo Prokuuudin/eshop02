@@ -1,4 +1,7 @@
 const lvCheckout: Record<string, string> = {
+  'checkout.customerComment.label': 'Pasūtījuma komentārs (nav obligāts)',
+  'checkout.customerComment.hint': 'Norādiet vēlmes par pasūtījumu vai piegādi. Komentāru redzēs administrators.',
+  'checkout.customerComment.placeholder': 'Piemēram: piezvaniet pirms piegādes',
   'checkout.errors.maintenance': 'Pasūtījumu noformēšana īslaicīgi nav pieejama. Grozs ir saglabāts. Lūdzu, mēģiniet vēlāk.',
   "checkout.delivery.omnivaCourier": "Kurjers",
   "checkout.delivery.courierRiga": "Kurjers Rīgā un apkārtnē",

@@ -96,6 +96,19 @@ describe('createServerOrder — server-side id generation', () => {
     expect(created.id).toBe('1001')
   })
 
+  it('persists the customer comment on the order row, separate from admin metadata', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1000n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await createServerOrder({ ...ORDER, customerComment: 'Call before delivery.' })
+
+    expect(tx.order.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ customerComment: 'Call before delivery.' }),
+    }))
+    expect(tx).not.toHaveProperty('orderNote')
+  })
+
   it('retries with a fresh id when a concurrent order takes the same id', async () => {
     queryRawMock
       .mockResolvedValueOnce([{ max: 1042n }])

@@ -10,6 +10,7 @@ import {
   isSecondItemCampaignActive,
   normalizeSecondItemSettings,
   isSecondItemProductEligible,
+  normalizeBrand as normalizeSecondItemBrand,
   SECOND_ITEM_DISCOUNT_TYPE,
   type SecondItemSettings,
 } from '@/lib/second-item-discount'
@@ -116,6 +117,22 @@ export function validateSecondItemCampaignInput(
     ok: true,
     fields: { ...settings.value, targetCategories: [], targetSubcategories: [], targetBrandLineIds: [], showOldPrice: false },
   }
+}
+
+/**
+ * Selected or excluded products that are not of the campaign's brand. Such a product can
+ * never be discounted, so saving it would only mislead the admin.
+ */
+export async function secondItemProductsOutsideBrand(
+  db: Pick<ExtendedTransactionClient, 'product'>,
+  fields: { targetBrands: string[]; productIds?: string[]; excludedProductIds?: string[] },
+): Promise<string[]> {
+  const ids = [...new Set([...(fields.productIds ?? []), ...(fields.excludedProductIds ?? [])])]
+  if (ids.length === 0) return []
+  const brand = normalizeSecondItemBrand(fields.targetBrands[0])
+  const rows = await db.product.findMany({ where: { id: { in: ids } }, select: { id: true, brand: true } })
+  const brandById = new Map(rows.map((row) => [row.id, normalizeSecondItemBrand(row.brand)]))
+  return ids.filter((id) => brandById.get(id) !== brand)
 }
 
 export async function readPromoCampaigns(db: CampaignDb): Promise<PromoCampaign[]> {

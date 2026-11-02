@@ -4,7 +4,7 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag, parseCampaignType, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
+import { campaignActiveFlag, parseCampaignType, secondItemProductsOutsideBrand, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
 import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
 
 export const runtime = 'nodejs'
@@ -58,6 +58,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (type === SECOND_ITEM_DISCOUNT_TYPE) {
       const checked = validateSecondItemCampaignInput(body as Record<string, unknown>, data, { startDate, endDate })
       if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
+      const outsideBrand = await secondItemProductsOutsideBrand(prisma, checked.fields)
+      if (outsideBrand.length > 0) return NextResponse.json({ error: 'products_not_in_brand', ids: outsideBrand }, { status: 422 })
       secondItem = checked.fields
     }
     const targetBrandLineIds = secondItem ? [] : brandLineIdList(body.targetBrandLineIds)

@@ -66,6 +66,8 @@ function saveErrorMessage(code: unknown, l: Localize): string {
     case 'invalid_discount_percent': return l('Скидка должна быть целым числом от 1 до 100%', 'The discount must be a whole number from 1 to 100%', 'Atlaidei jābūt veselam skaitlim no 1 līdz 100%')
     case 'invalid_max_pairs': return l('Максимум пар — целое число больше 0 или пусто', 'Maximum pairs must be a whole number above 0 or empty', 'Maksimālais pāru skaits — vesels skaitlis virs 0 vai tukšs')
     case 'overlapping_second_item_campaign': return l('Для этого бренда уже есть акция «второй товар» в пересекающиеся даты', 'This brand already has a second-item campaign with overlapping dates', 'Šim zīmolam jau ir otrās preces akcija ar pārklājošiem datumiem')
+    case 'products_required': return l('Выберите хотя бы один товар или переключите на «Все товары бренда»', 'Select at least one product or switch to “All products of the brand”', 'Izvēlieties vismaz vienu preci vai pārslēdziet uz “Visas zīmola preces”')
+    case 'products_not_in_brand': return l('Выбранные или исключённые товары должны относиться к бренду акции', 'Selected or excluded products must belong to the campaign brand', 'Izvēlētajām vai izslēgtajām precēm jāpieder akcijas zīmolam')
     case 'invalid_dates': return l('Проверьте даты', 'Check the dates', 'Pārbaudiet datumus')
     default: return l('Ошибка сохранения', 'Failed to save', 'Saglabāšanas kļūda')
   }
@@ -183,6 +185,11 @@ export default function AdminCampaignsPage(): React.ReactElement {
     const isSecondItem = form.type === 'second_item_discount'
     if (isSecondItem && form.targetBrands.length !== 1) {
       setError(saveErrorMessage('brand_required', l))
+      return
+    }
+    // "Selected products only" with an empty list would be saved as the whole brand.
+    if (isSecondItem && selectedProductsOnly && (form.productIds?.length ?? 0) === 0) {
+      setError(saveErrorMessage('products_required', l))
       return
     }
     const payload = isSecondItem

@@ -93,3 +93,61 @@ describe('transactional admin delivery and pricing edits', () => {
     expect(tx.order.update).not.toHaveBeenCalled()
   })
 })
+
+describe('admin edits of an order with a second-item discount split', () => {
+  const discounted = { ...product, brand: 'Kemon', quantity: 2, promotionDiscount: 30, promotionDiscountedUnits: 1, promotionId: 'kemon-2nd' }
+  // Ended and paused: an order placed under the campaign is still recalculated with its rules.
+  const campaign = {
+    id: 'kemon-2nd', name: 'Kemon 2nd', description: '', type: 'second_item_discount', discountPercent: 50,
+    startDate: '2020-01-01', endDate: '2020-12-31', active: false, targetCategories: [], targetSubcategories: [], targetBrands: ['Kemon'],
+    minOrderAmount: 0, createdAt: '', updatedAt: '',
+  }
+  let campaigns: unknown[]
+  let current: Record<string, unknown>
+  beforeEach(() => {
+    vi.clearAllMocks()
+    campaigns = [campaign]
+    current = { id: 'o1', createdAt: new Date(), firstName: 'Buyer', lastName: 'Name',
+      items: [discounted], subtotal: 120, discount: 30, tax: extractVat(90), total: 100, delivery: 10,
+      bonusSpent: null, paymentStatus: 'unpaid', paymentMethod: 'paysera', paymentSessionId: 'old',
+      stockReservationStatus: 'reserved', country: 'LV', deliveryMethod: 'courier', address: 'Street 1', city: 'Riga',
+    }
+    tx.order.findUnique.mockImplementation(async () => current)
+    tx.keyValueSetting.findUnique.mockImplementation((async ({ where }: { where: { key: string } }) =>
+      (where.key === 'promo-campaigns' ? { value: campaigns } : null)) as never)
+    tx.product.findMany.mockResolvedValue([{ ...product, brand: 'Kemon' }])
+    tx.product.updateMany.mockResolvedValue({ count: 1 })
+    tx.order.update.mockImplementation(async ({ data }) => ({ ...current, ...data, deliveryLocation: data.deliveryLocation === Prisma.DbNull ? null : data.deliveryLocation }))
+  })
+
+  it('keeps the split and the discount when the lines are unchanged', async () => {
+    const result = await edit({ items: [{ id: 'p1', quantity: 2 }], city: 'Jurmala' })
+    expect(result.discount).toBe(30)
+    expect(result.total).toBe(100)
+    expect(result.items[0]).toMatchObject({ promotionDiscount: 30, promotionDiscountedUnits: 1, promotionId: 'kemon-2nd' })
+  })
+
+  it('removes the discount when a unit of the only pair is removed instead of scaling it', async () => {
+    const result = await edit({ items: [{ id: 'p1', quantity: 1 }] })
+    expect(result.discount).toBe(0)
+    expect(result.subtotal).toBe(60)
+    expect(result.total).toBe(70)
+    expect(result.items[0]).not.toHaveProperty('promotionDiscount')
+    expect(result.items[0]).not.toHaveProperty('promotionId')
+    expect(result.paymentSessionId).toBeUndefined()
+  })
+
+  it('recalculates pairs for added units and a changed catalog price', async () => {
+    tx.product.findMany.mockResolvedValue([{ ...product, brand: 'Kemon', price: 55 }])
+    const result = await edit({ items: [{ id: 'p1', quantity: 4 }] })
+    expect(result.subtotal).toBe(220)
+    expect(result.discount).toBe(55) // two pairs, 27.50 each
+    expect(result.items[0]).toMatchObject({ promotionDiscount: 55, promotionDiscountedUnits: 2, promotionId: 'kemon-2nd' })
+  })
+
+  it('refuses the edit when the campaign no longer exists, instead of guessing a discount', async () => {
+    campaigns = []
+    await expect(edit({ items: [{ id: 'p1', quantity: 1 }] })).rejects.toMatchObject({ code: 'second_item_campaign_missing' })
+    expect(tx.order.update).not.toHaveBeenCalled()
+  })
+})

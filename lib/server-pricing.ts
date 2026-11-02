@@ -10,7 +10,7 @@ import { calcDeliveryFee } from '@/lib/delivery'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { toNum } from '@/lib/decimal'
 import productSubcategories from '@/data/product-subcategories.json'
-import { evaluatePromoCampaigns } from '@/lib/promo-campaigns'
+import { evaluatePromoCampaigns, type CampaignLineDiscount } from '@/lib/promo-campaigns'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
 import { isPurchasable, PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 import { loadEffectiveBrandLines, selectionMatches } from '@/lib/brand-lines/brand-line-membership'
@@ -249,6 +249,8 @@ export type RecomputedPricing = {
   promoApplied: boolean
   campaignApplied?: boolean
   campaignName?: string
+  /** Per-line split of `discount` when it comes from second-item campaigns; indexes match `items`. */
+  lineDiscounts?: CampaignLineDiscount[]
 }
 
 /** Recompute an order's money fields authoritatively from the catalog. */
@@ -317,5 +319,6 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
     promoApplied: usePromo,
     campaignApplied: campaign.freeShipping || (!usePromo && campaign.discount > 0),
     campaignName: campaign.campaignName,
+    ...(!usePromo && campaign.lineDiscounts?.length ? { lineDiscounts: campaign.lineDiscounts } : {}),
   }
 }

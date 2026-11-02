@@ -45,6 +45,15 @@ export function buildOrderItemSnapshot(
   }
 }
 
+/** Adds the second-item campaign split of the order discount to a line snapshot. */
+export function withPromotionDiscount(
+  item: ServerOrderItem,
+  line: { campaignId: string; discountedUnits: number; discount: number } | undefined,
+): ServerOrderItem {
+  if (!line || !(line.discount > 0)) return item
+  return { ...item, promotionDiscount: line.discount, promotionDiscountedUnits: line.discountedUnits, promotionId: line.campaignId }
+}
+
 export function mapDbToServerOrder(row: PrismaOrder): ServerOrder {
   return {
     id: row.id,

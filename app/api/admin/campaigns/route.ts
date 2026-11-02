@@ -4,28 +4,10 @@ import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-li
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag } from '@/lib/promo-campaigns'
+import { campaignActiveFlag, parseCampaignType, secondItemProductsOutsideBrand, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
+import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
 
 export const runtime = 'nodejs'
-
-type PromoCampaign = {
-  id: string
-  name: string
-  description: string
-  type: 'discount' | 'gift' | 'bundle' | 'free_shipping'
-  discountPercent: number
-  showOldPrice?: boolean
-  startDate: string
-  endDate: string
-  active: boolean
-  targetCategories: string[]
-  targetSubcategories: string[]
-  targetBrands: string[]
-  targetBrandLineIds?: string[]
-  minOrderAmount: number
-  createdAt: string
-  updatedAt: string
-}
 
 const KV_KEY = 'promo-campaigns'
 
@@ -65,16 +47,24 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     const body = (await request.json()) as Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'>
     const name = String(body.name ?? '').trim()
-    const type = body.type === 'free_shipping' ? 'free_shipping' : body.type === 'discount' ? 'discount' : null
+    const type = parseCampaignType(body.type)
     const startDate = String(body.startDate ?? '').slice(0, 10)
     const endDate = String(body.endDate ?? '').slice(0, 10)
     if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
     if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
     if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
-    const targetBrandLineIds = brandLineIdList(body.targetBrandLineIds)
+    const data = await readData()
+    let secondItem: Extract<ReturnType<typeof validateSecondItemCampaignInput>, { ok: true }>['fields'] | undefined
+    if (type === SECOND_ITEM_DISCOUNT_TYPE) {
+      const checked = validateSecondItemCampaignInput(body as Record<string, unknown>, data, { startDate, endDate })
+      if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
+      const outsideBrand = await secondItemProductsOutsideBrand(prisma, checked.fields)
+      if (outsideBrand.length > 0) return NextResponse.json({ error: 'products_not_in_brand', ids: outsideBrand }, { status: 422 })
+      secondItem = checked.fields
+    }
+    const targetBrandLineIds = secondItem ? [] : brandLineIdList(body.targetBrandLineIds)
     const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
     if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
-    const data = await readData()
     const now = new Date().toISOString()
     const item: PromoCampaign = {
       id: `campaign-${Date.now()}`,
@@ -91,6 +81,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       targetBrands: Array.isArray(body.targetBrands) ? [...new Set(body.targetBrands.map(String).filter(Boolean))] : [],
       targetBrandLineIds,
       minOrderAmount: Math.max(0, Number(body.minOrderAmount) || 0),
+      ...secondItem,
       createdAt: now,
       updatedAt: now,
     }

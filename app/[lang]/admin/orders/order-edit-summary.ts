@@ -6,6 +6,17 @@ import type { useAdminOrdersPage } from './useAdminOrdersPage'
 
 type State = ReturnType<typeof useAdminOrdersPage>
 
+/**
+ * The server recalculates a second-item discount when the lines of such an order change
+ * (lib/orders-data-store.ts), so the preview below cannot show its final amount.
+ */
+export function willRecalculateSecondItemDiscount(order: Order, items: State['editItems']): boolean {
+  const before = order.items as Array<Order['items'][number] & { promotionId?: string }>
+  if (!before.some((item) => item.promotionId)) return false
+  return items.length !== before.length
+    || items.some((item, index) => item.id !== before[index].id || item.quantity !== before[index].quantity)
+}
+
 export function calculateOrderEditSummary(
   order: Order,
   items: State['editItems'],

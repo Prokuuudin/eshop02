@@ -18,7 +18,7 @@ import { isCourierDeliveryMethod } from '@/lib/delivery'
 import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
 import { ExistingCheckoutOrderError, type ServerOrderLegalDetails } from '@/lib/orders-data-store'
-import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT } from '@/lib/orders-data-mapping'
+import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT, withPromotionDiscount } from '@/lib/orders-data-mapping'
 import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-variants'
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
@@ -348,13 +348,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           invalidVariants.push(line.id)
           return []
         }
-        return [buildOrderItemSnapshot(product, {
+        return [withPromotionDiscount(buildOrderItemSnapshot(product, {
           quantity: priced.quantity,
           price: priced.price,
           lineKey: buildLineKey(product.id, selectedVariants),
           variantLabel: selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', ') || undefined,
           selectedVariants,
-        })]
+        }), pricing.lineDiscounts?.find((discount) => discount.index === idx))]
       })
       if (missing.length > 0) throw new ProductUnavailableError([...new Set(missing)])
       if (invalidVariants.length > 0) throw new InvalidVariantSelectionError([...new Set(invalidVariants)])

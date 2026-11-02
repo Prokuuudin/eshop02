@@ -19,6 +19,11 @@ export type ServerOrderItem = {
   /** Variant options validated against the product's own variant groups at checkout.
    *  A type literal (not the SelectedVariant interface) so it stays assignable to Prisma Json. */
   selectedVariants?: Array<{ groupName: string; value: string; priceAdjustment?: number }>
+  /** Second-item campaign share of Order.discount on this line (euros, line total). Informational:
+   *  `price` stays the undiscounted unit price and Order.discount remains the amount charged off. */
+  promotionDiscount?: number
+  promotionDiscountedUnits?: number
+  promotionId?: string
 }
 
 export type ServerOrderLegalDetails =
@@ -115,7 +120,7 @@ export class ExistingCheckoutOrderError extends Error {
 export class AdminOrderUpdateError extends Error {
   constructor(
     message: string,
-    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock' | 'awaiting_grins_sync'
+    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock' | 'awaiting_grins_sync' | 'second_item_campaign_missing'
   ) {
     super(message)
     this.name = 'AdminOrderUpdateError'

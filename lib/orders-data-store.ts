@@ -15,7 +15,10 @@ import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDay
 import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
-import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder } from '@/lib/orders-data-mapping'
+import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder, withPromotionDiscount } from '@/lib/orders-data-mapping'
+import { isSecondItemCampaign, readPromoCampaigns, sortSecondItemCampaigns } from '@/lib/promo-campaigns'
+import { calculateSecondItemCampaigns } from '@/lib/second-item-discount'
+import { getValidOldPrice } from '@/lib/product-campaign-price'
 import {
   adjustOrderStock,
   assertNoAwaitingAllocation,
@@ -469,7 +472,7 @@ export async function updateServerOrderByAdmin(
       throw error
     }
 
-    const items: ServerOrderItem[] = input.items.map((item) => {
+    const rebuiltItems: ServerOrderItem[] = input.items.map((item) => {
       const product = byId.get(item.id)!
       return buildOrderItemSnapshot(product, {
         quantity: item.quantity,
@@ -478,14 +481,53 @@ export async function updateServerOrderByAdmin(
         variantLabel: item.variantLabel,
       })
     })
+    const subtotal = Math.round(rebuiltItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
+    // The per-line second-item split is only still true while the lines and their prices are
+    // exactly the ones it was computed for (e.g. a delivery-only edit).
+    const linesUnchanged = rebuiltItems.length === currentItems.length && rebuiltItems.every((item, index) => {
+      const before = currentItems[index]
+      return before?.id === item.id && before.quantity === item.quantity
+        && (before.lineKey ?? '') === (item.lineKey ?? '') && before.price === item.price
+    })
+    const secondItemCampaignIds = [...new Set(currentItems.flatMap((item) => (item.promotionId ? [item.promotionId] : [])))]
+    let items = rebuiltItems
+    let secondItemDiscount: number | undefined
+    if (linesUnchanged) {
+      items = rebuiltItems.map((item, index) => {
+        const before = currentItems[index]
+        return withPromotionDiscount(item, before.promotionId && typeof before.promotionDiscount === 'number'
+          ? { campaignId: before.promotionId, discountedUnits: before.promotionDiscountedUnits ?? 0, discount: before.promotionDiscount }
+          : undefined)
+      })
+    } else if (secondItemCampaignIds.length > 0) {
+      // The whole discount of such an order is its second-item split. Scaling it would keep a
+      // discount for a removed pair, so it is recalculated for the edited lines with the same
+      // campaigns (their dates no longer matter: the order was placed while they ran).
+      const campaigns = (await readPromoCampaigns(tx)).filter((campaign) => isSecondItemCampaign(campaign) && secondItemCampaignIds.includes(campaign.id))
+      if (campaigns.length !== secondItemCampaignIds.length) {
+        throw new AdminOrderUpdateError('The second-item campaign of this order no longer exists, so its discount cannot be recalculated', 'second_item_campaign_missing')
+      }
+      const result = calculateSecondItemCampaigns(
+        sortSecondItemCampaigns(campaigns.filter((campaign) => subtotal >= Math.max(0, Number(campaign.minOrderAmount) || 0))),
+        rebuiltItems.map((item) => {
+          const product = byId.get(item.id)!
+          const oldPrice = product.oldPrice == null ? null : toNum(product.oldPrice)
+          return { id: item.id, quantity: item.quantity, price: item.price, brand: product.brand, oldPrice: getValidOldPrice(item.price, oldPrice) ?? null, fromCatalog: true }
+        }),
+      )
+      items = rebuiltItems.map((item, index) => {
+        const line = result.lines.find((entry) => entry.index === index)
+        return withPromotionDiscount(item, line && { campaignId: line.campaignId, discountedUnits: line.discountedUnits, discount: line.discountCents / 100 })
+      })
+      secondItemDiscount = result.discountCents / 100
+    }
 
-    const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
     const oldSubtotal = toNum(current.subtotal)
     const oldDiscount = toNum(current.discount)
     // Manual/campaign discounts have no promoCode; a destination-only edit must
     // retain their economic value just as it retains a promo discount.
     const discountRate = oldSubtotal > 0 ? oldDiscount / oldSubtotal : 0
-    const discount = Math.round(subtotal * discountRate * 100) / 100
+    const discount = secondItemDiscount ?? Math.round(subtotal * discountRate * 100) / 100
     const shippingSettings = await getShippingSettings(tx)
     let destination: ReturnType<typeof validateOrderDelivery>
     try {

@@ -12,6 +12,7 @@ const PRICE_FIELDS = new Set([
   'coefficient',
   'multiplier',
   'campaignOffers',
+  'secondItemOffers',
 ])
 
 function redactValue(value: unknown): unknown {

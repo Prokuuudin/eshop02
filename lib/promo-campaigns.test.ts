@@ -149,3 +149,77 @@ describe('campaign dates', () => {
     expect(campaignActiveFlag('2026-10-01', true, now)).toBe(true)
   })
 })
+
+describe('second_item_discount campaigns', () => {
+  const now = new Date('2026-11-10T12:00:00Z')
+  const second = (overrides: Partial<PromoCampaign> = {}): PromoCampaign => ({
+    id: 'kemon-2nd', name: 'Kemon 2nd', description: '', type: 'second_item_discount', discountPercent: 50,
+    startDate: '2026-11-01', endDate: '2026-11-30', active: true,
+    targetCategories: [], targetSubcategories: [], targetBrands: ['Kemon'],
+    minOrderAmount: 0, createdAt: '2026-10-01T00:00:00Z', updatedAt: '', ...overrides,
+  })
+  const unit = (id: string, price: number, quantity = 1, brand = 'Kemon') => ({ id, quantity, price, brand, bonusRate: 0, fromCatalog: true })
+
+  it('discounts the cheaper unit of each pair and reports the per-line split', async () => {
+    const result = await evaluatePromoCampaigns([unit('a', 10), unit('b', 8), unit('c', 6), unit('d', 4)], db([second()]), now)
+    expect(result).toMatchObject({ campaignId: 'kemon-2nd', campaignName: 'Kemon 2nd', discount: 6, eligibleAmount: 28, freeShipping: false })
+    expect(result.lineDiscounts).toEqual([
+      { index: 1, campaignId: 'kemon-2nd', discountedUnits: 1, discount: 4 },
+      { index: 3, campaignId: 'kemon-2nd', discountedUnits: 1, discount: 2 },
+    ])
+  })
+
+  it('adds up campaigns for different brands', async () => {
+    const result = await evaluatePromoCampaigns(
+      [unit('a', 10, 2), unit('b', 20, 2, 'Other')],
+      db([second(), second({ id: 'other-2nd', name: 'Other 2nd', targetBrands: ['Other'], discountPercent: 10, createdAt: '2026-10-02T00:00:00Z' })]),
+      now,
+    )
+    expect(result).toMatchObject({ discount: 7, campaignName: 'Kemon 2nd, Other 2nd' })
+    expect(result.lineDiscounts?.map((line) => line.campaignId)).toEqual(['kemon-2nd', 'other-2nd'])
+  })
+
+  it('competes with percentage campaigns as one discount; the larger wins and nothing stacks', async () => {
+    const percent = (discountPercent: number): PromoCampaign => ({ ...second(), id: 'brand-sale', name: 'Brand sale', type: 'discount', discountPercent })
+    const items = [unit('a', 10, 2)]
+    const small = await evaluatePromoCampaigns(items, db([second(), percent(10)]), now)
+    expect(small).toMatchObject({ campaignId: 'kemon-2nd', discount: 5 })
+    const large = await evaluatePromoCampaigns(items, db([second(), percent(30)]), now)
+    expect(large).toMatchObject({ campaignId: 'brand-sale', discount: 6 })
+    expect(large.lineDiscounts).toBeUndefined()
+  })
+
+  it('keeps free shipping from a separate campaign', async () => {
+    const shipping: PromoCampaign = { ...second(), id: 'ship', name: 'Ship', type: 'free_shipping', targetBrands: [], discountPercent: 0 }
+    const result = await evaluatePromoCampaigns([unit('a', 10, 2)], db([shipping, second()]), now)
+    expect(result).toMatchObject({ discount: 5, freeShipping: true, campaignId: 'kemon-2nd' })
+  })
+
+  it('honours the minimum order amount and Riga campaign dates', async () => {
+    expect((await evaluatePromoCampaigns([unit('a', 10, 2)], db([second({ minOrderAmount: 21 })]), now)).discount).toBe(0)
+    expect((await evaluatePromoCampaigns([unit('a', 10, 2)], db([second({ minOrderAmount: 20 })]), now)).discount).toBe(5)
+    // 2026-11-01 00:30 in Riga is still 2026-10-31 in UTC.
+    expect((await evaluatePromoCampaigns([unit('a', 10, 2)], db([second()]), new Date('2026-10-31T22:30:00Z'))).discount).toBe(5)
+    expect((await evaluatePromoCampaigns([unit('a', 10, 2)], db([second()]), new Date('2026-10-31T21:30:00Z'))).discount).toBe(0)
+  })
+
+  it('shows a second-item badge only on eligible products and never changes their price', () => {
+    const product = (id: string, brand: string, price = 10): Product => ({ id, title: id, price, category: 'hair', brand, rating: 0, stock: 1 })
+    const [kemon, excluded, other] = attachCampaignOffers(
+      [product('k', 'KEMON'), product('x', 'Kemon'), product('o', 'Other')],
+      [second({ excludedProductIds: ['x'] })],
+      now,
+    )
+    expect(kemon.secondItemOffers).toEqual([{ id: 'kemon-2nd', name: 'Kemon 2nd', discountPercent: 50, minOrderAmount: 0 }])
+    expect(kemon.campaignOffers).toEqual([])
+    expect(kemon.price).toBe(10)
+    expect(excluded.secondItemOffers).toEqual([])
+    expect(other.secondItemOffers).toEqual([])
+  })
+
+  it('leaves products untouched when no second-item campaign is active', () => {
+    const product: Product = { id: 'k', title: 'k', price: 10, category: 'hair', brand: 'Kemon', rating: 0, stock: 1 }
+    const [decorated] = attachCampaignOffers([product], [second({ active: false })], now)
+    expect(decorated).not.toHaveProperty('secondItemOffers')
+  })
+})

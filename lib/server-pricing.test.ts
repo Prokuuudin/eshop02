@@ -617,3 +617,94 @@ describe('recomputeOrderPricing — ERP B2B price sellability', () => {
     expect(r.subtotal).toBe(9)
   })
 })
+
+describe('recomputeOrderPricing — second_item_discount campaigns', () => {
+  const row = (id: string, price: number, extra: Record<string, unknown> = {}) => ({
+    id, price, oldPrice: null, brand: 'Kemon', category: 'hair', bulkPricingTiers: null, bonusRate: 0,
+    isActive: true, isDeleted: false, externalId: null, erpPriceMissing: false, manualPriceApproved: false, manualApprovedPrice: null, ...extra,
+  })
+  const secondItem = {
+    id: 'kemon-2nd', name: 'Kemon 2nd', description: '', type: 'second_item_discount', discountPercent: 50, active: true,
+    startDate: '2020-01-01', endDate: '2099-12-31', targetCategories: [], targetSubcategories: [], targetBrands: ['Kemon'],
+    minOrderAmount: 0, createdAt: '', updatedAt: '',
+  }
+  const promo = (discount: number) => ({
+    id: 'promo', code: 'SALE', active: true, discount, discountType: 'percentage', discountValue: null, maxDiscount: null,
+    minOrder: 0, minEligibleAmount: 0, maxUses: null, perUserLimit: null, usedCount: 0, startsAt: null, expiresAt: null,
+    appliesTo: 'all', productIds: [], brands: [], categories: [], subcategories: [], excludedProductIds: [],
+    excludeSaleItems: false, firstOrderOnly: false,
+  })
+  const campaigns = (...value: unknown[]) => keyValueSettingFindUniqueMock.mockImplementation(
+    async ({ where }: { where: { key: string } }) => (where.key === 'promo-campaigns' ? { value } : null),
+  )
+
+  it('computes the discount from catalog prices, ignores client prices and keeps total = subtotal − discount + delivery', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 10), row('b', 6)])
+    promoCodeFindFirstMock.mockResolvedValue(null)
+    campaigns(secondItem)
+    const r = await recomputeOrderPricing({
+      items: [{ id: 'a', quantity: 2, price: 0.01 }, { id: 'b', quantity: 2, price: 0.01 }],
+      deliveryMethod: 'courier',
+      userBonusBalance: null,
+    })
+    expect(r.subtotal).toBe(32)
+    expect(r.discount).toBe(8) // (10,10) and (6,6): 5 + 3
+    expect(r.lineDiscounts).toEqual([
+      { index: 0, campaignId: 'kemon-2nd', discountedUnits: 1, discount: 5 },
+      { index: 1, campaignId: 'kemon-2nd', discountedUnits: 1, discount: 3 },
+    ])
+    expect(r.lineDiscounts!.reduce((sum, line) => sum + line.discount, 0)).toBe(r.discount)
+    expect(r.delivery).toBe(10)
+    expect(r.total).toBe(34)
+    expect(r.campaignApplied).toBe(true)
+    expect(r.promoApplied).toBe(false)
+  })
+
+  it('applies to the post-bulk-tier unit price', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 10, { bulkPricingTiers: [{ quantity: 4, pricePerUnit: 8 }] })])
+    promoCodeFindFirstMock.mockResolvedValue(null)
+    campaigns(secondItem)
+    const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 4 }], deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.subtotal).toBe(32)
+    expect(r.discount).toBe(8) // 2 discounted units × 8 × 50%
+  })
+
+  it('a larger promo code wins and the second-item split is not stored', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 10)])
+    promoCodeFindFirstMock.mockResolvedValue(promo(40))
+    campaigns(secondItem)
+    const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 2 }], promoCode: 'SALE', deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.discount).toBe(8)
+    expect(r.promoApplied).toBe(true)
+    expect(r.lineDiscounts).toBeUndefined()
+  })
+
+  it('a smaller promo code loses to the second-item discount; the two never add up', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 10)])
+    promoCodeFindFirstMock.mockResolvedValue(promo(10))
+    campaigns(secondItem)
+    const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 2 }], promoCode: 'SALE', deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.discount).toBe(5)
+    expect(r.promoApplied).toBe(false)
+    expect(r.total).toBe(15)
+  })
+
+  it('keeps free shipping from a free-shipping campaign', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 10)])
+    promoCodeFindFirstMock.mockResolvedValue(null)
+    campaigns(secondItem, { ...secondItem, id: 'ship', type: 'free_shipping', targetBrands: [], discountPercent: 0 })
+    const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 2 }], deliveryMethod: 'courier', userBonusBalance: null })
+    expect(r.delivery).toBe(0)
+    expect(r.discount).toBe(5)
+    expect(r.total).toBe(15)
+  })
+
+  it('gives the cheaper unit for free at 100% without a negative total', async () => {
+    productFindManyMock.mockResolvedValue([row('a', 19.99), row('b', 0.01)])
+    promoCodeFindFirstMock.mockResolvedValue(null)
+    campaigns({ ...secondItem, discountPercent: 100 })
+    const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 1 }, { id: 'b', quantity: 1 }], deliveryMethod: 'pickup', userBonusBalance: null })
+    expect(r.discount).toBe(0.01)
+    expect(r.total).toBe(19.99)
+  })
+})

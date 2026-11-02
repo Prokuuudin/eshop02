@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
+import { withPromotionDiscount } from '@/lib/orders-data-mapping'
 
 export const runtime = 'nodejs'
 
@@ -197,11 +198,11 @@ export async function POST(req: NextRequest): Promise<Response> {
       }, tx)
       return {
         ...order,
-        items: order.items.map((item, index) => ({
+        items: order.items.map((item, index) => withPromotionDiscount({
           ...item,
           price: pricing.items[index]?.price ?? 0,
           quantity: pricing.items[index]?.quantity ?? item.quantity,
-        })),
+        }, pricing.lineDiscounts?.find((discount) => discount.index === index))),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery: pricing.delivery,

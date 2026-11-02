@@ -93,3 +93,41 @@ describe('transactional admin delivery and pricing edits', () => {
     expect(tx.order.update).not.toHaveBeenCalled()
   })
 })
+
+describe('admin edits of an order with a second-item discount split', () => {
+  const discounted = { ...product, quantity: 2, promotionDiscount: 30, promotionDiscountedUnits: 1, promotionId: 'kemon-2nd' }
+  let current: Record<string, unknown>
+  beforeEach(() => {
+    vi.clearAllMocks()
+    current = { id: 'o1', createdAt: new Date(), firstName: 'Buyer', lastName: 'Name',
+      items: [discounted], subtotal: 120, discount: 30, tax: extractVat(90), total: 100, delivery: 10,
+      bonusSpent: null, paymentStatus: 'unpaid', paymentMethod: 'paysera', paymentSessionId: 'old',
+      stockReservationStatus: 'reserved', country: 'LV', deliveryMethod: 'courier', address: 'Street 1', city: 'Riga',
+    }
+    tx.order.findUnique.mockImplementation(async () => current)
+    tx.keyValueSetting.findUnique.mockImplementation(async () => null)
+    tx.product.findMany.mockResolvedValue([product])
+    tx.product.updateMany.mockResolvedValue({ count: 1 })
+    tx.order.update.mockImplementation(async ({ data }) => ({ ...current, ...data, deliveryLocation: data.deliveryLocation === Prisma.DbNull ? null : data.deliveryLocation }))
+  })
+
+  it('keeps the split and the discount when the lines are unchanged', async () => {
+    const result = await edit({ items: [{ id: 'p1', quantity: 2 }], city: 'Jurmala' })
+    expect(result.discount).toBe(30)
+    expect(result.total).toBe(100)
+    expect(result.items[0]).toMatchObject({ promotionDiscount: 30, promotionDiscountedUnits: 1, promotionId: 'kemon-2nd' })
+  })
+
+  it('drops the per-line split once the lines change, so no stale split survives', async () => {
+    const result = await edit({ items: [{ id: 'p1', quantity: 1 }] })
+    expect(result.items[0]).not.toHaveProperty('promotionDiscount')
+    expect(result.items[0]).not.toHaveProperty('promotionId')
+    expect(result.paymentSessionId).toBeUndefined()
+  })
+
+  it('drops the split when the catalog price changed since the order', async () => {
+    tx.product.findMany.mockResolvedValue([{ ...product, price: 55 }])
+    const result = await edit({ items: [{ id: 'p1', quantity: 2 }] })
+    expect(result.items[0]).not.toHaveProperty('promotionDiscount')
+  })
+})

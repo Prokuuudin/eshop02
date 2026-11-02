@@ -15,7 +15,7 @@ import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDay
 import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
-import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder } from '@/lib/orders-data-mapping'
+import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder, withPromotionDiscount } from '@/lib/orders-data-mapping'
 import {
   adjustOrderStock,
   assertNoAwaitingAllocation,
@@ -469,7 +469,7 @@ export async function updateServerOrderByAdmin(
       throw error
     }
 
-    const items: ServerOrderItem[] = input.items.map((item) => {
+    const rebuiltItems: ServerOrderItem[] = input.items.map((item) => {
       const product = byId.get(item.id)!
       return buildOrderItemSnapshot(product, {
         quantity: item.quantity,
@@ -478,6 +478,21 @@ export async function updateServerOrderByAdmin(
         variantLabel: item.variantLabel,
       })
     })
+    // The per-line second-item split is only still true while the lines and their prices are
+    // exactly the ones it was computed for (e.g. a delivery-only edit); otherwise it is dropped.
+    const linesUnchanged = rebuiltItems.length === currentItems.length && rebuiltItems.every((item, index) => {
+      const before = currentItems[index]
+      return before?.id === item.id && before.quantity === item.quantity
+        && (before.lineKey ?? '') === (item.lineKey ?? '') && before.price === item.price
+    })
+    const items = linesUnchanged
+      ? rebuiltItems.map((item, index) => {
+        const before = currentItems[index]
+        return withPromotionDiscount(item, before.promotionId && typeof before.promotionDiscount === 'number'
+          ? { campaignId: before.promotionId, discountedUnits: before.promotionDiscountedUnits ?? 0, discount: before.promotionDiscount }
+          : undefined)
+      })
+      : rebuiltItems
 
     const subtotal = Math.round(items.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100
     const oldSubtotal = toNum(current.subtotal)

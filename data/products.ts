@@ -34,6 +34,8 @@ export interface Product {
   price: number
   oldPrice?: number
   campaignOffers?: Array<{ id: string; discountPercent: number; minOrderAmount: number; name?: string; showOldPrice?: boolean }>
+  /** "Second item −X%" badges; the discount itself is computed for the cart on the server. */
+  secondItemOffers?: Array<{ id: string; discountPercent: number; minOrderAmount: number; name?: string }>
   rating: number // 0-5
   ratingCount?: number
   reviewCount?: number

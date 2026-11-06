@@ -3,6 +3,7 @@
 ## Текущее состояние
 
 - Ветка: `codex/hairshop-catalog-sync-mainline`.
+- Draft PR: [#13](https://github.com/Prokuuudin/eshop02/pull/13) в `main`; не merge.
 - Основа: актуальный на момент переноса `origin/main`, commit `dd3cec15e4c0c858352321451c7962aa01968b9c`.
 - Исходная ветка `codex/hairshop-catalog-sync-marked` (`139a113ff4abfa2c921c4f4c7af86d9eff6017ea`) не переписывалась.
 - Из исходной ветки перенесены только marker/write-gate/recovery изменения синхронизации. Исторические commits и посторонние изменения не переносились.
@@ -65,6 +66,7 @@ npm run typecheck
 ## Git и рабочая копия
 
 - Mainline port commits перед финальным HANDOFF: `72853e8a` и `48364641`.
+- Ветка опубликована как `origin/codex/hairshop-catalog-sync-mainline`; Draft PR — `#13`.
 - Актуальный commit: `git rev-parse HEAD`.
 - Worktree: `C:\Users\User\Desktop\eshop02\.worktrees\hairshop-catalog-sync-mainline`.
 - Исходное основное дерево было грязным; работа изолирована в worktree и не включает пользовательские изменения из него.

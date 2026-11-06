@@ -30,9 +30,18 @@
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop-catalog-exporter\tests\Run-Tests.ps1
 powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop-catalog-exporter\tests\Run-Sync-Tests.ps1
 & '.\node_modules\.bin\vitest.cmd' run --config vitest.config.ts lib/sync/hairshop-new-product-sync.test.ts app/api/internal/hairshop-catalog-sync/route.test.ts
+$env:DATABASE_URL='postgresql://generated_only:generated_only@127.0.0.1:5432/generated_only'
+npx prisma generate
+npm run typecheck
 ```
 
 Результат последнего этапа: PowerShell exporter `8/8`, PowerShell sync `13/13`, Vitest `16/16` — PASS. Проверены разрешённые, запрещённые, неопубликованные, незавершённые, отсутствующий/невалидный маркер, повторный apply, восстановление после ошибки второго батча, строгий API-ответ, лимит тела, отсутствие price/stock write, неактивность новой карточки, блокировка параллельного запуска и выключенный scheduler.
+
+Финальная проверка ветки:
+
+- `npm run typecheck` — PASS после локального `prisma generate` без подключения к БД (фиктивный URL использовался только для загрузки Prisma config);
+- ESLint четырёх изменённых TypeScript-файлов — PASS;
+- полный Vitest — `299` test files / `2643` tests PASS, `4` skipped; `9` files / `37` tests FAIL на существующих immutable allowlist SHA (`controlled-first-wave`, `second-wave`, `fourth/fifth/sixth-wave`, `first/second/final new-product`, `final-existing`). Ветка не меняет эти allowlist или их модули; Windows checkout меняет байтовое представление исторических JSON, а тесты намеренно привязаны к точному SHA. Целевые sync-тесты полностью зелёные.
 
 ## Изменённые файлы текущего этапа
 
@@ -56,7 +65,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop
 ## Git
 
 - Ветка: `codex/hairshop-catalog-sync-marked`
-- Последний завершённый проверенный коммит: `0f313a312eeef031f0204f0f9fbdfb048de93469`
+- Последний завершённый проверенный коммит: `a55c93beb6a001f397e915511417b493d50b7e7a`
 - Актуальный SHA после каждого продолжения: `git rev-parse HEAD`
 - Исходное основное дерево было грязным; работа изолирована в `.worktrees/hairshop-catalog-sync-marked` и не включает чужие изменения.
 
@@ -64,7 +73,7 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop
 
 - Production deployment, production Neon/MSSQL, Plesk и действующие задания не изменялись.
 - Scheduler подготовлен в коде и документации, но внешняя Plesk task не создавалась и не активировалась.
-- Нужен полный локальный regression run и финальный аудит diff.
+- Полный regression run и финальный аудит diff выполнены; известные immutable allowlist SHA failures описаны выше и не относятся к этой ветке.
 - Реальная доступность MSSQL с Pro Plesk и цепочка доверия TLS неизвестны; сетевые ограничения не обходить.
 - Изображения остаются HTTPS-ссылками Hairshop.lv; бинарные файлы не копируются.
 
@@ -85,4 +94,4 @@ git log -5 --oneline --decorate
 Get-Content -Raw .\docs\hairshop-catalog-sync\HANDOFF.md
 ```
 
-Следующий конкретный шаг: запустить полный unit/typecheck regression, обновить результаты здесь и проверить итоговый diff перед публикацией ветки.
+Следующий конкретный шаг: администратору добавить marker и выполнить read-only smoke test; до этого не включать `ScheduleEnabled`, Plesk task, `AllowApply` или серверный write gate.

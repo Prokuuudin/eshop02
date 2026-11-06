@@ -45,7 +45,7 @@ goes through `getServerUser` → `requireAdminPermission` / `getAdminAccessLevel
 - `app/api/auth/login` — challenge for every admin-capable user.
 - `app/api/auth/mfa/verify` — per-account limit, atomic challenge + recovery-code consume.
 - `app/api/auth/mfa/enroll`, `enroll/confirm` (new) — mandatory first enrollment via challenge token.
-- `app/api/auth/sync` — rejects admin-capable accounts (was a full MFA bypass).
+- `app/api/auth/sync` — removed (was a full MFA bypass, later a second login path).
 - `app/api/auth/admin-setup` — first admin bootstrap no longer issues a session.
 - `app/api/user/password` — rotated session keeps MFA status.
 - `app/api/user/mfa/*` — managers included; `disable` = "change device": revokes all sessions, no new session.

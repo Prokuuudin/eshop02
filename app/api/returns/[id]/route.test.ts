@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const current = {
-  id: 'r1', email: 'buyer@example.com', status: 'approved',
+  id: 'r1', orderId: 'o1', email: 'buyer@example.com', status: 'approved',
   items: [{ productId: 'p1', quantity: 2 }],
   createdAt: new Date('2026-01-01'), resolvedAt: null,
 }
@@ -14,6 +14,7 @@ const tx = {
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     returnRequest: { findUnique: vi.fn() },
+    order: { findUnique: vi.fn() },
     $transaction: vi.fn((callback: (client: typeof tx) => unknown) => callback(tx)),
   },
 }))
@@ -91,13 +92,36 @@ describe('PATCH /api/returns/:id stock restoration', () => {
   })
 
   it('hides another customer return on reads', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ email: 'other@example.com', platformRole: 'customer' } as never)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'other', email: 'other@example.com', platformRole: 'customer' } as never)
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({ userId: 'u1' } as never)
     const response = await GET(new NextRequest('http://localhost/api/returns/r1'), { params: Promise.resolve({ id: 'r1' }) })
     expect(response.status).toBe(403)
   })
 
-  it('allows customers to change only their comment', async () => {
+  it('refuses a caller whose e-mail matches the return but who does not own the order', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'attacker', email: current.email, platformRole: 'customer' } as never)
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({ userId: 'u1' } as never)
+    const params = { params: Promise.resolve({ id: 'r1' }) }
+    expect((await GET(new NextRequest('http://localhost/api/returns/r1'), params)).status).toBe(403)
+    const patched = await PATCH(new NextRequest('http://localhost/api/returns/r1', {
+      method: 'PATCH', body: JSON.stringify({ comment: 'taken over' }),
+    }), params)
+    expect(patched.status).toBe(403)
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+  })
+
+  it('refuses everyone but staff when the order has no owner or no longer exists', async () => {
     vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: current.email, platformRole: 'customer' } as never)
+    const params = { params: Promise.resolve({ id: 'r1' }) }
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({ userId: null } as never)
+    expect((await GET(new NextRequest('http://localhost/api/returns/r1'), params)).status).toBe(403)
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(null as never)
+    expect((await GET(new NextRequest('http://localhost/api/returns/r1'), params)).status).toBe(403)
+  })
+
+  it('allows customers to change only their comment', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'changed-since@example.com', platformRole: 'customer' } as never)
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({ userId: 'u1' } as never)
     tx.returnRequest.update.mockResolvedValue({ ...current, comment: 'updated' })
     const response = await PATCH(new NextRequest('http://localhost/api/returns/r1', {
       method: 'PATCH', body: JSON.stringify({ comment: 'updated', status: 'refunded', resolution: 'forged' }),
@@ -109,6 +133,7 @@ describe('PATCH /api/returns/:id stock restoration', () => {
 
   it('rejects a customer mutation containing no allowed fields', async () => {
     vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: current.email, platformRole: 'customer' } as never)
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({ userId: 'u1' } as never)
     const response = await PATCH(new NextRequest('http://localhost/api/returns/r1', {
       method: 'PATCH', body: JSON.stringify({ status: 'refunded' }),
     }), { params: Promise.resolve({ id: 'r1' }) })

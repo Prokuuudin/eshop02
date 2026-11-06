@@ -39,14 +39,18 @@ export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPoi
 
 // Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
 // Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
+/**
+ * The owner of an order is its userId. E-mail never grants access: Order.email is typed in at
+ * checkout and User.email can be changed by the account holder, so matching them would hand
+ * another person's order to whoever sets that address. Orders without a userId stay staff-only.
+ */
 export function canAccessOrder(
-  order: Pick<ServerOrder, 'userId' | 'email'>,
+  order: Pick<ServerOrder, 'userId'>,
   caller: ServerUser | null
 ): boolean {
   if (!caller) return false
   if (caller.platformRole === 'admin') return true
-  if (order.userId) return order.userId === caller.id
-  return !!caller.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
+  return Boolean(order.userId) && order.userId === caller.id
 }
 
 export type CreateOrderOptions = {

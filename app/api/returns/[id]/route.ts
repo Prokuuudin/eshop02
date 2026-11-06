@@ -10,6 +10,12 @@ export const runtime = 'nodejs'
 const ALLOWED_USER_FIELDS = new Set(['comment'])
 const ALLOWED_ADMIN_FIELDS = new Set(['status', 'resolution', 'resolvedAt', 'comment'])
 
+/** A return belongs to whoever owns its order; the e-mail stored on it is only a contact. */
+async function ownsReturnOrder(orderId: string, userId: string): Promise<boolean> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } })
+  return order?.userId === userId
+}
+
 class ReturnStockRestoreError extends Error {
   constructor(readonly productId: string) {
     super(`Unable to restore stock for ${productId}`)
@@ -28,7 +34,7 @@ export async function GET(
     const ret = await prisma.returnRequest.findUnique({ where: { id } })
     if (!ret) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    if (user.platformRole !== 'admin' && ret.email !== user.email) {
+    if (user.platformRole !== 'admin' && !(await ownsReturnOrder(ret.orderId, user.id))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 
@@ -53,7 +59,7 @@ export async function PATCH(
     const ret = await prisma.returnRequest.findUnique({ where: { id } })
     if (!ret) return NextResponse.json({ error: 'not_found' }, { status: 404 })
 
-    if (user.platformRole !== 'admin' && ret.email !== user.email) {
+    if (user.platformRole !== 'admin' && !(await ownsReturnOrder(ret.orderId, user.id))) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
     }
 

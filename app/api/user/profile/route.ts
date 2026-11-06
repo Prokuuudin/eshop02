@@ -57,10 +57,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         return NextResponse.json({ error: 'email_taken' }, { status: 409 })
       }
 
-      // SavedAddress has no userId נit's keyed by email alone. Without this check, self-service
-      // email change is an IDOR: set your email to someone else's, then GET /api/user/addresses
-      // returns their saved name/phone/address. Guest orders (order.userId === null) have the
-      // same email-only exposure via canAccessOrder's legacy fallback and are NOT covered here ׊      // that gap is still open.
+      // Legacy saved addresses may have no userId and are keyed by e-mail alone. Access is by
+      // userId everywhere now, so this only keeps such a row from pointing at a new account.
       const conflictingAddress = await prisma.savedAddress.findFirst({
         where: { email: { equals: newEmail, mode: 'insensitive' } },
         select: { id: true },

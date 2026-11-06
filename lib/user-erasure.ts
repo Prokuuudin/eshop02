@@ -30,10 +30,11 @@ export type UserExport = {
 
 /**
  * Assembles everything the platform holds about a data subject (Art. 15/20).
- * `id` is null for a guest who checked out without an account - orders,
- * saved addresses, returns and access requests are all keyed by email too,
- * so those still export; only the account-only tables (product news
- * subscriptions, wishlist, notifications, invitations) come back empty.
+ * With an account (`id`), everything is selected by owner: its orders, the invoices and returns
+ * of those orders, and its saved addresses. The account e-mail is changeable, so it must never
+ * pull in someone else's records. `id` is null only for a staff export of a guest who checked
+ * out without an account (see admin/customers/export): orders, saved addresses, returns and
+ * access requests are then keyed by that e-mail; the account-only tables come back empty.
  */
 export async function exportUserData(params: {
   id: string | null
@@ -45,7 +46,7 @@ export async function exportUserData(params: {
   // Orders first — invoices are scoped through them so a company member's personal
   // export never dumps company-wide invoices (Invoice has no per-user key of its own).
   const orders = await prisma.order.findMany({
-    where: id ? { OR: [{ userId: id }, { email: emailLower }] } : { email: emailLower },
+    where: id ? { userId: id } : { email: emailLower },
     orderBy: { createdAt: 'desc' },
   })
   const orderIds = orders.map((o) => o.id)
@@ -64,13 +65,14 @@ export async function exportUserData(params: {
             },
           })
         : Promise.resolve({ email: emailLower, note: 'Guest checkout - no registered account' }),
-      prisma.savedAddress.findMany({ where: { email: emailLower } }),
+      prisma.savedAddress.findMany({ where: id ? { userId: id } : { email: emailLower } }),
       id ? prisma.productNewsSubscription.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }) : Promise.resolve([]),
-      prisma.returnRequest.findMany({ where: { email: emailLower } }),
+      prisma.returnRequest.findMany({ where: id ? { orderId: { in: orderIds } } : { email: emailLower } }),
       orderIds.length ? prisma.invoice.findMany({ where: { orderId: { in: orderIds } } }) : Promise.resolve([]),
       id ? prisma.wishlistItem.findMany({ where: { userId: id }, orderBy: { addedAt: 'desc' } }) : Promise.resolve([]),
       id ? prisma.userNotification.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' } }) : Promise.resolve([]),
-      prisma.accessRequest.findMany({
+      // An access request has no owner key, only an unverified e-mail: staff export of a guest only.
+      id ? Promise.resolve([]) : prisma.accessRequest.findMany({
         where: { email: emailLower },
         select: {
           id: true, email: true, name: true, phone: true, companyId: true, companyName: true,
@@ -131,9 +133,13 @@ export async function anonymizeUser(params: {
   const recoveryPhoneHash = phoneLast4 ? await hashPassword(`phone-last4:${phoneLast4}`) : null
 
   await prisma.$transaction(async (tx) => {
+    // Only what this account owns. The account e-mail can be set to anyone's address, so a match
+    // on it would let one customer erase another customer's orders, returns and requests.
+    const ownedOrderIds = (await tx.order.findMany({ where: { userId: id }, select: { id: true } })).map((order) => order.id)
+
     // Financial records: keep the row, blank the personal fields.
     await tx.order.updateMany({
-      where: { OR: [{ userId: id }, { email: emailLower }] },
+      where: { userId: id },
       data: {
         firstName: 'Deleted', lastName: 'User', email: scrubbedEmail,
         phone: '', address: '', city: '', postalCode: null,
@@ -141,7 +147,7 @@ export async function anonymizeUser(params: {
     })
 
     await tx.returnRequest.updateMany({
-      where: { email: emailLower },
+      where: { orderId: { in: ownedOrderIds } },
       data: { firstName: 'Deleted', lastName: 'User', email: scrubbedEmail, phone: '' },
     })
 
@@ -150,10 +156,9 @@ export async function anonymizeUser(params: {
     // (cross-account data loss). Review erasure is handled manually until a FK exists.
 
     // Pure-PII / intent records: remove entirely.
-    await tx.savedAddress.deleteMany({ where: { email: emailLower } })
+    await tx.savedAddress.deleteMany({ where: { userId: id } })
     await tx.wishlistItem.deleteMany({ where: { userId: id } })
     await tx.productNewsSubscription.deleteMany({ where: { userId: id } })
-    await tx.accessRequest.deleteMany({ where: { email: emailLower } })
     await tx.companyMember.deleteMany({ where: { userId: id } })
     await tx.userNotification.deleteMany({ where: { userId: id } })
     // End every session (logs the account out everywhere).

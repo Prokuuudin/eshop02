@@ -13,12 +13,12 @@ vi.mock('@/lib/server-auth', () => ({
   SESSION_COOKIE: 'eshop_session',
 }))
 vi.mock('@/lib/rate-limit', () => ({
-  checkRateLimit: vi.fn(), resetRateLimit: vi.fn(), gcRateLimitStore: vi.fn(),
+  checkRateLimit: vi.fn(), resetRateLimit: vi.fn(), refundRateLimit: vi.fn(), gcRateLimitStore: vi.fn(),
 }))
 
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession } from '@/lib/server-auth'
-import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
+import { checkRateLimit, refundRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
 
 function makeRequest(email = ' User@Test.COM ') {
@@ -44,21 +44,87 @@ describe('POST /api/auth/login', () => {
     const res = await POST(makeRequest())
 
     expect(res.status).toBe(429)
-    expect(checkRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
+    expect(checkRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10', { windowMs: 15 * 60 * 1000, maxAttempts: 30 })
     expect(checkRateLimit).toHaveBeenCalledWith('login:email:user@test.com')
     expect(prisma.user.findUnique).not.toHaveBeenCalled()
     expect(verifyPassword).not.toHaveBeenCalled()
   })
 
-  it('resets both counters after a correct password', async () => {
+  it('restarts the identifier counter but only refunds this attempt on the IP budget', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'u1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true } as never)
     vi.mocked(verifyPassword).mockResolvedValue(true)
 
     const res = await POST(makeRequest())
 
     expect(res.status).toBe(200)
-    expect(resetRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
     expect(resetRateLimit).toHaveBeenCalledWith('login:email:user@test.com')
+    expect(refundRateLimit).toHaveBeenCalledWith('login:ip:203.0.113.10')
+    // Clearing the IP counter would let an attacker erase failures with their own valid account.
+    expect(resetRateLimit).not.toHaveBeenCalledWith('login:ip:203.0.113.10')
+  })
+
+  it('leaves both counters untouched after a wrong password', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({
+      id: 'c1', email: 'c@example.com', cardNumber: '1234', passwordHash: 'hash', platformRole: 'customer', mustChangePassword: false,
+    } as never)
+    vi.mocked(verifyPassword).mockResolvedValue(false)
+
+    const res = await POST(makeRequest('1234'))
+
+    expect(res.status).toBe(401)
+    expect(resetRateLimit).not.toHaveBeenCalled()
+    expect(refundRateLimit).not.toHaveBeenCalled()
+  })
+
+  describe('not-yet-activated customer (mustChangePassword)', () => {
+    const dormant = { id: 'c2', email: 'c2@example.com', cardNumber: '716', passwordHash: 'shared-hash', platformRole: 'customer', teamRole: null, mustChangePassword: true }
+
+    it('gets no session or cookie with the correct old password and is sent to activation', async () => {
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(dormant as never)
+      vi.mocked(verifyPassword).mockResolvedValue(true)
+
+      const res = await POST(makeRequest('716'))
+
+      expect(res.status).toBe(403)
+      expect(await res.json()).toEqual({ error: 'activation_required' })
+      expect(createSession).not.toHaveBeenCalled()
+      expect(res.cookies.get('eshop_session')).toBeUndefined()
+    })
+
+    it('does not reset or refund any counter, so the attempt stays counted', async () => {
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(dormant as never)
+      vi.mocked(verifyPassword).mockResolvedValue(true)
+
+      await POST(makeRequest('716'))
+
+      expect(resetRateLimit).not.toHaveBeenCalled()
+      expect(refundRateLimit).not.toHaveBeenCalled()
+    })
+
+    it('answers a wrong password like any other failure, so the card state is not revealed', async () => {
+      vi.mocked(prisma.user.findFirst).mockResolvedValue(dormant as never)
+      vi.mocked(verifyPassword).mockResolvedValue(false)
+
+      const res = await POST(makeRequest('716'))
+
+      expect(res.status).toBe(401)
+      expect(await res.json()).toEqual({ error: 'invalid_credentials' })
+      expect(createSession).not.toHaveBeenCalled()
+    })
+
+    it('keeps staff on the MFA path: forced change happens after the second factor', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: 'a1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true, mustChangePassword: true,
+      } as never)
+      vi.mocked(verifyPassword).mockResolvedValue(true)
+
+      const res = await POST(makeRequest())
+      const json = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(json.mfaRequired).toBe(true)
+      expect(createSession).not.toHaveBeenCalled()
+    })
   })
 
   it('gives a customer (card login) a normal session with no MFA step', async () => {

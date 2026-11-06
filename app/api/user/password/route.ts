@@ -37,9 +37,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     if (!user) return NextResponse.json({ error: 'user_not_found' }, { status: 404 })
 
-    // Forced first-login change (mustChangePassword): the user is session-authenticated
-    // and has no meaningful "current" password beyond the shared default נskip the check.
-    // Everyone else must prove the current password before it can be replaced.
+    // A customer who has not activated the account cannot set a password from a session:
+    // that session proves nothing about the mailbox on file. Activation goes through the
+    // e-mailed link (register-card -> /api/auth/invite) or password recovery.
+    if (user.mustChangePassword && !requiresAdminMfa(session)) {
+      return NextResponse.json({ error: 'activation_required' }, { status: 403 })
+    }
+
+    // Forced change for staff: getServerUser only returned this session after MFA, so the
+    // second factor stands in for the temporary password. Everyone else must prove the
+    // current password before it can be replaced.
     if (!user.mustChangePassword) {
       const valid = await verifyPassword(currentPassword, user.passwordHash)
       if (!valid) {

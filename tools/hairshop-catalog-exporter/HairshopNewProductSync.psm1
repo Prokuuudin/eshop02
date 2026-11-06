@@ -71,6 +71,26 @@ function Get-PictureUrl {
     return "https://hairshop.lv/content/images/thumbs/$padded$suffix.$extension"
 }
 
+function Get-RequiredProSyncMarker {
+    param([Parameter(Mandatory = $true)]$Product)
+
+    $hasMarker = if ($Product -is [System.Data.DataRow]) {
+        $Product.Table.Columns.Contains('IsMarkedForProSync')
+    }
+    else {
+        $null -ne $Product.PSObject.Properties['IsMarkedForProSync']
+    }
+    if (-not $hasMarker) {
+        throw 'Hairshop Pro sync is blocked: source product data does not contain IsMarkedForProSync.'
+    }
+
+    $marker = Get-SyncValue $Product 'IsMarkedForProSync' $null
+    if ($marker -isnot [bool]) {
+        throw 'Hairshop Pro sync is blocked: IsMarkedForProSync must be a confirmed boolean value.'
+    }
+    return [bool]$marker
+}
+
 function ConvertTo-HairshopNewProductCandidates {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)]$Data)
@@ -113,6 +133,7 @@ function ConvertTo-HairshopNewProductCandidates {
     $candidates = New-Object Collections.ArrayList
     $rejected = New-Object Collections.ArrayList
     foreach ($product in @($Data.Products)) {
+        if (-not (Get-RequiredProSyncMarker -Product $product)) { continue }
         if (-not (ConvertTo-SyncBoolean (Get-SyncValue $product 'Published' $false))) { continue }
         $id = [int64](Get-SyncValue $product 'ProductId' 0)
         $sku = ([string](Get-SyncValue $product 'SKU' '')).Trim()

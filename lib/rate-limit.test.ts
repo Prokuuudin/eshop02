@@ -1,11 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { queryRawMock } = vi.hoisted(() => ({ queryRawMock: vi.fn() }))
-vi.mock('@/lib/prisma', () => ({ prisma: { $queryRaw: queryRawMock, rateLimit: { deleteMany: vi.fn() } } }))
+const { queryRawMock, updateManyMock } = vi.hoisted(() => ({ queryRawMock: vi.fn(), updateManyMock: vi.fn() }))
+vi.mock('@/lib/prisma', () => ({ prisma: { $queryRaw: queryRawMock, rateLimit: { updateMany: updateManyMock, deleteMany: vi.fn() } } }))
 
-import { checkRateLimit } from './rate-limit'
+import { checkRateLimit, refundRateLimit } from './rate-limit'
 
 beforeEach(() => vi.clearAllMocks())
+
+describe('refundRateLimit', () => {
+  it('returns exactly one attempt, never below zero, and keeps the window', async () => {
+    await refundRateLimit('login:ip:203.0.113.10')
+    expect(updateManyMock).toHaveBeenCalledWith({
+      where: { key: 'login:ip:203.0.113.10', count: { gt: 0 } },
+      data: { count: { decrement: 1 } },
+    })
+  })
+
+  it('never fails the login when the counter store is unavailable', async () => {
+    updateManyMock.mockRejectedValueOnce(new Error('db down'))
+    await expect(refundRateLimit('login:ip:x')).resolves.toBeUndefined()
+  })
+})
 
 describe('checkRateLimit', () => {
   it('decides window expiry with the app clock, never the DB session clock/TimeZone', async () => {

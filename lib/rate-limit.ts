@@ -56,6 +56,20 @@ export async function resetRateLimit(key: string): Promise<void> {
   }
 }
 
+/**
+ * Give back one attempt without touching the rest of the window. A successful login must not
+ * consume a shared IP budget (several clients can sit behind one address), but it must not erase
+ * failures either: clearing the counter would let an attacker reset the IP limit with their own
+ * valid account in between guesses against other cards.
+ */
+export async function refundRateLimit(key: string): Promise<void> {
+  try {
+    await prisma.rateLimit.updateMany({ where: { key, count: { gt: 0 } }, data: { count: { decrement: 1 } } })
+  } catch {
+    /* best effort */
+  }
+}
+
 /** Remove expired counters. Call occasionally (amortised) to keep the table small. */
 export async function gcRateLimitStore(): Promise<void> {
   try {

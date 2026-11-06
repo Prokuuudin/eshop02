@@ -128,7 +128,23 @@ describe('POST /api/user/password', () => {
     expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: true })
   })
 
-  it('allows a forced (mustChangePassword) user to set a new password without the current one', async () => {
+  it('refuses a not-yet-activated customer, with or without a current password', async () => {
+    userFindUniqueMock.mockResolvedValue({
+      id: 'u1', passwordHash: 'OLD', mustChangePassword: true,
+    })
+    verifyPasswordMock.mockResolvedValue(true)
+    for (const body of [{ newPassword: 'newpassword1' }, { currentPassword: 'old-shared', newPassword: 'newpassword1' }]) {
+      const res = await POST(makeRequest(body))
+      expect(res.status).toBe(403)
+      expect(await res.json()).toEqual({ error: 'activation_required' })
+    }
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(sessionDeleteManyMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('still lets MFA-verified staff complete a forced change without the temporary password', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'u1', email: 'admin@x.lv', platformRole: 'admin' })
     userFindUniqueMock.mockResolvedValue({
       id: 'u1', passwordHash: 'OLD', mustChangePassword: true,
     })

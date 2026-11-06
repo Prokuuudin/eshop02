@@ -2,7 +2,9 @@
 
 ## Что делает поток
 
-Раз в час Windows/Plesk-клиент читает существующим SELECT-only подключением полный каталог nopCommerce 3.90, выбирает только опубликованные товары, которых ещё нет в локальном state, и отправляет их батчами в защищённый Hairshop Pro API.
+Windows/Plesk-клиент на сервере Hairshop Pro читает существующим SELECT-only подключением только строки nopCommerce 3.90, у которых одновременно `Published = 1` и `isMarkedForProSync = 1`, затем исключает уже обработанные legacy ID и отправляет кандидатов батчами в защищённый Hairshop Pro API.
+
+Режим fail-closed обязателен: перед выборкой клиент проверяет через системный каталог MSSQL, что `dbo.Product.isMarkedForProSync` существует и имеет тип `bit`. Отсутствующее поле, другой тип, невозможность прочитать metadata или отсутствие SELECT завершают запуск до первого HTTP-запроса. Конвертер повторно требует булево значение маркера в каждой строке. Полный XML snapshot-export не использует этот фильтр и не изменён.
 
 API:
 
@@ -43,10 +45,14 @@ price = 0
 stock = 0
 erpPriceMissing = true
 manualPriceApproved = false
-isActive = true
+isActive = false
 ```
 
-Значения `price=0` и `stock=0` являются техническими обязательными значениями схемы, не данными старого магазина. Товар не считается имеющим действующую ERP-цену. Существующий GrinS sync позже обновляет цену и остаток только по точному `externalId=SKU`; код GrinS не изменён.
+Значения `price=0` и `stock=0` являются техническими обязательными значениями схемы, не данными старого магазина. Товар не считается имеющим действующую ERP-цену. `isActive=false` оставляет карточку недоступной покупателю даже после появления цены/остатка, пока сотрудник Hairshop Pro явно не проверит и не активирует её. Существующий GrinS sync позже обновляет цену и остаток только по точному `externalId=SKU`; код GrinS не изменён.
+
+## Внешнее изменение в Hairshop.lv
+
+Поле добавляет только администратор старого магазина; этот репозиторий и exporter не выполняют DDL. Требуемый контракт: `dbo.Product.isMarkedForProSync bit NOT NULL` с default `0`/`false`. После изменения администратор выполняет `tools/hairshop-catalog-exporter/sql/smoke-test-readonly.sql` под отдельным reader и передаёт результат без секретов. Пока проверка не успешна, экспорт остаётся заблокированным.
 
 ## Защита записи
 
@@ -57,7 +63,7 @@ isActive = true
 3. `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true` в окружении Hairshop Pro;
 4. корректный общий secret длиной минимум 32 символа.
 
-Без любого из условий запись невозможна. Dry-run читает Product identities, но не открывает transaction записи.
+Для ручного apply нужны все перечисленные условия. Для запуска из расписания дополнительно требуются параметр `-Scheduled` и `ScheduleEnabled=true` в закрытом клиентском config. Без любого из условий запись невозможна. Dry-run читает Product identities, но не открывает transaction записи.
 
 ## Файлы Hairshop Pro
 
@@ -102,6 +108,8 @@ ACL:
 
 Файл `hairshop-catalog-sync.key` содержит только тот же secret, что `HAIRSHOP_CATALOG_SYNC_SECRET`, без кавычек и дополнительных строк.
 
+`catalog-sync.json` должен оставаться с `ScheduleEnabled=false` на этапе подготовки. Этот kill switch проверяется до чтения exporter config, MSSQL и API key, поэтому случайный запуск подготовленной команды является безопасным no-op.
+
 ## Первый dry-run
 
 До создания Scheduled Task вручную выполнить под будущей task identity:
@@ -145,9 +153,15 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -No
 После успешного ручного apply создать `Run a command` раз в час, например на 17-й минуте:
 
 ```text
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Apply
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Scheduled -Apply
 ```
 
-Эксклюзивный lock рядом со state отклоняет пересекающийся запуск. Plesk должен сохранять exit code и stdout/stderr, но stdout содержит только counts и путь отчёта — не secret и не connection string.
+Подготовленная задача должна быть `Disabled`, а `ScheduleEnabled` — `false`. После отдельного разрешения владельца включаются оба уровня. Эксклюзивный lock рядом со state отклоняет пересекающийся запуск. Plesk должен сохранять exit code и stdout/stderr, но stdout содержит только counts и путь отчёта — не secret и не connection string.
+
+Каждый начатый sync создаёт JSON-журнал. При ошибке позднего батча журнал содержит `progress.completedBatches`, `progress.totalBatches`, `progress.acknowledgedResults`, `stateCommitted=false` и `partialResults`. Локальный state не фиксируется частично; полный повтор безопасен, потому что API повторно распознаёт уже созданные deterministic ID/SKU/EAN как `already_exists`.
 
 Для остановки отключить Scheduled Task. Уже созданные товары не изменяются и не удаляются.
+
+Задачу следует подготовить на стороне Hairshop Pro, но оставить `Disabled` до отдельного разрешения владельца. Прямой путь требует исходящего TCP-доступа от Plesk task identity к MSSQL, TLS с проверкой сертификата (`Encrypt=True;TrustServerCertificate=False`) и сетевого ограничения private network/VPN либо allowlist конкретного статического IP. Публиковать MSSQL в общий интернет нельзя.
+
+Если такой маршрут невозможен, безопасная альтернатива — запускать этот же read-only exporter внутри приватной сети Hairshop.lv и отправлять уже разрешённые батчи по HTTPS в существующий Pro API. Это меняет место планировщика и поэтому требует отдельного решения владельца; сетевые ограничения обходить нельзя.

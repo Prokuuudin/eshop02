@@ -2,6 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
     [switch]$Apply,
+    [switch]$Scheduled,
     [string]$FixturePath = '',
     [switch]$AllowFixtureSource
 )
@@ -13,12 +14,16 @@ Import-Module (Join-Path $PSScriptRoot 'HairshopNewProductSync.psm1') -Force
 
 try {
     $syncConfig = Read-HairshopNewProductSyncConfig -Path $ConfigPath
+    if ($Scheduled -and -not ([string]$syncConfig.ScheduleEnabled -ieq 'true')) {
+        Write-Host 'Hairshop new-product scheduled sync is disabled by configuration; no source or API access was attempted.'
+        exit 0
+    }
     $exporterConfig = Read-CatalogExporterConfig -Path ([string]$syncConfig.CatalogExporterConfigPath)
     if ($FixturePath) {
         if (-not $AllowFixtureSource) { throw 'Fixture mode requires -AllowFixtureSource.' }
         $data = Read-CatalogFixture -Path $FixturePath
     }
-    else { $data = Get-CatalogDataFromMssql -Config $exporterConfig }
+    else { $data = Get-CatalogDataFromMssql -Config $exporterConfig -ProSyncOnly }
     $result = Invoke-HairshopNewProductSync -Data $data -Config $syncConfig -Apply:$Apply
     Write-Host ('Hairshop new-product sync completed. RunId={0}; Mode={1}' -f $result.RunId, $result.Mode)
     Write-Host ('Pending={0}; Created={1}; WouldCreate={2}; AlreadyExists={3}; Conflicts={4}; LocalRejected={5}' -f $result.Summary.pending, $result.Summary.created, $result.Summary.wouldCreate, $result.Summary.alreadyExists, $result.Summary.conflicts, $result.Summary.locallyRejected)

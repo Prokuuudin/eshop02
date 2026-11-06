@@ -6,5 +6,6 @@
   "ReportDirectory": "D:\\PrivateReports\\hairshop-catalog-sync",
   "BatchSize": 50,
   "RequestTimeoutSeconds": 120,
-  "AllowApply": false
+  "AllowApply": false,
+  "ScheduleEnabled": false
 }

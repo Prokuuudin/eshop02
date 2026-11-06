@@ -61,6 +61,7 @@ Server login должен иметь возможность подключить
 - `ProductsTotal` около `6629`;
 - `Published` около `2486`;
 - `Unpublished` около `4143`;
+- `Product.isMarkedForProSync` найден, имеет тип `bit`, а `ProSyncEligibleProducts` содержит только явно разрешённые опубликованные строки;
 - ненулевые количества языков, категорий, переводов и image mappings;
 - пять последних изменённых товаров без цен и остатков;
 - состояние `READ_COMMITTED_SNAPSHOT` для оценки DBA.

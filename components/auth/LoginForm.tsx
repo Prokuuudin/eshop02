@@ -31,6 +31,7 @@ export default function LoginForm({
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [activationRequired, setActivationRequired] = useState(false);
     const [setupRequired] = useState(() => !hasAdminUsers());
     const [showPassword, setShowPassword] = useState(false);
     const confirmed = searchParams.get('confirmed') === '1';
@@ -97,8 +98,13 @@ export default function LoginForm({
         if (submitting) return;
         setSubmitting(true);
         setError('');
+        setActivationRequired(false);
         const res = await loginUserAuto(identifier.trim(), password);
         setSubmitting(false);
+        if (res.activationRequired) {
+            setActivationRequired(true);
+            return;
+        }
         if (res.mfaRequired && res.challengeToken) {
             setMfaChallengeToken(res.challengeToken);
             setEnrollmentRequired(res.enrollmentRequired === true);
@@ -290,6 +296,24 @@ export default function LoginForm({
                 </p>
             )}
             {error && <p className="text-red-600 dark:text-red-400 mb-2">{error}</p>}
+            {activationRequired && (
+                <div
+                    role="alert"
+                    data-testid="login-activation-required"
+                    className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                >
+                    <p>{t('auth.activationRequired')}</p>
+                    {onRegister ? (
+                        <button type="button" onClick={onRegister} className="mt-1 font-medium underline underline-offset-2">
+                            {t('auth.activationRequiredAction')}
+                        </button>
+                    ) : (
+                        <Link href="/auth/register" className="mt-1 inline-block font-medium underline underline-offset-2">
+                            {t('auth.activationRequiredAction')}
+                        </Link>
+                    )}
+                </div>
+            )}
             <div>
                 <label htmlFor="login-identifier" className="block mb-1 text-sm text-foreground">
                     {adminLogin ? t('adminSetup.fieldEmail', 'Email') : t('auth.clientCardNumber', 'Номер карты')}

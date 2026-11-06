@@ -2,6 +2,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$ConfigPath,
     [switch]$Apply,
+    [switch]$Scheduled,
     [string]$FixturePath = '',
     [switch]$AllowFixtureSource
 )
@@ -13,6 +14,10 @@ Import-Module (Join-Path $PSScriptRoot 'HairshopNewProductSync.psm1') -Force
 
 try {
     $syncConfig = Read-HairshopNewProductSyncConfig -Path $ConfigPath
+    if ($Scheduled -and -not ([string]$syncConfig.ScheduleEnabled -ieq 'true')) {
+        Write-Host 'Hairshop new-product scheduled sync is disabled by configuration; no source or API access was attempted.'
+        exit 0
+    }
     $exporterConfig = Read-CatalogExporterConfig -Path ([string]$syncConfig.CatalogExporterConfigPath)
     if ($FixturePath) {
         if (-not $AllowFixtureSource) { throw 'Fixture mode requires -AllowFixtureSource.' }

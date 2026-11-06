@@ -40,10 +40,10 @@ const body = (mode: 'dry-run' | 'apply' = 'dry-run') => ({
   }],
 })
 
-function request(payload: unknown, key = SECRET): NextRequest {
+function request(payload: unknown, key = SECRET, extraHeaders: Record<string, string> = {}): NextRequest {
   return new NextRequest('http://localhost/api/internal/hairshop-catalog-sync', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-hairshop-catalog-sync-key': key },
+    headers: { 'content-type': 'application/json', 'x-hairshop-catalog-sync-key': key, ...extraHeaders },
     body: JSON.stringify(payload),
   })
 }
@@ -93,6 +93,13 @@ describe('POST /api/internal/hairshop-catalog-sync', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
+  it('rejects an oversized batch before parsing or querying products', async () => {
+    const response = await POST(request(body(), SECRET, { 'content-length': String(5 * 1024 * 1024 + 1) }))
+    expect(response.status).toBe(413)
+    expect(findMany).not.toHaveBeenCalled()
+    expect(transaction).not.toHaveBeenCalled()
+  })
+
   it('creates an absent product once when both write gates are enabled', async () => {
     process.env.HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED = 'true'
     const response = await POST(request(body('apply')))
@@ -100,7 +107,7 @@ describe('POST /api/internal/hairshop-catalog-sync', () => {
     expect(response.status).toBe(200)
     expect(json.metrics).toMatchObject({ created: 1, databaseWrites: 1, productUpdates: 0, priceUpdates: 0, stockUpdates: 0 })
     expect(create).toHaveBeenCalledTimes(1)
-    expect(create.mock.calls[0][0].data).toMatchObject({ price: 0, stock: 0, erpPriceMissing: true })
+    expect(create.mock.calls[0][0].data).toMatchObject({ price: 0, stock: 0, erpPriceMissing: true, isActive: false })
   })
 
   it('does not create on a repeated exact synchronization', async () => {

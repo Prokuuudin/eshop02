@@ -13,6 +13,7 @@ import {
 } from '@/lib/sync/hairshop-new-product-sync'
 
 export const runtime = 'nodejs'
+const MAX_REQUEST_BYTES = 5 * 1024 * 1024
 
 const IDENTITY_SELECT = {
   id: true,
@@ -53,9 +54,18 @@ export async function POST(request: NextRequest): Promise<Response> {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
 
+  const declaredLength = Number(request.headers.get('content-length') ?? '0')
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) {
+    return NextResponse.json({ error: 'request_too_large' }, { status: 413 })
+  }
+
   let raw: unknown
   try {
-    raw = await request.json()
+    const text = await request.text()
+    if (Buffer.byteLength(text, 'utf8') > MAX_REQUEST_BYTES) {
+      return NextResponse.json({ error: 'request_too_large' }, { status: 413 })
+    }
+    raw = JSON.parse(text)
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }

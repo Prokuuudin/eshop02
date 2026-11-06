@@ -63,7 +63,7 @@ isActive = false
 3. `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true` в окружении Hairshop Pro;
 4. корректный общий secret длиной минимум 32 символа.
 
-Без любого из условий запись невозможна. Dry-run читает Product identities, но не открывает transaction записи.
+Для ручного apply нужны все перечисленные условия. Для запуска из расписания дополнительно требуются параметр `-Scheduled` и `ScheduleEnabled=true` в закрытом клиентском config. Без любого из условий запись невозможна. Dry-run читает Product identities, но не открывает transaction записи.
 
 ## Файлы Hairshop Pro
 
@@ -108,6 +108,8 @@ ACL:
 
 Файл `hairshop-catalog-sync.key` содержит только тот же secret, что `HAIRSHOP_CATALOG_SYNC_SECRET`, без кавычек и дополнительных строк.
 
+`catalog-sync.json` должен оставаться с `ScheduleEnabled=false` на этапе подготовки. Этот kill switch проверяется до чтения exporter config, MSSQL и API key, поэтому случайный запуск подготовленной команды является безопасным no-op.
+
 ## Первый dry-run
 
 До создания Scheduled Task вручную выполнить под будущей task identity:
@@ -151,10 +153,12 @@ C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -No
 После успешного ручного apply создать `Run a command` раз в час, например на 17-й минуте:
 
 ```text
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Apply
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Scheduled -Apply
 ```
 
-Эксклюзивный lock рядом со state отклоняет пересекающийся запуск. Plesk должен сохранять exit code и stdout/stderr, но stdout содержит только counts и путь отчёта — не secret и не connection string.
+Подготовленная задача должна быть `Disabled`, а `ScheduleEnabled` — `false`. После отдельного разрешения владельца включаются оба уровня. Эксклюзивный lock рядом со state отклоняет пересекающийся запуск. Plesk должен сохранять exit code и stdout/stderr, но stdout содержит только counts и путь отчёта — не secret и не connection string.
+
+Каждый начатый sync создаёт JSON-журнал. При ошибке позднего батча журнал содержит `progress.completedBatches`, `progress.totalBatches`, `progress.acknowledgedResults`, `stateCommitted=false` и `partialResults`. Локальный state не фиксируется частично; полный повтор безопасен, потому что API повторно распознаёт уже созданные deterministic ID/SKU/EAN как `already_exists`.
 
 Для остановки отключить Scheduled Task. Уже созданные товары не изменяются и не удаляются.
 

@@ -17,6 +17,10 @@
 - Новые карточки создаются неактивными (`isActive=false`).
 - Read-only smoke test проверяет поле, тип и количество разрешённых опубликованных товаров.
 - `.env.example` содержит только пустой secret и выключенный write gate.
+- API отклоняет тело больше 5 MiB до DB query; Zod по-прежнему ограничивает batch 100 товарами.
+- PowerShell-клиент проверяет точное количество/identity/status каждого API-ответа до изменения локального state.
+- Failure-report сохраняет прогресс и подтверждённые результаты предыдущих батчей; повтор после частичного сбоя идемпотентен.
+- Добавлены `-Scheduled` и независимый `ScheduleEnabled=false`: выключенное расписание завершается no-op до MSSQL/API.
 
 ## Проверено
 
@@ -28,16 +32,19 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop
 & '.\node_modules\.bin\vitest.cmd' run --config vitest.config.ts lib/sync/hairshop-new-product-sync.test.ts app/api/internal/hairshop-catalog-sync/route.test.ts
 ```
 
-Результат этапа: PowerShell exporter `8/8`, PowerShell sync `9/9`, Vitest `15/15` — PASS. Проверены разрешённые, запрещённые, неопубликованные, незавершённые, отсутствующий/невалидный маркер, повторный apply, отсутствие price/stock write и блокировка параллельного запуска.
+Результат последнего этапа: PowerShell exporter `8/8`, PowerShell sync `13/13`, Vitest `16/16` — PASS. Проверены разрешённые, запрещённые, неопубликованные, незавершённые, отсутствующий/невалидный маркер, повторный apply, восстановление после ошибки второго батча, строгий API-ответ, лимит тела, отсутствие price/stock write, неактивность новой карточки, блокировка параллельного запуска и выключенный scheduler.
 
 ## Изменённые файлы текущего этапа
 
 - `.env.example`
+- `app/api/internal/hairshop-catalog-sync/route.ts`
+- `app/api/internal/hairshop-catalog-sync/route.test.ts`
 - `lib/sync/hairshop-new-product-sync.ts`
 - `lib/sync/hairshop-new-product-sync.test.ts`
 - `tools/hairshop-catalog-exporter/HairshopCatalogExporter.psm1`
 - `tools/hairshop-catalog-exporter/HairshopNewProductSync.psm1`
 - `tools/hairshop-catalog-exporter/Sync-HairshopNewProducts.ps1`
+- `tools/hairshop-catalog-exporter/catalog-sync.example.json`
 - `tools/hairshop-catalog-exporter/sql/smoke-test-readonly.sql`
 - `tools/hairshop-catalog-exporter/tests/Run-Tests.ps1`
 - `tools/hairshop-catalog-exporter/tests/Run-Sync-Tests.ps1`
@@ -49,15 +56,15 @@ powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop
 ## Git
 
 - Ветка: `codex/hairshop-catalog-sync-marked`
-- Проверенная база этапа: `137250addfbd3eb80bd076bc468d5ad38a911d19`
+- Последний завершённый проверенный коммит: `0f313a312eeef031f0204f0f9fbdfb048de93469`
 - Актуальный SHA после каждого продолжения: `git rev-parse HEAD`
 - Исходное основное дерево было грязным; работа изолирована в `.worktrees/hairshop-catalog-sync-marked` и не включает чужие изменения.
 
 ## Незавершённые задачи и ограничения
 
 - Production deployment, production Neon/MSSQL, Plesk и действующие задания не изменялись.
-- Scheduler подготовлен документально, но не создавался и не активировался.
-- Нужен финальный аудит частичных batch-ошибок и журналирования, затем полный локальный regression run.
+- Scheduler подготовлен в коде и документации, но внешняя Plesk task не создавалась и не активировалась.
+- Нужен полный локальный regression run и финальный аудит diff.
 - Реальная доступность MSSQL с Pro Plesk и цепочка доверия TLS неизвестны; сетевые ограничения не обходить.
 - Изображения остаются HTTPS-ссылками Hairshop.lv; бинарные файлы не копируются.
 
@@ -78,4 +85,4 @@ git log -5 --oneline --decorate
 Get-Content -Raw .\docs\hairshop-catalog-sync\HANDOFF.md
 ```
 
-Следующий конкретный шаг: улучшить failure-report для частично завершённых батчей и проверить, что повторный запуск безопасно восстанавливается после ошибки второго батча.
+Следующий конкретный шаг: запустить полный unit/typecheck regression, обновить результаты здесь и проверить итоговый diff перед публикацией ветки.

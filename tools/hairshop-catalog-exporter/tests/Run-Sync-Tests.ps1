@@ -103,6 +103,18 @@ try {
         return [pscustomobject]@{ schemaVersion = 1; runId = $Body.runId; mode = $Body.mode; metrics = [pscustomobject]@{}; results = $results }
     }
 
+    Invoke-ExpectedFailure -MessagePattern 'does not contain results' -Action {
+        Assert-SyncApiBatchResponse -Response ([pscustomobject]@{ runId = 'response-test'; mode = 'dry-run'; results = @() }) -Batch @($converted.Candidates[0]) -RunId 'response-test' -Mode 'dry-run' | Out-Null
+    }
+    Invoke-ExpectedFailure -MessagePattern "invalid status 'created'" -Action {
+        Assert-SyncApiBatchResponse -Response ([pscustomobject]@{
+            runId = 'response-test'
+            mode = 'dry-run'
+            results = @([pscustomobject]@{ legacyProductId = 101; sku = 'ONKO-001'; targetProductId = 'nop390-101'; status = 'created' })
+        }) -Batch @($converted.Candidates[0]) -RunId 'response-test' -Mode 'dry-run' | Out-Null
+    }
+    Write-Host 'PASS: incomplete and mode-inconsistent API responses are rejected'
+
     $callsBeforeBlockedRun = $script:ApiCalls
     Invoke-ExpectedFailure -MessagePattern 'does not contain IsMarkedForProSync' -Action {
         Invoke-HairshopNewProductSync -Data $missingMarkerData -Config $config -ApiInvoker $api | Out-Null
@@ -129,6 +141,80 @@ try {
     finally { $lockStream.Dispose() }
     Write-Host 'PASS: exclusive scheduler lock rejects a parallel run'
 
+    $partialConfig = [pscustomobject]@{
+        ApiEndpoint = $config.ApiEndpoint
+        ApiKeyFile = $config.ApiKeyFile
+        StatePath = Join-Path $temporaryRoot 'partial-state\sync-state.json'
+        ReportDirectory = Join-Path $temporaryRoot 'partial-reports'
+        BatchSize = 1
+        RequestTimeoutSeconds = 30
+        AllowApply = $true
+    }
+    $script:PartialCalls = 0
+    $partialApi = {
+        param($Endpoint, $ApiKey, $Body, $TimeoutSeconds)
+        $script:PartialCalls++
+        if ($script:PartialCalls -eq 2) { throw 'simulated second batch failure' }
+        $product = @($Body.products)[0]
+        return [pscustomobject]@{
+            schemaVersion = 1
+            runId = $Body.runId
+            mode = $Body.mode
+            metrics = [pscustomobject]@{}
+            results = @([pscustomobject]@{ legacyProductId = $product.legacyProductId; sku = $product.sku; ean = $product.ean; targetProductId = "nop390-$($product.legacyProductId)"; status = 'created'; reasons = @('TEST'); matchedProductIds = @(); warnings = @() })
+        }
+    }
+    Invoke-ExpectedFailure -MessagePattern 'simulated second batch failure' -Action {
+        Invoke-HairshopNewProductSync -Data $data -Config $partialConfig -Apply -ApiInvoker $partialApi | Out-Null
+    }
+    Assert-True (-not (Test-Path -LiteralPath $partialConfig.StatePath)) 'partial failure must not commit local state'
+    $partialFailurePath = @(Get-ChildItem -LiteralPath $partialConfig.ReportDirectory -Filter '*.json' -File)[0].FullName
+    $partialFailure = Get-Content -LiteralPath $partialFailurePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 1 $partialFailure.progress.completedBatches 'failure report completed batch count'
+    Assert-Equal 2 $partialFailure.progress.totalBatches 'failure report total batch count'
+    Assert-Equal 1 $partialFailure.progress.acknowledgedResults 'failure report acknowledged result count'
+    Assert-Equal 'created' $partialFailure.partialResults[0].status 'failure report retains committed remote result'
+
+    $recoveryApi = {
+        param($Endpoint, $ApiKey, $Body, $TimeoutSeconds)
+        $product = @($Body.products)[0]
+        $status = if ([int64]$product.legacyProductId -eq 101) { 'already_exists' } else { 'created' }
+        return [pscustomobject]@{
+            schemaVersion = 1
+            runId = $Body.runId
+            mode = $Body.mode
+            metrics = [pscustomobject]@{}
+            results = @([pscustomobject]@{ legacyProductId = $product.legacyProductId; sku = $product.sku; ean = $product.ean; targetProductId = "nop390-$($product.legacyProductId)"; status = $status; reasons = @('TEST'); matchedProductIds = @(); warnings = @() })
+        }
+    }
+    $recovered = Invoke-HairshopNewProductSync -Data $data -Config $partialConfig -Apply -ApiInvoker $recoveryApi
+    Assert-Equal 1 $recovered.Summary.alreadyExists 'recovery recognizes remotely committed first batch'
+    Assert-Equal 1 $recovered.Summary.created 'recovery creates only the previously failed batch'
+    $recoveredState = Get-Content -LiteralPath $partialConfig.StatePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 2 @($recoveredState.processed.PSObject.Properties).Count 'recovery commits both products to local state'
+    Write-Host 'PASS: partial batch failure is journaled and a full retry recovers idempotently'
+
+    $scheduledConfigPath = Join-Path $temporaryRoot 'scheduled-disabled.json'
+    $scheduledConfig = [ordered]@{
+        CatalogExporterConfigPath = Join-Path $temporaryRoot 'must-not-be-read-exporter.json'
+        ApiEndpoint = $config.ApiEndpoint
+        ApiKeyFile = Join-Path $temporaryRoot 'must-not-be-read-api.key'
+        StatePath = Join-Path $temporaryRoot 'must-not-be-written-state.json'
+        ReportDirectory = Join-Path $temporaryRoot 'must-not-be-written-reports'
+        BatchSize = 50
+        RequestTimeoutSeconds = 30
+        AllowApply = $false
+        ScheduleEnabled = $false
+    }
+    [IO.File]::WriteAllText($scheduledConfigPath, ($scheduledConfig | ConvertTo-Json -Depth 5), (New-Object Text.UTF8Encoding($false, $true)))
+    $scheduledEntryPoint = Join-Path (Split-Path $PSScriptRoot -Parent) 'Sync-HairshopNewProducts.ps1'
+    $scheduledOutput = & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File $scheduledEntryPoint -ConfigPath $scheduledConfigPath -Scheduled -Apply 2>&1
+    Assert-Equal 0 $LASTEXITCODE ('disabled scheduled entry point exit code: ' + ($scheduledOutput -join ' '))
+    Assert-True (($scheduledOutput -join ' ').Contains('disabled by configuration')) 'disabled scheduled entry point reports a no-op'
+    Assert-True (-not (Test-Path -LiteralPath $scheduledConfig.StatePath)) 'disabled schedule does not create state'
+    Assert-True (-not (Test-Path -LiteralPath $scheduledConfig.ReportDirectory)) 'disabled schedule does not create reports or access API'
+    Write-Host 'PASS: scheduled mode is a no-op until its independent config gate is enabled'
+
     $apply = Invoke-HairshopNewProductSync -Data $data -Config $config -Apply -ApiInvoker $api
     Assert-Equal 2 $apply.Summary.created 'apply created count'
     Assert-True (Test-Path -LiteralPath $config.StatePath) 'apply writes state'
@@ -148,7 +234,7 @@ try {
     $reports = @(Get-ChildItem -LiteralPath $config.ReportDirectory -Filter '*.json' -File)
     Assert-Equal 5 $reports.Count 'one journal report per started run, including fail-closed validation failure'
     Write-Host 'PASS: every run has a JSON journal and no secret is logged'
-    Write-Host 'ALL SYNC TESTS PASSED: 9'
+    Write-Host 'ALL SYNC TESTS PASSED: 13'
     exit 0
 }
 catch {

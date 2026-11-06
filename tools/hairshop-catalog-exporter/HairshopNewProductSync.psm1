@@ -260,6 +260,7 @@ function Read-HairshopNewProductSyncConfig {
     if ($null -eq $config.PSObject.Properties['BatchSize']) { $config | Add-Member -NotePropertyName BatchSize -NotePropertyValue 50 }
     if ($null -eq $config.PSObject.Properties['RequestTimeoutSeconds']) { $config | Add-Member -NotePropertyName RequestTimeoutSeconds -NotePropertyValue 120 }
     if ($null -eq $config.PSObject.Properties['AllowApply']) { $config | Add-Member -NotePropertyName AllowApply -NotePropertyValue $false }
+    if ($null -eq $config.PSObject.Properties['ScheduleEnabled']) { $config | Add-Member -NotePropertyName ScheduleEnabled -NotePropertyValue $false }
     $config.BatchSize = [Math]::Min(100, [Math]::Max(1, [int]$config.BatchSize))
     return $config
 }
@@ -301,6 +302,49 @@ function Invoke-SyncApiRequest {
     return Invoke-RestMethod -Uri $Endpoint -Method Post -Headers @{ 'x-hairshop-catalog-sync-key' = $ApiKey } -ContentType 'application/json; charset=utf-8' -Body ($Body | ConvertTo-Json -Depth 15 -Compress) -TimeoutSec $TimeoutSeconds
 }
 
+function Assert-SyncApiBatchResponse {
+    param(
+        [Parameter(Mandatory = $true)]$Response,
+        [Parameter(Mandatory = $true)]$Batch,
+        [Parameter(Mandatory = $true)][string]$RunId,
+        [Parameter(Mandatory = $true)][ValidateSet('dry-run', 'apply')][string]$Mode
+    )
+
+    if ([string](Get-SyncValue $Response 'runId' '') -ne $RunId -or
+        [string](Get-SyncValue $Response 'mode' '') -ne $Mode) {
+        throw 'Catalog sync API returned an unexpected runId or mode.'
+    }
+
+    $expected = @{}
+    foreach ($candidate in @($Batch)) {
+        $expected[[string]$candidate.legacyProductId] = $candidate
+    }
+    $resultsValue = Get-SyncValue $Response 'results' $null
+    if ($null -eq $resultsValue) { throw 'Catalog sync API response does not contain results.' }
+    $responseResults = @($resultsValue)
+    if ($responseResults.Count -ne $expected.Count) {
+        throw "Catalog sync API returned $($responseResults.Count) results for a batch of $($expected.Count)."
+    }
+
+    $seen = @{}
+    $allowedStatuses = if ($Mode -eq 'apply') { @('created', 'already_exists', 'conflict') } else { @('would_create', 'already_exists', 'conflict') }
+    foreach ($result in $responseResults) {
+        $id = [string](Get-SyncValue $result 'legacyProductId' '')
+        if (-not $expected.ContainsKey($id)) { throw "Catalog sync API returned an unexpected legacyProductId '$id'." }
+        if ($seen.ContainsKey($id)) { throw "Catalog sync API returned duplicate result for legacyProductId '$id'." }
+        $seen[$id] = $true
+
+        $status = [string](Get-SyncValue $result 'status' '')
+        if ($status -notin $allowedStatuses) { throw "Catalog sync API returned invalid status '$status' for mode '$Mode'." }
+        $targetId = [string](Get-SyncValue $result 'targetProductId' '')
+        if ($targetId -ne "nop390-$id") { throw "Catalog sync API returned an invalid targetProductId for legacyProductId '$id'." }
+        if ([string](Get-SyncValue $result 'sku' '') -ne [string]$expected[$id].sku) {
+            throw "Catalog sync API returned an unexpected SKU for legacyProductId '$id'."
+        }
+    }
+    return $responseResults
+}
+
 function Invoke-HairshopNewProductSync {
     [CmdletBinding()]
     param(
@@ -325,18 +369,22 @@ function Invoke-HairshopNewProductSync {
     $runId = '{0}-{1}' -f [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
     $mode = if ($Apply) { 'apply' } else { 'dry-run' }
     $reportPath = Join-Path ([string]$Config.ReportDirectory) "catalog-sync-$runId.json"
+    $results = New-Object Collections.ArrayList
+    $completedBatches = 0
+    $totalBatches = 0
     try {
         $converted = ConvertTo-HairshopNewProductCandidates -Data $Data
         $processed = Read-SyncState -Path ([string]$Config.StatePath)
         $pending = @($converted.Candidates | Where-Object { -not $processed.ContainsKey([string]$_.legacyProductId) })
-        $results = New-Object Collections.ArrayList
+        if ($pending.Count -gt 0) { $totalBatches = [int][Math]::Ceiling($pending.Count / [double][int]$Config.BatchSize) }
         for ($offset = 0; $offset -lt $pending.Count; $offset += [int]$Config.BatchSize) {
             $last = [Math]::Min($offset + [int]$Config.BatchSize - 1, $pending.Count - 1)
             $batch = @($pending[$offset..$last])
             $body = [pscustomobject][ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; products = $batch }
             $response = & $ApiInvoker ([string]$Config.ApiEndpoint) $apiKey $body ([int]$Config.RequestTimeoutSeconds)
-            if ([string](Get-SyncValue $response 'runId' '') -ne $runId -or [string](Get-SyncValue $response 'mode' '') -ne $mode) { throw 'Catalog sync API returned an unexpected runId or mode.' }
-            foreach ($result in @($response.results)) { [void]$results.Add($result) }
+            $validatedResults = @(Assert-SyncApiBatchResponse -Response $response -Batch $batch -RunId $runId -Mode $mode)
+            foreach ($result in $validatedResults) { [void]$results.Add($result) }
+            $completedBatches++
         }
 
         if ($Apply) {
@@ -363,11 +411,25 @@ function Invoke-HairshopNewProductSync {
         return [pscustomobject]@{ RunId = $runId; Mode = $mode; Summary = [pscustomobject]$summary; ReportPath = $reportPath; StatePath = [string]$Config.StatePath }
     }
     catch {
-        $failure = [ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; generatedAtUtc = [DateTime]::UtcNow.ToString('o'); status = 'failed'; error = $_.Exception.Message.Substring(0, [Math]::Min(500, $_.Exception.Message.Length)) }
+        $failure = [ordered]@{
+            schemaVersion = 1
+            runId = $runId
+            mode = $mode
+            generatedAtUtc = [DateTime]::UtcNow.ToString('o')
+            status = 'failed'
+            error = $_.Exception.Message.Substring(0, [Math]::Min(500, $_.Exception.Message.Length))
+            progress = [ordered]@{
+                completedBatches = $completedBatches
+                totalBatches = $totalBatches
+                acknowledgedResults = $results.Count
+                stateCommitted = $false
+            }
+            partialResults = @($results)
+        }
         try { Write-JsonAtomic -Path $reportPath -Value $failure } catch { }
         throw
     }
     finally { $lock.Dispose() }
 }
 
-Export-ModuleMember -Function @('Read-HairshopNewProductSyncConfig', 'ConvertTo-HairshopNewProductCandidates', 'Invoke-HairshopNewProductSync')
+Export-ModuleMember -Function @('Read-HairshopNewProductSyncConfig', 'ConvertTo-HairshopNewProductCandidates', 'Assert-SyncApiBatchResponse', 'Invoke-HairshopNewProductSync')

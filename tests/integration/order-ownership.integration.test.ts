@@ -9,9 +9,10 @@ import { NextRequest } from 'next/server'
 import { PGlite } from '@electric-sql/pglite'
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket'
 
-// Real route handlers and real SQL on an in-memory PostgreSQL bound to loopback. An attacker walks
-// the whole chain: set the account e-mail to the victim's address (still allowed), then try to read,
-// return or erase the victim's data. Ownership must follow userId, never the e-mail.
+// Real route handlers and real SQL on an in-memory PostgreSQL bound to loopback. An account holds the
+// victim's address and tries to read, return or erase the victim's data. New changes need a confirmed
+// link, but addresses set before that remain, so the address is written directly here. Ownership must
+// follow userId, never the e-mail.
 const { jar } = vi.hoisted(() => ({ jar: { session: undefined as string | undefined } }))
 
 vi.mock('server-only', () => ({}))
@@ -36,7 +37,6 @@ let repeatOrder: typeof import('@/app/api/orders/[id]/repeat/route').POST
 let payOrder: typeof import('@/app/api/orders/[id]/pay/route').POST
 let returnsRoute: typeof import('@/app/api/returns/route')
 let returnById: typeof import('@/app/api/returns/[id]/route')
-let profile: typeof import('@/app/api/user/profile/route').PATCH
 let deleteUser: typeof import('@/app/api/user/route').DELETE
 let userExport: typeof import('@/app/api/user/export/route').GET
 let exportUserData: typeof import('@/lib/user-erasure').exportUserData
@@ -81,7 +81,7 @@ const returnOf = async (orderId: string, email: string) => {
   return id
 }
 const signIn = async (userId: string): Promise<void> => { jar.session = await createSession(userId) }
-const setEmail = (email: string) => profile(request('/api/user/profile', 'PATCH', { email }))
+const setEmail = (userId: string, email: string) => db.user.update({ where: { id: userId }, data: { email } })
 const orderIdsFrom = async (res: Response) => ((await res.json()) as { orders: Array<{ id: string }> }).orders.map((o) => o.id)
 
 /** A victim with a real order and return, plus an attacker who took the victim's address. */
@@ -94,8 +94,7 @@ async function attackScene() {
   const attacker = await account()
   const attackerOrder = await order(attacker.id, attacker.email, 'Attacker')
   await signIn(attacker.id)
-  const changed = await setEmail(VICTIM_EMAIL)
-  expect(changed.status).toBe(200)
+  await setEmail(attacker.id, VICTIM_EMAIL)
   return { victim, victimOrder, victimReturn, legacyOrder, attacker, attackerOrder }
 }
 
@@ -119,7 +118,6 @@ beforeAll(async () => {
   payOrder = (await import('@/app/api/orders/[id]/pay/route')).POST
   returnsRoute = await import('@/app/api/returns/route')
   returnById = await import('@/app/api/returns/[id]/route')
-  profile = (await import('@/app/api/user/profile/route')).PATCH
   deleteUser = (await import('@/app/api/user/route')).DELETE
   userExport = (await import('@/app/api/user/export/route')).GET
   exportUserData = (await import('@/lib/user-erasure')).exportUserData
@@ -139,7 +137,7 @@ beforeEach(async () => {
   await db.user.deleteMany({})
 })
 
-describe('an attacker who sets their account e-mail to the victim address', () => {
+describe('an account holding the victim address', () => {
   it('sees only their own orders in /api/orders/my', async () => {
     const { attackerOrder } = await attackScene()
     expect(await orderIdsFrom(await myOrders(request('/api/orders/my')))).toEqual([attackerOrder])
@@ -240,7 +238,7 @@ describe('a legitimate owner', () => {
     const ret = await returnOf(id, owner.email)
     await signIn(owner.id)
 
-    expect((await setEmail('new-address@example.test')).status).toBe(200)
+    await setEmail(owner.id, 'new-address@example.test')
 
     expect(await orderIdsFrom(await myOrders(request('/api/orders/my')))).toEqual([id])
     expect((await orderById(request(`/api/orders/${id}`), params(id))).status).toBe(200)

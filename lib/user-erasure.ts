@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/server-auth'
 import { unsubscribeFromMarketing } from '@/lib/newsletter-store'
+import { emailChangeKey } from '@/lib/email-change'
 
 /**
  * GDPR erasure by anonymisation (Art. 17). Personal data cannot be hard-deleted
@@ -157,6 +158,7 @@ export async function anonymizeUser(params: {
 
     // Pure-PII / intent records: remove entirely.
     await tx.savedAddress.deleteMany({ where: { userId: id } })
+    await tx.keyValueSetting.deleteMany({ where: { key: emailChangeKey(id) } })
     await tx.wishlistItem.deleteMany({ where: { userId: id } })
     await tx.productNewsSubscription.deleteMany({ where: { userId: id } })
     await tx.companyMember.deleteMany({ where: { userId: id } })

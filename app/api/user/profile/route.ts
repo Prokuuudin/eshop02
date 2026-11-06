@@ -40,31 +40,15 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       ? checkoutProfile?.regNumber.replace(/\D/gu, '') || null
       : null
 
-    const newEmail = typeof body.email === 'string' ? body.email.trim().toLowerCase() : undefined
-    if (newEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
-      return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
-    }
-
-    if (newEmail !== undefined && newEmail !== user.email.toLowerCase()) {
-      const emailOwner = await prisma.user.findFirst({
-        where: {
-          email: { equals: newEmail, mode: 'insensitive' },
-          NOT: { id: user.id },
-        },
-        select: { id: true },
-      })
-      if (emailOwner) {
-        return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+    // The e-mail changes only through /api/user/email-change (current password + a link sent to
+    // the new address). A client resending the unchanged address with the profile is harmless.
+    if (typeof body.email === 'string') {
+      const requested = body.email.trim().toLowerCase()
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requested)) {
+        return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
       }
-
-      // Legacy saved addresses may have no userId and are keyed by e-mail alone. Access is by
-      // userId everywhere now, so this only keeps such a row from pointing at a new account.
-      const conflictingAddress = await prisma.savedAddress.findFirst({
-        where: { email: { equals: newEmail, mode: 'insensitive' } },
-        select: { id: true },
-      })
-      if (conflictingAddress) {
-        return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+      if (requested !== user.email.toLowerCase()) {
+        return NextResponse.json({ error: 'email_change_requires_confirmation' }, { status: 409 })
       }
     }
 
@@ -75,7 +59,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        email: newEmail,
         name: body.name !== undefined ? (body.name ?? null) : undefined,
         phone: body.phone !== undefined ? (body.phone ?? null) : undefined,
         avatarUrl: body.avatarUrl !== undefined ? (body.avatarUrl ?? null) : undefined,
@@ -87,17 +70,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
         legalAddress: customerType === 'company' ? checkoutProfile?.legalAddress || null : null,
       },
     })
-
-    // These are denormalized convenience fields, not the account identity. A stale legacy
-    // record must not roll back an otherwise valid profile update.
-    if (newEmail !== undefined && newEmail !== user.email) {
-      try {
-        await prisma.companyMember.updateMany({ where: { userId: user.id }, data: { email: newEmail } })
-        await prisma.savedAddress.updateMany({ where: { userId: user.id }, data: { email: newEmail } })
-      } catch (relatedUpdateError) {
-        logApiError("[user/profile PATCH] related email sync failed", relatedUpdateError)
-      }
-    }
 
     return NextResponse.json({
       user: {
@@ -111,10 +83,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       },
     })
   } catch (e: unknown) {
-    const databaseError = e as { code?: string }
-    if (databaseError.code === 'P2002') {
-      return NextResponse.json({ error: 'email_taken' }, { status: 409 })
-    }
     logApiError("[user/profile PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

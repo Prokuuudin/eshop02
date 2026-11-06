@@ -42,7 +42,6 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
             hasError ? 'account-profile__input--error border-red-500 bg-red-50 dark:bg-red-950' : ''
         }`;
     const nameRef = useRef<HTMLInputElement>(null);
-    const emailRef = useRef<HTMLInputElement>(null);
     const phoneWrapperRef = useRef<HTMLDivElement>(null);
     const companyRef = useRef<HTMLInputElement>(null);
     const didFocusRef = useRef(false);
@@ -58,7 +57,6 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
 
         const candidates: Array<{ empty: boolean; focus: () => void }> = [
             { empty: !profileDraft.name?.trim(),        focus: () => nameRef.current?.focus() },
-            { empty: !profileDraft.email?.trim(),       focus: () => emailRef.current?.focus() },
             { empty: !profileDraft.phone?.trim(),       focus: () => phoneWrapperRef.current?.querySelector<HTMLInputElement>('input')?.focus() },
             { empty: !profileDraft.companyName?.trim(), focus: () => companyRef.current?.focus() },
         ];
@@ -193,13 +191,15 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                             </label>
                             <Input
                                 id="profile-email"
-                                ref={emailRef}
                                 type="email"
-                                autoComplete="email"
+                                readOnly
+                                aria-describedby="profile-email-hint"
                                 className={fieldClass(!!profileErrors.email)}
                                 value={activeDraft.email}
-                                onChange={(e) => onChange('email', e.target.value)}
                             />
+                            <p id="profile-email-hint" className="mt-1.5 text-xs text-muted-foreground">
+                                {t('account.emailChange.readonlyHint')}
+                            </p>
                             {profileErrors.email && (
                                 <p className="account-profile__error mt-1.5 text-xs leading-4 text-red-600 dark:text-red-400">{profileErrors.email}</p>
                             )}

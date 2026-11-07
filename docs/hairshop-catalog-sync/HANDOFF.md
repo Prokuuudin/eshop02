@@ -1,93 +1,118 @@
-# HANDOFF: Hairshop.lv → Hairshop Pro catalog sync
+# HANDOFF: Hairshop.lv → Hairshop Pro JSON/HTTPS sync
 
-## Текущее состояние
+## Состояние
 
-- Ветка: `codex/hairshop-catalog-sync-mainline`.
-- Draft PR: [#13](https://github.com/Prokuuudin/eshop02/pull/13) в `main`; не merge.
-- Основа: актуальный на момент переноса `origin/main`, commit `dd3cec15e4c0c858352321451c7962aa01968b9c`.
-- Исходная ветка `codex/hairshop-catalog-sync-marked` (`139a113ff4abfa2c921c4f4c7af86d9eff6017ea`) не переписывалась.
-- Из исходной ветки перенесены только marker/write-gate/recovery изменения синхронизации. Исторические commits и посторонние изменения не переносились.
-- Production, Neon, Plesk и Hairshop.lv не изменялись. Задание по расписанию не создавалось и не включалось. Запись товаров не включалась.
+- Ветка: `codex/hairshop-json-https-sync`.
+- Основа: HEAD Draft PR #13, `14b3d54693cf5d0cb949047f3848f8b2d2b1a41b`.
+- PR #13 и его ветка не переписывались.
+- Новая ветка заменяет прямое MSSQL-чтение с Hairshop Pro на protected JSON/HTTPS source.
+- Production, Neon, Plesk, Hairshop.lv и MSSQL не изменялись. Merge/deploy/schedule/apply не выполнялись.
 
-## Назначение и границы
+## Архитектура
 
-Однонаправленно переносить только контент новых товарных карточек из nopCommerce 3.90 Hairshop.lv в Hairshop Pro. Источник читается отдельным SELECT-only MSSQL principal. В API допускаются только строки `dbo.Product`, у которых одновременно `Deleted = 0`, `Published = 1` и `isMarkedForProSync = 1`.
+Hairshop.lv запускает независимый PowerShell producer рядом с MSSQL. Он читает стандартные nopCommerce 3.90 tables под SELECT-only principal, выбирает `Deleted=0 AND Published=1` и атомарно публикует один JSON snapshot в protected HTTPS directory. Код nopCommerce и MSSQL schema не меняются.
 
-API создаёт только отсутствующие товары. Оно не обновляет и не удаляет существующие товары, не принимает цену или остаток и не связывает существующие строки эвристически. Новые товары создаются с `isActive=false`, `price=0`, `stock=0`, `erpPriceMissing=true`, `manualPriceApproved=false`. Цена и остаток остаются под авторитетом GrinS, а товар остаётся скрытым до отдельной ручной проверки.
+Hairshop Pro скачивает файл с отдельным Authorization secret и выполняет всю бизнес-обработку: проверку snapshot, cutoff, mapping, дедупликацию, API batching, journals и state.
 
-Запись закрыта независимыми условиями: параметр `-Apply`, локальный `AllowApply=true` и серверный `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true`. По умолчанию используется dry-run. Для scheduled-режима дополнительно требуется `ScheduleEnabled=true`; при выключенном флаге команда завершается до MSSQL и HTTP.
+`dbo.Product.isMarkedForProSync` удалён из контракта. Вместо per-product marker используется обязательный фиксированный `SourceCreatedAfterUtc` в закрытом Hairshop Pro config. Кандидатом может стать только source Product с `CreatedOnUtc` строго позже cutoff. Cutoff не берётся из JSON, не продвигается автоматически и после первого apply закрепляется в state schema v2; drift блокируется до API.
 
-## Что перенесено на mainline
+Полное сравнение: [`JSON-HTTPS-DESIGN.md`](JSON-HTTPS-DESIGN.md).
 
-- MSSQL metadata-check требует наличие `dbo.Product.isMarkedForProSync` с точным типом `bit`; отсутствие или другой тип блокирует запуск.
-- Новый режим экспортера `-ProSyncOnly` использует фильтр `Deleted=0 AND Published=1 AND isMarkedForProSync=1`; обычный snapshot-export не изменён.
-- Конвертер повторно проверяет marker как boolean и fail-closed отклоняет отсутствующее/невалидное значение до HTTP batching.
-- API ограничивает request body размером 5 MiB до обращения к Prisma; Zod по-прежнему ограничивает batch 100 товарами.
-- Новые карточки создаются неактивными. Payload по-прежнему не содержит price/stock.
-- PowerShell-клиент проверяет count, identity, status, target ID и SKU каждого API-ответа до обновления локального state.
-- При частичном сбое journal сохраняет подтверждённые batches и прогресс; state фиксируется только после полного успеха. Полный повтор идемпотентен.
-- `-Scheduled` и независимый `ScheduleEnabled=false` добавлены только как выключенный fail-closed gate. Внешнее расписание не создавалось.
+## Source snapshot
 
-## Совместимость с текущим main
+Producer files:
 
-- API: сохранены текущие `withSerializableRetry` для Prisma `P2034`, PostgreSQL advisory transaction lock, `Serializable` transaction, детерминированные target IDs и storefront revalidation.
-- Taxonomy v2: существующие функции и tests main сохранены; marker/recovery логика добавлена без изменения taxonomy write gate `HAIRSHOP_TAXONOMY_SYNC_WRITE_ENABLED`.
-- Prisma: используемые поля `Product` существуют в текущей schema; Prisma Client 7.8.0 генерируется успешно. Миграций schema в этой ветке нет.
-- GrinS: текущий `lib/sync/upsert-products.ts` остаётся update-only, ищет только точный `externalId`, не создаёт и не связывает товары и не меняет `isActive`. Поэтому GrinS может позднее обновить цену/остаток импортированной строки, но не публикует её автоматически.
-- `.env.example` main уже содержит пустой secret и выключенные catalog/taxonomy write gates; дублирующие строки не добавлялись.
+- `tools/hairshop-catalog-exporter/HairshopCatalogExporter.psm1`;
+- `tools/hairshop-catalog-exporter/HairshopCatalogJsonSource.psm1`;
+- `tools/hairshop-catalog-exporter/Export-HairshopCatalogJson.ps1`.
 
-## Проверки (2026-11-06)
+Envelope schema v1 содержит source, generated timestamp, random snapshot ID, product count, encoding, SHA-256 и base64 exact UTF-8 JSON payload. Payload содержит только published Product content, product translations, category/manufacturer names and mappings и picture metadata. Price/stock отсутствуют.
 
-Все проверки выполнены локально, без production MSSQL/Neon и без запросов к Hairshop.lv.
+Файл пишется во временный path, parse-проверяется и атомарно заменяет stable snapshot; предыдущая версия сохраняется как `.previous`.
+
+## Consumer fail-closed checks
+
+До Hairshop Pro API проверяются:
+
+- `https://` URL без credentials/query/fragment;
+- Authorization из отдельного absolute ACL-protected файла;
+- redirects disabled;
+- JSON Content-Type;
+- envelope/payload byte limits;
+- exact schema/source/encoding;
+- snapshot ID, freshness и future skew;
+- expected source database;
+- declared и minimum product counts;
+- base64 и exact SHA-256;
+- boolean `Published`, required content timestamps и fixed `SourceCreatedAfterUtc`;
+- duplicate source legacy ID/SKU/EAN.
+
+Scheduled mode с `ScheduleEnabled=false` завершается до чтения source secret и до HTTPS/API access.
+
+## Сохранённые гарантии PR #13
+
+- Dry-run по умолчанию.
+- Apply требует `-Apply`, `AllowApply=true`, API secret и `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true`.
+- API сохраняет request size limit, timing-safe secret, advisory xact lock, Serializable transaction и retry `P2034`.
+- Existing Product никогда не обновляется/удаляется; soft-deleted/ambiguous identity блокируется.
+- Deterministic ID, exact SKU/externalId и EAN повторно проверяются в текущей Hairshop Pro DB.
+- Новый Product: `isActive=false`, `price=0`, `stock=0`, `erpPriceMissing=true`, `manualPriceApproved=false`.
+- GrinS остаётся update-only и не создаёт/не связывает/не активирует Product.
+- Local exclusive lock, strict API response validation, partial-failure journal и commit state только после полного успеха сохранены.
+- Retry и потеря local state не создают дубликаты благодаря DB identity checks.
+
+## Осознанный компромисс
+
+Стандартные `Published` и `CreatedOnUtc` не выражают ручное разрешение конкретного товара для Hairshop Pro. Без marker схема безопасна только при бизнес-правиле: все новые опубликованные товары после согласованного cutoff являются кандидатами.
+
+Если требуется per-product opt-in, нужен внешний allowlist либо marker после отдельного разрешения. Текущая реализация сама MSSQL schema не меняет.
+
+## Проверки 2026-11-07
+
+Локально, без production/network access:
 
 - PowerShell exporter: `8/8` PASS.
-- PowerShell sync: `14/14` PASS, включая marker fail-closed, disabled scheduler, строгую валидацию API и recovery после частичного сбоя.
-- Целевые Vitest: `43/43` PASS для product sync API/lib, taxonomy API, storefront revalidation и GrinS upsert compatibility.
-- Prisma Client generation: PASS с фиктивным локальным `DATABASE_URL`; соединение с БД не выполнялось.
+- PowerShell JSON/sync: `15` сценариев PASS.
+- Targeted Vitest: `5/5` files, `43/43` tests PASS.
+- Prisma Client generation: PASS с фиктивным URL, без DB connection.
 - `npm run typecheck`: PASS.
-- ESLint изменённых TypeScript-файлов: PASS.
-- Полный Vitest с `--maxWorkers=4`: `358/358` files, `2925/2925` tests PASS.
-- Historical immutable allowlists отдельно: `9/9` files, `133/133` tests PASS. Проверены `controlled-first-wave`, `second-wave`, `fourth/fifth/sixth-wave`, `first/second/final new-product` и `final-existing`; эталонные SHA и allowlist-файлы не менялись.
+- ESLint изменённых TypeScript files PR #13: PASS.
+- Full Vitest `--maxWorkers=4`: `358/358` files, `2925/2925` tests PASS.
+- Historical immutable allowlists: `9/9` files, `133/133` tests PASS; canonical SHA/allowlists не менялись.
 
-Первый неограниченный полный Vitest-прогон дал один 5-секундный timeout в существующем PGlite-тесте `lib/sync/manual-price-query.test.ts` и связанный worker timeout. Этот файл отдельно прошёл `11/11`, после чего ограниченный полный прогон прошёл полностью. Изменений для обхода timeout не вносилось.
+## Конфигурация Hairshop Pro
 
-## Команды проверки
+Шаблон: `tools/hairshop-catalog-exporter/catalog-sync.example.json`.
 
-```powershell
-Set-Location 'C:\Users\User\Desktop\eshop02\.worktrees\hairshop-catalog-sync-mainline'
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop-catalog-exporter\tests\Run-Tests.ps1
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\tools\hairshop-catalog-exporter\tests\Run-Sync-Tests.ps1
-$env:DATABASE_URL='postgresql://generated_only:generated_only@127.0.0.1:5432/generated_only'
-& '..\..\node_modules\.bin\prisma.cmd' generate
-npm run typecheck
-& '..\..\node_modules\.bin\vitest.cmd' run --config vitest.config.ts --maxWorkers=4
-```
+Обязательные source gates:
 
-## Git и рабочая копия
+- `SourceSnapshotUrl`;
+- `SourceAuthorizationFile`;
+- `SourceCreatedAfterUtc`;
+- `ExpectedSourceDatabase`;
+- `MaximumSnapshotAgeMinutes` (5–1440);
+- `MaximumSnapshotBytes` (1024–104857600);
+- `MinimumSnapshotProductCount` (явно заданный положительный threshold).
 
-- Mainline port commits перед финальным HANDOFF: `72853e8a` и `48364641`.
-- Ветка опубликована как `origin/codex/hairshop-catalog-sync-mainline`; Draft PR — `#13`.
-- Актуальный commit: `git rev-parse HEAD`.
-- Worktree: `C:\Users\User\Desktop\eshop02\.worktrees\hairshop-catalog-sync-mainline`.
-- Исходное основное дерево было грязным; работа изолирована в worktree и не включает пользовательские изменения из него.
+Example cutoff и threshold являются placeholders, а не production-решением.
 
-## Оставшиеся блокеры перед реальным запуском
+## Внешние блокеры
 
-1. Администратор Hairshop.lv должен добавить и подтвердить `dbo.Product.isMarkedForProSync bit NOT NULL DEFAULT (0)`.
-2. Нужен отдельный SELECT-only MSSQL login/user без write, DDL и control ролей.
-3. Этим пользователем нужно выполнить `tools/hairshop-catalog-exporter/sql/smoke-test-readonly.sql` и передать результат без secret/connection string.
-4. Нужно подтвердить защищённый сетевой путь Plesk → MSSQL и доверенную TLS-цепочку без `TrustServerCertificate=True`.
-5. Только после этого можно вручную отметить конкретные опубликованные карточки и отдельно согласовать включение любого write gate или расписания.
+1. Владелец должен подтвердить, что после cutoff все новые published Product допустимы как кандидаты без per-product opt-in.
+2. Согласовать точный `SourceCreatedAfterUtc`; его нельзя выбирать автоматически.
+3. Определить protected HTTPS URL, Basic/Bearer scheme, TLS certificate и web ACL без anonymous/upload/directory listing.
+4. Подтвердить SELECT-only MSSQL principal через `sql/smoke-test-json-source-readonly.sql`. DDL не требуется.
+5. Установить реальный `MinimumSnapshotProductCount` по проверенному source count.
+6. Отдельно разрешить любые source/consumer scheduled tasks, production dry-run и тем более apply/write gate.
 
-До снятия этих блокеров не включать `ScheduleEnabled`, Plesk task, `AllowApply` или `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED`. Изображения остаются HTTPS-ссылками Hairshop.lv; бинарные файлы не копируются.
-
-## Как продолжить
+## Продолжение
 
 ```powershell
-Set-Location 'C:\Users\User\Desktop\eshop02\.worktrees\hairshop-catalog-sync-mainline'
+Set-Location 'C:\Users\User\Desktop\eshop02\.worktrees\hairshop-json-https-sync'
 git status --short --branch
-git log -5 --oneline --decorate
-Get-Content -Raw .\docs\hairshop-catalog-sync\HANDOFF.md
+git log -6 --oneline --decorate
+Get-Content -Raw -Encoding UTF8 .\docs\hairshop-catalog-sync\HANDOFF.md
+Get-Content -Raw -Encoding UTF8 .\docs\hairshop-catalog-sync\JSON-HTTPS-DESIGN.md
 ```
 
-Следующий безопасный шаг — review Draft PR. Merge, production deployment и любые внешние write-операции в scope этой задачи не входят.
+Следующий безопасный шаг — review Draft PR и выбор cutoff/auth/threshold. Не включать tasks, `ScheduleEnabled`, `AllowApply` или server write gate.

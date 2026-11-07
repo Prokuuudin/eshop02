@@ -1,5 +1,11 @@
 {
-  "CatalogExporterConfigPath": "D:\\PrivateConfig\\hairshop-catalog-exporter.json",
+  "SourceSnapshotUrl": "https://hairshop.lv/protected-export/hairshop-pro-catalog.json",
+  "SourceAuthorizationFile": "D:\\PrivateConfig\\hairshop-json-source.authorization",
+  "SourceCreatedAfterUtc": "2026-11-07T00:00:00Z",
+  "ExpectedSourceDatabase": "hairshop_p34s",
+  "MaximumSnapshotAgeMinutes": 180,
+  "MaximumSnapshotBytes": 52428800,
+  "MinimumSnapshotProductCount": 2000,
   "ApiEndpoint": "https://hairshoppro.lv/api/internal/hairshop-catalog-sync",
   "ApiKeyFile": "D:\\PrivateConfig\\hairshop-catalog-sync.key",
   "StatePath": "D:\\PrivateState\\hairshop-catalog-sync-state.json",

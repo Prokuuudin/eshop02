@@ -35,6 +35,11 @@ export const adminOrderUpdateSchema = z.object({
     quantity: z.number().int().min(1).max(10_000),
     lineKey: z.string().trim().max(300).optional(),
     variantLabel: z.string().trim().max(300).optional(),
+    // Option names for a line added by staff; anything else (price, adjustment) is dropped.
+    selectedVariants: z.array(z.object({
+      groupName: z.string().max(200),
+      value: z.string().max(200),
+    })).max(20).optional(),
   })).min(1).max(500),
   address: z.string().trim().max(500),
   city: z.string().trim().max(200),

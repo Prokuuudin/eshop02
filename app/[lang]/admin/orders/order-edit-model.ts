@@ -1,4 +1,7 @@
 import type { Order } from '@/lib/orders-store';
+import type { SelectedVariant } from '@/data/products';
+import { buildLineKey } from '@/lib/cart-store';
+import { getMissingRequiredGroups, variantUnitPrice } from '@/lib/product-variants';
 import type { CatalogProduct, EditItem } from './order-config';
 
 export function findEditProducts(catalog: CatalogProduct[], search: string): CatalogProduct[] {
@@ -29,19 +32,37 @@ export function updateEditItemQuantity(items: EditItem[], lineKey: string, quant
         : items.map((item) => item.lineKey === lineKey ? { ...item, quantity } : item);
 }
 
-export function addProductToEditItems(items: EditItem[], product: CatalogProduct): EditItem[] {
-    const existing = items.find((item) => item.lineKey === product.id);
+/** Options chosen in the admin form, in group order; empty choices are left out. */
+export function chosenVariants(product: CatalogProduct, choice: Record<string, string>): SelectedVariant[] {
+    return (product.variantGroups ?? []).flatMap((group) => {
+        const option = group.options.find((candidate) => candidate.value === choice[group.name]);
+        return option ? [{ groupName: group.name, value: option.value, ...(typeof option.priceAdjustment === 'number' ? { priceAdjustment: option.priceAdjustment } : {}) }] : [];
+    });
+}
+
+export function canAddWithVariants(product: CatalogProduct, selected: SelectedVariant[]): boolean {
+    return getMissingRequiredGroups(product.variantGroups, selected).length === 0;
+}
+
+/** Price shown in the form only; the server prices the line again from the product. */
+export function addProductToEditItems(items: EditItem[], product: CatalogProduct, selectedVariants: SelectedVariant[] = []): EditItem[] {
+    const lineKey = buildLineKey(product.id, selectedVariants);
+    const existing = items.find((item) => item.lineKey === lineKey);
     if (existing) {
-        return items.map((item) => item.lineKey === product.id
+        return items.map((item) => item.lineKey === lineKey
             ? { ...item, quantity: item.quantity + 1 }
             : item);
     }
     return [...items, {
         id: product.id,
-        lineKey: product.id,
+        lineKey,
         title: product.title,
-        price: product.price,
+        price: variantUnitPrice(product.price, selectedVariants),
         quantity: 1,
         image: product.image,
+        ...(selectedVariants.length ? {
+            selectedVariants,
+            variantLabel: selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', '),
+        } : {}),
     }];
 }

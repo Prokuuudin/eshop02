@@ -109,4 +109,22 @@ test('staff see the ordered configuration in the admin order list', async ({ pag
   await expect(row).toBeVisible({ timeout: 30_000 })
   await row.click()
   await expect(page.locator('#main-content')).toContainText('BASE XT')
+
+  // Staff add the chair once more: the base must be chosen before the line can be added.
+  await page.getByRole('button', { name: /Rediģēt/ }).first().click()
+  await page.getByPlaceholder(/Pievienot preci|Добавить товар|Add product/).fill('PANDA')
+  // The search result, not the order row that also names the chair.
+  await page.getByRole('button', { name: /PANDA GALAXY BASIC/ }).filter({ hasText: '€781.00' }).click()
+  const picker = page.getByTestId('order-edit-variant-picker')
+  const add = picker.getByRole('button', { name: 'Pievienot pasūtījumam' })
+  await expect(picker).toBeVisible()
+  await picker.getByRole('combobox', { name: 'Bāze' }).click()
+  await page.getByRole('option', { name: /BASE XM/ }).click()
+  await expect(add).toBeEnabled()
+  await add.click()
+  await page.getByRole('button', { name: 'Saglabāt izmaiņas' }).click()
+  await expect(picker).toBeHidden()
+  // The saved order is priced by the server: 738.50 + 827.04.
+  await expect(page.locator('#main-content')).toContainText('BASE XM', { timeout: 30_000 })
+  await expect(page.locator('#main-content')).toContainText(/1[\s ]?565[.,]54/)
 })

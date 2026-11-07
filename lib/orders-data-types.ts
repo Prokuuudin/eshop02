@@ -120,7 +120,7 @@ export class ExistingCheckoutOrderError extends Error {
 export class AdminOrderUpdateError extends Error {
   constructor(
     message: string,
-    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'insufficient_stock' | 'awaiting_grins_sync' | 'second_item_campaign_missing'
+    readonly code: 'not_found' | 'paid_order' | 'released_stock' | 'invalid_item' | 'invalid_variant' | 'insufficient_stock' | 'awaiting_grins_sync' | 'second_item_campaign_missing'
   ) {
     super(message)
     this.name = 'AdminOrderUpdateError'
@@ -129,7 +129,7 @@ export class AdminOrderUpdateError extends Error {
 
 export type AdminOrderUpdateInput = {
   pickupStoreId?: string
-  items: Array<{ id: string; quantity: number; lineKey?: string; variantLabel?: string }>
+  items: Array<{ id: string; quantity: number; lineKey?: string; variantLabel?: string; selectedVariants?: Array<{ groupName: string; value: string }> }>
   address: string
   city: string
   country?: import('./delivery').DeliveryCountry

@@ -5,6 +5,8 @@ import { errorResponse, successResponse } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { toNum } from '@/lib/decimal'
 import { Prisma } from '@/generated/prisma/client'
+import { getVariantGroups } from '@/lib/product-variants'
+import type { VariantGroup } from '@/data/products'
 
 export const runtime = 'nodejs'
 
@@ -17,6 +19,7 @@ export type AdminProductSearchItem = {
   sku: string | null
   price: number
   stock: number
+  variantGroups?: VariantGroup[]
 }
 
 const toItem = (p: {
@@ -28,7 +31,11 @@ const toItem = (p: {
   sku: string | null
   price: Prisma.Decimal | number
   stock: number
-}): AdminProductSearchItem => ({
+  technicalSpecs: unknown
+}): AdminProductSearchItem => {
+  // Staff adding a product to an order must pick its options; the server prices them again.
+  const variantGroups = getVariantGroups({ technicalSpecs: p.technicalSpecs as Record<string, string> | null })
+  return {
   id: p.id,
   title: p.title,
   brand: p.brand,
@@ -37,7 +44,9 @@ const toItem = (p: {
   sku: p.sku,
   price: toNum(p.price),
   stock: p.stock,
-})
+  ...(variantGroups?.length ? { variantGroups } : {}),
+  }
+}
 
 const selectFields = {
   id: true,
@@ -48,6 +57,7 @@ const selectFields = {
   sku: true,
   price: true,
   stock: true,
+  technicalSpecs: true,
 } as const
 
 // Лёгкий поиск товаров для пикеров админки:

@@ -19,7 +19,8 @@ import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder, withPromoti
 import { isSecondItemCampaign, readPromoCampaigns, sortSecondItemCampaigns } from '@/lib/promo-campaigns'
 import { calculateSecondItemCampaigns } from '@/lib/second-item-discount'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
-import { resolveSelectedVariants, variantUnitPrice } from '@/lib/product-variants'
+import { resolveSelectedVariants, resolveVariantSelectionForSale, variantUnitPrice } from '@/lib/product-variants'
+import { buildLineKey } from '@/lib/cart-store'
 import {
   adjustOrderStock,
   assertNoAwaitingAllocation,
@@ -477,22 +478,40 @@ export async function updateServerOrderByAdmin(
       throw error
     }
 
+    // A line of the order is addressed by its key; a line without one by its position, as the
+    // admin form names it. Price, adjustment and label are never read from the edit request.
+    const orderedByKey = new Map(currentItems.map((line, index) => [line.lineKey || `legacy:${orderId}:${index}`, line]))
+    const seenLineKeys = new Set<string>()
     const rebuiltItems: ServerOrderItem[] = input.items.map((item) => {
       const product = byId.get(item.id)!
-      // The configuration is never taken from the edit request: it is the one the line was
-      // ordered with, re-priced from the product's current options.
-      const ordered = currentItems.find((line) => line.id === item.id && (line.lineKey ?? line.id) === (item.lineKey ?? item.id))
-      const selectedVariants = resolveSelectedVariants(product.technicalSpecs, ordered?.selectedVariants?.map(({ groupName, value }) => ({ groupName, value })))
+      const orderedLine = item.lineKey ? orderedByKey.get(item.lineKey) : undefined
+      const ordered = orderedLine?.id === item.id ? orderedLine : undefined
+      // An ordered line keeps the configuration it was bought with, re-priced from the product's
+      // current options. A line staff add names its options, resolved here from the DB row: every
+      // required group must be chosen.
+      const selectedVariants = ordered
+        ? resolveSelectedVariants(product.technicalSpecs, ordered.selectedVariants?.map(({ groupName, value }) => ({ groupName, value })))
+        : resolveVariantSelectionForSale(product.technicalSpecs, item.selectedVariants?.map(({ groupName, value }) => ({ groupName, value })))
       if (!selectedVariants) {
-        throw new AdminOrderUpdateError(`The ordered option of product ${item.id} no longer exists`, 'invalid_item')
+        throw new AdminOrderUpdateError(ordered
+          ? `The ordered option of product ${item.id} no longer exists`
+          : `Choose an existing option for every required group of product ${item.id}`, 'invalid_variant')
       }
+      const price = variantUnitPrice(toNum(product.price), selectedVariants)
+      if (selectedVariants.length > 0 && !(price > 0)) {
+        throw new AdminOrderUpdateError(`The chosen option of product ${item.id} leaves no price`, 'invalid_variant')
+      }
+      const lineKey = ordered ? ordered.lineKey : buildLineKey(product.id, selectedVariants)
+      const identity = lineKey ?? item.lineKey ?? product.id
+      if (seenLineKeys.has(identity)) throw new AdminOrderUpdateError(`Line ${identity} is listed twice`, 'invalid_item')
+      seenLineKeys.add(identity)
       return buildOrderItemSnapshot(product, {
         quantity: item.quantity,
-        price: variantUnitPrice(toNum(product.price), selectedVariants),
-        lineKey: item.lineKey,
+        price,
+        lineKey,
         variantLabel: selectedVariants.length
           ? selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', ')
-          : item.variantLabel,
+          : ordered?.variantLabel,
         selectedVariants,
       })
     })

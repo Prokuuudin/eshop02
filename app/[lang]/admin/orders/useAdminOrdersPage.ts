@@ -10,7 +10,7 @@ import { reportAdminError } from '@/lib/admin-ui-errors';
 import { ALLOWED_STATUS_TRANSITIONS, ORDERS_PAGE_SIZE, STATUS_LIST, type CatalogProduct, type EditItem, type SortDir, type SortField } from './order-config';
 import { buildOrdersQuery, toOrder, type OrdersPageResponse } from './orders-query';
 import { useOrdersCsvExport } from './useOrdersCsvExport';
-import { addProductToEditItems, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
+import { addProductToEditItems, chosenVariants, orderToEditItems, updateEditItemQuantity } from './order-edit-model';
 import { buildOrdersPrintHtml } from './order-print';
 
 type HydrationStatus = 'idle' | 'loading' | 'loaded' | 'error';
@@ -45,6 +45,8 @@ function useAdminOrdersPageState() {
     const [editDelivery, setEditDelivery] = useState<string>('pickup');
     const [editProductSearch, setEditProductSearch] = useState('');
     const [catalog, setCatalog] = useState<CatalogProduct[]>([]);
+    const [variantProduct, setVariantProduct] = useState<CatalogProduct | null>(null);
+    const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
     const [editSaving, setEditSaving] = useState(false);
     const [mutationError, setMutationError] = useState('');
     const [paymentSavingIds, setPaymentSavingIds] = useState<Set<string>>(new Set());
@@ -420,6 +422,8 @@ function useAdminOrdersPageState() {
     const cancelEdit = () => {
         setEditingOrderId(null);
         setEditProductSearch('');
+        setVariantProduct(null);
+        setVariantChoice({});
     };
 
     const saveEdit = async (order: Order) => {
@@ -431,11 +435,14 @@ function useAdminOrdersPageState() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     orderId: order.id,
-                    items: editItems.map(({ id, quantity, lineKey, variantLabel }) => ({
+                    items: editItems.map(({ id, quantity, lineKey, variantLabel, selectedVariants }) => ({
                         id,
                         quantity,
                         lineKey,
                         variantLabel,
+                        ...(selectedVariants?.length
+                            ? { selectedVariants: selectedVariants.map(({ groupName, value }) => ({ groupName, value })) }
+                            : {}),
                     })),
                     address: editAddress.trim() || order.address,
                     city: editCity.trim() || order.city,
@@ -463,8 +470,30 @@ function useAdminOrdersPageState() {
     };
 
     const editAddProduct = (p: CatalogProduct) => {
-        setEditItems((prev) => addProductToEditItems(prev, p));
         setEditProductSearch('');
+        if (p.variantGroups?.length) {
+            // A product with options waits for staff to choose them; preselected ones are the default.
+            setVariantProduct(p);
+            setVariantChoice(Object.fromEntries(p.variantGroups.flatMap((group) => {
+                const preset = group.options.find((option) => option.preselected);
+                return preset ? [[group.name, preset.value]] : [];
+            })));
+            return;
+        }
+        setEditItems((prev) => addProductToEditItems(prev, p));
+    };
+
+    const confirmVariantProduct = () => {
+        if (!variantProduct) return;
+        const selected = chosenVariants(variantProduct, variantChoice);
+        setEditItems((prev) => addProductToEditItems(prev, variantProduct, selected));
+        setVariantProduct(null);
+        setVariantChoice({});
+    };
+
+    const cancelVariantProduct = () => {
+        setVariantProduct(null);
+        setVariantChoice({});
     };
 
     const toggleSort = (field: SortField) => {
@@ -566,6 +595,11 @@ function useAdminOrdersPageState() {
         saveEdit,
         editUpdateQty,
         editAddProduct,
+        variantProduct,
+        variantChoice,
+        setVariantChoice,
+        confirmVariantProduct,
+        cancelVariantProduct,
         toggleSort,
         exportOrdersCSV,
         exportCustomersCSV,

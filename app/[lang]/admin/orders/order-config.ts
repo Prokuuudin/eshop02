@@ -11,6 +11,7 @@ export type CatalogProduct = {
   stock: number
   image?: string
   sku?: string
+  variantGroups?: import('@/data/products').VariantGroup[]
 }
 
 export type EditItem = {
@@ -21,6 +22,8 @@ export type EditItem = {
   quantity: number
   image?: string
   variantLabel?: string
+  /** Options of a line staff add; the server resolves and prices them from the product. */
+  selectedVariants?: import('@/data/products').SelectedVariant[]
 }
 
 export const STATUS_LIST: OrderStatus[] = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']

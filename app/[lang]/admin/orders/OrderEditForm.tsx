@@ -10,7 +10,10 @@ import { checkoutDeliveryMethodIds, DELIVERY_METHOD_LABEL_KEYS, requiresDelivery
 import { calculateOrderEditSummary, willRecalculateSecondItemDiscount } from './order-edit-summary';
 import type { useAdminOrdersPage } from './useAdminOrdersPage';
 import { useAdminLocale } from '@/lib/use-admin-locale';
-import { localizeVariantLabel } from '@/lib/variant-group-label';
+import { localizeVariantGroupName, localizeVariantLabel } from '@/lib/variant-group-label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { canAddWithVariants, chosenVariants } from './order-edit-model';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
@@ -23,7 +26,7 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
         editingOrderId, editItems, editAddress, setEditAddress, editCity, setEditCity,
         editDeliveryLocationId, setEditDeliveryLocationId, editCountry, setEditCountry, editPostalCode, setEditPostalCode, editDelivery, setEditDelivery, editProductSearch,
         setEditProductSearch, editSaving, editProductResults, cancelEdit, saveEdit, editUpdateQty,
-        editAddProduct,
+        editAddProduct, variantProduct, variantChoice, setVariantChoice, confirmVariantProduct, cancelVariantProduct,
     } = state;
     if (editingOrderId !== order.id) return null;
     // A historical order may keep its legacy courier method; it is never offered otherwise.
@@ -241,6 +244,52 @@ export function OrderEditForm({ order, state }: { order: Order; state: OrdersSta
                                                     )}
                                                 </div>
                                             </div>
+
+                                            {/* Options of a product being added: required groups must be chosen */}
+                                            {variantProduct && (
+                                                <div className="order-edit__variant-picker space-y-3 rounded-lg border border-border bg-card p-3" data-testid="order-edit-variant-picker">
+                                                    <p className="text-sm font-medium text-foreground">{variantProduct.title}</p>
+                                                    {(variantProduct.variantGroups ?? []).map((group) => (
+                                                        <div key={group.name} className="flex flex-col gap-1">
+                                                            <span className="text-xs font-medium text-muted-foreground">
+                                                                {localizeVariantGroupName(group.name, language)}
+                                                                {group.required && <span className="text-destructive ml-1">*</span>}
+                                                            </span>
+                                                            <Select
+                                                                value={variantChoice[group.name] ?? ''}
+                                                                onValueChange={(value) => setVariantChoice((prev) => ({ ...prev, [group.name]: value }))}
+                                                            >
+                                                                <SelectTrigger aria-label={localizeVariantGroupName(group.name, language)} className="w-full">
+                                                                    <SelectValue placeholder={l('Выберите вариант', 'Choose an option', 'Izvēlieties variantu')} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {group.options.map((option) => (
+                                                                        <SelectItem key={option.value} value={option.value}>
+                                                                            {option.value}
+                                                                            {option.priceAdjustment
+                                                                                ? ` (${option.priceAdjustment > 0 ? '+' : '−'}€${Math.abs(option.priceAdjustment).toFixed(2)})`
+                                                                                : ''}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    ))}
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button type="button" variant="outline" size="sm" onClick={cancelVariantProduct}>
+                                                            {l('Отмена', 'Cancel', 'Atcelt')}
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            disabled={!canAddWithVariants(variantProduct, chosenVariants(variantProduct, variantChoice))}
+                                                            onClick={confirmVariantProduct}
+                                                        >
+                                                            {l('Добавить в заказ', 'Add to order', 'Pievienot pasūtījumam')}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {/* Recalculated summary */}
                                             {editItems.length > 0 &&

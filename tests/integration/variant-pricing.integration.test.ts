@@ -309,3 +309,139 @@ describe('after the order', () => {
     }
   })
 })
+
+describe('staff editing an order', () => {
+  type EditLine = { id: string; quantity: number; lineKey?: string; variantLabel?: string; selectedVariants?: unknown }
+  const STAFF = { id: 'staff', email: 'staff@example.test', platformRole: 'admin' } as never
+  const edit = (orderId: string, items: EditLine[]) => updateServerOrderByAdmin(orderId, {
+    items: items as never, address: 'Rencēnu 10A', city: 'Riga', deliveryMethod: 'pickup', pickupStoreId: 'riga-office',
+  }, STAFF, new NextRequest('http://localhost/api/admin/orders'))
+  const linesOf = async (orderId: string) => (await storedOrder(orderId)).items as StoredLine[]
+  const stockOf = async (id: string) => (await db.product.findUniqueOrThrow({ where: { id } })).stock
+  async function placed(items: unknown[], extra: Record<string, unknown> = {}) {
+    const { status, body } = await placeOrder(items, extra)
+    expect(status).toBe(200)
+    return { id: body.orderId, lines: await linesOf(body.orderId) }
+  }
+
+  it.each([
+    ['positive', choose('BASE XM', 'White'), 837.14],
+    ['negative', choose('BASE XT'), 738.5],
+  ])('adds a chair with a %s adjustment priced from the DB, keeping the ordered line', async (_name, selected, unit) => {
+    const order = await placed([{ id: 'plain', quantity: 2 }])
+    const updated = await edit(order.id, [
+      { id: 'plain', quantity: 2, lineKey: order.lines[0].lineKey },
+      { id: 'chair', quantity: 1, lineKey: 'chair', selectedVariants: selected },
+    ])
+    expect(updated.items.map((line) => line.price)).toEqual([25.5, unit])
+    expect(updated.items[1].lineKey).toBe(`chair::${selected.map((v) => `${v.groupName}=${v.value}`).join(',')}`)
+    expect(updated.items[1].variantLabel).toBe(selected.map((v) => `${v.groupName}: ${v.value}`).join(', '))
+    expect(updated.subtotal).toBe(Math.round((51 + unit) * 100) / 100)
+    expect(updated.total).toBe(updated.subtotal)
+  })
+
+  it.each([
+    ['no options at all', undefined],
+    ['a required group left open', [{ groupName: 'Bāze', value: 'BASE XM' }]],
+    ['an option the chair does not have', choose('BASE XZ')],
+  ])('refuses a chair added with %s, and changes nothing', async (_name, selected) => {
+    const order = await placed([{ id: 'plain', quantity: 1 }])
+    const before = await storedOrder(order.id)
+    const stock = await stockOf('chair')
+    await expect(edit(order.id, [
+      { id: 'plain', quantity: 1, lineKey: order.lines[0].lineKey },
+      { id: 'chair', quantity: 1, lineKey: 'chair', selectedVariants: selected },
+    ])).rejects.toMatchObject({ code: 'invalid_variant' })
+    const after = await storedOrder(order.id)
+    expect(after.items).toEqual(before.items)
+    expect(Number(after.total)).toBe(Number(before.total))
+    expect(await stockOf('chair')).toBe(stock)
+  })
+
+  it('refuses an added option that leaves no price', async () => {
+    const order = await placed([{ id: 'plain', quantity: 1 }])
+    await expect(edit(order.id, [
+      { id: 'plain', quantity: 1, lineKey: order.lines[0].lineKey },
+      { id: 'cheap', quantity: 1, selectedVariants: [{ groupName: 'Size', value: 'Free' }] },
+    ])).rejects.toMatchObject({ code: 'invalid_variant' })
+  })
+
+  it('ignores a forged price, adjustment, label and key on an added line', async () => {
+    const order = await placed([{ id: 'plain', quantity: 1 }])
+    const updated = await edit(order.id, [
+      { id: 'plain', quantity: 1, lineKey: order.lines[0].lineKey },
+      {
+        id: 'chair', quantity: 1, lineKey: 'chair::forged', variantLabel: 'Bāze: BASE XT',
+        price: 1, priceAdjustment: -780,
+        selectedVariants: [{ groupName: 'Bāze', value: 'BASE XM', priceAdjustment: -700 }, { groupName: 'Krāsa', value: 'Black', priceAdjustment: -81 }],
+      } as EditLine,
+    ])
+    expect(updated.items[1]).toMatchObject({
+      price: 827.04, lineKey: 'chair::Bāze=BASE XM,Krāsa=Black', variantLabel: 'Bāze: BASE XM, Krāsa: Black',
+      selectedVariants: [{ groupName: 'Bāze', value: 'BASE XM', priceAdjustment: 46.04 }, { groupName: 'Krāsa', value: 'Black' }],
+    })
+    expect(updated.subtotal).toBe(852.54)
+  })
+
+  it('a quantity change keeps the ordered configuration, and a request cannot swap it', async () => {
+    const order = await placed([{ id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') }])
+    const updated = await edit(order.id, [
+      { id: 'chair', quantity: 3, lineKey: order.lines[0].lineKey, variantLabel: 'Bāze: BASE XT', selectedVariants: choose('BASE XT') },
+    ])
+    expect(updated.items).toHaveLength(1)
+    expect(updated.items[0]).toMatchObject({ quantity: 3, price: 827.04, lineKey: order.lines[0].lineKey, variantLabel: 'Bāze: BASE XM, Krāsa: Black' })
+    expect(updated.subtotal).toBe(2481.12)
+  })
+
+  it('removing one configuration and adding another re-totals the order', async () => {
+    const order = await placed([
+      { id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') },
+      { id: 'chair', quantity: 2, selectedVariants: choose('BASE XT') },
+    ])
+    const stock = await stockOf('chair')
+    const updated = await edit(order.id, [
+      { id: 'chair', quantity: 2, lineKey: order.lines[1].lineKey },
+      { id: 'chair', quantity: 1, selectedVariants: choose('BASE XC', 'White') },
+    ])
+    expect(updated.items.map((line) => [line.variantLabel, line.price, line.quantity])).toEqual([
+      ['Bāze: BASE XT, Krāsa: Black', 738.5, 2],
+      ['Bāze: BASE XC, Krāsa: White', 791.1, 1],
+    ])
+    expect(updated.subtotal).toBe(2268.1)
+    expect(updated.total).toBe(2268.1)
+    // 3 units were held, still 3 after the swap.
+    expect(await stockOf('chair')).toBe(stock)
+  })
+
+  it('refuses the same line twice', async () => {
+    const order = await placed([{ id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') }])
+    await expect(edit(order.id, [
+      { id: 'chair', quantity: 1, lineKey: order.lines[0].lineKey },
+      { id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') },
+    ])).rejects.toMatchObject({ code: 'invalid_item' })
+  })
+
+  it('a promo discount is rescaled, not applied again, and stays put on a repeated edit', async () => {
+    await db.promoCode.create({ data: { id: 'promo-ten-edit', code: 'TEN', discount: 10, active: true } })
+    const order = await placed([{ id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') }], { promoCode: 'TEN' })
+    expect(Number((await storedOrder(order.id)).discount)).toBe(82.7)
+    const twice = await edit(order.id, [{ id: 'chair', quantity: 2, lineKey: order.lines[0].lineKey }])
+    expect(twice).toMatchObject({ subtotal: 1654.08, discount: 165.4, total: 1488.68 })
+    const again = await edit(order.id, [{ id: 'chair', quantity: 2, lineKey: order.lines[0].lineKey }])
+    expect(again).toMatchObject({ subtotal: 1654.08, discount: 165.4, total: 1488.68 })
+  })
+
+  it('spent bonus points are kept, never debited again, and the balance does not move', async () => {
+    await db.user.update({ where: { id: 'buyer' }, data: { bonusPoints: 5000 } })
+    const order = await placed([{ id: 'chair', quantity: 1, selectedVariants: choose('BASE XM') }], { bonusSpent: 5000 })
+    const balance = (await db.user.findUniqueOrThrow({ where: { id: 'buyer' } })).bonusPoints
+    const updated = await edit(order.id, [
+      { id: 'chair', quantity: 1, lineKey: order.lines[0].lineKey },
+      { id: 'chair', quantity: 1, selectedVariants: choose('BASE XT') },
+    ])
+    expect(updated.bonusSpent).toBe(5000)
+    expect(updated.subtotal).toBe(1565.54)
+    expect(updated.total).toBe(1515.54)
+    expect((await db.user.findUniqueOrThrow({ where: { id: 'buyer' } })).bonusPoints).toBe(balance)
+  })
+})

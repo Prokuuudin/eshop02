@@ -254,7 +254,8 @@ export function buildHairshopProductCreateData(
     oftenBoughtTogether: [],
     certificates: [],
     compatibleEquipment: [],
-    isActive: true,
+    // Catalog content requires explicit review in Hairshop Pro before it can be sold.
+    isActive: false,
     isDeleted: false,
     isCustom: false,
     lastSyncRunId: `hairshop-catalog:${runId}`,

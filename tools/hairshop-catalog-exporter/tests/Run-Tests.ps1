@@ -7,6 +7,7 @@ $ErrorActionPreference = 'Stop'
 $modulePath = Join-Path (Split-Path $PSScriptRoot -Parent) 'HairshopCatalogExporter.psm1'
 $fixturePath = Join-Path $PSScriptRoot 'fixtures\catalog-data.json'
 Import-Module $modulePath -Force
+Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'HairshopCatalogJsonSource.psm1') -Force
 
 $script:Passed = 0
 $script:TemporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('hairshop-exporter-tests-' + [Guid]::NewGuid().ToString('N'))
@@ -67,6 +68,20 @@ try {
     $outputDirectory = Join-Path $script:TemporaryRoot 'output'
     $config = New-TestConfig -OutputDirectory $outputDirectory
     $data = Read-CatalogFixture -Path $fixturePath
+
+    $jsonSnapshot = New-HairshopCatalogJsonSnapshot -Data $data -GeneratedAtUtc ([DateTime]'2026-11-07T10:00:00Z')
+    $jsonPayload = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($jsonSnapshot.payloadBase64)) | ConvertFrom-Json
+    Assert-Equal 2 $jsonSnapshot.productCount 'JSON source contains only published products'
+    Assert-Equal 64 $jsonSnapshot.payloadSha256.Length 'JSON source payload SHA-256 length'
+    Assert-True ($null -eq $jsonPayload.Products[0].PSObject.Properties['IsMarkedForProSync']) 'JSON source has no custom marker dependency'
+    Assert-Equal 2 @($jsonPayload.CategoryMappings).Count 'JSON source keeps relations for exported products'
+    $jsonPath = Join-Path $script:TemporaryRoot 'json-source\hairshop-pro-catalog.json'
+    [void](Write-HairshopCatalogJsonSnapshotAtomic -Snapshot $jsonSnapshot -Path $jsonPath)
+    Assert-True (Test-Path -LiteralPath $jsonPath -PathType Leaf) 'JSON snapshot is atomically published'
+    [void](Write-HairshopCatalogJsonSnapshotAtomic -Snapshot $jsonSnapshot -Path $jsonPath)
+    Assert-True (Test-Path -LiteralPath "$jsonPath.previous" -PathType Leaf) 'previous JSON snapshot is retained'
+    $script:Passed++
+    Write-Host 'PASS: minimal JSON source exports published products without a custom MSSQL marker'
 
     $first = Invoke-CatalogSnapshotExport -Data $data -Config $config
     $manifestPath = Join-Path $outputDirectory 'manifest.json'

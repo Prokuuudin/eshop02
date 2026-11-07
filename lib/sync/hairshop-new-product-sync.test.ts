@@ -108,7 +108,7 @@ describe('new Product mapping', () => {
       price: 0,
       stock: 0,
       erpPriceMissing: true,
-      isActive: true,
+      isActive: false,
       isDeleted: false,
       lastSyncRunId: 'hairshop-catalog:run-12345678',
     })

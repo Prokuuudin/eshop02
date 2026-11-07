@@ -3,6 +3,7 @@
 ## Состояние
 
 - Ветка: `codex/hairshop-json-https-sync`.
+- Draft PR: [#14](https://github.com/Prokuuudin/eshop02/pull/14) в `main`; он supersedes #13, но #13 не изменён и не закрыт.
 - Основа: HEAD Draft PR #13, `14b3d54693cf5d0cb949047f3848f8b2d2b1a41b`.
 - PR #13 и его ветка не переписывались.
 - Новая ветка заменяет прямое MSSQL-чтение с Hairshop Pro на protected JSON/HTTPS source.

@@ -49,16 +49,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!product) notFound();
 
     const productPath = `/product/${product.id}`;
-    const localized = localizedProductText(product, language);
-    const metaTitle = language === 'ru' && product.metaTitle?.trim()
-        ? product.metaTitle.trim()
+    // Search engines and link previews read these tags, so prices never reach them, for anyone.
+    const publicText = redactProductPrices(product);
+    const localized = localizedProductText(publicText, language);
+    const metaTitle = language === 'ru' && publicText.metaTitle?.trim()
+        ? publicText.metaTitle.trim()
         : `${localized.title} | Hairshop-Pro`;
     const metaDescription =
-        (language === 'ru' ? product.metaDescription?.trim() : undefined)
+        (language === 'ru' ? publicText.metaDescription?.trim() : undefined)
         || localized.description?.trim()
         || `${product.brand} — ${localized.title}`;
     const openGraphImage = product.ogImage?.trim() || product.image;
-    const openGraphAlt = product.ogAlt?.trim() || localized.title;
+    const openGraphAlt = publicText.ogAlt?.trim() || localized.title;
 
     return buildPublicPageMetadata({
         language,
@@ -99,7 +101,8 @@ export default async function ProductPage({ params }: PageProps): Promise<React.
 
     const siteUrl = getSiteUrl();
     const productUrl = `${siteUrl}${localizePath(`/product/${product.id}`, language)}`;
-    const localized = localizedProductText(product, language);
+    // The structured data below is for search engines: its only price is the Offer for signed-in users.
+    const localized = localizedProductText(redactProductPrices(product), language);
     const reviewCount = approvedReviews.length;
     const averageRating = reviewCount > 0
         ? approvedReviews.reduce((total, review) => total + review.rating, 0) / reviewCount

@@ -37,7 +37,7 @@ import { type CheckoutFormData } from './CheckoutFormSections';
 import { validateCheckoutForm } from './checkout-validation';
 import { createCheckoutOrder, checkoutOrderFailureMessage } from './checkout-order-api';
 import { calculateCheckoutTotals } from './checkout-totals';
-import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
+import { evaluateCampaignOffer, toPricingLine, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -182,7 +182,7 @@ function useCheckoutPageState() {
         let cancelled = false;
         const controller = new AbortController();
         void evaluateCampaignOffer(
-            checkoutItems.map(({ id, quantity }) => ({ id, quantity })),
+            checkoutItems.map(toPricingLine),
             controller.signal
         ).then((result) => {
             if (!cancelled && result) setCampaignOffer(result);
@@ -229,7 +229,7 @@ function useCheckoutPageState() {
             const data = await validatePromoCode({
                 code: promoCode,
                 email: formData.email,
-                items: checkoutItems.map(({ id, quantity }) => ({ id, quantity })),
+                items: checkoutItems.map(toPricingLine),
             });
             if (!data.valid) {
                 const message = t('checkout.promo.invalid');

@@ -19,6 +19,7 @@ import { buildOrderData, buildOrderItemSnapshot, mapDbToServerOrder, withPromoti
 import { isSecondItemCampaign, readPromoCampaigns, sortSecondItemCampaigns } from '@/lib/promo-campaigns'
 import { calculateSecondItemCampaigns } from '@/lib/second-item-discount'
 import { getValidOldPrice } from '@/lib/product-campaign-price'
+import { resolveSelectedVariants, variantUnitPrice } from '@/lib/product-variants'
 import {
   adjustOrderStock,
   assertNoAwaitingAllocation,
@@ -478,11 +479,21 @@ export async function updateServerOrderByAdmin(
 
     const rebuiltItems: ServerOrderItem[] = input.items.map((item) => {
       const product = byId.get(item.id)!
+      // The configuration is never taken from the edit request: it is the one the line was
+      // ordered with, re-priced from the product's current options.
+      const ordered = currentItems.find((line) => line.id === item.id && (line.lineKey ?? line.id) === (item.lineKey ?? item.id))
+      const selectedVariants = resolveSelectedVariants(product.technicalSpecs, ordered?.selectedVariants?.map(({ groupName, value }) => ({ groupName, value })))
+      if (!selectedVariants) {
+        throw new AdminOrderUpdateError(`The ordered option of product ${item.id} no longer exists`, 'invalid_item')
+      }
       return buildOrderItemSnapshot(product, {
         quantity: item.quantity,
-        price: toNum(product.price),
+        price: variantUnitPrice(toNum(product.price), selectedVariants),
         lineKey: item.lineKey,
-        variantLabel: item.variantLabel,
+        variantLabel: selectedVariants.length
+          ? selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', ')
+          : item.variantLabel,
+        selectedVariants,
       })
     })
     const subtotal = Math.round(rebuiltItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 100) / 100

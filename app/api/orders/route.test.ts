@@ -45,6 +45,9 @@ vi.mock('@/lib/server-pricing', () => ({
   ProductUnavailableError: class ProductUnavailableError extends Error {
     constructor(public readonly items: string[]) { super('unavailable') }
   },
+  InvalidVariantSelectionError: class InvalidVariantSelectionError extends Error {
+    constructor(public readonly items: string[]) { super('invalid variant') }
+  },
 }))
 vi.mock('@/lib/locale-config-server-store', () => ({
   getLocaleConfig: vi.fn(),
@@ -59,7 +62,7 @@ import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admi
 import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getTemplates } from '@/lib/email-templates-server-store'
-import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
+import { InvalidVariantSelectionError, ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { getLocaleConfig } from '@/lib/locale-config-server-store'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { DEFAULT_COMMERCE_SETTINGS } from '@/lib/commerce-settings'
@@ -721,20 +724,30 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(persisted).toMatchObject({ subtotal: 50, total: 64 })
   })
 
-  it('B1: a variant choice is re-derived from the product (price adjustment and label from DB)', async () => {
+  it('B1: only option names reach pricing, and the line records what pricing resolved from the DB', async () => {
+    vi.mocked(recomputeOrderPricing).mockResolvedValue({
+      items: [{ id: 'p1', price: 20, quantity: 2, bonusRate: 0, fromCatalog: true, selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -5 }] }],
+      subtotal: 40, discount: 0, tax: 6.94, delivery: 5, bonusSpent: 0, bonusEarned: 0, total: 45, promoApplied: false,
+    })
     await POST(makeRequest({
       ...VALID_ORDER,
-      items: [{ id: 'p1', quantity: 2, selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -24 }], variantLabel: 'Size: 2000ml' }],
+      items: [{ id: 'p1', quantity: 2, price: 1, selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -24 }], variantLabel: 'Size: 2000ml' }],
     }))
-    const [item] = (await persistedOrder()).items
-    expect(item).toMatchObject({
+    expect(vi.mocked(recomputeOrderPricing).mock.calls[0][0].items).toEqual([
+      { id: 'p1', quantity: 2, selectedVariants: [{ groupName: 'Size', value: '500ml' }] },
+    ])
+    const order = await persistedOrder()
+    expect(order.items[0]).toMatchObject({
+      price: 20,
       selectedVariants: [{ groupName: 'Size', value: '500ml', priceAdjustment: -5 }],
       variantLabel: 'Size: 500ml',
       lineKey: 'p1::Size=500ml',
     })
+    expect(order.total).toBe(45)
   })
 
   it('B1: a variant the product does not offer rejects the order', async () => {
+    vi.mocked(recomputeOrderPricing).mockRejectedValue(new InvalidVariantSelectionError(['p1']))
     const res = await POST(makeRequest({ ...VALID_ORDER, items: [{ id: 'p1', quantity: 1, selectedVariants: [{ groupName: 'Size', value: '5000ml' }] }] }))
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual({ error: 'invalid_variant', items: ['p1'] })

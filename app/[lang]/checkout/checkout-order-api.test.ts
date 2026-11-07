@@ -18,6 +18,17 @@ describe('createCheckoutOrder', () => {
         if (!result.ok) expect(checkoutOrderFailureMessage(result.reason, key => (messages as Record<string, string>)[key])).toContain(expected);
     });
 
+    it.each([
+        ['ru', ru, 'комплектация'],
+        ['en', en, 'option is no longer available'],
+        ['lv', lv, 'komplektācija'],
+    ])('explains a refused variant in %s', async (_locale, messages, expected) => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: 'invalid_variant', items: ['p1'] }) }));
+        const result = await createCheckoutOrder({ createdAt: new Date(), total: 25 }, null);
+        expect(result).toEqual({ ok: false, reason: 'invalid_variant' });
+        if (!result.ok) expect(checkoutOrderFailureMessage(result.reason, key => (messages as Record<string, string>)[key])).toContain(expected);
+    });
+
     it('rejects a response without canonical server totals', async () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ orderId: '1001' }) }));
         await expect(createCheckoutOrder({ createdAt: new Date(), total: 0.01 }, null)).resolves.toEqual({ ok: false, reason: 'invalid_response' });

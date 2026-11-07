@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { toNum } from '@/lib/decimal'
 import { buildLineKey, type CartItem, type SelectedVariant } from '@/lib/cart-store'
-import { sumPriceAdjustment } from '@/lib/product-variants'
+import { resolveVariantSelectionForSale, variantUnitPrice } from '@/lib/product-variants'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { logApiError } from '@/lib/observability'
 import { PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
@@ -55,7 +55,7 @@ export async function POST(_request: NextRequest, context: Context): Promise<Nex
       select: {
         id: true, title: true, titleKey: true, titleEn: true, titleLv: true,
         brand: true, image: true, images: true, price: true, stock: true,
-        bonusRate: true, bulkPricingTiers: true, minOrderQuantities: true,
+        bonusRate: true, bulkPricingTiers: true, minOrderQuantities: true, technicalSpecs: true,
         category: true, sku: true,
       },
     })
@@ -68,17 +68,23 @@ export async function POST(_request: NextRequest, context: Context): Promise<Nex
       if (typeof snapshot.id !== 'string') continue
       const product = byId.get(snapshot.id)
       const oldTitle = typeof snapshot.title === 'string' ? snapshot.title : snapshot.id
-      if (!product || product.stock <= 0) {
+      // The ordered options, re-read from the product as it is now: checkout will charge these.
+      const selectedVariants = product
+        ? resolveVariantSelectionForSale(product.technicalSpecs, Array.isArray(snapshot.selectedVariants)
+          ? snapshot.selectedVariants.map(({ groupName, value }) => ({ groupName, value }))
+          : undefined)
+        : null
+      if (!product || product.stock <= 0 || !selectedVariants) {
         unavailableItems.push({ id: snapshot.id, title: oldTitle })
         continue
       }
 
       const requestedQuantity = Math.max(1, Math.floor(Number(snapshot.quantity) || 1))
       const quantity = Math.min(requestedQuantity, product.stock)
-      const selectedVariants = Array.isArray(snapshot.selectedVariants) ? snapshot.selectedVariants : undefined
-      const price = toNum(product.price) + sumPriceAdjustment(selectedVariants ?? [])
       const currentBulkTiers = bulkTiers(product.bulkPricingTiers)
-      const effectivePrice = calculatePrice({ price, bulkPricingTiers: currentBulkTiers }, quantity)
+      // Same formula as checkout pricing: the (bulk-tier) unit price plus the options.
+      const effectivePrice = variantUnitPrice(calculatePrice({ price: toNum(product.price), bulkPricingTiers: currentBulkTiers }, quantity), selectedVariants)
+      const price = variantUnitPrice(toNum(product.price), selectedVariants)
       const oldPrice = Number(snapshot.price)
       if (Number.isFinite(oldPrice) && Math.abs(oldPrice - effectivePrice) >= 0.005) {
         changes.push({ id: product.id, title: product.title, type: 'price_changed', oldValue: oldPrice, newValue: effectivePrice })
@@ -90,7 +96,7 @@ export async function POST(_request: NextRequest, context: Context): Promise<Nex
       items.push({
         id: product.id,
         lineKey: buildLineKey(product.id, selectedVariants),
-        selectedVariants,
+        selectedVariants: selectedVariants.length ? selectedVariants : undefined,
         variantLabel: snapshot.variantLabel,
         titleKey: product.titleKey ?? undefined,
         title: product.title,

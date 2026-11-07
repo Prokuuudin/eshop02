@@ -26,6 +26,7 @@ const lvCheckout: Record<string, string> = {
     'checkout.shippingLoadFailed': 'Neizdevās ielādēt piegādes iestatījumus. Pārlādējiet lapu.',
     'order.trackShipment': 'Izsekot sūtījumu',
   'checkout.errors.productUnavailable': 'Dažas preces pašlaik nav pārdošanā. Izņemiet tās no groza un mēģiniet vēlreiz.',
+  'checkout.errors.invalidVariant': 'Izvēlētā preces komplektācija vairs nav pieejama. Izvēlieties variantu no jauna un mēģiniet vēlreiz.',
   'checkout.errors.paymentGateway': 'Neizdevās izveidot savienojumu ar Paysera. Izvēlieties bankas pārskaitījumu vai mēģiniet vēlāk.',
   'cart.title': 'Grozs',
   'cart.openFullCart': 'Atvērt pilnā ekrānā',

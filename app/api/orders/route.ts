@@ -11,7 +11,7 @@ import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { getServerUser } from '@/lib/server-auth'
 import { canPlaceOrders } from '@/lib/auth-access'
-import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
+import { InvalidVariantSelectionError, ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { stores } from '@/data/stores'
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isCourierDeliveryMethod } from '@/lib/delivery'
@@ -19,7 +19,7 @@ import { getCorrelationId, logOperationalEvent } from '@/lib/observability'
 import { createHash } from 'node:crypto'
 import { ExistingCheckoutOrderError, type ServerOrderLegalDetails } from '@/lib/orders-data-store'
 import { buildOrderItemSnapshot, ORDER_ITEM_SNAPSHOT_SELECT, withPromotionDiscount } from '@/lib/orders-data-mapping'
-import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-variants'
+import { isSelectedVariantsInput } from '@/lib/product-variants'
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
@@ -54,13 +54,6 @@ type CheckoutOrderInput = {
 
 type CheckoutLineInput = { id: string; quantity: number; selectedVariants?: SelectedVariant[] }
 
-/** A requested variant does not exist on the product (forged or stale cart). */
-class InvalidVariantSelectionError extends Error {
-  constructor(readonly items: string[]) {
-    super(`Invalid variant selection: ${items.join(', ')}`)
-    this.name = 'InvalidVariantSelectionError'
-  }
-}
 
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 
@@ -230,7 +223,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return {
         id: item.id,
         quantity: item.quantity,
-        ...(item.selectedVariants?.length ? { selectedVariants: item.selectedVariants } : {}),
+        // Option names only: a price adjustment in the request is never read.
+        ...(item.selectedVariants?.length
+          ? { selectedVariants: item.selectedVariants.map(({ groupName, value }) => ({ groupName, value })) }
+          : {}),
       }
     })
     const destination = validateOrderDelivery(order, await getShippingSettings())
@@ -318,7 +314,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     let created = await createServerOrder(orderBase, async (tx, currentBonusBalance) => {
       const pricing = await recomputeOrderPricing({
-        items: lines.map(({ id, quantity }) => ({ id, quantity })),
+        items: lines.map(({ id, quantity, selectedVariants }) => ({ id, quantity, selectedVariants })),
         promoCode,
         country,
         deliveryMethod,
@@ -335,7 +331,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       })
       const productById = new Map(products.map((product) => [product.id, product]))
       const missing: string[] = []
-      const invalidVariants: string[] = []
       const snapshotItems = lines.flatMap((line, idx) => {
         const product = productById.get(line.id)
         const priced = pricing.items[idx]
@@ -343,11 +338,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           missing.push(line.id)
           return []
         }
-        const selectedVariants = resolveSelectedVariants(product.technicalSpecs, line.selectedVariants)
-        if (!selectedVariants) {
-          invalidVariants.push(line.id)
-          return []
-        }
+        // The options the line was priced with, resolved by pricing from the same row.
+        const selectedVariants = priced.selectedVariants ?? []
         return [withPromotionDiscount(buildOrderItemSnapshot(product, {
           quantity: priced.quantity,
           price: priced.price,
@@ -357,7 +349,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         }), pricing.lineDiscounts?.find((discount) => discount.index === idx))]
       })
       if (missing.length > 0) throw new ProductUnavailableError([...new Set(missing)])
-      if (invalidVariants.length > 0) throw new InvalidVariantSelectionError([...new Set(invalidVariants)])
       return {
         ...orderBase,
         items: snapshotItems,

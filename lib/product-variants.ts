@@ -63,6 +63,27 @@ export function resolveSelectedVariants(technicalSpecs: unknown, requested: unkn
   return resolved
 }
 
+/**
+ * The variant choice a line is sold with: resolved from the product's own groups, with every
+ * required group chosen. Null when the request names an unknown option or leaves a required
+ * group open, so a configuration nobody chose is never sold at the base price.
+ */
+export function resolveVariantSelectionForSale(technicalSpecs: unknown, requested: unknown): SelectedVariant[] | null {
+  const resolved = resolveSelectedVariants(technicalSpecs, requested)
+  if (!resolved) return null
+  const specs = technicalSpecs && typeof technicalSpecs === 'object' && !Array.isArray(technicalSpecs)
+    ? technicalSpecs as Record<string, string>
+    : null
+  return getMissingRequiredGroups(getVariantGroups({ technicalSpecs: specs }), resolved).length > 0 ? null : resolved
+}
+
+/** Unit price of a configuration, in exact cents: base (or tier) price plus the chosen options. */
+export function variantUnitPrice(basePrice: number, selected: SelectedVariant[]): number {
+  const cents = Math.round(basePrice * 100)
+    + selected.reduce((sum, variant) => sum + Math.round((Number.isFinite(variant.priceAdjustment) ? variant.priceAdjustment ?? 0 : 0) * 100), 0)
+  return cents / 100
+}
+
 export function sumPriceAdjustment(selected: SelectedVariant[]): number {
   return selected.reduce((sum, v) => sum + (v.priceAdjustment ?? 0), 0)
 }

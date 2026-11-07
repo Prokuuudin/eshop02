@@ -94,7 +94,7 @@ export async function buildAdminOrderNotificationEmail(order: ServerOrder): Prom
   const items = Array.isArray(order.items) ? order.items : []
 
   const itemRows = items.map((item) => `<tr>
-    <td style="padding:4px 8px">${escHtml(item.title ?? '—')}</td>
+    <td style="padding:4px 8px">${escHtml(item.title ?? '—')}${item.variantLabel ? `<br><span style="color:#6b7280">${escHtml(item.variantLabel)}</span>` : ''}</td>
     <td style="padding:4px 8px;text-align:center">${item.quantity ?? 1}</td>
     <td style="padding:4px 8px;text-align:right">${money(item.price)}</td>
     <td style="padding:4px 8px;text-align:right">${money((item.price ?? 0) * (item.quantity ?? 1))}</td>

@@ -34,6 +34,11 @@ const order = {
 } as unknown as Order
 
 describe('buildInvoiceHtml', () => {
+  it('names the chosen configuration on the line, escaped', () => {
+    const html = buildInvoiceHtml({ ...order, items: [{ ...order.items[0], variantLabel: 'Bāze: BASE XM & <i>' }] } as Order)
+    expect(html).toContain('Bāze: BASE XM &amp; &lt;i&gt;')
+  })
+
   it('matches the reference invoice sections and adds the amount in words', () => {
     const html = buildInvoiceHtml(order)
     expect(html).toContain('Pasūtījuma numurs: #1001')

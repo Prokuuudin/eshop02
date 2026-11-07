@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { resolveVariantSelectionForSale, variantUnitPrice } from './product-variants'
 import { getVariantGroups, getMissingRequiredGroups, getPreselectedVariants, isSelectedVariantsInput, resolveSelectedVariants, sumPriceAdjustment } from './product-variants'
 import type { VariantGroup, SelectedVariant } from '@/data/products'
 
@@ -161,5 +162,46 @@ describe('resolveSelectedVariants — checkout re-derives the choice from DB var
     expect(isSelectedVariantsInput([{ groupName: 'a', value: 1 }])).toBe(false)
     expect(isSelectedVariantsInput([{ groupName: 'a'.repeat(201), value: 'b' }])).toBe(false)
     expect(isSelectedVariantsInput(Array.from({ length: 21 }, () => ({ groupName: 'a', value: 'b' })))).toBe(false)
+  })
+})
+
+describe('variantUnitPrice', () => {
+  it.each([
+    [781, [46.04], 827.04],
+    [781, [-42.5], 738.5],
+    [781, [0], 781],
+    [781, [46.04, 10.1], 837.14],
+    [0.1, [0.2], 0.3],
+    [8.1, [-4.65], 3.45],
+  ])('%s with %j is %s, in exact cents', (base, adjustments, expected) => {
+    expect(variantUnitPrice(base, adjustments.map((priceAdjustment, index) => ({ groupName: String(index), value: 'v', priceAdjustment })))).toBe(expected)
+  })
+
+  it('ignores a missing or non-finite adjustment', () => {
+    expect(variantUnitPrice(10, [{ groupName: 'a', value: 'b' }, { groupName: 'c', value: 'd', priceAdjustment: Number.NaN }])).toBe(10)
+  })
+})
+
+describe('resolveVariantSelectionForSale', () => {
+  const specs = { __variantGroupsJson: JSON.stringify([
+    { name: 'Base', required: true, options: [{ value: 'XM', priceAdjustment: 46.04 }, { value: 'XC' }] },
+    { name: 'Extra', required: false, options: [{ value: 'Bag', priceAdjustment: 5 }] },
+  ]) }
+
+  it('takes the adjustment from the product, never from the request', () => {
+    expect(resolveVariantSelectionForSale(specs, [{ groupName: 'Base', value: 'XM', priceAdjustment: -500 }]))
+      .toEqual([{ groupName: 'Base', value: 'XM', priceAdjustment: 46.04 }])
+  })
+
+  it('refuses a required group left open, an unknown option and a repeated group', () => {
+    expect(resolveVariantSelectionForSale(specs, undefined)).toBeNull()
+    expect(resolveVariantSelectionForSale(specs, [{ groupName: 'Extra', value: 'Bag' }])).toBeNull()
+    expect(resolveVariantSelectionForSale(specs, [{ groupName: 'Base', value: 'XZ' }])).toBeNull()
+    expect(resolveVariantSelectionForSale(specs, [{ groupName: 'Base', value: 'XM' }, { groupName: 'Base', value: 'XC' }])).toBeNull()
+  })
+
+  it('accepts an optional group left open, and a product without variants', () => {
+    expect(resolveVariantSelectionForSale(specs, [{ groupName: 'Base', value: 'XC' }])).toEqual([{ groupName: 'Base', value: 'XC' }])
+    expect(resolveVariantSelectionForSale(null, undefined)).toEqual([])
   })
 })

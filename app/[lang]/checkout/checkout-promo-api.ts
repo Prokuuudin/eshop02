@@ -1,7 +1,19 @@
 type CheckoutPromoItem = {
     id: string;
     quantity: number;
+    selectedVariants?: Array<{ groupName: string; value: string }>;
 };
+
+/** What a pricing preview needs from a cart line: the product, quantity and chosen options, never a price. */
+export function toPricingLine(item: CheckoutPromoItem): CheckoutPromoItem {
+    return {
+        id: item.id,
+        quantity: item.quantity,
+        ...(item.selectedVariants?.length
+            ? { selectedVariants: item.selectedVariants.map(({ groupName, value }) => ({ groupName, value })) }
+            : {}),
+    };
+}
 
 export type CampaignOffer = {
     discount: number;

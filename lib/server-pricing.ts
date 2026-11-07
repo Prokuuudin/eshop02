@@ -14,6 +14,8 @@ import { evaluatePromoCampaigns, type CampaignLineDiscount } from '@/lib/promo-c
 import { getValidOldPrice } from '@/lib/product-campaign-price'
 import { isPurchasable, PURCHASABLE_PRODUCT_WHERE } from '@/lib/product-sellability'
 import { loadEffectiveBrandLines, selectionMatches } from '@/lib/brand-lines/brand-line-membership'
+import { resolveVariantSelectionForSale, variantUnitPrice } from '@/lib/product-variants'
+import type { SelectedVariant } from '@/data/products'
 
 const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
@@ -30,9 +32,10 @@ const SUBCATEGORY_BY_PRODUCT_ID = productSubcategories as Record<string, string>
 
 type BulkTier = { quantity: number; pricePerUnit: number }
 
-type CatalogPrice = { price: number; oldPrice: number | null; brand: string; category: string; bulkPricingTiers?: BulkTier[]; bonusRate: number }
+type CatalogPrice = { price: number; oldPrice: number | null; brand: string; category: string; bulkPricingTiers?: BulkTier[]; bonusRate: number; technicalSpecs: unknown }
 
-export type LineItemInput = { id: string; quantity: number; price?: number }
+/** Only the product id, quantity and the names of chosen options are read from a client line. */
+export type LineItemInput = { id: string; quantity: number; price?: number; selectedVariants?: unknown }
 export type ResolvedLineItem = {
   id: string
   quantity: number
@@ -43,6 +46,10 @@ export type ResolvedLineItem = {
   category?: string
   subcategory?: string
   fromCatalog: boolean
+  /** Chosen options with their price adjustments from the DB product. */
+  selectedVariants?: SelectedVariant[]
+  /** The choice does not exist on the product, leaves a required group open, or prices the unit at zero or below. */
+  invalidVariant?: boolean
 }
 
 function sanitizeBulkTiers(value: unknown): BulkTier[] | undefined {
@@ -70,6 +77,14 @@ export class ProductUnavailableError extends Error {
   }
 }
 
+/** A requested variant does not exist on the product, or a required one is missing (forged or stale cart). */
+export class InvalidVariantSelectionError extends Error {
+  constructor(readonly items: string[]) {
+    super(`Invalid variant selection: ${items.join(', ')}`)
+    this.name = 'InvalidVariantSelectionError'
+  }
+}
+
 /**
  * Fetch authoritative catalog prices for a set of product ids. Only purchasable products
  * (see lib/product-sellability.ts) are returned — anything else has no sale price.
@@ -83,7 +98,7 @@ export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): P
   const rows = await db.product.findMany({
     where: { id: { in: uniqueIds }, ...PURCHASABLE_PRODUCT_WHERE },
     select: {
-      id: true, price: true, oldPrice: true, brand: true, category: true, bulkPricingTiers: true, bonusRate: true,
+      id: true, price: true, oldPrice: true, brand: true, category: true, bulkPricingTiers: true, bonusRate: true, technicalSpecs: true,
       isActive: true, isDeleted: true, externalId: true, erpPriceMissing: true, manualPriceApproved: true, manualApprovedPrice: true,
     },
   })
@@ -108,13 +123,15 @@ export async function getCatalogPrices(ids: string[], db: PricingDb = prisma): P
       category: row.category,
       bulkPricingTiers: sanitizeBulkTiers(row.bulkPricingTiers),
       bonusRate: typeof row.bonusRate === 'number' ? row.bonusRate : 0,
+      technicalSpecs: row.technicalSpecs,
     })
   }
   return map
 }
 
 /**
- * Resolve each line item's unit price from the catalog (bulk-tier aware).
+ * Resolve each line item's unit price from the catalog (bulk-tier aware), plus the price
+ * adjustments of the chosen variant options, taken from the same DB row.
  * Falls back to the sanitized client price only when the product is missing from the catalog.
  */
 export async function resolveLineItems(items: LineItemInput[], db: PricingDb = prisma): Promise<ResolvedLineItem[]> {
@@ -125,14 +142,22 @@ export async function resolveLineItems(items: LineItemInput[], db: PricingDb = p
     const catalog = prices.get(item.id)
 
     if (catalog) {
+      const variants = resolveVariantSelectionForSale(catalog.technicalSpecs, item.selectedVariants)
+      const price = variantUnitPrice(calculatePrice(catalog, quantity), variants ?? [])
+      // A preview still gets a base price for an invalid choice; an order is refused (recomputeOrderPricing).
+      const invalidVariant = !variants || (variants.length > 0 && !(price > 0))
+      const chosen = invalidVariant ? [] : variants
       return {
         id: item.id,
         quantity,
-        price: calculatePrice(catalog, quantity),
+        price: invalidVariant ? calculatePrice(catalog, quantity) : price,
         bonusRate: catalog.bonusRate,
         // Normalized against the base price (not the bulk-tier price) so promo
-        // `excludeSaleItems` matches what the storefront shows as a sale.
-        oldPrice: getValidOldPrice(catalog.price, catalog.oldPrice) ?? null,
+        // `excludeSaleItems` matches what the storefront shows as a sale. A variant
+        // adjustment moves both prices by the same amount.
+        oldPrice: getValidOldPrice(variantUnitPrice(catalog.price, chosen), catalog.oldPrice == null ? null : variantUnitPrice(catalog.oldPrice, chosen)) ?? null,
+        ...(chosen.length ? { selectedVariants: chosen } : {}),
+        ...(invalidVariant ? { invalidVariant: true } : {}),
         brand: catalog.brand,
         category: catalog.category,
         subcategory: SUBCATEGORY_BY_PRODUCT_ID[item.id],
@@ -260,6 +285,8 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
   // resolveLineItems exists for previews; it must never price a real order.
   const unavailable = items.filter((item) => !item.fromCatalog).map((item) => item.id)
   if (unavailable.length > 0) throw new ProductUnavailableError([...new Set(unavailable)])
+  const invalidVariants = items.filter((item) => item.invalidVariant).map((item) => item.id)
+  if (invalidVariants.length > 0) throw new InvalidVariantSelectionError([...new Set(invalidVariants)])
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   const promo = await evaluatePromoCode(input.promoCode, items, { userId: input.userId, email: input.email }, db)

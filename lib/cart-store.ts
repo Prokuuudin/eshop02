@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Product, SelectedVariant } from '@/data/products'
-import { resolveSelectedVariants, sumPriceAdjustment } from '@/lib/product-variants'
+import { resolveSelectedVariants, variantUnitPrice } from '@/lib/product-variants'
 import { getCurrentUser } from '@/lib/auth'
 
 export type { SelectedVariant }
@@ -112,7 +112,8 @@ function buildLineDetails(product: AddableProduct, selectedVariants?: SelectedVa
     titleLv: product.titleLv,
     brand: product.brand,
     image: product.image || product.images?.[0],
-    price: product.price + sumPriceAdjustment(variants ?? []),
+    // Same exact-cents formula as checkout pricing on the server.
+    price: variantUnitPrice(product.price, variants ?? []),
     bonusRate: product.bonusRate,
     bulkPricingTiers: product.bulkPricingTiers,
     minOrderQuantities: product.minOrderQuantities,

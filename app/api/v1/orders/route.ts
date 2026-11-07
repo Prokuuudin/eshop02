@@ -6,7 +6,9 @@ import { createHash } from 'node:crypto'
 import { getCorrelationId, logApiError } from '@/lib/observability'
 import { authenticateRequest, successResponse, errorResponse, parsePagination } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
-import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
+import { InvalidVariantSelectionError, ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
+import { isSelectedVariantsInput } from '@/lib/product-variants'
+import { buildLineKey } from '@/lib/cart-store'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
 import { withPromotionDiscount } from '@/lib/orders-data-mapping'
@@ -104,14 +106,14 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     const body = await req.json()
     const { items, address, payment, notes, customerComment } = body as {
-      items?: Array<{ productId?: string; quantity?: number }>
+      items?: Array<{ productId?: string; quantity?: number; selectedVariants?: unknown }>
       address?: Record<string, string>
       payment?: string
       notes?: string
       customerComment?: string
     }
 
-    if (!Array.isArray(items) || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0 || items.some((item) => !item || !isSelectedVariantsInput(item.selectedVariants))) {
       return errorResponse('Invalid items', 400)
     }
     if (!address) {
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     const normalizedItems = items
       .filter((i) => typeof i.productId === 'string' && i.productId.length > 0)
-      .map((i) => ({ id: i.productId as string, quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)) }))
+      .map((i) => ({ id: i.productId as string, quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)), selectedVariants: i.selectedVariants }))
 
     if (normalizedItems.length === 0) {
       return errorResponse('No valid items', 400)
@@ -198,11 +200,19 @@ export async function POST(req: NextRequest): Promise<Response> {
       }, tx)
       return {
         ...order,
-        items: order.items.map((item, index) => withPromotionDiscount({
-          ...item,
-          price: pricing.items[index]?.price ?? 0,
-          quantity: pricing.items[index]?.quantity ?? item.quantity,
-        }, pricing.lineDiscounts?.find((discount) => discount.index === index))),
+        items: order.items.map((item, index) => {
+          const selectedVariants = pricing.items[index]?.selectedVariants ?? []
+          return withPromotionDiscount({
+            ...item,
+            price: pricing.items[index]?.price ?? 0,
+            quantity: pricing.items[index]?.quantity ?? item.quantity,
+            ...(selectedVariants.length ? {
+              lineKey: buildLineKey(item.id, selectedVariants),
+              variantLabel: selectedVariants.map((variant) => `${variant.groupName}: ${variant.value}`).join(', '),
+              selectedVariants,
+            } : {}),
+          }, pricing.lineDiscounts?.find((discount) => discount.index === index))
+        }),
         subtotal: pricing.subtotal,
         tax: pricing.tax,
         delivery: pricing.delivery,
@@ -241,6 +251,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     if (error instanceof ProductUnavailableError) {
       return errorResponse(`Products not available for sale: ${error.items.join(', ')}`, 409)
+    }
+    if (error instanceof InvalidVariantSelectionError) {
+      return errorResponse(`Invalid variant selection for: ${error.items.join(', ')}`, 400)
     }
     if (error instanceof InsufficientStockError) {
       return errorResponse(`Insufficient stock for: ${error.items.join(', ')}`, 409)

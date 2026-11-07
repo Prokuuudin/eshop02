@@ -208,7 +208,7 @@ export function buildInvoiceHtml(
       const lineTotal = eur(item.price * item.quantity)
       return `
         <tr>
-          <td>${esc(localTitle)}</td><td>${esc(item.sku ?? '')}</td><td>${unitPrice}</td><td>${item.quantity}</td><td>${lineTotal}</td>
+          <td>${esc(localTitle)}${item.variantLabel ? `<br>${esc(item.variantLabel)}` : ''}</td><td>${esc(item.sku ?? '')}</td><td>${unitPrice}</td><td>${item.quantity}</td><td>${lineTotal}</td>
         </tr>`
     })
     .join('')

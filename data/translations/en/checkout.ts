@@ -26,6 +26,7 @@ const enCheckout: Record<string, string> = {
     'checkout.shippingLoadFailed': 'Could not load delivery settings. Reload the page.',
     'order.trackShipment': 'Track shipment',
   'checkout.errors.productUnavailable': 'Some items are not available for sale right now. Remove them from the cart and try again.',
+  'checkout.errors.invalidVariant': 'The selected product option is no longer available. Choose the option again and try again.',
   'checkout.errors.paymentGateway': 'Unable to connect to Paysera. Choose bank transfer or try again later.',
   'cart.title': 'Cart',
   'cart.openFullCart': 'Open full screen',

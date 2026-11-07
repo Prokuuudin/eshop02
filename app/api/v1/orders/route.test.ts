@@ -17,6 +17,7 @@ vi.mock('@/lib/api-helpers', () => ({
 vi.mock('@/lib/server-pricing', () => ({
   recomputeOrderPricing: pricingMock,
   ProductUnavailableError: class ProductUnavailableError extends Error { constructor(public items: string[]) { super('unavailable') } },
+  InvalidVariantSelectionError: class InvalidVariantSelectionError extends Error { constructor(public items: string[]) { super('invalid variant') } },
 }))
 vi.mock('@/lib/orders-data-store', async () => {
   class InsufficientStockError extends Error { constructor(public items: string[]) { super('stock') } }

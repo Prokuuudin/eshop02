@@ -30,6 +30,7 @@ import {
   getServerPromoDiscountPct,
   recomputeOrderPricing,
   evaluatePromoCode,
+  InvalidVariantSelectionError,
   ProductUnavailableError,
 } from './server-pricing'
 
@@ -706,5 +707,38 @@ describe('recomputeOrderPricing — second_item_discount campaigns', () => {
     const r = await recomputeOrderPricing({ items: [{ id: 'a', quantity: 1 }, { id: 'b', quantity: 1 }], deliveryMethod: 'pickup', userBonusBalance: null })
     expect(r.discount).toBe(0.01)
     expect(r.total).toBe(19.99)
+  })
+})
+
+describe('variant price adjustments', () => {
+  const chair = {
+    id: 'chair', price: 781, oldPrice: 900, bulkPricingTiers: null, brand: 'B', category: 'equipment', bonusRate: 0,
+    technicalSpecs: { __variantGroupsJson: JSON.stringify([{ name: 'Base', required: true, options: [
+      { value: 'XT', priceAdjustment: -42.5 }, { value: 'XM', priceAdjustment: 46.04 }, { value: 'Free', priceAdjustment: -781 },
+    ] }]) },
+  }
+
+  it('prices the chosen option from the DB row and moves the old price with it', async () => {
+    productFindManyMock.mockResolvedValue([chair])
+    const [line] = await resolveLineItems([{ id: 'chair', quantity: 2, price: 1, selectedVariants: [{ groupName: 'Base', value: 'XM', priceAdjustment: -700 }] }])
+    expect(line).toMatchObject({ price: 827.04, oldPrice: 946.04, selectedVariants: [{ groupName: 'Base', value: 'XM', priceAdjustment: 46.04 }] })
+    expect(line.invalidVariant).toBeUndefined()
+  })
+
+  it('a preview of an invalid choice gets the base price and a flag, never an error', async () => {
+    productFindManyMock.mockResolvedValue([chair])
+    const lines = await resolveLineItems([
+      { id: 'chair', quantity: 1, selectedVariants: [{ groupName: 'Base', value: 'XZ' }] },
+      { id: 'chair', quantity: 1 },
+      { id: 'chair', quantity: 1, selectedVariants: [{ groupName: 'Base', value: 'Free' }] },
+    ])
+    expect(lines.map((line) => [line.price, line.invalidVariant])).toEqual([[781, true], [781, true], [781, true]])
+  })
+
+  it('an order with an invalid choice is refused before any discount is computed', async () => {
+    productFindManyMock.mockResolvedValue([chair])
+    await expect(recomputeOrderPricing({ items: [{ id: 'chair', quantity: 1, selectedVariants: [{ groupName: 'Base', value: 'XZ' }] }] }))
+      .rejects.toBeInstanceOf(InvalidVariantSelectionError)
+    expect(promoCodeFindFirstMock).not.toHaveBeenCalled()
   })
 })

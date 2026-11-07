@@ -26,6 +26,7 @@ const ruCheckout: Record<string, string> = {
     'checkout.shippingLoadFailed': 'Не удалось загрузить условия доставки. Обновите страницу.',
     'order.trackShipment': 'Отследить посылку',
   'checkout.errors.productUnavailable': 'Некоторые товары сейчас не продаются. Удалите их из корзины и попробуйте снова.',
+  'checkout.errors.invalidVariant': 'Выбранная комплектация товара больше недоступна. Выберите вариант заново и попробуйте снова.',
   'checkout.errors.paymentGateway': 'Не удалось подключить оплату Paysera. Выберите банковский перевод или попробуйте позже.',
   'cart.title': 'Корзина',
   'cart.openFullCart': 'Открыть на весь экран',

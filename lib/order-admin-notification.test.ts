@@ -77,6 +77,15 @@ describe('admin order notification', () => {
     expect(html).not.toContain('>paysera<')
   })
 
+  it('shows the chosen configuration, escaped, under the product title', async () => {
+    const { html } = await buildAdminOrderNotificationEmail({
+      ...ORDER,
+      items: [{ ...ORDER.items[0], price: 827.04, quantity: 1, variantLabel: 'Bāze: BASE XM <b>, Krāsa: Black' }],
+    })
+    expect(html).toContain('Bāze: BASE XM &lt;b&gt;, Krāsa: Black')
+    expect(html).toContain('827')
+  })
+
   it('renders a separate escaped customer-comment block only when a comment exists', async () => {
     const { html } = await buildAdminOrderNotificationEmail({
       ...ORDER,

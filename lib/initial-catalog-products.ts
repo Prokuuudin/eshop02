@@ -212,11 +212,20 @@ export async function getCatalogFacets({
       (!category || p.category === category) &&
       matchesSubcategories(p, subcategories)
   )
-  const availableBrands = Array.from(new Set(brandBase.map((p) => brandSlug(p.brand))))
+  // One pass over brandBase: re-filtering it per brand (brands × products brandSlug calls)
+  // cost ~200 ms CPU per catalog request on the live catalog size.
+  const ownCounts = new Map<string, number>()
+  for (const p of brandBase) {
+    const brandId = brandSlug(p.brand)
+    ownCounts.set(brandId, (ownCounts.get(brandId) ?? 0) + 1)
+  }
+  const availableBrands = Array.from(ownCounts.keys())
+  // A selected brand counts alone; an unselected one counts together with the current selection.
+  const selectedCount = Array.from(new Set(brands)).reduce((sum, brandId) => sum + (ownCounts.get(brandId) ?? 0), 0)
   const brandCounts: Record<string, number> = {}
   for (const brandId of availableBrands) {
-    const nextBrands = brands.includes(brandId) ? [brandId] : [...brands, brandId]
-    brandCounts[brandId] = brandBase.filter((p) => nextBrands.includes(brandSlug(p.brand))).length
+    const own = ownCounts.get(brandId) ?? 0
+    brandCounts[brandId] = brands.includes(brandId) ? own : selectedCount + own
   }
 
   return { groupCounts, subcatCounts, onSaleCount, availableBrands, brandCounts }

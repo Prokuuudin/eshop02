@@ -70,6 +70,36 @@ describe('getInitialCatalogProducts query bounds', () => {
   })
 })
 
+describe('getCatalogFacets brand facet', () => {
+  const product = (id: string, brand: string, category: 'hair' | 'face' = 'hair') =>
+    ({ id, title: id, brand, price: 10, rating: 0, category, stock: 1 })
+
+  beforeEach(() => {
+    vi.mocked(getStorefrontFacetProducts).mockResolvedValue([
+      product('1', 'Zeta Pro'), product('2', 'Alpha'), product('3', 'Zeta Pro'),
+      product('4', 'Mid Brand', 'face'), product('5', 'Alpha'), product('6', 'Zéta Pro'),
+    ])
+  })
+
+  it('lists brands in first-appearance order with their own counts when nothing is selected', async () => {
+    const facets = await getCatalogFacets({ language: 'lv' })
+    expect(facets.availableBrands).toEqual(['zeta-pro', 'alpha', 'mid-brand'])
+    expect(facets.brandCounts).toEqual({ 'zeta-pro': 3, alpha: 2, 'mid-brand': 1 })
+  })
+
+  it('counts a selected brand alone and an unselected brand together with the selection', async () => {
+    const facets = await getCatalogFacets({ language: 'lv', brands: ['alpha', 'alpha', 'unknown'] })
+    expect(facets.availableBrands).toEqual(['zeta-pro', 'alpha', 'mid-brand'])
+    expect(facets.brandCounts).toEqual({ 'zeta-pro': 5, alpha: 2, 'mid-brand': 3 })
+  })
+
+  it('applies the other filters before counting brands', async () => {
+    const facets = await getCatalogFacets({ language: 'lv', category: 'hair', brands: ['zeta-pro'] })
+    expect(facets.availableBrands).toEqual(['zeta-pro', 'alpha'])
+    expect(facets.brandCounts).toEqual({ 'zeta-pro': 3, alpha: 5 })
+  })
+})
+
 describe('guest price oracle (B2B prices must not be inferable)', () => {
   // Storage order differs from both price orders, so an applied price sort is observable.
   const catalog = [

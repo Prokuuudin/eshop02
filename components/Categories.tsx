@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { useTranslation } from '@/lib/use-translation';
 import { useCategoriesConfig } from '@/lib/use-categories-config';

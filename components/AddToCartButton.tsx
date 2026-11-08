@@ -1,6 +1,6 @@
 ﻿'use client'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { useTranslation } from '@/lib/use-translation'
 import { localizeVariantGroupName } from '@/lib/variant-group-label'
 import { Product, SelectedVariant } from '@/data/products'

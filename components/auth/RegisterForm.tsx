@@ -1,6 +1,6 @@
 ﻿'use client';
 import React, { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Phone, Mail } from 'lucide-react';
 import { requestCardActivation, type CardActivationErrorCode } from '@/lib/auth';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 
 interface Tool {
     title: string;

@@ -1,7 +1,7 @@
 ﻿"use client"
 import React, { useState } from 'react'
 import { useTranslation } from '@/lib/use-translation'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { Button } from './ui/button'
 import { useAuthStore } from '@/lib/auth-store'
 import { useCategoriesConfig } from '@/lib/use-categories-config'

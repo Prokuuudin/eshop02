@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowRight, MessageSquareText } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 

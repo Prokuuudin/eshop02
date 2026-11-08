@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import type { ReactElement } from 'react'
 import { MapPin, Pencil, Trash2, ShoppingCart } from 'lucide-react'
 import ConfirmActionDialog from '@/components/ConfirmActionDialog'

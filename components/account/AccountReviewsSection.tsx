@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Star, MessageSquare, ChevronRight } from 'lucide-react';
 import { useTranslation } from '@/lib/use-translation';
 

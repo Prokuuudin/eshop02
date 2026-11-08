@@ -2,7 +2,7 @@
 import React from 'react';
 import { DeliveryLocationPicker } from '@/components/DeliveryLocationPicker';
 import Script from 'next/script';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { ClipboardCheck, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

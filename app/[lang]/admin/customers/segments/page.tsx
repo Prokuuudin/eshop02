@@ -1,7 +1,7 @@
 'use client';
 
 import { Hint } from '@/components/ui/tooltip';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import AdminGate from '@/components/admin/AdminGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -2,7 +2,7 @@
 
 import { Hint } from '@/components/ui/tooltip';
 import React, { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
 import {
     ArrowLeft, BookmarkPlus, ShoppingCart, Pencil, Trash2,

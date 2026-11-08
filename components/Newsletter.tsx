@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { Button } from './ui/button'
 import { Checkbox } from './ui/checkbox'
 import { useTranslation } from '@/lib/use-translation'

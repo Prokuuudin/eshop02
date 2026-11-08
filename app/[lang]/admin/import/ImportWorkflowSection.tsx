@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import type { RowAction } from '@/app/api/admin/import/preview/route';
 import type { useAdminImportPage } from './useAdminImportPage';

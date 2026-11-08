@@ -1,8 +1,9 @@
 import 'server-only'
 
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
+import { ADMIN_ORDER_NOTIFICATION_TYPE } from '@/lib/order-admin-notification-constants'
 
-export const ADMIN_ORDER_NOTIFICATION_TYPE = 'admin_order_created'
+export { ADMIN_ORDER_NOTIFICATION_TYPE }
 export const ADMIN_ORDER_NOTIFICATION_INITIAL_DELAY_MS = 2 * 60 * 1000
 
 export type AdminOrderNotificationSource = 'checkout' | 'admin' | 'api_v1'

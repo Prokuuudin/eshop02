@@ -1,11 +1,7 @@
 async function main(): Promise<void> {
   if (process.argv.length > 2) throw new Error('This scheduled entry point does not accept arguments')
 
-  const [{ processAdminOrderNotificationOutbox }, { logOperationalEvent }, { prisma }] = await Promise.all([
-    import('@/lib/order-admin-notification-worker'),
-    import('@/lib/observability'),
-    import('@/lib/prisma'),
-  ])
+  const { logOperationalEvent } = await import('@/lib/observability')
 
   if (!process.env.CONTACT_TO?.trim()) {
     logOperationalEvent({
@@ -18,6 +14,20 @@ async function main(): Promise<void> {
   }
 
   const totals = { claimed: 0, sent: 0, retryScheduled: 0, failed: 0, recovered: 0 }
+
+  // Empty queue (the normal state): finish without loading Prisma and the worker.
+  // Unknown (null) falls through to the full run, which claims and reports as before.
+  const { hasOpenAdminOrderNotificationWork } = await import('@/lib/order-admin-notification-outbox-probe')
+  if (await hasOpenAdminOrderNotificationWork() === false) {
+    logOperationalEvent({ event: 'order_admin_email_outbox_run_completed', ...totals, openWork: false })
+    process.exitCode = 0
+    return
+  }
+
+  const [{ processAdminOrderNotificationOutbox }, { prisma }] = await Promise.all([
+    import('@/lib/order-admin-notification-worker'),
+    import('@/lib/prisma'),
+  ])
   try {
     for (let batch = 0; batch < 10; batch += 1) {
       const result = await processAdminOrderNotificationOutbox({ batchSize: 20 })

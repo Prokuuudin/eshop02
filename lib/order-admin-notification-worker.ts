@@ -10,7 +10,9 @@ import { logOperationalEvent } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import type { ServerOrder } from '@/lib/orders-data-types'
 
-export const ADMIN_ORDER_NOTIFICATION_MAX_ATTEMPTS = 12
+import { ADMIN_ORDER_NOTIFICATION_MAX_ATTEMPTS } from '@/lib/order-admin-notification-constants'
+
+export { ADMIN_ORDER_NOTIFICATION_MAX_ATTEMPTS }
 export const ADMIN_ORDER_NOTIFICATION_STALE_AFTER_MS = 15 * 60 * 1000
 export const ADMIN_ORDER_NOTIFICATION_RETRY_BASE_MS = 60 * 1000
 export const ADMIN_ORDER_NOTIFICATION_RETRY_CAP_MS = 6 * 60 * 60 * 1000

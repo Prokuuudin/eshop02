@@ -13,7 +13,7 @@ import InvoiceList from '@/components/InvoiceList'
 import InvoiceViewer from '@/components/InvoiceViewer'
 import AccountPageHero from '@/components/account/AccountPageHero'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import type { Invoice, PaymentRecord } from '@/lib/invoices-store'
 
 export default function InvoicesPage(): React.ReactElement {

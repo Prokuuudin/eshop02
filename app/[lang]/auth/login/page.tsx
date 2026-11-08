@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import type { ReactElement } from 'react'
 import LoginForm from '@/components/auth/LoginForm'
 import { Button } from '@/components/ui/button'

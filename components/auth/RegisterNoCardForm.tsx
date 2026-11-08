@@ -1,7 +1,7 @@
 ﻿'use client';
 import React, { useRef, useState } from 'react';
 import Script from 'next/script';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Upload, X, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

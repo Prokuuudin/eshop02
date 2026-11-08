@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import StickyTableHead from '@/components/admin/StickyTableHead';
 import { Info } from 'lucide-react';

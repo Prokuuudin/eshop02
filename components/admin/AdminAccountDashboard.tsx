@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { reportAdminPartial } from '@/lib/admin-ui-errors';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import {
     Cog,

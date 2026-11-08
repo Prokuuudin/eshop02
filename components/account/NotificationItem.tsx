@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { AlertTriangle, Check, CheckCircle, Info, Tag, X } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import type { Notification, NotificationType } from '@/lib/notifications-store'

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import AccountOrderCard from '@/components/account/AccountOrderCard';
 import type { Order } from '@/lib/orders-store';
 

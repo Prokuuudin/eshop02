@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { ChevronDown } from 'lucide-react';
 import { translations } from '@/data/translations';
 import { CONTENT_REGISTRY } from '@/lib/content-registry';

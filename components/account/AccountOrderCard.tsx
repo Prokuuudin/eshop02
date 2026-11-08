@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, BookmarkPlus, CalendarDays, Coins, Package, RotateCcw, Truck } from 'lucide-react'
 import { formatDate, formatEuro } from '@/lib/utils'

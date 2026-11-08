@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useSavedAddresses } from '@/lib/saved-addresses-store';

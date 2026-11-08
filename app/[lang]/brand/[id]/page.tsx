@@ -1,6 +1,6 @@
 ﻿import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { notFound } from 'next/navigation';
 import { getSiteUrl } from '@/lib/site-url';
 import { translations, type Language } from '@/data/translations';

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { useTranslation } from '@/lib/use-translation'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
 import { localizePath } from '@/lib/i18n-routing'

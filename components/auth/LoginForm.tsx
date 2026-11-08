@@ -1,7 +1,7 @@
 ﻿'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import {
     confirmMfaEnrollment,

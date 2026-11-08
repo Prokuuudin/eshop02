@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { type Product } from '@/data/products'
 import { getCurrentUser } from '@/lib/auth'
 import { useRFQStore, mapServerRfq } from '@/lib/rfq-store'

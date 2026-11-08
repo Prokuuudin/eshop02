@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { UserCircle2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';

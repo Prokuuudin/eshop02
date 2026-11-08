@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { useTranslation } from '@/lib/use-translation';

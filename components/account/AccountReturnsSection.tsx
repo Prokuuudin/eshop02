@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { RotateCcw, ChevronRight, Package } from 'lucide-react';
 import { useReturnsStore, mapServerReturn, RETURN_REASON_LABELS, type ReturnReason, ReturnStatus } from '@/lib/returns-store';
 import { useAuthStore } from '@/lib/auth-store';

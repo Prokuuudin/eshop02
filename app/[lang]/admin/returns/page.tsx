@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { type ReturnStatus, type ReturnReason, getReturnReasonLabels } from '@/lib/returns-store';
 import { formatDate, formatEuro } from '@/lib/utils';

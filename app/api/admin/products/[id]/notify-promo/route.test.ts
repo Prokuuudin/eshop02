@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
   queue: Promise.resolve() as Promise<unknown>,
   subscribers: [] as Subscriber[],
   product: null as null | { id: string; title: string; isDeleted: boolean },
+  loseCommitResponse: false,
   requireAdminPermission: vi.fn(),
   appendServerAudit: vi.fn(),
   sendEmail: vi.fn(),
@@ -56,6 +57,10 @@ vi.mock('@/lib/prisma', () => ({
         const staged = structuredClone(h.state)
         const result = await run(db(staged))
         h.state = staged
+        if (h.loseCommitResponse && staged.notifications.length > 0) {
+          h.loseCommitResponse = false
+          throw new Error('Connection lost after commit')
+        }
         return result
       } finally {
         release()
@@ -91,6 +96,7 @@ beforeEach(() => {
   h.state = { audits: [], notifications: [] }
   h.subscribers = structuredClone(SUBSCRIBERS)
   h.product = { id: 'p1', title: 'Secret Shampoo', isDeleted: false }
+  h.loseCommitResponse = false
   h.requireAdminPermission.mockResolvedValue({ id: 'admin-1', email: 'admin@test.com' })
   h.sendEmail.mockResolvedValue(undefined)
   h.appendServerAudit.mockImplementation(writeAudit)
@@ -186,6 +192,16 @@ describe('POST /api/admin/products/:id/notify-promo — delivery and audit', () 
     expect((await retry.json()).error).toBe('in_progress')
     expect(h.sendEmail).toHaveBeenCalledTimes(2)
     expect(h.state.notifications).toHaveLength(2)
+  })
+
+  it('does not duplicate notifications when the commit succeeded but its response was lost', async () => {
+    h.loseCommitResponse = true
+
+    expect((await post({}, 'promo-commit-response-lost')).status).toBe(500)
+    expect(await (await post({}, 'promo-commit-response-lost')).json()).toEqual({ ok: true, replayed: true })
+    expect(h.state.notifications).toHaveLength(2)
+    expect(h.state.audits).toHaveLength(2)
+    expect(h.sendEmail).toHaveBeenCalledTimes(2)
   })
 })
 

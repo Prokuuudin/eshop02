@@ -17,6 +17,8 @@ export const runtime = 'nodejs'
 const PROMO_EVENTS = { prepared: 'product.promo_notification_prepared', recorded: 'product.promo_notification_recorded' }
 type PromoResult = { channel: 'email+app'; sent: number; failed: number; skippedInvalidEmail: number; appNotifications: number }
 
+class PromoResultAuditError extends Error {}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -78,11 +80,18 @@ export async function POST(
     try {
       await prisma.$transaction(async (tx) => {
         if (data.length > 0) await tx.userNotification.createMany({ data })
-        await appendServerAudit(tx, req, actor, {
-          action: PROMO_EVENTS.recorded, ...target, requestId: batchId, after: result,
-        })
+        try {
+          await appendServerAudit(tx, req, actor, {
+            action: PROMO_EVENTS.recorded, ...target, requestId: batchId, after: result,
+          })
+        } catch (error) {
+          throw new PromoResultAuditError('Promo result audit failed before commit', { cause: error })
+        }
       })
     } catch (error) {
+      // Only fall back if the callback aborted before commit. A commit error
+      // can be reported after the notifications have already been persisted.
+      if (!(error instanceof PromoResultAuditError)) throw error
       logApiError('[admin/products/:id/notify-promo POST] result audit failed', error)
       if (data.length > 0) await prisma.userNotification.createMany({ data })
     }

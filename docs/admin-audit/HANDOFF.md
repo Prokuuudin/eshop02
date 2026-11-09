@@ -7,10 +7,20 @@
 - Ветка: `fix/2026-11-09-admin-audit-product-archive`.
 - Stacked base: `f53ea450753e1f2017d20a43701f1da1f20d85e9`, проверенный head открытого Draft PR #15 (`fix/2026-11-09-admin-audit-content-payment`).
 - Коммит реализации: `b0b5d5bb6bb520e958ae5f6bb9d4f94ec2c8f110`.
+- Коммит исправления архитектурного лимита: `eb7d3370966dde4382e16466f3d4877a14b393cc`.
 - Draft PR #16: https://github.com/Prokuuudin/eshop02/pull/16; base `fix/2026-11-09-admin-audit-content-payment`, поэтому diff содержит только работу с архивом товаров.
+- `static-and-unit` для исправленного SHA прошёл: https://github.com/Prokuuudin/eshop02/actions/runs/42618745522/job/129165119202.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 PR #15 был проверен через публичный GitHub API до создания ветки: `state=open`, `draft=true`, `merged=false`, head точно `f53ea450753e1f2017d20a43701f1da1f20d85e9`. Поэтому ветка создана от этого SHA, а не от `main` или release-ветки.
+
+## Исправление `static-and-unit` PR #16
+
+На head `ffe50351a7bd353254c7cfab33ae588dfb91f13d` CI воспроизводимо останавливался на `npm run audit:architecture`: `lib/product-overrides-store.ts: 803 lines (limit 800)`. Лимит и workflow не менялись.
+
+Минимальный связный блок `readProductOverridesTx`/`writeProductOverridesTx` вынесен в `lib/product-overrides-transaction.ts`. Вызовы остаются внутри callback той же Prisma-транзакции восстановления; порядок Product/archive/override mutation → `appendServerAudit` → commit не изменён. После выноса локальный architecture audit и одноимённый CI step проходят.
+
+GitHub `static-and-unit` на SHA `eb7d3370966dde4382e16466f3d4877a14b393cc` завершился `success`; внутри job также прошли lint, typecheck, security/architecture audits, unit, integration и ERP performance.
 
 ## Реализовано
 
@@ -72,6 +82,7 @@ UI и раньше отправлял по одному параллельном
 - `app/api/admin/products/restore/route.test.ts`
 - `hooks/admin/products/useProductsAdmin.ts`
 - `lib/product-overrides-store.ts`
+- `lib/product-overrides-transaction.ts`
 - `lib/product-overrides-store.test.ts`
 - `lib/product-archive-audit.test.ts`
 - `lib/admin-log-store.ts`
@@ -109,6 +120,9 @@ npm run test:unit
 npm run typecheck
 # PASS
 
+npm run audit:architecture
+# PASS: 956 source modules
+
 npm run lint
 # PASS: 0 errors, 63 pre-existing warnings; изменённые файлы без предупреждений
 
@@ -125,9 +139,9 @@ git diff --check
 # PASS
 ```
 
-Изолированная PostgreSQL недоступна: TCP `127.0.0.1:5432` закрыт, Docker daemon отсутствует. Поэтому runtime rollback на PostgreSQL не проверен. Рабочая Neon принципиально не использовалась. Integration/e2e/build также не запускались: для них нет изолированной БД, а целевые route/store/unit проверки и полный unit-suite прошли.
+Изолированная PostgreSQL недоступна: TCP `127.0.0.1:5432` закрыт, Docker daemon отсутствует. Поэтому runtime rollback на PostgreSQL не проверен. Рабочая Neon принципиально не использовалась. Локально integration/e2e/build не запускались; целевые тесты и полный unit-suite прошли, а CI `static-and-unit` дополнительно подтвердил свой integration step.
 
-## Browser checks PR #15
+## Browser checks PR #15/#16
 
 На head `f53ea450…` в GitHub Actions run `42610957972` упали три browser job до запуска самих тестов:
 
@@ -136,6 +150,8 @@ git diff --check
 - `firefox-smoke` — шаг `npx playwright install --with-deps firefox`.
 
 GitHub API подтверждает job/step и runner label `ubuntu-latest`. Среда `ubuntu26.04-x64` указана в передаче; публичная загрузка raw logs без авторизации вернула `403`, поэтому конкретный текст ошибки образа независимо не подтверждён. Это инфраструктурный сбой установки browser dependencies, а не падение browser assertions. Изменения workflow/CI находятся вне рамок этого PR и не вносились.
+
+На исправленном SHA PR #16 run `42618745522` картина та же: `static-and-unit`, encoding, Mailpit и performance проходят, а `accessibility-webkit`, `chromium-critical-smoke` и `firefox-smoke` отдельно падают до browser assertions. Эти Playwright failures не смешивать с результатом `static-and-unit`; CI-конфигурация намеренно не изменялась.
 
 ## Уточнённая карта покрытия
 

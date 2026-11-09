@@ -8,7 +8,7 @@
 - Stacked base: `e91fc0fa1c7c3675459af9b12ee8f4c6e97f6fe8`, проверенный head открытого Draft PR #18 (`fix/2026-11-09-admin-audit-product-archive-move`).
 - Проверка перед созданием ветки: PR #18 был `open`, `draft=true`, `merged=false`; его head точно совпадал с `e91fc0fa1c7c3675459af9b12ee8f4c6e97f6fe8`, а `static-and-unit` на нём имел результат `success`.
 - Коммит реализации: `9272528410adc406a3483004a8481321559cc749`.
-- Draft PR: будет добавлен после push; base должен быть `fix/2026-11-09-admin-audit-product-archive-move`, чтобы diff содержал только аудит ценовых групп.
+- Draft PR #19: https://github.com/Prokuuudin/eshop02/pull/19; base `fix/2026-11-09-admin-audit-product-archive-move`, поэтому diff содержит только аудит ценовых групп.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Реализовано

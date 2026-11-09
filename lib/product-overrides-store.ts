@@ -7,6 +7,7 @@ import { appendServerAudit } from '@/lib/server-audit';
 import type { ServerUser } from '@/lib/server-auth';
 import { attachCampaignOffersFromDb, readPromoCampaigns } from '@/lib/promo-campaigns';
 import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
+import { readProductOverridesTx, writeProductOverridesTx } from '@/lib/product-overrides-transaction';
 import {
     mapDbToProduct,
     mapProductToDbCreate,
@@ -505,22 +506,6 @@ const writeDeletedProductsArchiveTx = async (tx: TxClient, records: ArchivedProd
     });
 };
 
-const readProductOverridesTx = async (tx: TxClient): Promise<Record<string, ProductOverride>> => {
-    const row = await tx.keyValueSetting.findUnique({ where: { key: OVERRIDES_KEY } });
-    const parsed = row?.value as unknown;
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? (parsed as Record<string, ProductOverride>)
-        : {};
-};
-
-const writeOverridesMapTx = async (tx: TxClient, overrides: Record<string, ProductOverride>): Promise<void> => {
-    await tx.keyValueSetting.upsert({
-        where: { key: OVERRIDES_KEY },
-        create: { key: OVERRIDES_KEY, value: overrides as unknown as Prisma.InputJsonValue },
-        update: { value: overrides as unknown as Prisma.InputJsonValue },
-    });
-};
-
 const normalizeProductPatch = (
     patch: Partial<Omit<Product, 'id'>>
 ): Partial<Omit<Product, 'id'>> => {
@@ -746,9 +731,9 @@ export const restoreDeletedProduct = async (
                 // regardless of what the archived snapshot happened to hold.
                 delete patch.stock;
                 if (Object.keys(patch).length > 0) {
-                    const overrides = await readProductOverridesTx(tx);
+                    const overrides = await readProductOverridesTx(tx, OVERRIDES_KEY);
                     overrides[nextId] = { ...overrides[nextId], ...patch };
-                    await writeOverridesMapTx(tx, overrides);
+                    await writeProductOverridesTx(tx, OVERRIDES_KEY, overrides);
                 }
             }
         }

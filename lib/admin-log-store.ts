@@ -38,6 +38,10 @@ export type AdminLogAction =
   | 'card_rules_campaign.reset'
   | 'card_rules_campaign.batch_started'
   | 'card_rules_campaign.batch_completed'
+  | 'broadcast.prepared'
+  | 'broadcast.delivery_recorded'
+  | 'stock_alert.report_prepared'
+  | 'stock_alert.report_recorded'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -98,6 +102,10 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'card_rules_campaign.reset': 'Сброс рассылки правил карты',
   'card_rules_campaign.batch_started': 'Запуск пакета рассылки правил карты',
   'card_rules_campaign.batch_completed': 'Результат пакета рассылки правил карты',
+  'broadcast.prepared': 'Подготовка рассылки',
+  'broadcast.delivery_recorded': 'Результат рассылки',
+  'stock_alert.report_prepared': 'Подготовка отчёта по остаткам',
+  'stock_alert.report_recorded': 'Результат отправки отчёта по остаткам',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -145,6 +153,10 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'card_rules_campaign.reset': 'Card rules campaign reset',
   'card_rules_campaign.batch_started': 'Card rules campaign batch started',
   'card_rules_campaign.batch_completed': 'Card rules campaign batch result',
+  'broadcast.prepared': 'Broadcast prepared',
+  'broadcast.delivery_recorded': 'Broadcast delivery result',
+  'stock_alert.report_prepared': 'Stock report prepared',
+  'stock_alert.report_recorded': 'Stock report delivery result',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -192,6 +204,10 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'card_rules_campaign.reset': 'Kartes noteikumu kampaņa atiestatīta',
   'card_rules_campaign.batch_started': 'Kartes noteikumu kampaņas pakete sākta',
   'card_rules_campaign.batch_completed': 'Kartes noteikumu kampaņas paketes rezultāts',
+  'broadcast.prepared': 'Sagatavots e-pasta izsūtījums',
+  'broadcast.delivery_recorded': 'E-pasta izsūtījuma rezultāts',
+  'stock_alert.report_prepared': 'Sagatavots krājumu pārskats',
+  'stock_alert.report_recorded': 'Krājumu pārskata nosūtīšanas rezultāts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

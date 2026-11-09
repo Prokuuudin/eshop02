@@ -4,8 +4,12 @@ import { logApiError } from '@/lib/observability'
 import { requireAdmin } from '@/lib/server-auth'
 import { sendEmail } from '@/lib/mailer'
 import { prisma } from '@/lib/prisma'
+import { invitationBatchId } from '@/lib/invitation-dispatch'
+import { prepareAuditedDelivery, recordAuditedDelivery } from '@/lib/audited-delivery'
 
 export const runtime = 'nodejs'
+
+const STOCK_REPORT_EVENTS = { prepared: 'stock_alert.report_prepared', recorded: 'stock_alert.report_recorded' }
 
 type AlertProduct = {
   id: string
@@ -75,8 +79,8 @@ function buildHtml(products: AlertProduct[], threshold: number): string {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as {
@@ -92,6 +96,8 @@ export async function POST(request: NextRequest): Promise<Response> {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json({ error: 'invalid_email' }, { status: 400 })
     }
+    const batchId = invitationBatchId(request, actor.id, 'stock-alert-report')
+    if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
 
     const rows = await prisma.product.findMany({
       where: { isDeleted: false, stock: { gte: 0, lte: threshold } },
@@ -112,7 +118,30 @@ export async function POST(request: NextRequest): Promise<Response> {
     const lowCount = alertProducts.filter((p) => p.stock > 0).length
     const subject = `[Остатки] ${outCount} нет в наличии, ${lowCount} мало — ${new Date().toLocaleDateString('ru-RU')}`
 
-    await sendEmail(to, subject, html)
+    // Audit before SMTP: counts and threshold only — no address or report content.
+    // A technical retry replays a delivered report; a recorded failure may retry.
+    const target = { entityType: 'stock_alert_report', entityId: batchId }
+    const claim = await prepareAuditedDelivery({
+      request, actor, batchId, actions: STOCK_REPORT_EVENTS, target,
+      after: {
+        channel: 'email', threshold, products: alertProducts.length, outOfStock: outCount, lowStock: lowCount,
+        recipientIsActor: to.toLowerCase() === actor.email.toLowerCase(),
+      },
+      retryable: (result) => (result as { status?: string } | null)?.status === 'failed',
+    })
+    if (claim.kind === 'in_progress') return NextResponse.json({ error: 'in_progress' }, { status: 409 })
+    if (claim.kind === 'replay') {
+      const products = (claim.prepared as { products?: number } | null)?.products ?? 0
+      return NextResponse.json({ ok: true, sent: products, replayed: true })
+    }
+
+    try {
+      await sendEmail(to, subject, html)
+    } catch (error) {
+      await recordAuditedDelivery({ request, actor, batchId, actions: STOCK_REPORT_EVENTS, target, result: { channel: 'email', status: 'failed' } })
+      throw error
+    }
+    await recordAuditedDelivery({ request, actor, batchId, actions: STOCK_REPORT_EVENTS, target, result: { channel: 'email', status: 'sent' } })
 
     return NextResponse.json({ ok: true, sent: alertProducts.length })
   } catch (err) {

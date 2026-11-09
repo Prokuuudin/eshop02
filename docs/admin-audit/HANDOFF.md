@@ -9,7 +9,7 @@
 - Перед созданием ветки GitHub подтвердил: PR #26 `open`, `draft=true`, `merged=false`, head точно `8f1e224921f5ffa3a4900b4bfe36452e6af45392`.
 - Коммит реализации: `1cf040ae10eed766fa4ff47fea707e3dcbff4e0f`.
 - Stacked Draft PR #27: https://github.com/Prokuuudin/eshop02/pull/27; base `fix/2026-11-09-admin-audit-promo-template-sends`.
-- Результат `static-and-unit` будет добавлен после проверки финального SHA.
+- Проверенный head до этого документационного обновления: `2a5efd2a41f364610553edb9297d15de9ce3d998`; `static-and-unit` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42704103387/job/129456212408.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Реализовано
@@ -105,6 +105,8 @@ npm run check:encoding
 git diff --check
 # PASS
 ```
+
+GitHub `static-and-unit` на SHA `2a5efd2a41f364610553edb9297d15de9ce3d998` прошёл: lint, typecheck, security/architecture audits, unit, integration и ERP performance завершились успешно. Следующий коммит меняет только этот handoff; его CI нужно проверить как финальный branch head.
 
 ## Карта покрытия
 

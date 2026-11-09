@@ -20,8 +20,8 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const gate = await requireAdmin()
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
   const contentLength = Number(request.headers.get('content-length') ?? 0)
   if (contentLength > MAX_BACKUP_BYTES) return NextResponse.json({ error: 'backup_too_large' }, { status: 413 })
   try {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const body = JSON.parse(raw) as { backup?: unknown; confirmation?: string }
     if (body.confirmation !== 'RESTORE CONFIGURATION') return NextResponse.json({ error: 'restore_confirmation_required' }, { status: 400 })
     validateConfigurationBackup(body.backup)
-    const restored = await restoreConfigurationBackup(body.backup)
+    const restored = await restoreConfigurationBackup(body.backup, { actor, request })
     return NextResponse.json({ ok: true, restored })
   } catch {
     return NextResponse.json({ error: 'invalid_or_failed_restore' }, { status: 400 })

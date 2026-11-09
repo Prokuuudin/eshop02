@@ -44,4 +44,12 @@ describe('administrator audit event labels', () => {
     expect(labels['price_group.product_price_set']).toBe(priceSet)
     expect(labels['price_group.product_price_removed']).toBe(priceRemoved)
   })
+
+  it.each([
+    ['ru', 'Восстановление конфигурации'],
+    ['lv', 'Konfigurācija atjaunota'],
+    ['en', 'Configuration restored'],
+  ] as const)('names the configuration restore event in %s', (language, label) => {
+    expect(getAdminActionLabels(language)['settings.configuration_restored']).toBe(label)
+  })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 const txProductFindUnique = vi.hoisted(() => vi.fn())
 const txProductUpdateMany = vi.hoisted(() => vi.fn())
@@ -9,6 +9,7 @@ const notifyPriceChangeMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const notifyRestockMock = vi.hoisted(() => vi.fn(() => Promise.resolve()))
 const deleteProductAnyMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ success: true, products: [] })))
 const deleteProductsAnyMock = vi.hoisted(() => vi.fn((ids: string[]) => Promise.resolve({ success: true, deletedCount: ids.length })))
+const resetProductOverrideMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ success: true, products: [] })))
 const revalidateTagMock = vi.hoisted(() => vi.fn())
 
 vi.mock('next/cache', () => ({ revalidateTag: revalidateTagMock }))
@@ -32,6 +33,7 @@ vi.mock('@/lib/product-overrides-store', () => ({
   getAdminProducts: vi.fn().mockResolvedValue([]),
   deleteProductAny: deleteProductAnyMock,
   deleteProductsAny: deleteProductsAnyMock,
+  resetProductOverride: resetProductOverrideMock,
 }))
 vi.mock('@/lib/product-overrides-mapping', () => ({
   mapDbToProduct: (p: { id: string; title: string; price: number; stock: number }) => p,
@@ -60,6 +62,8 @@ beforeEach(() => {
   txKeyValueFindUnique.mockResolvedValue(null)
   txProductUpdateMany.mockResolvedValue({ count: 1 })
 })
+
+const actor = { id: 'admin-1' }
 
 it('fires notifyPriceChange when price actually changes', async () => {
   txProductFindUnique.mockResolvedValue({ id: 'p1', title: 'Shampoo', price: 10, stock: 5, revision: 1, isDeleted: false, isCustom: true, externalId: null })
@@ -117,6 +121,44 @@ it('bulk deletes unique selected product ids', async () => {
 
   expect(res.status).toBe(200)
   expect(deleteProductsAnyMock).toHaveBeenCalledTimes(1)
-  expect(deleteProductsAnyMock).toHaveBeenCalledWith(['p1', 'p2'])
+  expect(deleteProductsAnyMock).toHaveBeenCalledWith(['p1', 'p2'], {
+    actor,
+    request: req,
+  })
   await expect(res.json()).resolves.toMatchObject({ data: { deletedCount: 2 } })
+})
+
+it('passes the authenticated actor to a single archive move', async () => {
+  const req = new NextRequest('http://localhost/api/admin/products', {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'p1', permanently: true }),
+  })
+
+  expect((await DELETE(req)).status).toBe(200)
+  expect(deleteProductAnyMock).toHaveBeenCalledWith('p1', { actor, request: req })
+  expect(resetProductOverrideMock).not.toHaveBeenCalled()
+})
+
+it('passes the authenticated actor to an override reset', async () => {
+  const req = new NextRequest('http://localhost/api/admin/products', {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'p1' }),
+  })
+
+  expect((await DELETE(req)).status).toBe(200)
+  expect(resetProductOverrideMock).toHaveBeenCalledWith('p1', { actor, request: req })
+  expect(deleteProductAnyMock).not.toHaveBeenCalled()
+})
+
+it('does not mutate products when catalog.update is denied', async () => {
+  vi.mocked(requireAdminPermission).mockResolvedValue(new NextResponse(null, { status: 403 }) as never)
+  const req = new NextRequest('http://localhost/api/admin/products', {
+    method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'p1', permanently: true }),
+  })
+
+  expect((await DELETE(req)).status).toBe(403)
+  expect(deleteProductAnyMock).not.toHaveBeenCalled()
+  expect(deleteProductsAnyMock).not.toHaveBeenCalled()
+  expect(resetProductOverrideMock).not.toHaveBeenCalled()
 })

@@ -71,6 +71,22 @@ vi.mock('@/lib/prisma', () => {
           return staged.products[where.id]
         }),
         findUnique: vi.fn(async ({ where }: { where: { id: string } }) => staged.products[where.id] ?? null),
+        findMany: vi.fn(async ({ where }: { where: { id: { in: string[] }; isDeleted: boolean } }) => (
+          where.id.in.map((id) => staged.products[id]).filter((product) => product && product.isDeleted === where.isDeleted)
+        )),
+        delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+          const current = staged.products[where.id]
+          delete staged.products[where.id]
+          return current
+        }),
+        deleteMany: vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => {
+          for (const id of where.id.in) delete staged.products[id]
+          return { count: where.id.in.length }
+        }),
+        updateMany: vi.fn(async ({ where, data }: { where: { id: { in: string[] } }; data: Record<string, unknown> }) => {
+          for (const id of where.id.in) staged.products[id] = { ...staged.products[id], ...structuredClone(data) }
+          return { count: where.id.in.length }
+        }),
       },
     }
   }
@@ -90,6 +106,19 @@ vi.mock('@/lib/prisma', () => {
         release()
       }
     }),
+    product: {
+      findMany: vi.fn(async () => Object.values(harness.state.products).filter((product) => !product.isDeleted)),
+    },
+    keyValueSetting: {
+      findUnique: vi.fn(async ({ where }: { where: { key: string } }) => {
+        if (where.key === 'product-overrides') {
+          return Object.keys(harness.state.overrides).length > 0
+            ? { key: where.key, value: structuredClone(harness.state.overrides), updatedAt: new Date() }
+            : null
+        }
+        return null
+      }),
+    },
   }
   return { prisma }
 })
@@ -102,11 +131,21 @@ vi.mock('@/lib/server-audit', () => ({
     input: Record<string, unknown>,
   ) => {
     if (harness.failAudit) throw new Error('audit unavailable')
-    tx.__audits.push({ actorId: actor.id, requestId: request.headers.get('x-request-id'), input })
+    tx.__audits.push({
+      actorId: actor.id,
+      requestId: typeof input.requestId === 'string' ? input.requestId : request.headers.get('x-request-id'),
+      input,
+    })
   }),
 }))
 
-import { purgeDeletedProductArchive, restoreDeletedProduct } from '@/lib/product-overrides-store'
+import {
+  deleteProductAny,
+  deleteProductsAny,
+  purgeDeletedProductArchive,
+  resetProductOverride,
+  restoreDeletedProduct,
+} from '@/lib/product-overrides-store'
 
 const actor = { id: 'admin-1', email: 'admin@example.test' } as never
 
@@ -130,6 +169,20 @@ function archived(id: string, source: 'base' | 'custom' = 'custom'): Archived {
       category: 'hair',
       stock: 2,
     },
+  }
+}
+
+function activeProduct(id: string, isCustom = false): Record<string, unknown> {
+  return {
+    id,
+    title: `Product ${id}`,
+    brand: 'Hairshop',
+    price: 12.5,
+    rating: 0,
+    category: 'hair',
+    stock: 2,
+    isCustom,
+    isDeleted: false,
   }
 }
 
@@ -254,6 +307,130 @@ describe('product archive permanent audit', () => {
     })).rejects.toThrow('audit unavailable')
 
     expect(harness.state.archive.map((item) => item.id)).toEqual(['p1'])
+    expect(harness.state.audits).toEqual([])
+  })
+})
+
+describe('product archive move and override reset audit', () => {
+  it('moves one base product to the archive and records the real transition', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+
+    const result = await deleteProductAny('p1', {
+      actor,
+      request: request('/api/admin/products'),
+    })
+
+    expect(result.success).toBe(true)
+    expect(harness.state.products.p1.isDeleted).toBe(true)
+    expect(harness.state.archive).toHaveLength(1)
+    expect(harness.state.archive[0]).toMatchObject({ id: 'p1', source: 'base' })
+    expect(harness.state.audits[0]).toMatchObject({
+      actorId: 'admin-1',
+      input: {
+        action: 'product.archived',
+        entityType: 'product',
+        entityId: 'p1',
+        entityTitle: 'Product p1',
+        before: { archived: false, source: 'base' },
+        after: expect.objectContaining({ archived: true, source: 'base' }),
+      },
+    })
+  })
+
+  it('serializes concurrent archive retries without replacing the real event', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+    const audit = { actor, request: request('/api/admin/products') }
+
+    const results = await Promise.all([
+      deleteProductAny('p1', audit),
+      deleteProductAny('p1', audit),
+    ])
+
+    expect(results.filter((result) => result.success)).toHaveLength(1)
+    expect(harness.state.archive).toHaveLength(1)
+    expect(harness.state.audits).toHaveLength(1)
+  })
+
+  it('rolls back the product and archive when archive-move audit fails', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+    harness.failAudit = true
+
+    await expect(deleteProductAny('p1', {
+      actor,
+      request: request('/api/admin/products'),
+    })).rejects.toThrow('audit unavailable')
+
+    expect(harness.state.products.p1.isDeleted).toBe(false)
+    expect(harness.state.archive).toEqual([])
+    expect(harness.state.audits).toEqual([])
+  })
+
+  it('archives every changed bulk item with one shared request id', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+    harness.state.products.p2 = activeProduct('p2', true)
+
+    const result = await deleteProductsAny(['p1', 'p2'], {
+      actor,
+      request: request('/api/admin/products'),
+    })
+
+    expect(result).toEqual({ success: true, deletedCount: 2 })
+    expect(harness.state.archive.map((item) => item.id).sort()).toEqual(['p1', 'p2'])
+    expect(harness.state.products.p1.isDeleted).toBe(true)
+    expect(harness.state.products.p2).toBeUndefined()
+    expect(harness.state.audits.map((row) => row.input.entityId).sort()).toEqual(['p1', 'p2'])
+    expect(harness.state.audits[0].requestId).toBeTruthy()
+    expect(new Set(harness.state.audits.map((row) => row.requestId)).size).toBe(1)
+  })
+
+  it('keeps bulk archive atomic when one selected id is missing', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+
+    const result = await deleteProductsAny(['p1', 'missing'], {
+      actor,
+      request: request('/api/admin/products'),
+    })
+
+    expect(result.success).toBe(false)
+    expect(harness.state.products.p1.isDeleted).toBe(false)
+    expect(harness.state.archive).toEqual([])
+    expect(harness.state.audits).toEqual([])
+  })
+
+  it('resets an existing override once and does not audit the repeat', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+    harness.state.overrides = { p1: { price: 99 }, p2: { title: 'Keep' } }
+    const audit = { actor, request: request('/api/admin/products') }
+
+    await resetProductOverride('p1', audit)
+    await resetProductOverride('p1', audit)
+
+    expect(harness.state.overrides).toEqual({ p2: { title: 'Keep' } })
+    expect(harness.state.audits).toHaveLength(1)
+    expect(harness.state.audits[0]).toMatchObject({
+      actorId: 'admin-1',
+      input: {
+        action: 'product.override_reset',
+        entityType: 'product',
+        entityId: 'p1',
+        entityTitle: 'Product p1',
+        before: { override: { price: 99 } },
+        after: { override: null },
+      },
+    })
+  })
+
+  it('rolls back an override reset when its audit append fails', async () => {
+    harness.state.products.p1 = activeProduct('p1')
+    harness.state.overrides = { p1: { price: 99 } }
+    harness.failAudit = true
+
+    await expect(resetProductOverride('p1', {
+      actor,
+      request: request('/api/admin/products'),
+    })).rejects.toThrow('audit unavailable')
+
+    expect(harness.state.overrides).toEqual({ p1: { price: 99 } })
     expect(harness.state.audits).toEqual([])
   })
 })

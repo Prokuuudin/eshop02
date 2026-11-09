@@ -21,4 +21,14 @@ describe('administrator audit event labels', () => {
     expect(labels['product.restored']).toBe(restored)
     expect(labels['product.permanently_deleted']).toBe(permanentlyDeleted)
   })
+
+  it.each([
+    ['ru', 'Перенос товара в архив', 'Сброс переопределения товара'],
+    ['lv', 'Produkts pārvietots uz arhīvu', 'Produkta pārrakstījums atiestatīts'],
+    ['en', 'Product moved to archive', 'Product override reset'],
+  ] as const)('names product archive-move events in %s', (language, archived, overrideReset) => {
+    const labels = getAdminActionLabels(language)
+    expect(labels['product.archived']).toBe(archived)
+    expect(labels['product.override_reset']).toBe(overrideReset)
+  })
 })

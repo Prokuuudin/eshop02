@@ -1,13 +1,17 @@
 import { cache } from 'react';
-import type { NextRequest } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
-import { appendServerAudit } from '@/lib/server-audit';
-import type { ServerUser } from '@/lib/server-auth';
 import { attachCampaignOffersFromDb, readPromoCampaigns } from '@/lib/promo-campaigns';
 import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
-import { readProductOverridesTx, writeProductOverridesTx } from '@/lib/product-overrides-transaction';
+import {
+    appendProductArchivedAudit,
+    appendProductPermanentlyDeletedAudit,
+    appendProductRestoredAudit,
+    type ProductAuditContext,
+} from '@/lib/product-archive-audit';
+import { readProductOverridesTx, resetProductOverrideTx, writeProductOverridesTx } from '@/lib/product-overrides-transaction';
 import {
     mapDbToProduct,
     mapProductToDbCreate,
@@ -572,17 +576,11 @@ export const upsertProductOverride = async (
 };
 
 export const resetProductOverride = async (
-    productId: string
+    productId: string,
+    audit: ProductAuditContext,
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
-    const dbProduct = await prisma.product.findUnique({ where: { id: productId } });
-    if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' };
-
-    const overrides = await getProductOverrides();
-    if (productId in overrides) {
-        delete overrides[productId];
-        await writeOverridesMap(overrides);
-    }
-
+    const result = await prisma.$transaction((tx) => resetProductOverrideTx(tx, OVERRIDES_KEY, productId, audit));
+    if (!result.success) return result;
     return { success: true, products: await getAdminProducts() };
 };
 
@@ -630,27 +628,27 @@ export const deleteCustomProduct = async (
 // archive record for a product that's already isDeleted in Postgres, with no
 // way to restore it short of direct DB access.
 export const deleteProductAny = async (
-    productId: string
+    productId: string,
+    audit: ProductAuditContext,
 ): Promise<{ success: true; products: Product[] } | { success: false; error: string }> => {
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
 
-    const dbProduct = await prisma.product.findUnique({ where: { id: nextId } });
-    if (!dbProduct || dbProduct.isDeleted) return { success: false, error: 'Товар не найден' };
-
-    const targetProduct = mapDbToProduct(dbProduct);
-
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
+
+        const dbProduct = await tx.product.findUnique({ where: { id: nextId } });
+        if (!dbProduct || dbProduct.isDeleted) return { success: false as const, error: 'Товар не найден' };
 
         const archive = await readDeletedProductsArchiveTx(tx);
         const nextArchive = archive.filter((e) => e.id !== nextId);
-        nextArchive.unshift({
+        const archived: ArchivedProductRecord = {
             id: nextId,
-            product: targetProduct,
+            product: mapDbToProduct(dbProduct),
             source: dbProduct.isCustom ? 'custom' : 'base',
             deletedAt: new Date().toISOString(),
-        });
+        };
+        nextArchive.unshift(archived);
         await writeDeletedProductsArchiveTx(tx, nextArchive);
 
         if (dbProduct.isCustom) {
@@ -658,17 +656,22 @@ export const deleteProductAny = async (
         } else {
             await tx.product.update({ where: { id: nextId }, data: { isDeleted: true } });
         }
+        await appendProductArchivedAudit(tx, audit, archived);
+        return { success: true as const };
     });
 
+    if (!result.success) return result;
     return { success: true, products: await getAdminProducts() };
 };
 
 export const deleteProductsAny = async (
-    productIds: string[]
+    productIds: string[],
+    audit: ProductAuditContext,
 ): Promise<{ success: true; deletedCount: number } | { success: false; error: string }> => {
     const ids = [...new Set(productIds.map((id) => id.trim()).filter(Boolean))];
     if (ids.length === 0) return { success: false, error: 'Не выбраны товары для удаления' };
 
+    const requestId = randomUUID();
     return prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`;
 
@@ -699,6 +702,7 @@ export const deleteProductsAny = async (
         if (baseIds.length > 0) {
             await tx.product.updateMany({ where: { id: { in: baseIds } }, data: { isDeleted: true } });
         }
+        for (const archived of nextRecords) await appendProductArchivedAudit(tx, audit, archived, requestId);
 
         return { success: true as const, deletedCount: rows.length };
     });
@@ -706,7 +710,7 @@ export const deleteProductsAny = async (
 
 export const restoreDeletedProduct = async (
     productId: string,
-    audit: { actor: ServerUser; request: NextRequest },
+    audit: ProductAuditContext,
 ): Promise<{ success: true } | { success: false; error: string }> => {
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
@@ -741,14 +745,7 @@ export const restoreDeletedProduct = async (
         const nextArchive = archive.filter((e) => e.id !== nextId);
         await writeDeletedProductsArchiveTx(tx, nextArchive);
 
-        await appendServerAudit(tx, audit.request, audit.actor, {
-            action: 'product.restored',
-            entityType: 'product',
-            entityId: nextId,
-            entityTitle: archived.product.title,
-            before: { archived: true, source: archived.source, deletedAt: archived.deletedAt },
-            after: { archived: false, source: archived.source },
-        });
+        await appendProductRestoredAudit(tx, audit, archived);
 
         return { success: true as const };
     });
@@ -756,7 +753,7 @@ export const restoreDeletedProduct = async (
 
 export const purgeDeletedProductArchive = async (
     productId: string,
-    audit: { actor: ServerUser; request: NextRequest },
+    audit: ProductAuditContext,
 ): Promise<
     { success: true; archive: ArchivedProductRecord[] } | { success: false; error: string }
 > => {
@@ -773,14 +770,7 @@ export const purgeDeletedProductArchive = async (
 
         const nextArchive = archive.filter((e) => e.id !== nextId);
         await writeDeletedProductsArchiveTx(tx, nextArchive);
-        await appendServerAudit(tx, audit.request, audit.actor, {
-            action: 'product.permanently_deleted',
-            entityType: 'product',
-            entityId: nextId,
-            entityTitle: archived.product.title,
-            before: { archived: true, source: archived.source, deletedAt: archived.deletedAt },
-            after: { archived: false, permanentlyDeleted: true, source: archived.source },
-        });
+        await appendProductPermanentlyDeletedAudit(tx, audit, archived);
         return { success: true as const, archive: nextArchive };
     });
 };

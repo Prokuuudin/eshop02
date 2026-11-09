@@ -12,6 +12,8 @@ export type AdminLogAction =
   | 'product.price_changed'
   | 'product.stock_changed'
   | 'product.deleted'
+  | 'product.archived'
+  | 'product.override_reset'
   | 'product.restored'
   | 'product.permanently_deleted'
   | 'product.created'
@@ -49,6 +51,8 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'product.price_changed':     'Изменение цены',
   'product.stock_changed':     'Изменение остатка',
   'product.deleted':           'Удаление товара',
+  'product.archived':          'Перенос товара в архив',
+  'product.override_reset':    'Сброс переопределения товара',
   'product.restored':          'Восстановление товара',
   'product.permanently_deleted': 'Окончательное удаление товара',
   'product.created':           'Создание товара',
@@ -73,6 +77,8 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'product.price_changed': 'Price changed',
   'product.stock_changed': 'Stock changed',
   'product.deleted': 'Product deleted',
+  'product.archived': 'Product moved to archive',
+  'product.override_reset': 'Product override reset',
   'product.restored': 'Product restored',
   'product.permanently_deleted': 'Product permanently deleted',
   'product.created': 'Product created',
@@ -97,6 +103,8 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'product.price_changed': 'Cena mainīta',
   'product.stock_changed': 'Atlikums mainīts',
   'product.deleted': 'Produkts dzēsts',
+  'product.archived': 'Produkts pārvietots uz arhīvu',
+  'product.override_reset': 'Produkta pārrakstījums atiestatīts',
   'product.restored': 'Produkts atjaunots',
   'product.permanently_deleted': 'Produkts neatgriezeniski dzēsts',
   'product.created': 'Produkts izveidots',

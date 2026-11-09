@@ -375,7 +375,7 @@ describe('upsertProductOverride — diffing against the current merged value', (
 describe('resetProductOverride', () => {
   it('returns an error when the product does not exist', async () => {
     vi.mocked(prisma.product.findUnique).mockResolvedValue(null)
-    const result = await resetProductOverride('missing')
+    const result = await resetProductOverride('missing', auditContext)
     expect(result.success).toBe(false)
   })
 
@@ -388,7 +388,7 @@ describe('resetProductOverride', () => {
     } as never)
     vi.mocked(prisma.product.findMany).mockResolvedValue([])
 
-    const result = await resetProductOverride('p1')
+    const result = await resetProductOverride('p1', auditContext)
 
     expect(result.success).toBe(true)
     expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(
@@ -401,7 +401,7 @@ describe('resetProductOverride', () => {
     vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
     vi.mocked(prisma.product.findMany).mockResolvedValue([])
 
-    const result = await resetProductOverride('p1')
+    const result = await resetProductOverride('p1', auditContext)
 
     expect(result.success).toBe(true)
     expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
@@ -466,7 +466,7 @@ describe('restoreDeletedProduct', () => {
 describe('deleteProductAny', () => {
   it('returns an error when the product does not exist', async () => {
     vi.mocked(prisma.product.findUnique).mockResolvedValue(null)
-    const result = await deleteProductAny('missing')
+    const result = await deleteProductAny('missing', auditContext)
     expect(result.success).toBe(false)
   })
 
@@ -480,7 +480,7 @@ describe('deleteProductAny', () => {
     vi.mocked(prisma.product.update).mockResolvedValue({} as never)
     vi.mocked(prisma.product.findMany).mockResolvedValue([])
 
-    const result = await deleteProductAny('p1')
+    const result = await deleteProductAny('p1', auditContext)
 
     expect(result.success).toBe(true)
     // The archive-row read/write and the isDeleted flip must happen inside
@@ -507,7 +507,7 @@ describe('deleteProductAny', () => {
     vi.mocked(prisma.product.delete).mockResolvedValue({} as never)
     vi.mocked(prisma.product.findMany).mockResolvedValue([])
 
-    const result = await deleteProductAny('custom-1')
+    const result = await deleteProductAny('custom-1', auditContext)
 
     expect(result.success).toBe(true)
     expect(prisma.product.delete).toHaveBeenCalledWith({ where: { id: 'custom-1' } })

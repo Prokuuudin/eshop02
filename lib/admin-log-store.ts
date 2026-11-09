@@ -33,6 +33,11 @@ export type AdminLogAction =
   | 'invitation.delivery_recorded'
   | 'invitation.sms_recorded'
   | 'invitation.card_assigned'
+  | 'access_request.rejection_email_prepared'
+  | 'access_request.rejection_email_recorded'
+  | 'card_rules_campaign.reset'
+  | 'card_rules_campaign.batch_started'
+  | 'card_rules_campaign.batch_completed'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -88,6 +93,11 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Результат отправки приглашений',
   'invitation.sms_recorded': 'Запись SMS-приглашений',
   'invitation.card_assigned': 'Назначение карты клиенту',
+  'access_request.rejection_email_prepared': 'Подготовка письма об отклонении заявки',
+  'access_request.rejection_email_recorded': 'Результат письма об отклонении заявки',
+  'card_rules_campaign.reset': 'Сброс рассылки правил карты',
+  'card_rules_campaign.batch_started': 'Запуск пакета рассылки правил карты',
+  'card_rules_campaign.batch_completed': 'Результат пакета рассылки правил карты',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -130,6 +140,11 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Invitation delivery result',
   'invitation.sms_recorded': 'SMS invitations recorded',
   'invitation.card_assigned': 'Customer card assigned',
+  'access_request.rejection_email_prepared': 'Rejection email prepared',
+  'access_request.rejection_email_recorded': 'Rejection email delivery result',
+  'card_rules_campaign.reset': 'Card rules campaign reset',
+  'card_rules_campaign.batch_started': 'Card rules campaign batch started',
+  'card_rules_campaign.batch_completed': 'Card rules campaign batch result',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -172,6 +187,11 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Ielūgumu nosūtīšanas rezultāts',
   'invitation.sms_recorded': 'SMS ielūgumi reģistrēti',
   'invitation.card_assigned': 'Klientam piešķirta karte',
+  'access_request.rejection_email_prepared': 'Sagatavota pieteikuma noraidījuma vēstule',
+  'access_request.rejection_email_recorded': 'Pieteikuma noraidījuma vēstules rezultāts',
+  'card_rules_campaign.reset': 'Kartes noteikumu kampaņa atiestatīta',
+  'card_rules_campaign.batch_started': 'Kartes noteikumu kampaņas pakete sākta',
+  'card_rules_campaign.batch_completed': 'Kartes noteikumu kampaņas paketes rezultāts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

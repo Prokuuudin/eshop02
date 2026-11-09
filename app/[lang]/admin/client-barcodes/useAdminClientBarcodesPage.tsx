@@ -288,11 +288,14 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 return;
             }
             try {
-                await fetch('/api/admin/card-request', {
+                // One key per admin action: a technical retry is replayed by the
+                // server instead of sending the rejection email twice.
+                const notify = await fetch('/api/admin/card-request', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'reject', email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+                    body: JSON.stringify({ action: 'reject', accessRequestId: requestId, email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
                 });
+                if (!notify.ok) throw new Error('rejection_email_failed');
                 setMessage(l(`Заявка отклонена. Уведомление отправлено на ${email}.`, `Application rejected. A notification was sent to ${email}.`, `Pieteikums noraidīts. Paziņojums nosūtīts uz ${email}.`));
             } catch {
                 setMessage(l('Заявка отклонена. Не удалось отправить уведомление.', 'Application rejected. Failed to send the notification.', 'Pieteikums noraidīts. Paziņojumu neizdevās nosūtīt.'));

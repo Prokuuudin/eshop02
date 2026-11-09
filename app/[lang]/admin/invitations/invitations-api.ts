@@ -127,7 +127,7 @@ export async function updateCardCampaign(
 ): Promise<{ ok: boolean; data: CampaignResponse }> {
     return parseResponse(await fetch('/api/admin/card-rules-campaign', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: idempotencyHeaders(),
         body: JSON.stringify(reset ? { reset: true } : {}),
     }));
 }

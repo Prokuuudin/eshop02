@@ -248,13 +248,14 @@ export function useProductsAdmin(): ProductsAdminResult {
     if (ids.length === 0) return false;
     setArchiveBulkPending(true);
     setError('');
+    const requestId = crypto.randomUUID();
     // Fired concurrently: the server serializes the actual writes behind a single
     // advisory lock anyway, so awaiting one id at a time here only stacks up
     // client-to-Neon round-trip latency for no benefit (looked like a hang on 20+ items).
     const results = await Promise.allSettled(ids.map(async (id) => {
       const res = await fetch('/api/admin/products/restore', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-request-id': requestId },
         body: JSON.stringify({ id }),
       });
       const json = (await res.json()) as ApiEnvelope<unknown>;
@@ -280,10 +281,11 @@ export function useProductsAdmin(): ProductsAdminResult {
     if (ids.length === 0) return false;
     setArchiveBulkPending(true);
     setError('');
+    const requestId = crypto.randomUUID();
     const results = await Promise.allSettled(ids.map(async (id) => {
       const res = await fetch('/api/admin/products/archive', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-request-id': requestId },
         body: JSON.stringify({ id }),
       });
       const json = (await res.json()) as ApiEnvelope<unknown>;

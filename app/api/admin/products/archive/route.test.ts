@@ -10,7 +10,8 @@ import { DELETE, GET } from './route'
 const del = (body: unknown) => DELETE(new NextRequest('https://shop.test/api/admin/products/archive', { method: 'DELETE', body: JSON.stringify(body) }))
 
 describe('/api/admin/products/archive', () => {
-  beforeEach(() => { vi.clearAllMocks(); vi.mocked(requireAdmin).mockResolvedValue({ id: 'admin' } as never) })
+  const actor = { id: 'admin', email: 'admin@example.test' }
+  beforeEach(() => { vi.clearAllMocks(); vi.mocked(requireAdmin).mockResolvedValue(actor as never) })
   it('returns the admin gate response without reading the archive', async () => {
     vi.mocked(requireAdmin).mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }) as never)
     expect((await GET()).status).toBe(403)
@@ -18,6 +19,11 @@ describe('/api/admin/products/archive', () => {
   })
   it('rejects an empty purge target', async () => {
     expect((await del({ id: '  ' })).status).toBe(400)
+    expect(purgeDeletedProductArchive).not.toHaveBeenCalled()
+  })
+  it('does not purge when the admin gate rejects DELETE', async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }) as never)
+    expect((await del({ id: 'p1' })).status).toBe(403)
     expect(purgeDeletedProductArchive).not.toHaveBeenCalled()
   })
   it('propagates a domain rejection without claiming deletion', async () => {
@@ -28,6 +34,9 @@ describe('/api/admin/products/archive', () => {
     vi.mocked(purgeDeletedProductArchive).mockResolvedValue({ success: true, archive: [] })
     const response = await del({ id: ' p1 ' })
     expect(response.status).toBe(200)
-    expect(purgeDeletedProductArchive).toHaveBeenCalledWith('p1')
+    expect(purgeDeletedProductArchive).toHaveBeenCalledWith('p1', {
+      actor,
+      request: expect.any(NextRequest),
+    })
   })
 })

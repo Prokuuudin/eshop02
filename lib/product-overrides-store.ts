@@ -1,7 +1,10 @@
 import { cache } from 'react';
+import type { NextRequest } from 'next/server';
 import { type Product } from '@/data/products';
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
+import { appendServerAudit } from '@/lib/server-audit';
+import type { ServerUser } from '@/lib/server-auth';
 import { attachCampaignOffersFromDb, readPromoCampaigns } from '@/lib/promo-campaigns';
 import { ERP_PRICE_LOCKED_OVERRIDE_FIELDS, toStorefrontProducts } from '@/lib/product-sellability';
 import {
@@ -502,6 +505,22 @@ const writeDeletedProductsArchiveTx = async (tx: TxClient, records: ArchivedProd
     });
 };
 
+const readProductOverridesTx = async (tx: TxClient): Promise<Record<string, ProductOverride>> => {
+    const row = await tx.keyValueSetting.findUnique({ where: { key: OVERRIDES_KEY } });
+    const parsed = row?.value as unknown;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, ProductOverride>)
+        : {};
+};
+
+const writeOverridesMapTx = async (tx: TxClient, overrides: Record<string, ProductOverride>): Promise<void> => {
+    await tx.keyValueSetting.upsert({
+        where: { key: OVERRIDES_KEY },
+        create: { key: OVERRIDES_KEY, value: overrides as unknown as Prisma.InputJsonValue },
+        update: { value: overrides as unknown as Prisma.InputJsonValue },
+    });
+};
+
 const normalizeProductPatch = (
     patch: Partial<Omit<Product, 'id'>>
 ): Partial<Omit<Product, 'id'>> => {
@@ -619,7 +638,7 @@ export const deleteCustomProduct = async (
     return { success: true, products: await getAdminProducts() };
 };
 
-// All three functions below share one Postgres advisory lock keyed on the
+// The archive mutation functions below share one Postgres advisory lock keyed on the
 // archive's KV row: without it, two admins archiving/restoring *different*
 // products at nearly the same time can each read the array before either
 // writes, and the second write silently clobbers the first — losing an
@@ -701,19 +720,19 @@ export const deleteProductsAny = async (
 };
 
 export const restoreDeletedProduct = async (
-    productId: string
+    productId: string,
+    audit: { actor: ServerUser; request: NextRequest },
 ): Promise<{ success: true } | { success: false; error: string }> => {
     const nextId = productId.trim();
     if (!nextId) return { success: false, error: 'ID товара обязателен' };
 
-    const result = await prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
 
         const archive = await readDeletedProductsArchiveTx(tx);
         const archived = archive.find((e) => e.id === nextId);
         if (!archived) return { success: false as const, error: 'Товар не найден в архиве' };
 
-        let overridePatch: ProductOverride | null = null;
         if (archived.source === 'custom') {
             await tx.product.create({ data: mapProductToDbCreate(archived.product, true) });
         } else {
@@ -726,27 +745,33 @@ export const restoreDeletedProduct = async (
                 // Stock is never restored as an override — live inventory always wins,
                 // regardless of what the archived snapshot happened to hold.
                 delete patch.stock;
-                if (Object.keys(patch).length > 0) overridePatch = patch;
+                if (Object.keys(patch).length > 0) {
+                    const overrides = await readProductOverridesTx(tx);
+                    overrides[nextId] = { ...overrides[nextId], ...patch };
+                    await writeOverridesMapTx(tx, overrides);
+                }
             }
         }
 
         const nextArchive = archive.filter((e) => e.id !== nextId);
         await writeDeletedProductsArchiveTx(tx, nextArchive);
 
-        return { success: true as const, overridePatch };
+        await appendServerAudit(tx, audit.request, audit.actor, {
+            action: 'product.restored',
+            entityType: 'product',
+            entityId: nextId,
+            entityTitle: archived.product.title,
+            before: { archived: true, source: archived.source, deletedAt: archived.deletedAt },
+            after: { archived: false, source: archived.source },
+        });
+
+        return { success: true as const };
     });
-
-    if (!result.success) return result;
-
-    if (result.overridePatch) {
-        await upsertProductOverride(nextId, result.overridePatch);
-    }
-
-    return { success: true };
 };
 
 export const purgeDeletedProductArchive = async (
-    productId: string
+    productId: string,
+    audit: { actor: ServerUser; request: NextRequest },
 ): Promise<
     { success: true; archive: ArchivedProductRecord[] } | { success: false; error: string }
 > => {
@@ -757,11 +782,20 @@ export const purgeDeletedProductArchive = async (
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${DELETED_ARCHIVE_KEY}))`
 
         const archive = await readDeletedProductsArchiveTx(tx);
-        if (!archive.some((e) => e.id === nextId))
+        const archived = archive.find((e) => e.id === nextId);
+        if (!archived)
             return { success: false as const, error: 'Товар не найден в архиве' };
 
         const nextArchive = archive.filter((e) => e.id !== nextId);
         await writeDeletedProductsArchiveTx(tx, nextArchive);
+        await appendServerAudit(tx, audit.request, audit.actor, {
+            action: 'product.permanently_deleted',
+            entityType: 'product',
+            entityId: nextId,
+            entityTitle: archived.product.title,
+            before: { archived: true, source: archived.source, deletedAt: archived.deletedAt },
+            after: { archived: false, permanentlyDeleted: true, source: archived.source },
+        });
         return { success: true as const, archive: nextArchive };
     });
 };

@@ -12,6 +12,8 @@ export type AdminLogAction =
   | 'product.price_changed'
   | 'product.stock_changed'
   | 'product.deleted'
+  | 'product.restored'
+  | 'product.permanently_deleted'
   | 'product.created'
   | 'promo.created'
   | 'promo.updated'
@@ -47,6 +49,8 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'product.price_changed':     'Изменение цены',
   'product.stock_changed':     'Изменение остатка',
   'product.deleted':           'Удаление товара',
+  'product.restored':          'Восстановление товара',
+  'product.permanently_deleted': 'Окончательное удаление товара',
   'product.created':           'Создание товара',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
@@ -69,6 +73,8 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'product.price_changed': 'Price changed',
   'product.stock_changed': 'Stock changed',
   'product.deleted': 'Product deleted',
+  'product.restored': 'Product restored',
+  'product.permanently_deleted': 'Product permanently deleted',
   'product.created': 'Product created',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
@@ -91,6 +97,8 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'product.price_changed': 'Cena mainīta',
   'product.stock_changed': 'Atlikums mainīts',
   'product.deleted': 'Produkts dzēsts',
+  'product.restored': 'Produkts atjaunots',
+  'product.permanently_deleted': 'Produkts neatgriezeniski dzēsts',
   'product.created': 'Produkts izveidots',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',

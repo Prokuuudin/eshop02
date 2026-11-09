@@ -11,4 +11,14 @@ describe('administrator audit event labels', () => {
     expect(labels['order.payment_status_updated']).toBe(payment)
     expect(labels['site_content.updated']).toBe(content)
   })
+
+  it.each([
+    ['ru', 'Восстановление товара', 'Окончательное удаление товара'],
+    ['lv', 'Produkts atjaunots', 'Produkts neatgriezeniski dzēsts'],
+    ['en', 'Product restored', 'Product permanently deleted'],
+  ] as const)('names product archive events in %s', (language, restored, permanentlyDeleted) => {
+    const labels = getAdminActionLabels(language)
+    expect(labels['product.restored']).toBe(restored)
+    expect(labels['product.permanently_deleted']).toBe(permanentlyDeleted)
+  })
 })

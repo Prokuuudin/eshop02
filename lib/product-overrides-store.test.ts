@@ -2,6 +2,9 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 vi.mock('server-only', () => ({}))
 
 const settingFindUniqueMock = vi.hoisted(() => vi.fn())
+const appendServerAuditMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: appendServerAuditMock }))
 
 vi.mock('@/lib/prisma', () => {
   const client = {
@@ -59,6 +62,11 @@ import {
 import type { Product } from '@/data/products'
 
 beforeEach(() => vi.clearAllMocks())
+
+const auditContext = {
+  actor: { id: 'admin-1', email: 'admin@example.test' },
+  request: { headers: new Headers() },
+} as never
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -439,7 +447,7 @@ describe('restoreDeletedProduct', () => {
     vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
     vi.mocked(prisma.product.findMany).mockResolvedValue([])
 
-    const result = await restoreDeletedProduct('p1')
+    const result = await restoreDeletedProduct('p1', auditContext)
 
     expect(result.success).toBe(true)
 
@@ -510,7 +518,7 @@ describe('deleteProductAny', () => {
 describe('purgeDeletedProductArchive', () => {
   it('returns an error when the id is not in the archive', async () => {
     settingFindUniqueMock.mockResolvedValue({ key: 'deleted-products-archive', value: [], updatedAt: new Date() } as never)
-    const result = await purgeDeletedProductArchive('missing')
+    const result = await purgeDeletedProductArchive('missing', auditContext)
     expect(result.success).toBe(false)
   })
 
@@ -525,7 +533,7 @@ describe('purgeDeletedProductArchive', () => {
     } as never)
     vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
 
-    const result = await purgeDeletedProductArchive('p1')
+    const result = await purgeDeletedProductArchive('p1', auditContext)
 
     expect(result.success).toBe(true)
     if (result.success) {

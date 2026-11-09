@@ -113,4 +113,12 @@ describe('administrator audit event labels', () => {
     const actions = ['product.promo_notification_prepared', 'product.promo_notification_recorded', 'email_template.test_prepared', 'email_template.test_recorded'] as const
     expect(actions.map((action) => labels[action])).toEqual(expected)
   })
+
+  it.each([
+    ['ru', 'Изменение шаблона письма'],
+    ['lv', 'E-pasta veidne atjaunināta'],
+    ['en', 'Email template updated'],
+  ] as const)('names the email-template update event in %s', (language, expected) => {
+    expect(getAdminActionLabels(language)['email_template.updated']).toBe(expected)
+  })
 })

@@ -22,6 +22,7 @@ export type AdminLogAction =
   | 'price_group.deleted'
   | 'price_group.product_price_set'
   | 'price_group.product_price_removed'
+  | 'email_template.updated'
   | 'settings.configuration_restored'
   | 'access_request.approved'
   | 'access_request.rejected'
@@ -90,6 +91,7 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'price_group.deleted':       'Удаление ценовой группы',
   'price_group.product_price_set': 'Установка индивидуальной цены',
   'price_group.product_price_removed': 'Снятие индивидуальной цены',
+  'email_template.updated': 'Изменение шаблона письма',
   'settings.configuration_restored': 'Восстановление конфигурации',
   'access_request.approved': 'Одобрение заявки на доступ',
   'access_request.rejected': 'Отклонение заявки на доступ',
@@ -145,6 +147,7 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'price_group.deleted': 'Price group deleted',
   'price_group.product_price_set': 'Custom product price set',
   'price_group.product_price_removed': 'Custom product price removed',
+  'email_template.updated': 'Email template updated',
   'settings.configuration_restored': 'Configuration restored',
   'access_request.approved': 'Access request approved',
   'access_request.rejected': 'Access request rejected',
@@ -200,6 +203,7 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'price_group.deleted': 'Cenu grupa dzēsta',
   'price_group.product_price_set': 'Individuālā cena iestatīta',
   'price_group.product_price_removed': 'Individuālā cena noņemta',
+  'email_template.updated': 'E-pasta veidne atjaunināta',
   'settings.configuration_restored': 'Konfigurācija atjaunota',
   'access_request.approved': 'Piekļuves pieteikums apstiprināts',
   'access_request.rejected': 'Piekļuves pieteikums noraidīts',

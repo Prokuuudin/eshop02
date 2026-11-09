@@ -1,101 +1,90 @@
-# Hairshop Pro: аудит уведомлений об акциях и тестовых писем шаблонов — handoff
+# Hairshop Pro: аудит шаблонов писем и вложений уведомлений — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-promo-template-sends`.
-- Stacked base: `8a1fc1da51b8d1d1764cf2a70cc9ce7a0a9aee74`, проверенный head открытого Draft PR #25 (`fix/2026-11-09-admin-audit-broadcasts`).
-- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #25 `open`, `draft=true`, `merged=false`, head точно `8a1fc1da…`, base `fix/2026-11-09-admin-audit-card-mailings`; `static-and-unit` на `8a1fc1da` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42698142515/job/129435406240.
-- Коммит реализации: `e6895e07` (`fix(audit): record promo notifications and template test emails`).
-- Draft PR: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
-  - base: `fix/2026-11-09-admin-audit-broadcasts`
-  - head: `fix/2026-11-09-admin-audit-promo-template-sends`
-  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-broadcasts...fix/2026-11-09-admin-audit-promo-template-sends?expand=1 («Create draft pull request»)
-- `static-and-unit` запускается только на `pull_request` (`.github/workflows/quality.yml`), поэтому CI появится после создания PR. Результат CI на финальном SHA **не проверен**.
+- Ветка: `fix/2026-11-09-admin-audit-email-assets`.
+- Stacked base: `8f1e224921f5ffa3a4900b4bfe36452e6af45392`, проверенный head открытого Draft PR #26 (`fix/2026-11-09-admin-audit-promo-template-sends`).
+- Перед созданием ветки GitHub подтвердил: PR #26 `open`, `draft=true`, `merged=false`, head точно `8f1e224921f5ffa3a4900b4bfe36452e6af45392`.
+- Коммит реализации: `1cf040ae10eed766fa4ff47fea707e3dcbff4e0f`.
+- Draft PR и результат `static-and-unit` будут добавлены после push.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
-
-## Что делают маршруты
-
-| Маршрут | Права | Получатели | Записи в БД | Отправка |
-|---|---|---|---|---|
-| `POST /api/admin/products/[id]/notify-promo` | `catalog.update` | `ProductNewsSubscription` с `notifyPromo = true`; email — каналы `email`/`both` с валидным адресом; in-app — каналы `app`/`both` | **Подписки не меняются.** После SMTP создаются `UserNotification` (in-app) с флагом `emailSent` | Параллельные письма подписчикам; текст — необязательное сообщение администратора (≤ 500 символов) или стандартный |
-| `POST /api/admin/email-templates/[id]/send-test` | `requireAdmin` (`users.manage`) | Один адрес `to` из тела | Нет | Одно письмо `[Тест] …` с образцами значений подстановок |
 
 ## Реализовано
 
-### notify-promo
+### Изменение шаблона письма
 
-`lib/product-news-notify.ts` разделён на шаги: `planProductNews` (отбор и разбиение по каналам), `sendProductNewsEmails` (SMTP, возвращает доставленных и число ошибок), `productNewsNotifications` (строки in-app с `emailSent`), `promoNews`. `deliverProductNews`, `notifyPriceChange` и `notifyRestock` собраны из тех же шагов, их поведение не менялось (существующие тесты product-news проходят).
+Путь: `PUT /api/admin/email-templates/[id]` → `upsertTemplate` → KV-строка `email-templates` в `KeyValueSetting`.
 
-Маршрут:
+- Существующий `requireAdmin()`, allowlist полей, validation, статусы и response body сохранены.
+- Actor и request передаются из авторизованной серверной сессии.
+- Read-modify-write KV, `email_template.updated` и существующий advisory lock выполняются в одной Prisma-транзакции.
+- Сравниваются только разрешённые поля `name`, `subject`, `body`, `variables`. Идентичный повтор возвращает существующий шаблон без upsert, изменения `updatedAt` и события.
+- Audit entity ID — ID шаблона. `before/after` содержат только список фактически изменившихся полей и для каждого поля `bytes`/SHA-256.
+- Строковые поля хешируются как UTF-8; `variables` — как JSON-массив.
+- Название, subject, body, значения variables и полный шаблон в `AuditLog` не попадают.
+- Ошибка `appendServerAudit` откатывает KV-изменение вместе с событием.
 
-1. Права, 404 для отсутствующего или удалённого товара, обрезка сообщения — как раньше; затем проверка `Idempotency-Key`.
-2. План получателей. Нет подписчиков → `{ ok: true }` без писем, записей и событий (как раньше).
-3. `prepareAuditedDelivery` (`lib/audited-delivery.ts`) — событие `product.promo_notification_prepared` под advisory lock ключа **до** SMTP. Сбой аудита → `500 server_error`, ни одного письма и уведомления.
-4. SMTP.
-5. Одна транзакция: `UserNotification.createMany` + `product.promo_notification_recorded`. Если аудит результата не записался, уведомления создаются отдельно (подписчики их не теряют), а ключ остаётся в `in_progress` — технический повтор не отправит письма второй раз.
+Action label `email_template.updated`:
 
-### send-test
+- RU: «Изменение шаблона письма»;
+- LV: «E-pasta veidne atjaunināta»;
+- EN: “Email template updated”.
 
-Только отправка, поэтому напрямую `lib/audited-delivery.ts`: `email_template.test_prepared` до SMTP, `email_template.test_recorded` (`sent`/`failed`) после. Сбой SMTP по-прежнему `500 send_failed`, неизвестный шаблон — `404 not_found` до аудита.
+### Загрузка вложения уведомления
 
-### Повторы (`Idempotency-Key`)
+Путь: `POST /api/admin/notifications/assets` → `createMediaAsset` → `MediaAsset`.
 
-| Найдено по ключу | notify-promo | send-test |
-|---|---|---|
-| Ничего | Отправка | Отправка |
-| «prepared» без «recorded» (идёт отправка, или результат не записался) | `409 in_progress`, без писем и уведомлений | `409 in_progress`, без письма |
-| «recorded», что-то доставлено | `{ ok: true, replayed: true }` | `{ ok: true, replayed: true }` |
-| «recorded», ничего не доставлено | Новая попытка тем же ключом (`sent = 0` и `appNotifications = 0`) | Новая попытка (`status: 'failed'`) |
+- Существующее право `marketing.manage`, лимит 10 MiB, image/PDF validation, safe filename, response и URL `/api/media/<encoded name>` сохранены.
+- Прямой `mediaAsset.create` заменён вызовом уже существующего транзакционного helper из `lib/media-asset-store.ts`.
+- Строка `MediaAsset` и `media.uploaded` создаются в одной Prisma-транзакции.
+- Событие содержит сгенерированный ID/имя ассета, API path, MIME, размер и SHA-256; байты файла и исходное содержимое не журналируются.
+- Ошибка аудита откатывает загрузку.
+- Поведение отдельной загрузки сохранено: каждый POST получает новое имя и создаёт отдельный ассет/событие, даже если байты совпадают.
+- Дисковой записи нет: содержимое хранится только в PostgreSQL `MediaAsset`, поэтому файловая staging/compensation не требуется.
 
-Новый ключ означает явную повторную отправку. UI (`NotifyPromoSubscribersButton`, `email-template-api.ts`) отправляет новый ключ на каждый клик. Без заголовка запрос ведёт себя как раньше.
+`media.uploaded` и его RU/LV/EN labels уже были добавлены и протестированы в предыдущем media PR; этот PR подключает notification-assets route к тому же helper.
 
-### Содержимое журнала
+## Что подтверждено тестами
 
-| Action | entity | Данные |
-|---|---|---|
-| `product.promo_notification_prepared` | `product` / ID товара | `channel: 'email+app'`, `subscribers`, `emailRecipients`, `skippedInvalidEmail`, `appRecipients`, `customMessage` (флаг) |
-| `product.promo_notification_recorded` | то же | `sent`, `failed`, `skippedInvalidEmail`, `appNotifications` |
-| `email_template.test_prepared` | `email_template` / ID шаблона | `channel`, `variables` (число), `recipientIsActor` |
-| `email_template.test_recorded` | то же | `channel`, `status` |
+- отказ до mutation без требуемой server session/permission;
+- malformed template variables и неподдерживаемые file bytes не доходят до storage;
+- actor/request передаются из route в transactional helper;
+- только разрешённые template fields сохраняются;
+- успешное изменение шаблона создаёт fingerprint payload без текста;
+- идентичный template update — no-op без write/event;
+- параллельные изменения разных шаблонов не теряются;
+- конкурентный одинаковый update создаёт одно событие;
+- ошибка аудита откатывает изменение шаблона;
+- notification image/PDF сохраняются через `createMediaAsset`;
+- два одинаковых notification uploads остаются двумя отдельными операциями;
+- media helper подтверждает hash/size payload, отсутствие bytes, rollback при ошибке аудита, collision и concurrent replace/delete;
+- RU/LV/EN labels.
 
-`requestId` = `<scope>:<ID сотрудника>:<ключ>` или `<scope>:<uuid>` без ключа. Нет адресов, темы, тела, текста акции, названия товара и значений подстановок (проверено тестами по конкретным значениям). Названия RU/LV/EN: «Подготовка уведомления об акции» / «Sagatavots akcijas paziņojums» / «Promo notification prepared»; «Результат уведомления об акции» / «Akcijas paziņojuma rezultāts» / «Promo notification result»; «Подготовка тестового письма шаблона» / «Sagatavota veidnes testa vēstule» / «Template test email prepared»; «Результат тестового письма шаблона» / «Veidnes testa vēstules rezultāts» / «Template test email result».
-
-### Изменения контракта (совместимые)
-
-Необязательный `Idempotency-Key` (некорректный → `400 invalid_idempotency_key`), `409 in_progress`, `replayed: true`. Остальные коды и ответы не менялись.
-
-## Что подтверждено
-
-Дополнительная проверка Codex покрывает потерю ответа на коммит после фактической записи результата. Отдельная запись уведомлений выполняется только после ошибки самого `appendServerAudit` внутри callback транзакции. При неопределённом исходе коммита маршрут возвращает 500, а технический повтор с тем же ключом сверяется с журналом без повторной отправки.
-
-- `notify-promo/route.test.ts` (13; реальные планировщик и отправщик product-news, SMTP подменён, staged-транзакции для аудита и `UserNotification`):
-  - права и ввод: `catalog.update`; 404 для отсутствующего и удалённого товара; некорректный ключ; без подписчиков — ничего;
-  - доставка и аудит: claim и событие до SMTP, уведомления и результат после; разбиение по каналам; текст акции в письме, но не в аудите; частичный сбой SMTP (`emailSent: false`); сбой аудита до SMTP — ни писем, ни уведомлений; сбой аудита результата — уведомления созданы, повтор → 409 без повторных писем;
-  - повторы: replay; параллельный дубль — каждый подписчик один раз; повтор тем же ключом, когда ничего не доставлено; явная повторная отправка новым ключом.
-- `send-test/route.test.ts` (11; 3 прежних сценария сохранены): права и адрес; подстановки образцов; 404 и сбой SMTP; некорректный ключ; аудит без адреса и содержимого; сбой аудита до SMTP; сбой SMTP и повтор тем же ключом; replay; сбой записи результата → 409 без повторной отправки; параллельный дубль; явная повторная отправка.
-- `lib/product-news-notify.test.ts`, `app/api/product-news/*`, `app/api/admin/products/*` (цена и наличие используют те же шаги) — без изменений, проходят. `email-template-api.test.ts`, `lib/admin-log-store.test.ts` (RU/LV/EN).
-- Мутационная проверка: без fallback-создания уведомлений падает тест сбоя аудита результата; ветка `in_progress` проверена мутацией в PR #25.
-- Нового raw SQL нет. Реальная PostgreSQL-конкуренция проверена только моделью. Рабочая Neon не использовалась; реальные письма не отправлялись.
+Конкуренция и rollback подтверждены stateful unit harness с staged commit. Настоящая изолированная PostgreSQL в этом PR не использовалась; рабочая Neon не использовалась.
 
 ## Затронутые пути
 
-- `lib/product-news-notify.ts`
-- `app/api/admin/products/[id]/notify-promo/route.ts`, `route.test.ts`
-- `app/api/admin/email-templates/[id]/send-test/route.ts`, `route.test.ts`
-- `components/admin/products/NotifyPromoSubscribersButton.tsx`, `app/[lang]/admin/config/email-templates/email-template-api.ts`
-- `lib/admin-log-store.ts`, `lib/admin-log-store.test.ts`
+- `app/api/admin/email-templates/[id]/route.ts`
+- `app/api/admin/email-templates/[id]/route.test.ts`
+- `app/api/admin/notifications/assets/route.ts`
+- `app/api/admin/notifications/assets/route.test.ts`
+- `lib/email-templates-server-store.ts`
+- `lib/email-templates-server-store.test.ts`
+- `lib/admin-log-store.ts`
+- `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
 
-## Проверки
-
-Локально на `e6895e07` до push:
+## Проверки до push
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts 'app/api/admin/products/[id]/notify-promo' 'app/api/admin/email-templates' 'app/[lang]/admin/config/email-templates' lib/product-news-notify.test.ts lib/admin-log-store.test.ts
-# PASS: 7 files, 74 tests
+npm run prisma:generate
+# PASS: Prisma Client 7.8.0; подключения к БД не было
+
+npx vitest run --config vitest.config.ts 'app/api/admin/email-templates/[id]/route.test.ts' app/api/admin/notifications/assets/route.test.ts lib/email-templates-server-store.test.ts lib/media-asset-store.test.ts lib/admin-log-store.test.ts
+# PASS: 5 files, 66 tests
 
 npm run typecheck
 # PASS
@@ -104,9 +93,9 @@ npm run audit:architecture
 # PASS: 960 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 376 files, 3275 tests
+# PASS: 376 files, 3285 tests
 
-npx eslint <9 изменённых файлов>
+npx eslint <8 изменённых TypeScript-файлов>
 # PASS
 
 npm run check:encoding
@@ -116,32 +105,28 @@ git diff --check
 # PASS
 ```
 
-GitHub `static-and-unit`: не запущен — нужен PR (см. «Статус и база»).
-
-## Отдельные находки (не исправлялись)
-
-- **Тестовое письмо шаблона уходит на произвольный адрес.** В письме только образцы значений, без реальных данных; теперь в журнале есть флаг `recipientIsActor`. Решать вместе с ограничением адресов для `card-request` и отчёта по остаткам (отдельная задача владельца).
-- **Уведомления о цене и наличии** (`notifyPriceChange`, `notifyRestock`) вызываются из сохранения товара и отката цен. Это не отдельные админские отправки, и в этот PR они не входили. Их SMTP по-прежнему выполняется внутри вызывающего кода.
-
 ## Карта покрытия
 
 ### Постоянный аудит в той же транзакции
 
-К ранее покрытым добавлены `POST /api/admin/products/[id]/notify-promo` (claim до SMTP; in-app уведомления и результат — одной транзакцией после) и `POST /api/admin/email-templates/[id]/send-test` (claim до SMTP, результат после).
+Добавлены:
+
+- `PUT /api/admin/email-templates/[id]` — `email_template.updated`;
+- `POST /api/admin/notifications/assets` — `media.uploaded` через общий media helper.
 
 ### Запись после операции или в отдельной транзакции
 
-Без изменений относительно PR #25:
+По коду без изменений остаются:
 
-- `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
-- `POST /api/admin/import`: started/completed окружают отдельные product operations;
-- `POST /api/admin/notifications/send`, `orders/send-invoice`, `returns/notify`: доставка выполняется до audit append;
-- `POST /api/admin/storefront-cache/revalidate`: revalidation выполняется до audit append;
-- `POST /api/admin/grins-import/preview`: read-only preview, событие пишется после вычисления.
+- `POST /api/admin/grins-import/apply`;
+- `POST /api/admin/import`;
+- `POST /api/admin/notifications/send`, `orders/send-invoice`, `returns/notify`;
+- `POST /api/admin/storefront-cache/revalidate`;
+- `POST /api/admin/grins-import/preview`.
 
 ### Без записи в `AuditLog`
 
-После PR #25 было 16; этот PR закрывает два маршрута, остаётся **14**:
+После PR #26 оставалось 14 handler. Этот PR закрывает два, остаётся **12**:
 
 1. `PUT /api/admin/banner-groups`
 2. `PUT /api/admin/banners/[id]`
@@ -155,32 +140,33 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 10. `POST /api/admin/campaigns`
 11. `PATCH /api/admin/contact-messages`
 12. `PUT /api/admin/dashboard-prefs`
-13. `PUT /api/admin/email-templates/[id]`
-14. `POST /api/admin/notifications/assets`
 
-`POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin (по коду).
+`POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin.
 
-## Первый следующий шаг
+## Первый следующий шаг для Claude
 
-0. Создать Draft PR (base `fix/2026-11-09-admin-audit-broadcasts`, head `fix/2026-11-09-admin-audit-promo-template-sends`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-broadcasts --head fix/2026-11-09-admin-audit-promo-template-sends`.
-1. Следующий stacked PR — шаблоны писем и ассеты уведомлений: `PUT /api/admin/email-templates/[id]` (изменение темы и тела шаблона) и `POST /api/admin/notifications/assets` (загрузка изображения для уведомлений, `validateUploadedImage`). Начать от зелёного head этого PR.
-2. Проследить хранилище шаблонов (`lib/email-templates-server-store`: KV, файл или их сочетание) и место хранения ассета. Изменение и событие — в одной транзакции; для файлов — подготовка и компенсация (по образцу configuration restore, PR #20); для `MediaAsset` — по образцу медиа (PR #22).
-3. Сохранить права, лимиты, валидацию и API-контракт; в журнале — ID шаблона или ассета, хеши и размеры до и после, без текста шаблона и содержимого файла; no-op без события.
-4. Тесты: отказ без прав, невалидный ввод, успех, no-op, параллельные изменения, сбой аудита с откатом.
+Следующий stacked PR: баннеры, блог и кампании.
 
-Далее: CMS-контент (баннеры, блог, кампании), `contact-messages`, `dashboard-prefs`; hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events. Отдельно — ограничение адресов для `card-request`, отчёта по остаткам и тестовых писем шаблонов.
+1. Начать с финального зелёного head этого PR и направить новый Draft PR в его ветку, если он открыт.
+2. Проследить `PUT /api/admin/banner-groups`, CRUD/reorder баннеров, create/delete блога и CRUD кампаний до DB/KV/media storage.
+3. Разделить реальные mutation types и no-op; использовать actor из server session и `appendServerAudit` в той же транзакции.
+4. Для ссылок/изображений журналировать только ID/path, размеры и хеши, без содержимого.
+5. Проверить permission, validation, success, no-op, concurrency и audit rollback.
+
+После этого: `contact-messages`, `dashboard-prefs`; затем hardening post-operation audits, постоянные login/logout events.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-promo-template-sends
+git switch fix/2026-11-09-admin-audit-email-assets
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts 'app/api/admin/products/[id]/notify-promo' 'app/api/admin/email-templates' lib/product-news-notify.test.ts lib/admin-log-store.test.ts
+npm run prisma:generate
+npx vitest run --config vitest.config.ts 'app/api/admin/email-templates/[id]/route.test.ts' app/api/admin/notifications/assets/route.test.ts lib/email-templates-server-store.test.ts lib/media-asset-store.test.ts lib/admin-log-store.test.ts
 npm run audit:architecture
 npm run typecheck
 ```
 
-Не подставлять production Neon URL; PostgreSQL integration/e2e запускать только на отдельной локальной, PGlite или preview DB.
+Ожидается чистый checkout. Не подставлять production Neon URL; PostgreSQL integration/e2e запускать только на отдельной локальной, PGlite или preview DB.

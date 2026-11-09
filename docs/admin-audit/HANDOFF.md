@@ -10,6 +10,7 @@
 - Коммит реализации archive move/override reset: `c13f575cc20dea13c9656bf1972ece93d4dd66e6`.
 - Коммит исправления архитектурного лимита: `eb7d3370966dde4382e16466f3d4877a14b393cc`.
 - Draft PR #16: https://github.com/Prokuuudin/eshop02/pull/16; base `fix/2026-11-09-admin-audit-content-payment`, поэтому diff содержит только работу с архивом товаров.
+- Stacked Draft PR #18: https://github.com/Prokuuudin/eshop02/pull/18; base `fix/2026-11-09-admin-audit-product-archive`, поэтому diff содержит только archive move/override reset.
 - `static-and-unit` для исправленного SHA прошёл: https://github.com/Prokuuudin/eshop02/actions/runs/42618745522/job/129165119202.
 - Финальный head PR #16 также прошёл `static-and-unit`: https://github.com/Prokuuudin/eshop02/actions/runs/42619329938/job/129167111876.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.

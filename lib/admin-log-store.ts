@@ -42,6 +42,10 @@ export type AdminLogAction =
   | 'broadcast.delivery_recorded'
   | 'stock_alert.report_prepared'
   | 'stock_alert.report_recorded'
+  | 'product.promo_notification_prepared'
+  | 'product.promo_notification_recorded'
+  | 'email_template.test_prepared'
+  | 'email_template.test_recorded'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -106,6 +110,10 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'broadcast.delivery_recorded': 'Результат рассылки',
   'stock_alert.report_prepared': 'Подготовка отчёта по остаткам',
   'stock_alert.report_recorded': 'Результат отправки отчёта по остаткам',
+  'product.promo_notification_prepared': 'Подготовка уведомления об акции',
+  'product.promo_notification_recorded': 'Результат уведомления об акции',
+  'email_template.test_prepared': 'Подготовка тестового письма шаблона',
+  'email_template.test_recorded': 'Результат тестового письма шаблона',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -157,6 +165,10 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'broadcast.delivery_recorded': 'Broadcast delivery result',
   'stock_alert.report_prepared': 'Stock report prepared',
   'stock_alert.report_recorded': 'Stock report delivery result',
+  'product.promo_notification_prepared': 'Promo notification prepared',
+  'product.promo_notification_recorded': 'Promo notification result',
+  'email_template.test_prepared': 'Template test email prepared',
+  'email_template.test_recorded': 'Template test email result',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -208,6 +220,10 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'broadcast.delivery_recorded': 'E-pasta izsūtījuma rezultāts',
   'stock_alert.report_prepared': 'Sagatavots krājumu pārskats',
   'stock_alert.report_recorded': 'Krājumu pārskata nosūtīšanas rezultāts',
+  'product.promo_notification_prepared': 'Sagatavots akcijas paziņojums',
+  'product.promo_notification_recorded': 'Akcijas paziņojuma rezultāts',
+  'email_template.test_prepared': 'Sagatavota veidnes testa vēstule',
+  'email_template.test_recorded': 'Veidnes testa vēstules rezultāts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

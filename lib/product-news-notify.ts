@@ -6,7 +6,7 @@ import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 
 type NotifyDb = Pick<ExtendedTransactionClient, 'productNewsSubscription' | 'userNotification'>
 type NotificationChannel = 'app' | 'email' | 'both'
-type ProductNews = {
+export type ProductNews = {
   type: 'info' | 'success' | 'promo'
   title: string
   message: string
@@ -33,12 +33,19 @@ function buildEmailHtml(news: ProductNews): string {
     </div>`
 }
 
-async function deliverProductNews(
-  productId: string,
-  flag: 'notifyPrice' | 'notifyStock' | 'notifyPromo',
-  news: ProductNews,
-  db: NotifyDb,
-): Promise<void> {
+type NewsFlag = 'notifyPrice' | 'notifyStock' | 'notifyPromo'
+type Subscriber = { userId: string; user: { email: string; notificationChannel: string | null } }
+
+/** Who receives a product news item, split by channel; read-only. */
+export type ProductNewsPlan = {
+  productId: string
+  subscribers: Subscriber[]
+  emailTargets: Array<{ userId: string; email: string }>
+  skippedInvalidEmail: number
+  appRecipients: Subscriber[]
+}
+
+export async function planProductNews(productId: string, flag: NewsFlag, db: NotifyDb): Promise<ProductNewsPlan> {
   const subscribers = await db.productNewsSubscription.findMany({
     where: { productId, [flag]: true },
     select: {
@@ -46,14 +53,13 @@ async function deliverProductNews(
       user: { select: { email: true, notificationChannel: true } },
     },
   })
-  if (subscribers.length === 0) return
-
-  const emailDelivered = new Set<string>()
-  await Promise.all(subscribers.map(async (subscriber) => {
+  const emailTargets: ProductNewsPlan['emailTargets'] = []
+  let skippedInvalidEmail = 0
+  for (const subscriber of subscribers) {
     const channel = normalizeChannel(subscriber.user.notificationChannel)
-    if (channel !== 'email' && channel !== 'both') return
-
+    if (channel !== 'email' && channel !== 'both') continue
     if (!isValidEmail(subscriber.user.email)) {
+      skippedInvalidEmail++
       logOperationalEvent({
         event: 'product_news_email_skipped',
         level: 'warn',
@@ -61,36 +67,64 @@ async function deliverProductNews(
         userId: subscriber.userId,
         productId,
       })
-      return
+      continue
     }
-
-    try {
-      await sendEmail(subscriber.user.email.trim(), news.title, buildEmailHtml(news))
-      emailDelivered.add(subscriber.userId)
-    } catch (error) {
-      logOperationalEvent({
-        event: 'product_news_email_failed',
-        level: 'error',
-        userId: subscriber.userId,
-        productId,
-      }, error)
-    }
-  }))
-
+    emailTargets.push({ userId: subscriber.userId, email: subscriber.user.email.trim() })
+  }
   const appRecipients = subscribers.filter((subscriber) => {
     const channel = normalizeChannel(subscriber.user.notificationChannel)
     return channel === 'app' || channel === 'both'
   })
-  if (appRecipients.length === 0) return
+  return { productId, subscribers, emailTargets, skippedInvalidEmail, appRecipients }
+}
 
-  await db.userNotification.createMany({
-    data: appRecipients.map((subscriber) => ({
-      userId: subscriber.userId,
-      ...news,
-      channel: normalizeChannel(subscriber.user.notificationChannel),
-      emailSent: emailDelivered.has(subscriber.userId),
-    })),
-  })
+/** Sends the emails of a plan; resolves to the user IDs actually delivered and the failure count. */
+export async function sendProductNewsEmails(
+  plan: ProductNewsPlan,
+  news: ProductNews,
+): Promise<{ delivered: Set<string>; failed: number }> {
+  const delivered = new Set<string>()
+  let failed = 0
+  await Promise.all(plan.emailTargets.map(async (target) => {
+    try {
+      await sendEmail(target.email, news.title, buildEmailHtml(news))
+      delivered.add(target.userId)
+    } catch (error) {
+      failed++
+      logOperationalEvent({
+        event: 'product_news_email_failed',
+        level: 'error',
+        userId: target.userId,
+        productId: plan.productId,
+      }, error)
+    }
+  }))
+  return { delivered, failed }
+}
+
+/** In-app notification rows for a plan, flagged with the email outcome. */
+export type ProductNewsNotification = ProductNews & { userId: string; channel: NotificationChannel; emailSent: boolean }
+export function productNewsNotifications(plan: ProductNewsPlan, news: ProductNews, delivered: Set<string>): ProductNewsNotification[] {
+  return plan.appRecipients.map((subscriber) => ({
+    userId: subscriber.userId,
+    ...news,
+    channel: normalizeChannel(subscriber.user.notificationChannel),
+    emailSent: delivered.has(subscriber.userId),
+  }))
+}
+
+async function deliverProductNews(
+  productId: string,
+  flag: NewsFlag,
+  news: ProductNews,
+  db: NotifyDb,
+): Promise<void> {
+  const plan = await planProductNews(productId, flag, db)
+  if (plan.subscribers.length === 0) return
+  const { delivered } = await sendProductNewsEmails(plan, news)
+  const data = productNewsNotifications(plan, news, delivered)
+  if (data.length === 0) return
+  await db.userNotification.createMany({ data })
 }
 
 export async function notifyPriceChange(
@@ -122,16 +156,20 @@ export async function notifyRestock(
   }, db)
 }
 
+export function promoNews(productId: string, productTitle: string, message: string | undefined): ProductNews {
+  return {
+    type: 'promo',
+    title: 'Акция на товар',
+    message: message?.trim() || `Специальное предложение на «${productTitle}».`,
+    link: `/product/${productId}`,
+  }
+}
+
 export async function notifyPromo(
   productId: string,
   productTitle: string,
   message: string | undefined,
   db: NotifyDb = prisma,
 ): Promise<void> {
-  await deliverProductNews(productId, 'notifyPromo', {
-    type: 'promo',
-    title: 'Акция на товар',
-    message: message?.trim() || `Специальное предложение на «${productTitle}».`,
-    link: `/product/${productId}`,
-  }, db)
+  await deliverProductNews(productId, 'notifyPromo', promoNews(productId, productTitle, message), db)
 }

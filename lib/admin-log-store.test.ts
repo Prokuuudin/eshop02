@@ -103,4 +103,14 @@ describe('administrator audit event labels', () => {
     const actions = ['broadcast.prepared', 'broadcast.delivery_recorded', 'stock_alert.report_prepared', 'stock_alert.report_recorded'] as const
     expect(actions.map((action) => labels[action])).toEqual(expected)
   })
+
+  it.each([
+    ['ru', ['Подготовка уведомления об акции', 'Результат уведомления об акции', 'Подготовка тестового письма шаблона', 'Результат тестового письма шаблона']],
+    ['lv', ['Sagatavots akcijas paziņojums', 'Akcijas paziņojuma rezultāts', 'Sagatavota veidnes testa vēstule', 'Veidnes testa vēstules rezultāts']],
+    ['en', ['Promo notification prepared', 'Promo notification result', 'Template test email prepared', 'Template test email result']],
+  ] as const)('names promo and template test events in %s', (language, expected) => {
+    const labels = getAdminActionLabels(language)
+    const actions = ['product.promo_notification_prepared', 'product.promo_notification_recorded', 'email_template.test_prepared', 'email_template.test_recorded'] as const
+    expect(actions.map((action) => labels[action])).toEqual(expected)
+  })
 })

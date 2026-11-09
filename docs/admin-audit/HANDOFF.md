@@ -7,7 +7,7 @@
 - Ветка: `fix/2026-11-09-admin-audit-product-archive`.
 - Stacked base: `f53ea450753e1f2017d20a43701f1da1f20d85e9`, проверенный head открытого Draft PR #15 (`fix/2026-11-09-admin-audit-content-payment`).
 - Коммит реализации: `b0b5d5bb6bb520e958ae5f6bb9d4f94ec2c8f110`.
-- Новый Draft PR должен иметь base `fix/2026-11-09-admin-audit-content-payment`, чтобы его diff содержал только работу с архивом товаров.
+- Draft PR #16: https://github.com/Prokuuudin/eshop02/pull/16; base `fix/2026-11-09-admin-audit-content-payment`, поэтому diff содержит только работу с архивом товаров.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 PR #15 был проверен через публичный GitHub API до создания ветки: `state=open`, `draft=true`, `merged=false`, head точно `f53ea450753e1f2017d20a43701f1da1f20d85e9`. Поэтому ветка создана от этого SHA, а не от `main` или release-ветки.

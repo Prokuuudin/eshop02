@@ -1,80 +1,79 @@
-# Hairshop Pro: аудит контента и ручной оплаты — handoff
+# Hairshop Pro: аудит восстановления и окончательного удаления товаров — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и границы
 
-- Ветка: `fix/2026-11-09-admin-audit-content-payment`.
-- База ветки: `a4cecbb34f37ef3653b44f190882b8300ae21e94` (`release/2026-11-08-prefetch-catalog`).
-- Коммит реализации: `d0bc0ccb79962e9bad53f7bf186b55ea52bddcb9`.
-- Draft PR: https://github.com/Prokuuudin/eshop02/pull/15 (base: `release/2026-11-08-prefetch-catalog`).
+- Ветка: `fix/2026-11-09-admin-audit-product-archive`.
+- Stacked base: `f53ea450753e1f2017d20a43701f1da1f20d85e9`, проверенный head открытого Draft PR #15 (`fix/2026-11-09-admin-audit-content-payment`).
+- Коммит реализации: `b0b5d5bb6bb520e958ae5f6bb9d4f94ec2c8f110`.
+- Новый Draft PR должен иметь base `fix/2026-11-09-admin-audit-content-payment`, чтобы его diff содержал только работу с архивом товаров.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
-## Почему выбрана эта база
+PR #15 был проверен через публичный GitHub API до создания ветки: `state=open`, `draft=true`, `merged=false`, head точно `f53ea450753e1f2017d20a43701f1da1f20d85e9`. Поэтому ветка создана от этого SHA, а не от `main` или release-ветки.
 
-Перед началом выполнен `git fetch origin main --prune`. Актуальный на момент работы `origin/main`:
+## Реализовано
 
-`dd3cec15e4c0c858352321451c7962aa01968b9c` (2026-11-06, merge PR #12).
+### Восстановление из архива
 
-Release-SHA `a4cecbb3` (2026-11-08) и `origin/main` разошлись после общего предка `c65f4501`. Для целевых путей сравнение показало:
+Путь: `POST /api/admin/products/restore` → `restoreDeletedProduct`.
 
-- `app/api/admin/content/route.ts`, `lib/site-content-server-store.ts`, `app/api/orders/[id]/route.ts` и `app/[lang]/admin/orders/OrderListItem.tsx` совпадают;
-- `lib/orders-data-store.ts` в release-линии отличается от `origin/main` и содержит более новые проверки/исправления владения заказом и оплаты.
+- Существующий `requireAdmin()` сохранён и выполняется до чтения payload.
+- Actor берётся из авторизованной серверной сессии и передаётся вместе с `NextRequest` в server helper.
+- Восстановление `Product`, восстановление override-полей, удаление записи из `deleted-products-archive` и `appendServerAudit` теперь находятся в одной Prisma-транзакции.
+- Ранее override-поля базового товара сохранялись отдельным вызовом после коммита архива; этот частичный commit устранён. Поле `stock` по-прежнему не восстанавливается как override: актуальный ERP-остаток остаётся источником истины.
+- Action: `product.restored`; entity: `product/<productId>`.
+- Audit payload: название товара, источник (`base`/`custom`), `deletedAt` и переход `archived: true → false`.
+- Если ID уже отсутствует в архиве, товар и журнал не меняются.
+- Advisory lock на архив сериализует конкурентные restore/purge. Два одновременных восстановления одного ID дают ровно одно изменение и одно событие.
 
-Поэтому взят ровно ранее проверенный SHA `a4cecbb3`: он сохраняет воспроизводимость предыдущей сверки и не откатывает более новые защитные изменения заказа. Фактический SHA в Plesk по-прежнему не подтверждён; это установлено только по Git, не по production.
+### Окончательное удаление
 
-Команда сравнения:
+Путь: `DELETE /api/admin/products/archive` → `purgeDeletedProductArchive`.
 
-```powershell
-git diff --name-status dd3cec15e4c0c858352321451c7962aa01968b9c..a4cecbb34f37ef3653b44f190882b8300ae21e94 -- app/api/admin/content/route.ts lib/site-content-server-store.ts 'app/api/orders/[id]/route.ts' lib/orders-data-store.ts 'app/[lang]/admin/orders/OrderListItem.tsx'
-```
+- Существующий `requireAdmin()`, статус ответа и envelope сохранены.
+- Удаление recovery-записи из архива и `appendServerAudit` выполняются в одной Prisma-транзакции.
+- Action: `product.permanently_deleted`; entity: `product/<productId>`.
+- Audit payload: название товара, источник, `deletedAt` и переход к `permanentlyDeleted: true`.
+- Повторный или конкурентный запрос после первого успешного удаления получает прежнюю domain-ошибку и не создаёт событие об отсутствующем изменении.
+- Для базового товара физическая строка `Product` остаётся с `isDeleted=true`; для custom-товара строка была удалена ещё при переносе в архив. Окончательность здесь означает удаление последней recovery-копии из KV-архива — это фактическое прежнее поведение API.
 
-Результат: изменён только `lib/orders-data-store.ts` (`10` строк: `7` добавлено, `3` удалено).
+### Массовые действия
 
-## Что реализовано
+UI и раньше отправлял по одному параллельному запросу на каждый ID, сохраняя частичную успешность. Формат API не менялся. Теперь один bulk restore или bulk purge создаёт один UUID и передаёт его во всех запросах как `x-request-id`; существующий `appendServerAudit` сохраняет этот общий ID в каждой фактически созданной строке журнала.
 
-### `PUT /api/admin/content`
+Тест массового purge отправляет `p1`, отсутствующий ID и `p2` с одним request ID. Изменяются и журналируются только `p1`/`p2`; обе записи имеют общий request ID.
 
-- `requireAdmin()` по-прежнему выполняется до чтения payload; actor берётся из авторизованной серверной сессии.
-- `saveSiteContentOverridesToStore` теперь в одной Prisma-транзакции:
-  1. сериализует конкурентные сохранения отдельным advisory lock;
-  2. читает текущее значение;
-  3. вычисляет фактический diff;
-  4. сохраняет `KeyValueSetting`;
-  5. вызывает существующий `appendServerAudit`.
-- Action: `site_content.updated`, entity: `setting/site-content`.
-- В `before`/`after` записываются только изменившиеся элементы. Для текста каждый элемент содержит `language`, `key`, `value`; для изображения — `key`, `value`. Удалённое/отсутствующее значение представлено `null`.
-- При no-op нет ни upsert, ни события.
-- Ошибка audit append откатывает изменение контента.
-- `revalidatePath('/', '/blog', '/catalog')` вызывается route только после успешного возврата транзакции.
-
-### `PATCH /api/orders/[id]` — ручное подтверждение оплаты
-
-- Существующая проверка `requireAdmin()` сохранена; actor и `NextRequest` передаются в `updateServerOrderPayment` отдельным необязательным audit context.
-- Общая функция по-прежнему обслуживает Paysera/PayPal callbacks, повтор оплаты, checkout reconciliation и служебные вызовы. Они audit context не передают, поэтому не маскируются под действие сотрудника.
-- В существующей транзакции заказа после фактического изменения вызывается `appendServerAudit`.
-- Action: `order.payment_status_updated`, entity: `order/<orderId>`.
-- `before`/`after`: `paymentStatus` и `paymentProvider`; ID заказа находится в `entityId`.
-- Терминальный повтор для уже оплаченного заказа остаётся idempotent и не создаёт второй audit event.
-- Ошибка audit append откатывает изменение оплаты и связанные изменения резерва.
-
-### Названия в журнале
+### Названия событий
 
 | Action | RU | LV | EN |
 |---|---|---|---|
-| `site_content.updated` | Обновление контента сайта | Vietnes saturs atjaunināts | Site content updated |
-| `order.payment_status_updated` | Ручное изменение статуса оплаты | Maksājuma statuss mainīts manuāli | Payment status updated manually |
+| `product.restored` | Восстановление товара | Produkts atjaunots | Product restored |
+| `product.permanently_deleted` | Окончательное удаление товара | Produkts neatgriezeniski dzēsts | Product permanently deleted |
+
+## Фактическая классификация всех проверенных путей
+
+| Путь/ветка | Фактическое действие | Состояние аудита после этого PR |
+|---|---|---|
+| `POST /api/admin/products/restore` | Восстановление Product/override и удаление recovery-записи | Постоянный server audit в той же транзакции |
+| `DELETE /api/admin/products/archive` | Удаление последней recovery-записи, то есть окончательное удаление | Постоянный server audit в той же транзакции |
+| `DELETE /api/admin/products`, одиночный, `permanently=true` | Перенос в архив; base получает `isDeleted=true`, custom удаляется из Product, но остаётся восстановимый snapshot | Нет записи; следующий пробел |
+| `DELETE /api/admin/products`, `ids[]` | Массовый перенос в архив по тем же правилам | Нет записи; следующий пробел |
+| `DELETE /api/admin/products`, одиночный без `permanently=true` | Сброс записи из `product-overrides`, товар не удаляется | Нет записи; следующий пробел |
+| `deleteCustomProduct` | Физическое удаление custom Product без архива | Не имеет серверных вызывающих в выбранной базе; не считается API-path |
+
+Поле `permanently` в `DELETE /api/admin/products` вводит в заблуждение: фактический пользовательский результат — «переместить в корзину/архив». Этот PR намеренно не переименовывает контракт и не добавляет туда аудит, чтобы diff оставался посвящён восстановлению и окончательному purge.
 
 ## Затронутые пути
 
-- `app/api/admin/content/route.ts`
-- `app/api/admin/content/route.test.ts`
-- `app/api/orders/[id]/route.ts`
-- `app/api/orders/[id]/route.test.ts`
-- `lib/site-content-server-store.ts`
-- `lib/site-content-server-store.test.ts`
-- `lib/orders-data-store.ts`
-- `lib/order-payment-audit.test.ts`
+- `app/api/admin/products/archive/route.ts`
+- `app/api/admin/products/archive/route.test.ts`
+- `app/api/admin/products/restore/route.ts`
+- `app/api/admin/products/restore/route.test.ts`
+- `hooks/admin/products/useProductsAdmin.ts`
+- `lib/product-overrides-store.ts`
+- `lib/product-overrides-store.test.ts`
+- `lib/product-archive-audit.test.ts`
 - `lib/admin-log-store.ts`
 - `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
@@ -83,93 +82,87 @@ git diff --name-status dd3cec15e4c0c858352321451c7962aa01968b9c..a4cecbb34f37ef3
 
 Подтверждено тестами:
 
-- успешное сохранение контента и точный payload события;
-- no-op контента без upsert/audit;
-- rollback контента при ошибке `appendServerAudit`;
-- отказ контента без admin permission;
-- cache revalidation только после успешного transactional save;
-- успешная ручная оплата с actor из route и точным статус/provider transition;
-- повторная ручная оплата без второго события;
-- rollback оплаты при ошибке audit append;
-- отказ оплаты без admin permission;
-- автоматические PayPal/Paysera и поздние/повторные callbacks сохраняют прежнее поведение и не получают admin audit context;
-- RU/LV/EN названия обоих actions.
+- успешное восстановление custom/base-поведения и точный audit action/entity/actor/before/after;
+- восстановление override внутри транзакции без возврата архивного `stock`;
+- успешное окончательное удаление и точный audit payload;
+- отказ route до мутации без admin session/permission;
+- последовательный и конкурентный повтор без второго события;
+- rollback восстановления и purge при ошибке `appendServerAudit`;
+- массовый purge: журнал содержит только фактически изменившиеся ID, объединённые одним request ID;
+- RU/LV/EN labels.
+
+Stateful rollback-тест создаёт staged-копию Product/KV/AuditLog и коммитит её только после успешного завершения transaction callback. Это подтверждает размещение мутации и аудита в одной транзакционной границе, но не заменяет проверку на настоящем PostgreSQL.
 
 Точные команды и результаты:
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
 npm run prisma:generate
-# PASS: Prisma Client 7.8.0 generated; соединение с БД не выполнялось
+# PASS: Prisma Client 7.8.0 generated; подключение к БД не выполнялось
 
-npx vitest run --config vitest.config.ts lib/site-content-server-store.test.ts app/api/admin/content/route.test.ts lib/order-payment-audit.test.ts 'app/api/orders/[id]/route.test.ts' lib/admin-log-store.test.ts
-# PASS: 5 files, 19 tests
-
-npx vitest run --config vitest.config.ts lib/delivery-production-regressions.test.ts lib/orders-late-payment.test.ts app/api/webhooks/paysera/route.test.ts app/api/webhooks/paypal/route.test.ts lib/orders-data-store.test.ts
-# PASS: 5 files, 94 tests
+npx vitest run --config vitest.config.ts lib/product-archive-audit.test.ts lib/product-overrides-store.test.ts app/api/admin/products/restore/route.test.ts app/api/admin/products/archive/route.test.ts lib/admin-log-store.test.ts
+# PASS: 5 files, 76 tests
 
 npm run test:unit
-# PASS: 365 files, 3036 tests
+# PASS: 366 files, 3047 tests
 
 npm run typecheck
 # PASS
 
 npm run lint
-# PASS with 63 pre-existing warnings, 0 errors; изменённые файлы без предупреждений
+# PASS: 0 errors, 63 pre-existing warnings; изменённые файлы без предупреждений
+
+npm run check:prisma
+# PASS: schema valid (фиктивный localhost URL, без подключения)
 
 npm run check:admin-i18n
-# PASS: 424 dictionary keys, 67 keys in use; 1 pre-existing hardcoded-Cyrillic candidate
+# PASS: 424 keys, 67 in use; 1 pre-existing hardcoded-Cyrillic candidate
+
+npm run check:encoding
+# PASS: 1349 source files
 
 git diff --check
 # PASS
 ```
 
-Коммит-hook также выполнил `npm run check:encoding`: PASS, 1348 source files.
+Изолированная PostgreSQL недоступна: TCP `127.0.0.1:5432` закрыт, Docker daemon отсутствует. Поэтому runtime rollback на PostgreSQL не проверен. Рабочая Neon принципиально не использовалась. Integration/e2e/build также не запускались: для них нет изолированной БД, а целевые route/store/unit проверки и полный unit-suite прошли.
 
-Production build запускался только с фиктивными localhost-переменными и без рабочей БД:
+## Browser checks PR #15
 
-```powershell
-$env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-$env:NEXT_PUBLIC_SITE_URL='http://127.0.0.1:3000'
-npm run build
-```
+На head `f53ea450…` в GitHub Actions run `42610957972` упали три browser job до запуска самих тестов:
 
-Webpack compilation и TypeScript завершились успешно; сборка остановилась на page-data для `/[lang]/brand/[id]` с ожидаемым `P1001` (`127.0.0.1:5432` недоступен). Полная build/page-data, integration и e2e не подтверждены: изолированная тестовая PostgreSQL не была предоставлена, а рабочую Neon использовать запрещено. Предупреждения сборки о Swiper nested CSS и ambiguous Tailwind durations существовали до этого изменения.
+- `accessibility-webkit` — шаг `npx playwright install --with-deps webkit`;
+- `chromium-critical-smoke` — шаг `npx playwright install --with-deps chromium`;
+- `firefox-smoke` — шаг `npx playwright install --with-deps firefox`.
 
-## Карта покрытия аудита
+GitHub API подтверждает job/step и runner label `ubuntu-latest`. Среда `ubuntu26.04-x64` указана в передаче; публичная загрузка raw logs без авторизации вернула `403`, поэтому конкретный текст ошибки образа независимо не подтверждён. Это инфраструктурный сбой установки browser dependencies, а не падение browser assertions. Изменения workflow/CI находятся вне рамок этого PR и не вносились.
 
-Методика: учитывались обработчики `POST/PUT/PATCH/DELETE` под `app/api/admin`, которые меняют состояние или отправляют сообщение. Read-only preview (`import/preview`, `grins-import/stocks-preview`, `promo-products-preview`) и намеренно запрещённые `POST/DELETE /api/admin/audit-log` (оба `405`) не считались.
+## Уточнённая карта покрытия
 
-### Постоянный server audit в одной транзакции
+### Постоянный audit в той же транзакции
 
-По коду mutation и `appendServerAudit` находятся в одной Prisma-транзакции (напрямую либо через server helper) у следующих групп:
+К ранее покрытым группам добавлены:
 
-- новые `PUT /api/admin/content` и ручной `PATCH /api/orders/[id]` (вне `/api/admin`);
-- bonus/locale/shipping/brands/categories config;
-- brand lines (create/update/membership/review через `lib/brand-lines/brand-line-admin.ts`);
-- admin users, role approvals, MFA reset, bonus ledger;
-- orders create/update/delete, metadata/bulk metadata, shipment, stock acknowledgment, late-payment exception, notification retry;
-- product create/update/soft-delete, manual-price approval, restore-previous, image crop, price-batch revert;
-- promo-code create/update/delete;
-- review reply/status/delete;
-- company activity-log retention delete.
+- `POST /api/admin/products/restore`;
+- `DELETE /api/admin/products/archive`.
 
-Это установлено по коду; для нового контента/оплаты, ряда order/product/user routes и brand-lines транзакционность также покрыта unit/route tests. Полный runtime-аудит всех перечисленных старых routes в БД не выполнялся.
+Для этих двух путей транзакционная граница и no-op/concurrency поведение подтверждены целевыми unit/route tests. Остальные ранее перечисленные transactional routes в рамках этого PR повторно проверялись только полным unit-suite, а не runtime PostgreSQL.
 
-### Постоянная запись, но после операции / отдельной транзакцией
+### Запись после операции или в отдельной транзакции
 
-- `POST /api/admin/grins-import/apply`: сначала `applyManualImport`, затем отдельная транзакция `appendServerAudit`; ошибка аудита ловится и не откатывает уже применённый импорт. Это важный открытый риск.
-- `POST /api/admin/import`: `catalog.import_started` пишется до цикла, `catalog.import_completed` — после; сами product operations выполняются между ними отдельными вызовами.
-- `POST /api/admin/notifications/send`: app/email delivery выполняется до отдельной audit-транзакции.
-- `POST /api/admin/orders/send-invoice` и `POST /api/admin/returns/notify`: email отправляется до audit-транзакции.
-- `POST /api/admin/storefront-cache/revalidate`: revalidation выполняется до audit-транзакции.
-- `POST /api/admin/grins-import/preview`: preview read-only, событие пишется после вычисления preview.
+По коду остаются:
 
-Эта классификация установлена по порядку вызовов в коде; транзакционный rollback внешней отправки принципиально невозможен.
+- `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
+- `POST /api/admin/import`: started/completed окружают отдельные product operations;
+- `POST /api/admin/notifications/send`, `orders/send-invoice`, `returns/notify`: доставка выполняется до audit append;
+- `POST /api/admin/storefront-cache/revalidate`: revalidation выполняется до audit append;
+- `POST /api/admin/grins-import/preview`: read-only preview, событие пишется после вычисления.
+
+Это установлено по порядку вызовов в коде; runtime PostgreSQL/SMTP проверка в этом PR не выполнялась.
 
 ### Без записи в `AuditLog`
 
-На выбранной базе `a4cecbb3` подтверждены прежние **34 handler’а**. После этого PR `PUT /api/admin/content` закрыт, остаётся **33**:
+Предыдущий handoff указывал 33 оставшихся handler после PR #15. Перепроверка веток `DELETE /api/admin/products` выявила один пропущенный handler: наличие `appendServerAudit` для POST/PUT в том же route ошибочно маскировало отсутствие аудита в DELETE. Поэтому корректное число после PR #15 было 34. Этот PR закрывает restore и archive purge; остаётся **32**:
 
 1. `PATCH /api/admin/access-requests/[id]`
 2. `POST /api/admin/backup` (restore configuration)
@@ -201,47 +194,37 @@ Webpack compilation и TypeScript завершились успешно; сбо�
 28. `DELETE /api/admin/price-groups/[id]`
 29. `POST /api/admin/price-groups`
 30. `POST /api/admin/products/[id]/notify-promo`
-31. `DELETE /api/admin/products/archive` (permanent purge)
-32. `POST /api/admin/products/restore`
-33. `POST /api/admin/stock-alerts/send`
+31. `DELETE /api/admin/products` (single/bulk archive move и override reset)
+32. `POST /api/admin/stock-alerts/send`
 
-Важно: обычный soft-delete товара через `DELETE /api/admin/products` уже имеет транзакционный audit. Пробелы — восстановление и permanent archive purge.
+### Вход/выход администратора
 
-### Вход и выход администратора
+`POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не пишут постоянный `AuditLog`. При определённых company-настройках они fire-and-forget пишут `CompanyActivityLog`; отдельного постоянного события успешного входа/выхода platform admin нет. Это установлено по коду, production-данные не проверялись.
 
-`POST /api/auth/login` и `POST /api/auth/logout` не пишут в постоянный `AuditLog`. Они fire-and-forget пишут `CompanyActivityLog` только при `user.companyId && user.auditLoggingEnabled`. Admin MFA flow возвращает challenge до обычной login-записи; отдельного постоянного события успешного входа platform admin по коду нет. Это установлено по коду, production-данные не проверялись.
+## Первый следующий шаг для Claude
 
-## Следующие PR
+Следующий PR: закрыть оставшиеся ветки `DELETE /api/admin/products` без изменения их контракта.
 
-Рекомендуемый следующий небольшой PR: **восстановление и окончательное удаление товаров**.
+1. Начать с `app/api/admin/products/route.ts: DELETE`, `deleteProductAny`, `deleteProductsAny` и `resetProductOverride` в `lib/product-overrides-store.ts`.
+2. Передать actor/request из существующего `requireAdminPermission('catalog.update')`.
+3. Для single/bulk archive move повторно читать Product после получения archive advisory lock, чтобы конкурентный повтор не создавал phantom archive/audit event.
+4. Поместить Product/KV mutation и audit в одну транзакцию; для bulk создать audit только для реально изменённых ID и использовать общий request ID.
+5. Отдельным action журналировать reset override только при наличии фактического override.
+6. Добавить stateful rollback/concurrency tests и, если появится изолированная PostgreSQL, повторить rollback на ней.
 
-Конкретный первый шаг:
-
-1. Открыть `lib/product-overrides-store.ts`, функции `restoreDeletedProduct` и `purgeDeletedProductArchive`.
-2. Передать туда `actor` и `NextRequest` из `app/api/admin/products/restore/route.ts` и `app/api/admin/products/archive/route.ts`.
-3. Поместить изменение Product/archive и `appendServerAudit` в одну Prisma-транзакцию; no-op/not-found не журналировать.
-4. Добавить route/store tests: success payload, repeat/no-op, audit failure rollback, permission denial.
-
-Следующие очереди после этого:
-
-1. price groups (`POST`, `PUT`, `DELETE`);
-2. configuration restore (`POST /api/admin/backup`; файловая операция потребует отдельного проекта atomic journal/compensation, Prisma-транзакции недостаточно);
-3. access requests (`PATCH`, включая user/request/certificate и последующую email-отправку);
-4. content assets и CMS: upload, banners, blog, campaigns, email templates, media;
-5. рассылки/отправки: broadcast, stock alerts, invitations/card/SMS, promo notification, test email;
-6. отдельный hardening PR для post-operation audits, в первую очередь GrinS apply;
-7. постоянный аудит успешного входа/выхода platform admin.
+После product DELETE следующая приоритетная очередь: price groups; configuration restore; access requests; content assets/CMS; рассылки; hardening post-operation audits (в первую очередь GrinS apply); постоянные login/logout events.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-content-payment
+git switch fix/2026-11-09-admin-audit-product-archive
 git status --short
+git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
 npm run prisma:generate
-npm run test:unit
+npx vitest run --config vitest.config.ts lib/product-archive-audit.test.ts lib/product-overrides-store.test.ts app/api/admin/products/restore/route.test.ts app/api/admin/products/archive/route.test.ts lib/admin-log-store.test.ts
 npm run typecheck
 ```
 
-Ожидается чистый worktree. Для integration/e2e/build page-data сначала предоставить отдельную локальную/preview PostgreSQL; не подставлять production Neon URL.
+Ожидается чистый checkout. Не подставлять production Neon URL; для PostgreSQL integration/e2e сначала предоставить отдельную локальную или preview DB.

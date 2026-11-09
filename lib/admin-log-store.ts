@@ -23,6 +23,8 @@ export type AdminLogAction =
   | 'price_group.product_price_set'
   | 'price_group.product_price_removed'
   | 'settings.configuration_restored'
+  | 'access_request.approved'
+  | 'access_request.rejected'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -68,6 +70,8 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Установка индивидуальной цены',
   'price_group.product_price_removed': 'Снятие индивидуальной цены',
   'settings.configuration_restored': 'Восстановление конфигурации',
+  'access_request.approved': 'Одобрение заявки на доступ',
+  'access_request.rejected': 'Отклонение заявки на доступ',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -100,6 +104,8 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Custom product price set',
   'price_group.product_price_removed': 'Custom product price removed',
   'settings.configuration_restored': 'Configuration restored',
+  'access_request.approved': 'Access request approved',
+  'access_request.rejected': 'Access request rejected',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -132,6 +138,8 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Individuālā cena iestatīta',
   'price_group.product_price_removed': 'Individuālā cena noņemta',
   'settings.configuration_restored': 'Konfigurācija atjaunota',
+  'access_request.approved': 'Piekļuves pieteikums apstiprināts',
+  'access_request.rejected': 'Piekļuves pieteikums noraidīts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

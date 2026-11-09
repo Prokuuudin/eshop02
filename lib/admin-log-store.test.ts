@@ -52,4 +52,14 @@ describe('administrator audit event labels', () => {
   ] as const)('names the configuration restore event in %s', (language, label) => {
     expect(getAdminActionLabels(language)['settings.configuration_restored']).toBe(label)
   })
+
+  it.each([
+    ['ru', 'Одобрение заявки на доступ', 'Отклонение заявки на доступ'],
+    ['lv', 'Piekļuves pieteikums apstiprināts', 'Piekļuves pieteikums noraidīts'],
+    ['en', 'Access request approved', 'Access request rejected'],
+  ] as const)('names access request decisions in %s', (language, approved, rejected) => {
+    const labels = getAdminActionLabels(language)
+    expect(labels['access_request.approved']).toBe(approved)
+    expect(labels['access_request.rejected']).toBe(rejected)
+  })
 })

@@ -180,6 +180,8 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                         ? l(`У клиента уже есть карта №${json.cardNumber}.`, `The customer already has card No. ${json.cardNumber}.`, `Klientam jau ir karte Nr. ${json.cardNumber}.`)
                         : json.error === 'staff_account'
                         ? l('Email заявки принадлежит сотруднику — заявку нельзя одобрить.', 'The application email belongs to a staff account — it cannot be approved.', 'Pieteikuma e-pasts pieder darbiniekam — to nevar apstiprināt.')
+                        : json.error === 'already_decided'
+                        ? l('Заявка уже обработана. Список обновлён.', 'The application has already been processed. The list has been refreshed.', 'Pieteikums jau ir apstrādāts. Saraksts ir atjaunināts.')
                         : l('Не удалось одобрить заявку', 'Failed to approve the application', 'Neizdevās apstiprināt pieteikumu')
                 );
                 setMessage('');
@@ -278,7 +280,10 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 body: JSON.stringify({ status: 'rejected', reviewNote: note ?? l('Отклонено администратором', 'Rejected by administrator', 'Administrators noraidīja') }),
             });
             if (!res.ok) {
-                setFormError(l('Не удалось отклонить заявку', 'Failed to reject the application', 'Neizdevās noraidīt pieteikumu'));
+                const json = await res.json().catch(() => ({}));
+                setFormError(json.error === 'already_decided'
+                    ? l('Заявка уже обработана. Список обновлён.', 'The application has already been processed. The list has been refreshed.', 'Pieteikums jau ir apstrādāts. Saraksts ir atjaunināts.')
+                    : l('Не удалось отклонить заявку', 'Failed to reject the application', 'Neizdevās noraidīt pieteikumu'));
                 setMessage('');
                 return;
             }

@@ -1,133 +1,136 @@
-# Hairshop Pro: аудит медиафайлов — handoff
+# Hairshop Pro: аудит приглашений — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-media`.
-- Stacked base: `8519830864af8f27eaca21eb5649d172972d1eaa`, проверенный head открытого Draft PR #21 (`fix/2026-11-09-admin-audit-access-requests`).
-- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #21 `open`, `draft=true`, `merged=false`, head точно `85198308…`, base `fix/2026-11-09-admin-audit-configuration-restore`; `static-and-unit` на `85198308` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42687029062/job/129396477986.
-- Коммит реализации: `90ddbb40` (`fix(audit): record media uploads, replacements and deletions`).
-- Draft PR в `fix/2026-11-09-admin-audit-access-requests`: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
-  - base: `fix/2026-11-09-admin-audit-access-requests`
-  - head: `fix/2026-11-09-admin-audit-media`
-  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-access-requests...fix/2026-11-09-admin-audit-media?expand=1 («Create draft pull request»)
+- Ветка: `fix/2026-11-09-admin-audit-invitations`.
+- Stacked base: `055f3af7b1990b7220a739c904fe54b092f31232`, проверенный head открытого Draft PR #22 (`fix/2026-11-09-admin-audit-media`).
+- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #22 `open`, `draft=true`, `merged=false`, head точно `055f3af7…`, base `fix/2026-11-09-admin-audit-access-requests`; `static-and-unit` на `055f3af7` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42689788833/job/129406180594.
+- Коммит реализации: `fa76b7f3` (`fix(audit): record invitations once and their delivery after commit`).
+- Draft PR: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
+  - base: `fix/2026-11-09-admin-audit-media`
+  - head: `fix/2026-11-09-admin-audit-invitations`
+  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-media...fix/2026-11-09-admin-audit-invitations?expand=1 («Create draft pull request»)
 - `static-and-unit` запускается только на `pull_request` (`.github/workflows/quality.yml`), поэтому CI появится после создания PR. Результат CI на финальном SHA **не проверен**.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
-## Где живут медиафайлы
+## Что делают маршруты
 
-Прослежены все три маршрута до фактических изменений: байты хранятся **только** в таблице `MediaAsset` (`name` PK, `mimeType`, `size`, `data Bytes`, `createdAt`, `updatedAt`). Файловой системы, Blob/S3 или CDN-копии нет; `/api/media/<name>` читает строку из БД (`Cache-Control: public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400`). Поэтому staging/компенсация не нужны: каждая мутация и её строка аудита — одна PostgreSQL-транзакция.
+| Маршрут | БД | Внешняя отправка |
+|---|---|---|
+| `POST /api/admin/invitations` | `replaceInvitation`: удаляет неиспользованные `InvitationToken` пользователя, создаёт новый (хранится только sha256 токена) | SMTP-письмо со ссылкой `/auth/invite?token=…` |
+| `POST /api/admin/invitations/sms` | `InvitationDelivery` (`channel: 'sms'`, `status: 'sent'`) | Нет: в production `503 sms_provider_not_configured` до любых записей; вне production — симуляция, текст возвращается администратору |
+| `POST /api/admin/invitations/card` | обновление `User.cardNumber` или создание «спящего» аккаунта | Нет (UI затем отдельно вызывает `POST /api/admin/invitations` для нового клиента) |
 
 ## Реализовано
 
-Новый `lib/media-asset-store.ts` (по образцу `price-groups-server-store`): `createMediaAsset`, `replaceMediaAsset`, `deleteMediaAssets`. Маршруты оставляют у себя права, лимиты, валидацию и формат ответа.
+Права (`requireAdmin()` / `users.manage`), лимит пакета `INVITE_BATCH_SIZE = 20` (`no_user_ids`, `too_many`), исключение staff-аккаунтов и технических email, все коды ошибок и форма ответов сохранены. Новый `lib/invitation-dispatch.ts` — общие guard'ы; `replaceInvitation` теперь возвращает число заменённых открытых приглашений (прочие вызывающие значение игнорируют).
 
-| Маршрут | Событие | Транзакция |
+### Email-приглашения
+
+1. Транзакция (уровень изоляции по умолчанию): advisory lock пакета → проверка повтора → advisory locks пользователей в стабильном порядке → для каждого: проверка «доставка в процессе» → `replaceInvitation` → `appendServerAudit` (`invitation.created` или `invitation.replaced`).
+2. После коммита — SMTP по каждому выпущенному приглашению.
+3. Когда результат известен — отдельная транзакция: `InvitationToken.status = 'error'` для неушедших, `InvitationDelivery` (`channel: 'email'`, `sent`/`error`), событие `invitation.delivery_recorded`. Если эта запись не удалась, ответ всё равно правдивый (200 со статусами), ошибка логируется, токены неушедших писем гасятся отдельным запросом.
+
+`Serializable` убран сознательно: снимок такой транзакции берётся до ожидания advisory lock, и `appendServerAudit` прочитал бы устаревшую голову цепочки целостности. Сериализацию теперь дают advisory locks (пакет и пользователь).
+
+### Повторы, конкуренция и явная повторная отправка
+
+- **Технический повтор**: клиент передаёт заголовок `Idempotency-Key` (`[A-Za-z0-9._:-]{8,128}`, иначе `400 invalid_idempotency_key`). Ключ вместе с ID сотрудника становится `requestId` строк аудита. Повтор или параллельный дубль с тем же ключом под lock находит закоммиченные строки и отвечает `{ results, replayed: true }` (статусы из `invitation.delivery_recorded`, иначе `pending`; без `inviteUrl` — токен в открытом виде не хранится). Новых токенов, писем и событий нет. UI теперь отправляет новый ключ на каждое действие (`crypto.randomUUID()`); без заголовка запрос — новая явная отправка, как раньше.
+- **Конкурентный запрос с другим ключом**: если у пользователя свежий (< 60 с) токен `sent` без записанной доставки, значит, его письмо ещё отправляется. Пользователь пропускается: в ответе `status: 'pending'` без `inviteUrl`, без нового токена, письма и события. Это исправляет прежнюю гонку, когда второй запрос заменял токен и первое письмо уходило с мёртвой ссылкой. UI показывает «уже отправляется: N» и не считает это ошибкой.
+- **Явная повторная отправка** работает как раньше: после записанной доставки (успех или ошибка) новый запрос заменяет приглашение (`invitation.replaced`, `before: { openInvitations: n }`) и отправляет письмо. Если процесс упал до записи доставки, повтор снова доступен через 60 с.
+
+### SMS
+
+В одной транзакции под lock пакета — `InvitationDelivery` и `invitation.sms_recorded` (`after: { channel: 'sms', simulated: true, batchSize, userIds }`). Повтор с тем же ключом отдаёт те же тексты с `replayed: true` без новых строк. Явный повтор (новый ключ) записывается заново, как и раньше. Пустой пакет ничего не пишет. Production по-прежнему `503` без записей.
+
+### Выдача карты
+
+Существующий клиент: `SELECT "cardNumber" … FOR UPDATE`; та же карта (после нормализации) — no-op с прежним ответом `{ ok, userId, created: false }`, без записи и события. Иначе `update` + `invitation.card_assigned` (`before: { hasCard }`, `after: { hasCard: true, cardChanged, accountCreated: false }`). Новый клиент: `create` + событие с `accountCreated: true` в одной транзакции. `P2002` → `409 card_taken`, как раньше.
+
+### Содержимое журнала
+
+| Action | entity | Данные |
 |---|---|---|
-| `POST /api/admin/content/upload` | `media.uploaded` | `mediaAsset.create` + аудит |
-| `POST /api/admin/media/replace` | `media.replaced` | `SELECT … FOR UPDATE` + сравнение хеша + `update` + аудит |
-| `DELETE /api/admin/media` | `media.deleted` (по строке на файл, общий `requestId`) | `SELECT … WHERE name = ANY($1) ORDER BY name FOR UPDATE` + `deleteMany` + аудит |
+| `invitation.created` / `invitation.replaced` | `user` / userId | `before: null` или `{ openInvitations }`; `after: { channel: 'email', language, expiresAt, batchSize }` |
+| `invitation.delivery_recorded` | `invitation_batch` / batchId | `{ channel: 'email', batchSize, sent: [userId], failed: [userId], pending: [userId] }` |
+| `invitation.sms_recorded` | `invitation_batch` / batchId | `{ channel: 'sms', simulated: true, batchSize, userIds }` |
+| `invitation.card_assigned` | `user` / userId | флаги `hasCard`, `cardChanged`, `accountCreated` |
 
-Опции транзакции: `maxWait 10s`, `timeout 60s` — видео до 50 МБ передаётся внутри интерактивной транзакции.
+Нет токенов и их хешей, email, телефонов, имён, номеров карт, текста письма или SMS (проверено тестами по конкретным значениям). Названия RU/LV/EN: «Создание приглашения» / «Ielūgums izveidots» / «Invitation created»; «Замена приглашения» / «Ielūgums aizstāts» / «Invitation replaced»; «Результат отправки приглашений» / «Ielūgumu nosūtīšanas rezultāts» / «Invitation delivery result»; «Запись SMS-приглашений» / «SMS ielūgumi reģistrēti» / «SMS invitations recorded»; «Назначение карты клиенту» / «Klientam piešķirta karte» / «Customer card assigned».
 
-Аудит: `entityType: 'media_asset'`, `entityId`/`entityTitle` = имя файла; `before`/`after` = `{ path, mimeType, size, sha256 }` (`before: null` для загрузки, `after: null` для удаления). Хеш хранящихся байт считает PostgreSQL (`encode(sha256(data), 'hex')`), байты в приложение ради аудита не загружаются. Содержимое файла и исходное имя файла с компьютера сотрудника в журнал не попадают. Actor и request — из `requireAdmin()`.
+### Изменения контракта (совместимые)
 
-Названия: RU «Загрузка медиафайла» / «Замена медиафайла» / «Удаление медиафайла»; LV «Multivides fails augšupielādēts» / «Multivides fails aizstāts» / «Multivides fails dzēsts»; EN «Media file uploaded» / «Media file replaced» / «Media file deleted».
-
-### Сохранено без изменений
-
-- `requireAdmin()` (`users.manage`) до чтения тела во всех трёх маршрутах.
-- Upload: `file_is_required`, лимит 10 МБ для изображений / 50 МБ для видео (`file_too_large`), сигнатурная проверка `validateUploadedMedia` (`unsupported_file_type`, SVG и активный контент отклоняются), имя `<Date.now()>-<нормализованное имя>`, ответ `{ path, originalName, size, mimeType }`, `500 failed_to_upload_file`.
-- Replace: `invalid_filename`, `file_required`, лимит 10 МБ, только изображения (`validateUploadedImage`, `unsupported_type`), `404 not_found`, ответ `{ ok: true, path }`, `500 replace_failed`. Замена на месте под тем же именем — все ссылки `/api/media/<name>` остаются рабочими.
-- Delete: `name` или `names`, `400 name_required`, ответ `{ ok: true, deleted, errors: [...невалидные, ...отсутствующие] }`, `500 failed_to_delete`.
-- `GET /api/admin/media` не менялся.
-
-### Повторы и конкурентность
-
-- **Replace без изменений** (тот же sha256, тип и размер): `200 { ok: true, path }`, без записи, без сдвига `updatedAt` (порядок в медиатеке не меняется), без события.
-- **Параллельные replace одного файла** сериализуются row lock: второй видит результат первого, поэтому `before` второго события равен `after` первого; если байты одинаковы — второй запрос становится no-op.
-- **Повторный и параллельный delete**: существование решается под row lock; удалённый другим запросом файл возвращается в `errors`, `deleted: 0`, второго события нет. Порядок блокировки по имени исключает взаимную блокировку пакетных удалений.
-- **Upload** по контракту каждый раз создаёт новый ресурс с новым именем — повтор того же файла даёт отдельный ресурс и отдельное событие (дедупликации не было и не добавлялось). Совпадение имени в ту же миллисекунду → `P2002` → откат вместе с аудитом, `500 failed_to_upload_file` (как раньше).
-
-### Гарантии при сбое
-
-| Сбой | Результат |
-|---|---|
-| Ошибка `appendServerAudit` при upload | Ресурс не создан, `500 failed_to_upload_file` |
-| Ошибка аудита при replace | Прежние байты, тип и `updatedAt` сохранены, `500 replace_failed` |
-| Ошибка аудита на любом файле пакетного delete | Не удалён ни один файл пакета, `500 failed_to_delete` |
+- В `results` email-приглашений появился статус `pending` (без `inviteUrl`); в ответе повтора — `replayed: true`.
+- Новый необязательный заголовок `Idempotency-Key`; некорректное значение → `400 invalid_idempotency_key`.
+- Сбой записи результата доставки больше не превращает ответ в `500`: письма уже ушли, ответ 200 с фактическими статусами.
 
 ## Что подтверждено
 
-**Unit** (`lib/media-asset-store.test.ts`, 15): stateful harness со staged-копией состояния и сериализацией транзакций (модель row lock):
-
-- upload: событие с path/type/size/hash; откат при сбое аудита; коллизия имени без второго события;
-- replace: before/after; no-op без записи, без `updatedAt` и события; смена только типа фиксируется; `not_found` без события; откат при сбое аудита; конкурентная цепочка before→after; конкурентный дубль — одно событие; SQL содержит `FOR UPDATE` и `sha256(data)`;
-- delete: события по файлам с общим `requestId`; повтор — no-op; конкурентное удаление — одно событие; сбой аудита на втором файле оставляет оба файла;
-- в аудите нет байт файла (маркер и base64), ключи только `mimeType/path/sha256/size`.
-
-**Маршруты** (`content/upload` 12, `media` 9, `media/replace` 10): отказ без прав до обращения к store (upload, replace, delete), невалидный файл/имя/тип/размер до store, передача actor/request из сессии, no-op replace с тем же ответом, сбой store/аудита → прежние 500-коды, повторный delete → `deleted: 0` и файл в `errors`. `lib/admin-log-store.test.ts` — RU/LV/EN.
-
-**PostgreSQL-семантика на изолированном PGlite** (in-memory PostgreSQL в scratch-каталоге вне репозитория, схема из `prisma migrate diff --from-empty --to-schema prisma/schema.prisma`, реальный `appendServerAudit` и `PrismaPg`): 16/16 PASS — `sha256(data)` в PostgreSQL совпадает с Node sha256; `ANY($1)` с массивом и `ORDER BY … FOR UPDATE` работают; no-op не сдвигает `updatedAt`; повторный delete — no-op; общий `requestId`; при отказе вставки аудита (CHECK-ограничение) загрузка откатывается; байт в аудите нет. PGlite однопользовательский, поэтому настоящая конкурентность двух соединений там не проверялась — только моделью в unit-тестах. Рабочая Neon не использовалась; PGlite и его пакеты не добавлены в репозиторий.
+- `app/api/admin/invitations/route.post.test.ts` (16, stateful harness: staged-транзакции, сериализация как у advisory locks, управляемые часы, SMTP подменён): отказ без прав без записей; пустой, не-массив и 21 ID; некорректный ключ; staff-фильтр; пакет 3 с одной ошибкой SMTP (токены и аудит закоммичены до первого письма, статусы, `delivery_recorded` с sent/failed, токен `error`, строки доставки); отсутствие секретов в аудите; откат всех токенов пакета и отсутствие писем при сбое аудита; сбой записи доставки (ответ 200, токен погашен); повтор с тем же ключом; параллельный дубль с тем же ключом; параллельный запрос с другим ключом во время SMTP (`pending`, один токен, одно письмо, одно событие); явная повторная отправка после доставки (`invitation.replaced`); немедленный повтор после ошибки доставки; повтор после истечения окна 60 с.
+- `sms/route.test.ts` (11, новый): права, пакеты, ключ, production 503 без записей, строки доставки и одно событие без телефонов и текста, повтор, параллельный дубль, явный повтор, откат при сбое аудита, пустой пакет.
+- `card/route.test.ts` (16): прежние 9 сценариев + аудит существующего и нового клиента без ПДн и номера карты, no-op той же карты, смена карты, две параллельные одинаковые выдачи → одна запись, откат обновления и создания при сбое аудита.
+- `route.test.ts` (GET, 6), `invitations-api.test.ts` (новый ключ на каждое действие), `lib/admin-log-store.test.ts` (RU/LV/EN), `lib/invitations.test.ts`.
+- Мутационная проверка: при отключённых проверке повтора и in-flight guard падают тесты повтора, параллельного дубля и конкурентного запроса.
+- PostgreSQL-семантика на изолированном PGlite (scratch-каталог вне репозитория, схема из `prisma migrate diff`): 8/8 PASS — `pg_advisory_xact_lock(hashtext($1))` с параметрами, in-flight запросы по `InvitationToken`/`InvitationDelivery`, подсчёт заменённых приглашений, `SELECT "cardNumber" … FOR UPDATE`. Настоящая конкуренция двух соединений проверена только моделью: PGlite однопользовательский. Рабочая Neon не использовалась.
 
 ## Затронутые пути
 
-- `lib/media-asset-store.ts` (новый)
-- `lib/media-asset-store.test.ts` (новый)
-- `app/api/admin/content/upload/route.ts`, `route.test.ts`
-- `app/api/admin/media/route.ts`, `route.test.ts`
-- `app/api/admin/media/replace/route.ts`, `route.test.ts`
+- `lib/invitation-dispatch.ts` (новый), `lib/invitations.ts`
+- `app/api/admin/invitations/route.ts`, `route.test.ts`, `route.post.test.ts` (новый)
+- `app/api/admin/invitations/sms/route.ts`, `sms/route.test.ts` (новый)
+- `app/api/admin/invitations/card/route.ts`, `card/route.test.ts`
+- `app/[lang]/admin/invitations/invitations-api.ts`, `invitations-api.test.ts`, `useInvitationsPage.ts`
 - `lib/admin-log-store.ts`, `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
 
 ## Проверки
 
-Локально на `90ddbb40` до push:
+Локально на `fa76b7f3` до push:
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts lib/media-asset-store.test.ts app/api/admin/content/upload/route.test.ts app/api/admin/media/route.test.ts app/api/admin/media/replace/route.test.ts lib/admin-log-store.test.ts
-# PASS: 5 files, 67 tests
+npx vitest run --config vitest.config.ts app/api/admin/invitations lib/admin-log-store.test.ts 'app/[lang]/admin/invitations' lib/invitations.test.ts
+# PASS: 8 files, 90 tests
 
 npm run typecheck
 # PASS
 
 npm run audit:architecture
-# PASS: 958 source modules
+# PASS: 959 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 370 files, 3139 tests
+# PASS: 372 files, 3176 tests
 
-npx eslint lib/media-asset-store.ts lib/media-asset-store.test.ts app/api/admin/content/upload/route.ts app/api/admin/content/upload/route.test.ts app/api/admin/media/route.ts app/api/admin/media/route.test.ts app/api/admin/media/replace/route.ts app/api/admin/media/replace/route.test.ts lib/admin-log-store.ts lib/admin-log-store.test.ts
+npx eslint <14 изменённых файлов>
 # PASS
 
 npm run check:encoding
-# PASS: 1356 source files
+# PASS: 1359 source files
 
 git diff --check
 # PASS
 ```
 
-PGlite-проверка (16/16) выполнялась временным скриптом вне репозитория; файл в коммит не входит.
-
 GitHub `static-and-unit`: не запущен — нужен PR (см. «Статус и база»).
 
 ## Отдельные находки (не исправлялись)
 
-- **Удаление не проверяет ссылки.** `DELETE /api/admin/media` удаляет ресурс, даже если он используется в баннерах, блоге, товарах или `site-content`; ссылки начинают отдавать 404. Поведение прежнее; теперь удаление хотя бы попадает в журнал с хешем.
-- **Кэш после замены.** `/api/media/<name>` кэшируется публично на 1 час (+ stale-while-revalidate сутки), поэтому после replace CDN/браузер может показывать старое изображение. Поведение прежнее.
-- **Replace принимает только изображения**, в том числе для существующего видео-ресурса (видео можно заменить картинкой, но не другим видео). Поведение прежнее.
+- **Одобрение заявки на доступ** (`PATCH /api/admin/access-requests/[id]`, PR #21) создаёт приглашение и отправляет письмо, но не пишет `InvitationDelivery`. Поэтому явная отправка из «Приглашений» в течение 60 с после одобрения вернёт `pending`. Решение — записывать доставку там так же; оставлено, чтобы не расширять PR.
+- **Самостоятельная активация карты** (`lib/card-activation.ts`) тоже вызывает `replaceInvitation`, без per-user lock. Гонка с одновременной отправкой администратора теоретически возможна. Без аудита — это не админское действие.
+- **Выдача карты существующему клиенту** перезаписывает другую карту без подтверждения. Поведение прежнее, теперь фиксируется как `cardChanged: true`.
+- **SMS вне production** записывает `InvitationDelivery.status = 'sent'` для симуляции. Поведение прежнее; в событии аудита явно `simulated: true`.
 
 ## Карта покрытия
 
 ### Постоянный аудит в той же транзакции
 
-К ранее покрытым добавлены `POST /api/admin/content/upload`, `POST /api/admin/media/replace`, `DELETE /api/admin/media`.
+К ранее покрытым добавлены `POST /api/admin/invitations` (выпуск и замена приглашений; результат доставки — отдельным событием после SMTP), `POST /api/admin/invitations/sms`, `POST /api/admin/invitations/card`.
 
 ### Запись после операции или в отдельной транзакции
 
-Без изменений относительно PR #21:
+Без изменений относительно PR #22:
 
 - `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
 - `POST /api/admin/import`: started/completed окружают отдельные product operations;
@@ -137,7 +140,7 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ### Без записи в `AuditLog`
 
-После PR #21 было 26; этот PR закрывает три маршрута, остаётся **23**:
+После PR #22 было 23; этот PR закрывает три маршрута, остаётся **20**:
 
 1. `PUT /api/admin/banner-groups`
 2. `PUT /api/admin/banners/[id]`
@@ -156,34 +159,31 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 15. `PUT /api/admin/dashboard-prefs`
 16. `PUT /api/admin/email-templates/[id]`
 17. `POST /api/admin/email-templates/[id]/send-test`
-18. `POST /api/admin/invitations/card`
-19. `POST /api/admin/invitations`
-20. `POST /api/admin/invitations/sms`
-21. `POST /api/admin/notifications/assets`
-22. `POST /api/admin/products/[id]/notify-promo`
-23. `POST /api/admin/stock-alerts/send`
+18. `POST /api/admin/notifications/assets`
+19. `POST /api/admin/products/[id]/notify-promo`
+20. `POST /api/admin/stock-alerts/send`
 
 `POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin (по коду).
 
 ## Первый следующий шаг
 
-0. Создать Draft PR (base `fix/2026-11-09-admin-audit-access-requests`, head `fix/2026-11-09-admin-audit-media`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-access-requests --head fix/2026-11-09-admin-audit-media`.
-1. Следующий stacked PR — аудит приглашений: `POST /api/admin/invitations`, `POST /api/admin/invitations/card`, `POST /api/admin/invitations/sms`. Начать от зелёного head этого PR.
-2. Проследить создание/замену `InvitationToken`, `InvitationDelivery` и внешнюю доставку (SMTP/SMS); токен — в той же транзакции, что и аудит, доставка — после коммита (по образцу access requests в PR #21).
-3. Сохранить права, лимиты пакетов, API-контракт; в журнале — ID пользователя/приглашения, канал, количество и статус доставки, без токена, email, телефона и текста сообщения; повтор без изменений не должен создавать второй токен и событие.
-4. Тесты: отказ без прав, невалидный ввод, успех, повтор, параллельные запросы для одного пользователя, сбой аудита (откат токена), сбой доставки после коммита.
+0. Создать Draft PR (base `fix/2026-11-09-admin-audit-media`, head `fix/2026-11-09-admin-audit-invitations`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-media --head fix/2026-11-09-admin-audit-invitations`.
+1. Следующий stacked PR — карточные рассылки: `POST /api/admin/card-request` (письмо об отклонении заявки) и `POST /api/admin/card-rules-campaign` (кампания правил карты: состояние в KV, пакетная отправка). Начать от зелёного head этого PR.
+2. Проследить изменения KV-состояния кампании и отправку; изменение состояния и аудит — в одной транзакции, результат доставки — отдельно после SMTP (по образцу этого PR, переиспользуя `lib/invitation-dispatch.ts` для `Idempotency-Key`).
+3. Сохранить права, размеры пакетов, блокировку кампании (`CAMPAIGN_LOCK_MS`) и API-контракт; в журнале — внутренние ID, канал, размеры и счётчики, без email, текста и заметок.
+4. Тесты: отказ без прав, невалидный ввод, пакет, повтор, конкуренция, откат при сбое аудита, сбой SMTP после коммита.
 
-Далее: остальные рассылки (`broadcast`, `card-request`, `card-rules-campaign`, `notify-promo`, `stock-alerts/send`), затем CMS-контент (баннеры, блог, кампании, шаблоны писем), hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
+Далее: остальные рассылки (`broadcast`, `notify-promo`, `stock-alerts/send`, `email-templates/[id]/send-test`), затем CMS-контент (баннеры, блог, кампании, шаблоны писем), hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-media
+git switch fix/2026-11-09-admin-audit-invitations
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts lib/media-asset-store.test.ts app/api/admin/content/upload/route.test.ts app/api/admin/media/route.test.ts app/api/admin/media/replace/route.test.ts lib/admin-log-store.test.ts
+npx vitest run --config vitest.config.ts app/api/admin/invitations lib/admin-log-store.test.ts 'app/[lang]/admin/invitations' lib/invitations.test.ts
 npm run audit:architecture
 npm run typecheck
 ```

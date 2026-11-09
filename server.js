@@ -1,6 +1,7 @@
 const { createServer, request } = require('node:http')
 const next = require('next')
 const { applyTrustedClientIp } = require('./server-client-ip')
+const { installRuntimeStats } = require('./server-runtime-stats')
 
 const IMAGE_WARMUP_PATH = '/_next/image?url=%2Fhero.jpg&w=3840&q=90'
 const IMAGE_WARMUP_TIMEOUT_MS = 60_000
@@ -21,6 +22,8 @@ if (!isNamedPipe && (!Number.isInteger(port) || port < 1 || port > 65535)) {
 
 const app = next(isNamedPipe ? { dev } : { dev, hostname, port })
 const handle = app.getRequestHandler()
+// Admin-only diagnostics: GET /api/admin/runtime-stats (see server-runtime-stats.js).
+const trackRequest = installRuntimeStats()
 
 function warmImageOptimizer(server) {
     const startedAt = performance.now()
@@ -74,6 +77,7 @@ app.prepare()
     .then(() => {
         const server = createServer((request, response) => {
             applyTrustedClientIp(request.headers)
+            trackRequest(request, response)
             handle(request, response).catch((error) => {
                 console.error('Failed to handle request', error)
 

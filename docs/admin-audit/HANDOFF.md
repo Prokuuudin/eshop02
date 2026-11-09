@@ -9,6 +9,7 @@
 - Проверка перед созданием ветки: PR #18 был `open`, `draft=true`, `merged=false`; его head точно совпадал с `e91fc0fa1c7c3675459af9b12ee8f4c6e97f6fe8`, а `static-and-unit` на нём имел результат `success`.
 - Коммит реализации: `9272528410adc406a3483004a8481321559cc749`.
 - Draft PR #19: https://github.com/Prokuuudin/eshop02/pull/19; base `fix/2026-11-09-admin-audit-product-archive-move`, поэтому diff содержит только аудит ценовых групп.
+- Проверенный head до этого документационного обновления: `587ac8124aa3e14b7aece7fe5e18da4afa4e9e10`; `static-and-unit` завершён с `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42623784184/job/129182249107.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Реализовано
@@ -90,7 +91,7 @@ git diff --check
 # PASS
 ```
 
-GitHub `static-and-unit` на финальном SHA и ссылка на job будут добавлены после push.
+GitHub `static-and-unit` на SHA `587ac8124aa3e14b7aece7fe5e18da4afa4e9e10` прошёл: lint, typecheck, security/architecture audits, unit, integration и ERP performance завершились успешно. Job: https://github.com/Prokuuudin/eshop02/actions/runs/42623784184/job/129182249107. Следующий коммит меняет только этот handoff; его CI нужно проверить как финальный branch head.
 
 ## Playwright отдельно
 

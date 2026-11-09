@@ -28,6 +28,11 @@ export type AdminLogAction =
   | 'media.uploaded'
   | 'media.replaced'
   | 'media.deleted'
+  | 'invitation.created'
+  | 'invitation.replaced'
+  | 'invitation.delivery_recorded'
+  | 'invitation.sms_recorded'
+  | 'invitation.card_assigned'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -78,6 +83,11 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'media.uploaded': 'Загрузка медиафайла',
   'media.replaced': 'Замена медиафайла',
   'media.deleted': 'Удаление медиафайла',
+  'invitation.created': 'Создание приглашения',
+  'invitation.replaced': 'Замена приглашения',
+  'invitation.delivery_recorded': 'Результат отправки приглашений',
+  'invitation.sms_recorded': 'Запись SMS-приглашений',
+  'invitation.card_assigned': 'Назначение карты клиенту',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -115,6 +125,11 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'media.uploaded': 'Media file uploaded',
   'media.replaced': 'Media file replaced',
   'media.deleted': 'Media file deleted',
+  'invitation.created': 'Invitation created',
+  'invitation.replaced': 'Invitation replaced',
+  'invitation.delivery_recorded': 'Invitation delivery result',
+  'invitation.sms_recorded': 'SMS invitations recorded',
+  'invitation.card_assigned': 'Customer card assigned',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -152,6 +167,11 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'media.uploaded': 'Multivides fails augšupielādēts',
   'media.replaced': 'Multivides fails aizstāts',
   'media.deleted': 'Multivides fails dzēsts',
+  'invitation.created': 'Ielūgums izveidots',
+  'invitation.replaced': 'Ielūgums aizstāts',
+  'invitation.delivery_recorded': 'Ielūgumu nosūtīšanas rezultāts',
+  'invitation.sms_recorded': 'SMS ielūgumi reģistrēti',
+  'invitation.card_assigned': 'Klientam piešķirta karte',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

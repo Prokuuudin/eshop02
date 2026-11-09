@@ -12,6 +12,7 @@ const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, require
   replaceInvitationMock: vi.fn(),
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -30,9 +31,7 @@ vi.mock('@/lib/invitations', async (importOriginal) => {
   return { ...actual, readInvitations: readInvitationsMock, deriveStatus: deriveStatusMock, replaceInvitation: replaceInvitationMock }
 })
 
-import { GET, POST } from './route'
-import { buildInviteEmail } from '@/lib/invitation-emails'
-import { sendEmail } from '@/lib/mailer'
+import { GET } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -134,23 +133,4 @@ describe('GET /api/admin/invitations', () => {
   })
 })
 
-describe('POST /api/admin/invitations', () => {
-  it('never issues a card invitation to a staff account, only to customers', async () => {
-    transactionMock.mockImplementation(async (fn) => fn({}))
-    vi.mocked(buildInviteEmail).mockReturnValue({ subject: 'Invite', html: '<p>Invite</p>' })
-    userFindManyMock.mockResolvedValue([
-      { id: 'c1', name: 'Client', email: 'client@test.com', cardNumber: '1001', platformRole: 'customer', teamRole: null, superAdmin: false },
-      { id: 'o1', name: 'Owner', email: 'owner@test.com', cardNumber: '1002', platformRole: 'customer', teamRole: 'admin', superAdmin: false },
-      { id: 'a1', name: 'Admin', email: 'admin@test.com', cardNumber: '1003', platformRole: 'admin', teamRole: null, superAdmin: true },
-      { id: 'm1', name: 'Manager', email: 'manager@test.com', cardNumber: '1004', platformRole: 'customer', teamRole: 'manager', superAdmin: false },
-    ])
-
-    const res = await POST(new NextRequest('http://localhost/api/admin/invitations', {
-      method: 'POST', body: JSON.stringify({ userIds: ['c1', 'o1', 'a1', 'm1'] }),
-    }))
-
-    expect(res.status).toBe(200)
-    expect(replaceInvitationMock.mock.calls.map(([, r]) => r.userId)).toEqual(['c1', 'o1'])
-    expect(vi.mocked(sendEmail).mock.calls.map(([to]) => to)).toEqual(['client@test.com', 'owner@test.com'])
-  })
-})
+// POST is covered by route.post.test.ts with a stateful transaction harness.

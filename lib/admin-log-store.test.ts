@@ -73,4 +73,14 @@ describe('administrator audit event labels', () => {
     expect(labels['media.replaced']).toBe(replaced)
     expect(labels['media.deleted']).toBe(deleted)
   })
+
+  it.each([
+    ['ru', ['Создание приглашения', 'Замена приглашения', 'Результат отправки приглашений', 'Запись SMS-приглашений', 'Назначение карты клиенту']],
+    ['lv', ['Ielūgums izveidots', 'Ielūgums aizstāts', 'Ielūgumu nosūtīšanas rezultāts', 'SMS ielūgumi reģistrēti', 'Klientam piešķirta karte']],
+    ['en', ['Invitation created', 'Invitation replaced', 'Invitation delivery result', 'SMS invitations recorded', 'Customer card assigned']],
+  ] as const)('names invitation events in %s', (language, expected) => {
+    const labels = getAdminActionLabels(language)
+    const actions = ['invitation.created', 'invitation.replaced', 'invitation.delivery_recorded', 'invitation.sms_recorded', 'invitation.card_assigned'] as const
+    expect(actions.map((action) => labels[action])).toEqual(expected)
+  })
 })

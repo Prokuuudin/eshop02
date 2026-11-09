@@ -1,20 +1,57 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { userFindFirstMock, userUpdateMock, userCreateMock, hashPasswordMock, requireAdminMock } = vi.hoisted(() => ({
+const { userFindFirstMock, userUpdateMock, userCreateMock, hashPasswordMock, requireAdminMock, appendServerAuditMock, h } = vi.hoisted(() => ({
   userFindFirstMock: vi.fn(),
   userUpdateMock: vi.fn(),
   userCreateMock: vi.fn(),
   hashPasswordMock: vi.fn(),
   requireAdminMock: vi.fn(),
+  appendServerAuditMock: vi.fn(),
+  // Committed state of the transaction harness: writes and audit rows publish
+  // only when the callback resolves; transactions run one at a time (row lock).
+  h: {
+    cards: {} as Record<string, string | null>,
+    committed: [] as string[],
+    audits: [] as Array<Record<string, unknown>>,
+    queue: Promise.resolve() as Promise<unknown>,
+  },
 }))
 
+vi.mock('server-only', () => ({}))
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: appendServerAuditMock }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: {
-      findFirst: userFindFirstMock,
-      update: userUpdateMock,
-      create: userCreateMock,
+    user: { findFirst: userFindFirstMock },
+    $transaction: async (run: (tx: unknown) => Promise<unknown>) => {
+      const previous = h.queue
+      let release = (): void => undefined
+      h.queue = new Promise<void>((resolve) => { release = resolve })
+      await previous
+      try {
+        const writes: string[] = []
+        const audits: Array<Record<string, unknown>> = []
+        const cards: Record<string, string | null> = { ...h.cards }
+        const tx = {
+          _audits: audits,
+          $queryRaw: async (_strings: TemplateStringsArray, id: string) => (id in cards ? [{ cardNumber: cards[id] }] : []),
+          user: {
+            update: async (args: { where: { id: string }; data: { cardNumber: string } }) => {
+              writes.push('update'); cards[args.where.id] = args.data.cardNumber; return userUpdateMock(args)
+            },
+            create: async (args: { data: { id: string; cardNumber: string } }) => {
+              writes.push('create'); cards[args.data.id] = args.data.cardNumber; return userCreateMock(args)
+            },
+          },
+        }
+        const result = await run(tx)
+        h.cards = cards
+        h.committed.push(...writes)
+        h.audits.push(...audits)
+        return result
+      } finally {
+        release()
+      }
     },
   },
 }))
@@ -40,6 +77,13 @@ beforeEach(() => {
   userFindFirstMock.mockResolvedValue(null)
   userCreateMock.mockImplementation(async ({ data }) => ({ id: data.id }))
   userUpdateMock.mockImplementation(async ({ where }) => ({ id: where.id }))
+  h.cards = { 'user-1': null }
+  h.committed = []
+  h.audits = []
+  h.queue = Promise.resolve()
+  appendServerAuditMock.mockImplementation(async (tx: { _audits: Array<Record<string, unknown>> }, _req: NextRequest, actor: { id: string }, input: Record<string, unknown>) => {
+    tx._audits.push({ actorId: actor.id, ...input })
+  })
 })
 
 describe('POST /api/admin/invitations/card', () => {
@@ -114,5 +158,80 @@ describe('POST /api/admin/invitations/card', () => {
     expect(await res.json()).toEqual({ error: 'staff_account' })
     expect(userUpdateMock).not.toHaveBeenCalled()
     expect(userCreateMock).not.toHaveBeenCalled()
+  })
+
+  it('audits a card assigned to an existing client with flags only', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+    await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', phone: '+37120000000' }))
+
+    expect(h.audits).toEqual([{
+      actorId: 'admin-1', action: 'invitation.card_assigned', entityType: 'user', entityId: 'user-1',
+      before: { hasCard: false }, after: { hasCard: true, cardChanged: false, accountCreated: false },
+    }])
+  })
+
+  it('audits a created sleeping account without email, phone, name or card number', async () => {
+    const res = await POST(makeRequest({ email: 'New@Client.lv', cardNumber: '01002', name: 'Anna', phone: '+37120000001' }))
+    const { userId } = await res.json()
+
+    expect(h.audits).toEqual([{
+      actorId: 'admin-1', action: 'invitation.card_assigned', entityType: 'user', entityId: userId,
+      before: null, after: { hasCard: true, cardChanged: false, accountCreated: true },
+    }])
+    const serialized = JSON.stringify(h.audits)
+    for (const secret of ['client.lv', 'Anna', '+3712', '1002']) expect(serialized).not.toContain(secret)
+  })
+
+  it('treats a repeat of the same card for the same client as a no-op', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+    h.cards['user-1'] = '1001'
+
+    const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '01001' }))
+
+    expect(await res.json()).toEqual({ ok: true, userId: 'user-1', created: false })
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(h.audits).toHaveLength(0)
+  })
+
+  it('records a card change on an existing client', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+    h.cards['user-1'] = '1000'
+
+    await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' }))
+
+    expect(h.audits[0]).toMatchObject({ before: { hasCard: true }, after: { cardChanged: true } })
+  })
+
+  it('applies two concurrent identical assignments once', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+
+    const responses = await Promise.all([
+      POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' })),
+      POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' })),
+    ])
+
+    expect(responses.map((r) => r.status)).toEqual([200, 200])
+    expect(h.committed).toEqual(['update'])
+    expect(h.audits).toHaveLength(1)
+  })
+
+  it('rolls back the card assignment when the audit append fails', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+    appendServerAuditMock.mockRejectedValueOnce(new Error('audit unavailable'))
+
+    const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' }))
+
+    expect(res.status).toBe(500)
+    expect(h.committed).toEqual([])
+    expect(h.cards['user-1']).toBeNull()
+  })
+
+  it('rolls back a created account when the audit append fails', async () => {
+    appendServerAuditMock.mockRejectedValueOnce(new Error('audit unavailable'))
+
+    const res = await POST(makeRequest({ email: 'new@client.lv', cardNumber: '1002', phone: '+37120000001' }))
+
+    expect(res.status).toBe(500)
+    expect(h.committed).toEqual([])
   })
 })

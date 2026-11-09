@@ -79,12 +79,19 @@ export async function fetchCardCampaign(
     return parseResponse(await fetch(`/api/admin/card-rules-campaign?${buildPageQuery(query)}`, { signal }));
 }
 
+// One key per admin action: a technical retry of the same request is replayed
+// by the server instead of issuing a second token and email.
+const idempotencyHeaders = (): Record<string, string> => ({
+    'Content-Type': 'application/json',
+    'Idempotency-Key': crypto.randomUUID(),
+});
+
 export async function sendInvitationBatch(
     userIds: string[]
 ): Promise<{ ok: boolean; data: InvitationsResponse }> {
     return parseResponse(await fetch('/api/admin/invitations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: idempotencyHeaders(),
         body: JSON.stringify({ userIds }),
     }));
 }
@@ -95,7 +102,7 @@ export async function sendSmsInvitationBatch(
 ): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; error?: string } }> {
     return parseResponse(await fetch('/api/admin/invitations/sms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: idempotencyHeaders(),
         body: JSON.stringify({ userIds, language }),
     }));
 }

@@ -7,6 +7,8 @@ export type AdminLogAction =
   | 'order.bulk_status_changed'
   | 'order.note_saved'
   | 'order.updated'
+  | 'order.payment_status_updated'
+  | 'site_content.updated'
   | 'product.price_changed'
   | 'product.stock_changed'
   | 'product.deleted'
@@ -37,6 +39,8 @@ export type AdminLogEntry = {
 
 export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'order.updated':             'Редактирование заказа',
+  'order.payment_status_updated': 'Ручное изменение статуса оплаты',
+  'site_content.updated':      'Обновление контента сайта',
   'order.status_changed':      'Смена статуса заказа',
   'order.bulk_status_changed': 'Массовая смена статуса',
   'order.note_saved':          'Заметка к заказу',
@@ -57,6 +61,8 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
 
 const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'order.updated': 'Order edited',
+  'order.payment_status_updated': 'Payment status updated manually',
+  'site_content.updated': 'Site content updated',
   'order.status_changed': 'Order status changed',
   'order.bulk_status_changed': 'Bulk status change',
   'order.note_saved': 'Order note saved',
@@ -77,6 +83,8 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
 
 const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'order.updated': 'Pasūtījums rediģēts',
+  'order.payment_status_updated': 'Maksājuma statuss mainīts manuāli',
+  'site_content.updated': 'Vietnes saturs atjaunināts',
   'order.status_changed': 'Pasūtījuma statuss mainīts',
   'order.bulk_status_changed': 'Masveida statusa maiņa',
   'order.note_saved': 'Pasūtījuma piezīme saglabāta',

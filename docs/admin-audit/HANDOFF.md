@@ -8,7 +8,8 @@
 - Stacked base: `8f1e224921f5ffa3a4900b4bfe36452e6af45392`, проверенный head открытого Draft PR #26 (`fix/2026-11-09-admin-audit-promo-template-sends`).
 - Перед созданием ветки GitHub подтвердил: PR #26 `open`, `draft=true`, `merged=false`, head точно `8f1e224921f5ffa3a4900b4bfe36452e6af45392`.
 - Коммит реализации: `1cf040ae10eed766fa4ff47fea707e3dcbff4e0f`.
-- Draft PR и результат `static-and-unit` будут добавлены после push.
+- Stacked Draft PR #27: https://github.com/Prokuuudin/eshop02/pull/27; base `fix/2026-11-09-admin-audit-promo-template-sends`.
+- Результат `static-and-unit` будет добавлен после проверки финального SHA.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Реализовано

@@ -1,91 +1,100 @@
-# Hairshop Pro: аудит восстановления конфигурации — handoff
+# Hairshop Pro: аудит решений по заявкам на доступ — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-configuration-restore`.
-- Stacked base: `a700ccc2a5c1b235df9332f79dc9c3ee89f937c4`, проверенный head открытого Draft PR #19 (`fix/2026-11-09-admin-audit-price-groups`).
-- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #19 `open`, `draft=true`, `merged=false`, head точно `a700ccc2…`, base `fix/2026-11-09-admin-audit-product-archive-move`; `static-and-unit` на `a700ccc2` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42624578706/job/129184935085. Browser jobs (`firefox-smoke`, `accessibility-webkit`, `chromium-critical-smoke`) на том же SHA падают — известная проблема установки Playwright, PR #17.
-- Коммит реализации: `59bf4e0c` (`fix(audit): record configuration restore with file compensation`).
-- Draft PR в `fix/2026-11-09-admin-audit-price-groups`: **не создан** — `gh` на этой машине не авторизован (`gh auth status`: not logged in), токена в окружении нет. Ветка запушена; PR открывается по ссылке: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-price-groups...fix/2026-11-09-admin-audit-configuration-restore?expand=1 (отметить «Create draft pull request»).
+- Ветка: `fix/2026-11-09-admin-audit-access-requests`.
+- Stacked base: `5ff8204d1125ea953b63bc593029110b6d0c6ee5`, проверенный head открытого Draft PR #20 (`fix/2026-11-09-admin-audit-configuration-restore`).
+- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #20 `open`, `draft=true`, `merged=false`, head точно `5ff8204d…`, base `fix/2026-11-09-admin-audit-price-groups`; `static-and-unit` на `5ff8204d` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42684637345/job/129388037096. Browser jobs (`chromium-critical-smoke`, `firefox-smoke`, `accessibility-webkit`) на том же SHA падают — известная проблема установки Playwright, PR #17.
+- Коммит реализации: `27e84a6d` (`fix(audit): record access request decisions once`).
+- Draft PR в `fix/2026-11-09-admin-audit-configuration-restore`: **не создан**. `gh` не авторизован (`gh auth status`: not logged in), токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена; PR открывается по ссылке: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-configuration-restore...fix/2026-11-09-admin-audit-access-requests?expand=1 (выбрать «Create draft pull request»).
 - `static-and-unit` запускается только на `pull_request` (`.github/workflows/quality.yml`), поэтому CI на этой ветке появится только после создания PR. Результат CI на финальном SHA **не проверен**.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Реализовано
 
-Прослежен `POST /api/admin/backup` → `restoreConfigurationBackup` в `lib/configuration-backup.ts`. Restore меняет только 9 JSON-файлов в `data/` (`CONFIGURATION_FILES`); БД restore не трогает (PostgreSQL восстанавливается отдельно через PITR). В одной PostgreSQL-транзакции находятся только advisory lock и строка `AuditLog`; файловая часть транзакционной быть не может и защищена staging + компенсацией.
+Прослежен `PATCH /api/admin/access-requests/[id]` (`app/api/admin/access-requests/[id]/route.ts`). Единственный вызывающий в UI — `app/[lang]/admin/client-barcodes/useAdminClientBarcodesPage.tsx`, работает только со списком `?status=pending`.
 
-Сохранены без изменений: `requireAdmin` (`users.manage`) до чтения тела, фраза `RESTORE CONFIGURATION`, лимит 20 MB (заголовок и фактический размер), `validateConfigurationBackup` (версия, полный набор файлов, sha256/bytes manifest), формат ответа `{ ok: true, restored: string[] }` и `400 invalid_or_failed_restore` при любой ошибке.
+Сохранено без изменений: проверка `getServerUser()` + `hasAdminPermission(user, 'customers.read')` → 403; 404 для неизвестной заявки; zod-схема тела и `400 invalid_status` / `invalid_company_details` / `invalid_card`; `409 staff_account` / `card_taken` / `user_has_card`; создание или обновление аккаунта, `mustChangePassword: true`; формат ответов `{ request, cardNumber, userId, emailStatus: 'sent' }` (200), `{ …, emailStatus: 'error' }` (502), `{ request }` для отклонения, `500 server_error`.
 
-Изменение семантики: `restored` теперь перечисляет только фактически изменённые файлы (раньше — всегда все 9). UI (`app/[lang]/admin/system/backup/page.tsx`) показывает `restored.length`, поэтому при no-op покажет «Восстановлено файлов: 0». Форма ответа не изменилась.
+### Новый порядок одобрения
 
-| Action | Сущность | before / after |
-|---|---|---|
-| `settings.configuration_restored` | `configuration` / `configuration-files` | `{ files: [{ name, bytes, sha256 }] }` только по изменённым файлам; хеш и размер считаются по байтам файла до и после |
+1. Предпроверки вне транзакции (права, тело, карта, staff-аккаунт) — как раньше.
+2. `existing.status !== 'pending'` → `409 { error: 'already_decided', status }`.
+3. Одна транзакция:
+   - условный `accessRequest.updateMany({ where: { id, status: 'pending' } })`; `count !== 1` → откат и `409 already_decided`. В PostgreSQL условный UPDATE берёт row lock, поэтому из конкурентных решений проходит ровно одно;
+   - `user.create` или `user.update`;
+   - `deleteCertificate(tx, id)` (теперь возвращает, был ли сертификат удалён);
+   - `replaceInvitation(tx, …)` — **перенесено внутрь транзакции** (раньше выполнялось после коммита);
+   - `appendServerAudit(tx, req, user, …)`;
+   - чтение ответа.
+4. После коммита — отправка письма. При ошибке токен помечается `status: 'error'`, ответ `502 emailStatus: 'error'`; решение, аккаунт, приглашение и аудит остаются.
+5. `P2002` при гонке двух разных заявок за одну карту → `409 card_taken`, за один email → `409 concurrent_update`.
 
-Содержимое файлов и payload бэкапа в журнал не попадают (проверено тестом с маркером в исходном файле). Actor и request берутся из `requireAdmin()`; `requestId` = operationId восстановления. Названия: RU «Восстановление конфигурации», LV «Konfigurācija atjaunota», EN «Configuration restored».
+Отклонение: тот же claim, `deleteCertificate(tx)` и аудит в одной транзакции (раньше `update` и удаление сертификата шли отдельными запросами). Письмо об отклонении отправляет UI отдельным вызовом `POST /api/admin/card-request` — этот маршрут не менялся и по-прежнему без аудита.
 
-### Порядок выполнения
+### Исправленное поведение повторов
 
-1. Валидация бэкапа; in-process очередь (`serialized`) — параллельные restore в одном процессе идут строго по очереди.
-2. Вне транзакции: все 9 целевых файлов пишутся во временные `.<operationId>.stage.<name>` (`flag: 'wx'`) в том же каталоге (тот же том — `rename` атомарен).
-3. Транзакция `maxWait 10s / timeout 30s`: `pg_advisory_xact_lock(hashtext('configuration-backup-restore'))` сериализует restore между процессами; под lock текущие файлы перечитываются; файл считается неизменным, если sha256 канонического JSON совпадает с manifest. Для изменённых пишется rollback-копия `.<operationId>.rollback.<name>`.
-4. Если изменённых нет — возврат `[]`, ни одного `rename`, события нет.
-5. `rename(stage → destination)` по каждому изменённому файлу. Без предварительного `unlink`: Node `fs.rename` на Windows использует `MoveFileEx(MOVEFILE_REPLACE_EXISTING)`, читатели не видят отсутствующего файла, а сбой `rename` оставляет оригинал на месте.
-6. `appendServerAudit(tx, …)`; после коммита rollback-копии удаляются.
+До этого PR повторный PATCH уже решённой заявки выполнял весь сценарий заново: снова ставил `mustChangePassword: true` (в том числе уже активированному клиенту), перезаписывал согласия, удалял действующие неиспользованные приглашения, создавал новое и снова отправлял письмо. Отклонение одобренной заявки меняло статус на `rejected`, но аккаунт с картой оставался. Теперь любое решение по не-`pending` заявке — `409 already_decided` без побочных эффектов. В UI добавлено сообщение RU/LV/EN «Заявка уже обработана», список после этого перезагружается.
 
-### Фактические гарантии при частичном сбое
+### Событие аудита
 
-| Сбой | Что происходит | Диагностика |
-|---|---|---|
-| Ошибка записи stage-файлов | Целевые файлы не тронуты, временные удаляются | исключение → 400 |
-| Ошибка `rename` после первой замены | Под тем же lock уже заменённые файлы возвращаются из rollback-копий; файл, на котором упал `rename`, не менялся. Транзакция откатывается, события нет | `configuration_restore_failed`, `failureStage: file_replacement`, `auditCommit: not_committed` |
-| Ошибка `appendServerAudit` | То же: все заменённые файлы возвращаются, транзакция откатывается | `failureStage: audit_append` |
-| Ошибка после callback (коммит/ответ потерян) | Поиск строки `AuditLog` по `requestId`. Есть — restore считается успешным. Нет — компенсация под новым advisory lock (или без lock, если БД недоступна) | `configuration_restore_commit_confirmed_after_error` (warn) или `configuration_restore_failed`, `failureStage: audit_commit` |
-| Проверка коммита невозможна (БД недоступна) | Файлы компенсируются, но строка аудита могла закоммититься: **журнал может содержать событие о restore, которого в файлах нет** | `configuration_restore_consistency_unknown`, `auditCommit: unknown`, `alert: true` |
-| Компенсация не удалась (ошибка `rename` rollback-копии) | Файл остаётся в новом состоянии без события аудита; rollback-копия **не удаляется** и лежит в `data/.<operationId>.rollback.<name>` для ручного восстановления | `compensation: failed`, `compensationFailedFiles`, `configuration_restore_recovery_files_retained`, `alert: true` |
-| Файл изменён другим писателем после нашей замены | Компенсация **не перезаписывает** чужое состояние (sha256 текущих байт ≠ staged), файл помечается как не скомпенсированный, rollback-копия сохраняется | как выше, `alert: true` |
+| Action | Entity | before | after |
+|---|---|---|---|
+| `access_request.approved` | `access_request` / ID заявки | `{ status: 'pending', approvedTeamRole: null }` | `status`, `approvedTeamRole` (назначенная роль, по умолчанию `viewer`), `requestType`, `customerType`, `account: { userId, action: 'created' \| 'updated' }`, `invitation: { created: true, expiresAt }`, `certificateDeleted` |
+| `access_request.rejected` | `access_request` / ID заявки | то же | `status`, `approvedTeamRole: null`, `requestType`, `certificateDeleted` |
 
-Не гарантируется: атомарность набора из 9 файлов для читателей во время restore (другие API могут прочитать смесь старых и новых файлов в пределах миллисекунд замены); защита от прямых записей в эти файлы другими admin API, которые не берут тот же lock; повтор `rename` при временных Windows-блокировках (`EPERM`/`EBUSY` от антивируса/индексатора) — такой сбой обрабатывается как ошибка замены с компенсацией.
+Actor и request передаются из серверной сессии. `entityTitle` не пишется. В журнал не попадают: email, имя, телефон, хэш пароля, название компании и регистрационный номер заявителя, номер карты, заметка проверяющего (свободный текст), сертификат и его имя файла, токен приглашения и его хэш (проверено тестом по списку конкретных значений). Названия: RU «Одобрение заявки на доступ» / «Отклонение заявки на доступ», LV «Piekļuves pieteikums apstiprināts» / «Piekļuves pieteikums noraidīts», EN «Access request approved» / «Access request rejected».
+
+## Фактические гарантии при сбоях
+
+| Сбой | Результат |
+|---|---|
+| Ошибка `appendServerAudit` | Транзакция откатывается целиком: заявка остаётся `pending`, аккаунт не создан и не изменён, сертификат на месте, приглашения нет, письмо не отправлено; `500 server_error` |
+| Ошибка в `user.create/update`, `deleteCertificate`, `replaceInvitation` | То же — всё в одной транзакции |
+| Ошибка SMTP после коммита | Решение, аккаунт, приглашение (`status: 'error'`) и одна строка аудита сохранены; `502 emailStatus: 'error'`; повторная отправка — с экрана «Приглашения». Отдельного события аудита о сбое доставки нет — только `logApiError` |
+| Ошибка `invitationToken.updateMany` после сбоя SMTP | Приглашение остаётся `sent`, хотя письмо не ушло; ответ `500` вместо `502` (поведение не менялось) |
+| Повтор / второй администратор / двойной клик | Ровно одно решение, один аккаунт, одно приглашение, одно письмо, одна строка аудита; остальные — `409 already_decided` |
 
 ## Что подтверждено тестами
 
-`lib/configuration-backup.test.ts` (11), реальные файлы во временном каталоге `os.tmpdir()`, Prisma и `appendServerAudit` — инъекция зависимостей:
+`app/api/admin/access-requests/[id]/route.test.ts` — 33 теста на stateful harness: каждая `$transaction` работает на staged-копии состояния (заявки, пользователи, сертификаты в KV, приглашения, аудит) и публикует её только при успешном callback; транзакции выполняются по одной (модель row lock); `P2002` моделируется по уникальности `cardNumber`/`email`; реальный `replaceInvitation`; `sendEmail` и `appendServerAudit` подменены.
 
-- создание и валидация бэкапа; отказ на изменённом и неполном бэкапе;
-- успешное восстановление: заменён только изменившийся файл, событие с именами/размерами/хешами, содержимого нет, временных файлов в каталоге не осталось;
-- no-op: ни одного `rename`, нет события, временных файлов нет;
-- два параллельных restore: одновременно активна одна транзакция, оба события записаны, итог — состояние второго бэкапа;
-- сбой на второй замене: все 9 файлов побайтно равны исходным, события нет;
-- сбой `appendServerAudit`: все файлы восстановлены, `auditCommit: not_committed`, `compensation: succeeded`;
-- сбой компенсации: `compensation: failed`, rollback-копия сохранена, файл с упавшей заменой не пострадал;
-- коммит неизвестен, БД недоступна: `configuration_restore_consistency_unknown`, файлы компенсированы;
-- коммит неизвестен, но строка аудита найдена: результат успешен, rollback-копии удалены;
-- коммит неизвестен, файл перезаписан другим писателем: компенсация его не трогает.
+- прежние сценарии: спящий аккаунт, юрлицо, неверный рег. номер, `card_taken`, дописывание карты существующему пользователю, `invalid_card`, отклонение без аккаунтов, удаление сертификата при обоих решениях, card-заявка, staff-аккаунты (состояние не меняется), владелец B2B-компании;
+- отказ без прав (без сессии, клиент, владелец B2B-компании) → 403, состояние не меняется, нет аудита и письма;
+- точное содержимое события одобрения и отклонения, actor и request из сессии;
+- отсутствие ПДн, карты, заметки, сертификата, токена и его хэша в аудите;
+- откат одобрения и отклонения при ошибке аудита (состояние побайтно равно исходному, письма нет);
+- приглашение сохранено до отправки письма;
+- повторы во всех 4 комбинациях решений → 409 без побочных эффектов;
+- два конкурентных одобрения; конкурентные одобрение и отклонение; две заявки в гонке за одну карту;
+- сбой SMTP → 502, решение и аудит сохранены, приглашение `error`; повтор после сбоя не дублирует аккаунт, приглашение, аудит и письмо.
 
-`app/api/admin/backup/route.test.ts` (7): отказ без прав до валидации и restore (401/403), неверная фраза, невалидный manifest → 400 без restore, передача actor/request, лимит 413. `lib/admin-log-store.test.ts`: RU/LV/EN.
+Мутационная проверка: при отключении проверки `pending` и условного claim падают 6 тестов повторов и конкурентности.
 
-Изолированная PostgreSQL недоступна (`127.0.0.1:5432` закрыт, Docker daemon не запущен), поэтому реальный rollback транзакции и `pg_advisory_xact_lock` в runtime не проверены; рабочая Neon принципиально не использовалась. Тесты прогонялись на Windows 11 — `rename` поверх существующего файла и пути в `os.tmpdir()` проверены на NTFS.
+`lib/admin-log-store.test.ts` — RU/LV/EN; `lib/certificate-store.test.ts` — без изменений, проходит.
+
+Изолированная PostgreSQL недоступна (`127.0.0.1:5432` закрыт, Docker daemon не запущен). Row lock условного UPDATE, реальный откат и `P2002` проверены только моделью; рабочая Neon принципиально не использовалась.
 
 ## Затронутые пути
 
-- `app/api/admin/backup/route.ts`
-- `app/api/admin/backup/route.test.ts`
-- `lib/configuration-backup.ts`
-- `lib/configuration-backup.test.ts`
+- `app/api/admin/access-requests/[id]/route.ts`
+- `app/api/admin/access-requests/[id]/route.test.ts`
+- `app/[lang]/admin/client-barcodes/useAdminClientBarcodesPage.tsx`
+- `lib/certificate-store.ts`
 - `lib/admin-log-store.ts`
 - `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
 
 ## Проверки
 
-Локально на `59bf4e0c` до push:
+Локально на `27e84a6d` до push:
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts lib/configuration-backup.test.ts app/api/admin/backup/route.test.ts lib/admin-log-store.test.ts
-# PASS: 3 files, 33 tests
+npx vitest run --config vitest.config.ts 'app/api/admin/access-requests/[id]/route.test.ts' lib/admin-log-store.test.ts lib/certificate-store.test.ts
+# PASS: 3 files, 59 tests
 
 npm run typecheck
 # PASS
@@ -94,9 +103,9 @@ npm run audit:architecture
 # PASS: 957 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 369 files, 3092 tests
+# PASS: 369 files, 3113 tests
 
-npx eslint lib/configuration-backup.ts lib/configuration-backup.test.ts app/api/admin/backup/route.ts app/api/admin/backup/route.test.ts lib/admin-log-store.ts lib/admin-log-store.test.ts
+npx eslint 'app/api/admin/access-requests/[id]/route.ts' 'app/api/admin/access-requests/[id]/route.test.ts' lib/admin-log-store.ts lib/admin-log-store.test.ts lib/certificate-store.ts 'app/[lang]/admin/client-barcodes/useAdminClientBarcodesPage.tsx'
 # PASS
 
 npm run check:encoding
@@ -106,17 +115,22 @@ git diff --check
 # PASS
 ```
 
-GitHub `static-and-unit`: не запущен — нужен PR (см. «Статус и база»). После создания PR проверить job на head-коммите ветки.
+GitHub `static-and-unit`: не запущен — нужен PR (см. «Статус и база»).
+
+## Отдельные находки (не исправлялись)
+
+- **Право на решение — `customers.read`.** Одобрение создаёт аккаунт с картой и приглашение, но проверяется право чтения. Его имеет и роль `manager` (`MANAGER_PERMISSIONS`). Это архитектурная слабость, а не эксплуатируемая уязвимость: manager — доверенный сотрудник, а staff-аккаунты защищены `staff_account`. Права сохранены по условию задачи; ужесточение (например, отдельное право или `users.manage`) — решение владельца.
+- `POST /api/admin/card-request` (письмо об отклонении) по-прежнему без аудита — в списке ниже.
 
 ## Карта покрытия
 
 ### Постоянный аудит в той же транзакции
 
-К ранее покрытым сценариям добавлен `POST /api/admin/backup` (restore). Строка аудита и advisory lock транзакционны; файловая часть — staging + компенсация с гарантиями из таблицы выше.
+К ранее покрытым добавлен `PATCH /api/admin/access-requests/[id]` (одобрение и отклонение). Доставка письма с приглашением идёт после коммита и в аудит не пишется.
 
 ### Запись после операции или в отдельной транзакции
 
-Без изменений относительно PR #19:
+Без изменений относительно PR #20:
 
 - `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
 - `POST /api/admin/import`: started/completed окружают отдельные product operations;
@@ -126,57 +140,56 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ### Без записи в `AuditLog`
 
-После PR #19 было 28; этот PR закрывает `POST /api/admin/backup`, остаётся **27**:
+После PR #20 было 27; этот PR закрывает `PATCH /api/admin/access-requests/[id]`, остаётся **26**:
 
-1. `PATCH /api/admin/access-requests/[id]`
-2. `PUT /api/admin/banner-groups`
-3. `PUT /api/admin/banners/[id]`
-4. `DELETE /api/admin/banners/[id]`
-5. `POST /api/admin/banners/reorder`
-6. `POST /api/admin/banners`
-7. `DELETE /api/admin/blog/[id]`
-8. `POST /api/admin/blog`
-9. `POST /api/admin/broadcast`
-10. `PUT /api/admin/campaigns/[id]`
-11. `DELETE /api/admin/campaigns/[id]`
-12. `POST /api/admin/campaigns`
-13. `POST /api/admin/card-request`
-14. `POST /api/admin/card-rules-campaign`
-15. `PATCH /api/admin/contact-messages`
-16. `POST /api/admin/content/upload`
-17. `PUT /api/admin/dashboard-prefs`
-18. `PUT /api/admin/email-templates/[id]`
-19. `POST /api/admin/email-templates/[id]/send-test`
-20. `POST /api/admin/invitations/card`
-21. `POST /api/admin/invitations`
-22. `POST /api/admin/invitations/sms`
-23. `POST /api/admin/media/replace`
-24. `DELETE /api/admin/media`
-25. `POST /api/admin/notifications/assets`
-26. `POST /api/admin/products/[id]/notify-promo`
-27. `POST /api/admin/stock-alerts/send`
+1. `PUT /api/admin/banner-groups`
+2. `PUT /api/admin/banners/[id]`
+3. `DELETE /api/admin/banners/[id]`
+4. `POST /api/admin/banners/reorder`
+5. `POST /api/admin/banners`
+6. `DELETE /api/admin/blog/[id]`
+7. `POST /api/admin/blog`
+8. `POST /api/admin/broadcast`
+9. `PUT /api/admin/campaigns/[id]`
+10. `DELETE /api/admin/campaigns/[id]`
+11. `POST /api/admin/campaigns`
+12. `POST /api/admin/card-request`
+13. `POST /api/admin/card-rules-campaign`
+14. `PATCH /api/admin/contact-messages`
+15. `POST /api/admin/content/upload`
+16. `PUT /api/admin/dashboard-prefs`
+17. `PUT /api/admin/email-templates/[id]`
+18. `POST /api/admin/email-templates/[id]/send-test`
+19. `POST /api/admin/invitations/card`
+20. `POST /api/admin/invitations`
+21. `POST /api/admin/invitations/sms`
+22. `POST /api/admin/media/replace`
+23. `DELETE /api/admin/media`
+24. `POST /api/admin/notifications/assets`
+25. `POST /api/admin/products/[id]/notify-promo`
+26. `POST /api/admin/stock-alerts/send`
 
 `POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin (по коду).
 
 ## Первый следующий шаг
 
-0. Создать Draft PR по ссылке выше (base `fix/2026-11-09-admin-audit-price-groups`) и проверить `static-and-unit` на head ветки; при наличии авторизованного `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-price-groups --head fix/2026-11-09-admin-audit-configuration-restore`.
-1. Следующий stacked PR — аудит решений по заявкам на доступ: `PATCH /api/admin/access-requests/[id]`. Начать от зелёного head этого PR.
-2. Проследить approve/reject до всех DB mutations (заявка, создание/активация пользователя или компании, письма); определить, что входит в одну транзакцию, а что (отправка письма) идёт после коммита.
-3. Сохранить permission gate, валидацию и API-контракт; `appendServerAudit` в той же транзакции, actor из серверной сессии, before/after по статусу заявки и созданным сущностям без персональных данных сверх необходимого; повтор того же решения — без события.
-4. Тесты: отказ без прав, невалидный переход статуса, approve, reject, no-op повтор, параллельные решения по одной заявке, откат при сбое аудита.
+0. Создать Draft PR по ссылке выше (base `fix/2026-11-09-admin-audit-configuration-restore`) и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-configuration-restore --head fix/2026-11-09-admin-audit-access-requests`.
+1. Следующий stacked PR — аудит контент-ассетов и медиа: `POST /api/admin/content/upload`, `POST /api/admin/media/replace`, `DELETE /api/admin/media`. Начать от зелёного head этого PR.
+2. Проследить каждую операцию до файловой системы/хранилища и ссылок в БД/KV; определить, что входит в одну транзакцию, а что требует staging/компенсации (по образцу configuration restore в PR #20).
+3. Сохранить права, лимиты размера/типа и API-контракт; `appendServerAudit` с actor из сессии; в журнале — путь/ID ассета, размер, тип и хеш до/после, без содержимого файла; no-op без события.
+4. Тесты: отказ без прав, невалидный файл, успех, no-op, параллельные запросы, сбой после записи файла и сбой аудита.
 
-Далее: content assets/CMS, рассылки; затем hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
+Далее: рассылки (`broadcast`, `invitations*`, `card-request`, `card-rules-campaign`), затем hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-configuration-restore
+git switch fix/2026-11-09-admin-audit-access-requests
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts lib/configuration-backup.test.ts app/api/admin/backup/route.test.ts lib/admin-log-store.test.ts
+npx vitest run --config vitest.config.ts 'app/api/admin/access-requests/[id]/route.test.ts' lib/admin-log-store.test.ts lib/certificate-store.test.ts
 npm run audit:architecture
 npm run typecheck
 ```

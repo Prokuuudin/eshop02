@@ -1,98 +1,113 @@
-# Hairshop Pro: аудит приглашений — handoff
+# Hairshop Pro: аудит карточных рассылок — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-invitations`.
-- Stacked base: `055f3af7b1990b7220a739c904fe54b092f31232`, проверенный head открытого Draft PR #22 (`fix/2026-11-09-admin-audit-media`).
-- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #22 `open`, `draft=true`, `merged=false`, head точно `055f3af7…`, base `fix/2026-11-09-admin-audit-access-requests`; `static-and-unit` на `055f3af7` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42689788833/job/129406180594.
-- Коммит реализации: `fa76b7f3` (`fix(audit): record invitations once and their delivery after commit`).
+- Ветка: `fix/2026-11-09-admin-audit-card-mailings`.
+- Stacked base: `a0370069ec0fe5a604c55fc83bf98d5d3a4e2095`, проверенный head открытого Draft PR #23 (`fix/2026-11-09-admin-audit-invitations`).
+- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #23 `open`, `draft=true`, `merged=false`, head точно `a0370069…`, base `fix/2026-11-09-admin-audit-media`; `static-and-unit` на `a0370069` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42693719976/job/129419894460.
+- Коммит реализации: `2c55020b` (`fix(audit): record card rejection emails and rules campaign batches`).
 - Draft PR: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
-  - base: `fix/2026-11-09-admin-audit-media`
-  - head: `fix/2026-11-09-admin-audit-invitations`
-  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-media...fix/2026-11-09-admin-audit-invitations?expand=1 («Create draft pull request»)
+  - base: `fix/2026-11-09-admin-audit-invitations`
+  - head: `fix/2026-11-09-admin-audit-card-mailings`
+  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-invitations...fix/2026-11-09-admin-audit-card-mailings?expand=1 («Create draft pull request»)
 - `static-and-unit` запускается только на `pull_request` (`.github/workflows/quality.yml`), поэтому CI появится после создания PR. Результат CI на финальном SHA **не проверен**.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Что делают маршруты
 
-| Маршрут | БД | Внешняя отправка |
+| Маршрут | Состояние | Внешняя отправка |
 |---|---|---|
-| `POST /api/admin/invitations` | `replaceInvitation`: удаляет неиспользованные `InvitationToken` пользователя, создаёт новый (хранится только sha256 токена) | SMTP-письмо со ссылкой `/auth/invite?token=…` |
-| `POST /api/admin/invitations/sms` | `InvitationDelivery` (`channel: 'sms'`, `status: 'sent'`) | Нет: в production `503 sms_provider_not_configured` до любых записей; вне production — симуляция, текст возвращается администратору |
-| `POST /api/admin/invitations/card` | обновление `User.cardNumber` или создание «спящего» аккаунта | Нет (UI затем отдельно вызывает `POST /api/admin/invitations` для нового клиента) |
+| `POST /api/admin/card-request` (`action: 'reject'`) | Нет изменений в БД (заявка отклоняется раньше через `PATCH /api/admin/access-requests/[id]`) | SMTP-письмо об отклонении на `email` из тела запроса; `approve` → `410 legacy_approval_disabled` |
+| `POST /api/admin/card-rules-campaign` | KV `card-rules-campaign`: `runningSince` (замок на `CAMPAIGN_LOCK_MS = 120 000 мс`), `cursor`, `sentCount`, `errorCount`, `finished`, `lastRunAt`; `reset` обнуляет | SMTP: до `CAMPAIGN_BATCH_SIZE = 50` писем с правилами карты за вызов |
 
 ## Реализовано
 
-Права (`requireAdmin()` / `users.manage`), лимит пакета `INVITE_BATCH_SIZE = 20` (`no_user_ids`, `too_many`), исключение staff-аккаунтов и технических email, все коды ошибок и форма ответов сохранены. Новый `lib/invitation-dispatch.ts` — общие guard'ы; `replaceInvitation` теперь возвращает число заменённых открытых приглашений (прочие вызывающие значение игнорируют).
+Права сохранены: `card-request` — `requireAdminPermission('customers.read')`, кампания — `requireAdmin()`. Сохранены размер пакета, замок кампании, ответы `409 busy` / `409 finished`, `{ state }` для reset, `{ state, processed }` для пакета, коды card-request (`invalid_json` 400, `missing_fields` 422, `unknown_action` 400, `legacy_approval_disabled` 410, `email_failed` 500). Переиспользованы `invitationBatchId` и `lockBatch` из `lib/invitation-dispatch.ts` (PR #23).
 
-### Email-приглашения
+### Кампания правил карты
 
-1. Транзакция (уровень изоляции по умолчанию): advisory lock пакета → проверка повтора → advisory locks пользователей в стабильном порядке → для каждого: проверка «доставка в процессе» → `replaceInvitation` → `appendServerAudit` (`invitation.created` или `invitation.replaced`).
-2. После коммита — SMTP по каждому выпущенному приглашению.
-3. Когда результат известен — отдельная транзакция: `InvitationToken.status = 'error'` для неушедших, `InvitationDelivery` (`channel: 'email'`, `sent`/`error`), событие `invitation.delivery_recorded`. Если эта запись не удалась, ответ всё равно правдивый (200 со статусами), ошибка логируется, токены неушедших писем гасятся отдельным запросом.
+1. **Захват или сброс** — одна транзакция под advisory lock кампании: чтение KV → проверка повтора по `Idempotency-Key` → `finished` / `busy` → запись KV → `appendServerAudit` (`card_rules_campaign.batch_started` или `card_rules_campaign.reset`). Сбой аудита откатывает захват: замок не ставится, письма не уходят. `Serializable` заменён advisory lock: снимок сериализуемой транзакции берётся до ожидания lock, и `appendServerAudit` прочитал бы устаревшую голову цепочки целостности.
+2. **SMTP** — после коммита, как раньше: курсор двигается на каждом получателе, неподходящие строки пропускаются.
+3. **Результат** — отдельная транзакция: итоговое KV (курсор, счётчики, снятый замок) + `card_rules_campaign.batch_completed`. Если аудит результата не записался, KV сохраняется отдельно (лог `card_rules_campaign_result_audit_failed`), чтобы следующий пакет не повторил отправленное; ответ 200. При исключении после захвата (например, недоступны шаблоны) KV сохраняется с `interrupted: true`, ответ `500 server_error`, как раньше.
+4. **Сброс** уже нулевой кампании — no-op без записи и события.
 
-`Serializable` убран сознательно: снимок такой транзакции берётся до ожидания advisory lock, и `appendServerAudit` прочитал бы устаревшую голову цепочки целостности. Сериализацию теперь дают advisory locks (пакет и пользователь).
+### Письмо об отклонении
 
-### Повторы, конкуренция и явная повторная отправка
+1. Тело письма строится как раньше.
+2. Транзакция под lock ключа: проверка повтора → проверка необязательного `accessRequestId` (заявка должна существовать, иметь статус `rejected` и тот же email, иначе `409 request_mismatch`) → `access_request.rejection_email_prepared`. Сбой аудита → `500 email_failed`, письмо не уходит.
+3. SMTP после коммита.
+4. `access_request.rejection_email_recorded` со `status: 'sent' | 'failed'`. Сбой этой записи логируется, ответ остаётся правдивым.
 
-- **Технический повтор**: клиент передаёт заголовок `Idempotency-Key` (`[A-Za-z0-9._:-]{8,128}`, иначе `400 invalid_idempotency_key`). Ключ вместе с ID сотрудника становится `requestId` строк аудита. Повтор или параллельный дубль с тем же ключом под lock находит закоммиченные строки и отвечает `{ results, replayed: true }` (статусы из `invitation.delivery_recorded`, иначе `pending`; без `inviteUrl` — токен в открытом виде не хранится). Новых токенов, писем и событий нет. UI теперь отправляет новый ключ на каждое действие (`crypto.randomUUID()`); без заголовка запрос — новая явная отправка, как раньше.
-- **Конкурентный запрос с другим ключом**: если у пользователя свежий (< 60 с) токен `sent` без записанной доставки, значит, его письмо ещё отправляется. Пользователь пропускается: в ответе `status: 'pending'` без `inviteUrl`, без нового токена, письма и события. Это исправляет прежнюю гонку, когда второй запрос заменял токен и первое письмо уходило с мёртвой ссылкой. UI показывает «уже отправляется: N» и не считает это ошибкой.
-- **Явная повторная отправка** работает как раньше: после записанной доставки (успех или ошибка) новый запрос заменяет приглашение (`invitation.replaced`, `before: { openInvitations: n }`) и отправляет письмо. Если процесс упал до записи доставки, повтор снова доступен через 60 с.
+Без `accessRequestId` письмо отправляется как раньше, событие пишется с `entityId: 'unlinked'`, `linked: false`. UI теперь передаёт `accessRequestId`, а сообщение «уведомление отправлено» показывает только при `res.ok` (раньше показывалось и при 500).
 
-### SMS
+### Повторы и конкуренция (`Idempotency-Key` из #23)
 
-В одной транзакции под lock пакета — `InvitationDelivery` и `invitation.sms_recorded` (`after: { channel: 'sms', simulated: true, batchSize, userIds }`). Повтор с тем же ключом отдаёт те же тексты с `replayed: true` без новых строк. Явный повтор (новый ключ) записывается заново, как и раньше. Пустой пакет ничего не пишет. Production по-прежнему `503` без записей.
+| Ситуация | Кампания | Письмо об отклонении |
+|---|---|---|
+| Технический повтор с тем же ключом после завершения | `{ state, processed, replayed: true }`; следующий пакет **не** отправляется | `{ ok: true, replayed: true }`; повторного письма нет |
+| Повтор сброса с тем же ключом | `{ state, replayed: true }`; прогресс после сброса **не** стирается | — |
+| Параллельный дубль с тем же ключом во время отправки | `409 busy` | `409 in_progress` |
+| Параллельный запуск с другим ключом | `409 busy` (как раньше) | Отдельная явная отправка |
+| Явный повтор (новое действие → новый ключ) | Следующий пакет, как раньше | Новое письмо, как раньше |
+| Тот же ключ после записанного сбоя SMTP | — | Разрешена новая попытка |
 
-### Выдача карты
-
-Существующий клиент: `SELECT "cardNumber" … FOR UPDATE`; та же карта (после нормализации) — no-op с прежним ответом `{ ok, userId, created: false }`, без записи и события. Иначе `update` + `invitation.card_assigned` (`before: { hasCard }`, `after: { hasCard: true, cardChanged, accountCreated: false }`). Новый клиент: `create` + событие с `accountCreated: true` в одной транзакции. `P2002` → `409 card_taken`, как раньше.
+UI отправляет новый ключ на каждый вызов: каждый шаг цикла кампании, каждый сброс и каждое письмо об отклонении. Без заголовка запрос — новая явная операция.
 
 ### Содержимое журнала
 
 | Action | entity | Данные |
 |---|---|---|
-| `invitation.created` / `invitation.replaced` | `user` / userId | `before: null` или `{ openInvitations }`; `after: { channel: 'email', language, expiresAt, batchSize }` |
-| `invitation.delivery_recorded` | `invitation_batch` / batchId | `{ channel: 'email', batchSize, sent: [userId], failed: [userId], pending: [userId] }` |
-| `invitation.sms_recorded` | `invitation_batch` / batchId | `{ channel: 'sms', simulated: true, batchSize, userIds }` |
-| `invitation.card_assigned` | `user` / userId | флаги `hasCard`, `cardChanged`, `accountCreated` |
+| `card_rules_campaign.batch_started` | `campaign` / `card-rules-campaign` | before/after: `sentCount`, `errorCount`, `cursor` (ID пользователя), `finished`, `running`; `channel`, `batchLimit` |
+| `card_rules_campaign.batch_completed` | то же | `processed`, `sent`, `failed`, `skipped`, `failedUserIds`, `interrupted` + итоговое состояние |
+| `card_rules_campaign.reset` | то же | состояние до и после |
+| `access_request.rejection_email_prepared` | `access_request` / ID заявки или `unlinked` | `channel`, `language`, `linked`, `hasNote` |
+| `access_request.rejection_email_recorded` | то же | `channel`, `status` |
 
-Нет токенов и их хешей, email, телефонов, имён, номеров карт, текста письма или SMS (проверено тестами по конкретным значениям). Названия RU/LV/EN: «Создание приглашения» / «Ielūgums izveidots» / «Invitation created»; «Замена приглашения» / «Ielūgums aizstāts» / «Invitation replaced»; «Результат отправки приглашений» / «Ielūgumu nosūtīšanas rezultāts» / «Invitation delivery result»; «Запись SMS-приглашений» / «SMS ielūgumi reģistrēti» / «SMS invitations recorded»; «Назначение карты клиенту» / «Klientam piešķirta karte» / «Customer card assigned».
+Нет адресов, имён, номеров карт, заметок, темы и текста писем (проверено тестами по конкретным значениям). Названия RU/LV/EN: «Запуск пакета рассылки правил карты» / «Kartes noteikumu kampaņas pakete sākta» / «Card rules campaign batch started»; «Результат пакета рассылки правил карты» / «Kartes noteikumu kampaņas paketes rezultāts» / «Card rules campaign batch result»; «Сброс рассылки правил карты» / «Kartes noteikumu kampaņa atiestatīta» / «Card rules campaign reset»; «Подготовка письма об отклонении заявки» / «Sagatavota pieteikuma noraidījuma vēstule» / «Rejection email prepared»; «Результат письма об отклонении заявки» / «Pieteikuma noraidījuma vēstules rezultāts» / «Rejection email delivery result».
 
 ### Изменения контракта (совместимые)
 
-- В `results` email-приглашений появился статус `pending` (без `inviteUrl`); в ответе повтора — `replayed: true`.
-- Новый необязательный заголовок `Idempotency-Key`; некорректное значение → `400 invalid_idempotency_key`.
-- Сбой записи результата доставки больше не превращает ответ в `500`: письма уже ушли, ответ 200 с фактическими статусами.
+- Необязательный заголовок `Idempotency-Key` (некорректный → 400 `invalid_idempotency_key`; у card-request в формате `{ ok: false, code }`); поле `replayed: true` в ответах повтора.
+- card-request: необязательное поле `accessRequestId` (не строка или длиннее 100 → `422 invalid_access_request_id`; несовпадение → `409 request_mismatch`); `409 in_progress` для параллельного дубля.
+- Кампания: при сбое аудита результата ответ 200 (KV сохранён), а не 500.
 
 ## Что подтверждено
 
-- `app/api/admin/invitations/route.post.test.ts` (16, stateful harness: staged-транзакции, сериализация как у advisory locks, управляемые часы, SMTP подменён): отказ без прав без записей; пустой, не-массив и 21 ID; некорректный ключ; staff-фильтр; пакет 3 с одной ошибкой SMTP (токены и аудит закоммичены до первого письма, статусы, `delivery_recorded` с sent/failed, токен `error`, строки доставки); отсутствие секретов в аудите; откат всех токенов пакета и отсутствие писем при сбое аудита; сбой записи доставки (ответ 200, токен погашен); повтор с тем же ключом; параллельный дубль с тем же ключом; параллельный запрос с другим ключом во время SMTP (`pending`, один токен, одно письмо, одно событие); явная повторная отправка после доставки (`invitation.replaced`); немедленный повтор после ошибки доставки; повтор после истечения окна 60 с.
-- `sms/route.test.ts` (11, новый): права, пакеты, ключ, production 503 без записей, строки доставки и одно событие без телефонов и текста, повтор, параллельный дубль, явный повтор, откат при сбое аудита, пустой пакет.
-- `card/route.test.ts` (16): прежние 9 сценариев + аудит существующего и нового клиента без ПДн и номера карты, no-op той же карты, смена карты, две параллельные одинаковые выдачи → одна запись, откат обновления и создания при сбое аудита.
-- `route.test.ts` (GET, 6), `invitations-api.test.ts` (новый ключ на каждое действие), `lib/admin-log-store.test.ts` (RU/LV/EN), `lib/invitations.test.ts`.
-- Мутационная проверка: при отключённых проверке повтора и in-flight guard падают тесты повтора, параллельного дубля и конкурентного запроса.
-- PostgreSQL-семантика на изолированном PGlite (scratch-каталог вне репозитория, схема из `prisma migrate diff`): 8/8 PASS — `pg_advisory_xact_lock(hashtext($1))` с параметрами, in-flight запросы по `InvitationToken`/`InvitationDelivery`, подсчёт заменённых приглашений, `SELECT "cardNumber" … FOR UPDATE`. Настоящая конкуренция двух соединений проверена только моделью: PGlite однопользовательский. Рабочая Neon не использовалась.
+- `card-rules-campaign/route.post.test.ts` (19, stateful harness: staged KV и аудит, сериализация как у advisory lock, реальные `readCampaign`/`writeCampaign`, SMTP подменён):
+  - права и ключ: отказ без прав без изменений; некорректный ключ; `finished` → 409;
+  - пакет: захват и событие закоммичены до первого письма; частичный сбой (2 отправлено, 1 ошибка; `failedUserIds`; курсор; `finished`); нет адресов, имён и текста в аудите; пропуск неподходящей строки; полный пакет 50 и продолжение без повторов;
+  - сбои: откат захвата при сбое аудита (писем нет, следующий запуск работает); сбой аудита результата (курсор сохранён, повторов нет); прерванный пакет (`interrupted`, замок снят);
+  - конкуренция и повторы: параллельный запуск → `busy`; технический повтор → replay без следующего пакета; параллельный дубль → `busy`, одна отправка; устаревший замок перехватывается, свежий — `busy`;
+  - сброс: событие before/after; no-op; повтор сброса не стирает прогресс; откат при сбое аудита.
+- `card-request/route.test.ts` (19, новый; SMTP подменён):
+  - права, JSON, поля, `unknown_action`, 410 для approve, `accessRequestId`, ключ — без отправки и аудита;
+  - три вида `request_mismatch`;
+  - порядок «событие → SMTP → результат»; отсутствие ПДн, заметки и текста; unlinked-вызов;
+  - сбой аудита до SMTP (письма нет); сбой SMTP (`failed`, 500); повтор тем же ключом после сбоя; сбой аудита результата (ответ `ok`);
+  - replay доставленного; параллельный дубль → `in_progress`; явный повтор новым ключом.
+- `card-rules-campaign/route.test.ts` (GET, 5) и `lib/admin-log-store.test.ts` (RU/LV/EN).
+- Мутационная проверка: при отключённых проверках повтора падают тесты технического повтора, параллельного дубля и повтора сброса.
+- Нового raw SQL нет; `pg_advisory_xact_lock(hashtext($1))` проверен на PGlite в PR #23. Реальная PostgreSQL-конкуренция проверена только моделью. Рабочая Neon не использовалась; реальные письма не отправлялись.
 
 ## Затронутые пути
 
-- `lib/invitation-dispatch.ts` (новый), `lib/invitations.ts`
-- `app/api/admin/invitations/route.ts`, `route.test.ts`, `route.post.test.ts` (новый)
-- `app/api/admin/invitations/sms/route.ts`, `sms/route.test.ts` (новый)
-- `app/api/admin/invitations/card/route.ts`, `card/route.test.ts`
-- `app/[lang]/admin/invitations/invitations-api.ts`, `invitations-api.test.ts`, `useInvitationsPage.ts`
+- `app/api/admin/card-request/route.ts`, `route.test.ts` (новый)
+- `app/api/admin/card-rules-campaign/route.ts`, `route.test.ts`, `route.post.test.ts` (новый)
+- `app/[lang]/admin/invitations/invitations-api.ts`
+- `app/[lang]/admin/client-barcodes/useAdminClientBarcodesPage.tsx`
 - `lib/admin-log-store.ts`, `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
 
 ## Проверки
 
-Локально на `fa76b7f3` до push:
+Локально на `2c55020b` до push:
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts app/api/admin/invitations lib/admin-log-store.test.ts 'app/[lang]/admin/invitations' lib/invitations.test.ts
-# PASS: 8 files, 90 tests
+npx vitest run --config vitest.config.ts app/api/admin/card-request app/api/admin/card-rules-campaign lib/admin-log-store.test.ts
+# PASS: 4 files, 70 tests (19 + 19 + 5 + 27)
 
 npm run typecheck
 # PASS
@@ -101,13 +116,13 @@ npm run audit:architecture
 # PASS: 959 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 372 files, 3176 tests
+# PASS: 374 files, 3217 tests
 
-npx eslint <14 изменённых файлов>
+npx eslint <9 изменённых файлов>
 # PASS
 
 npm run check:encoding
-# PASS: 1359 source files
+# PASS: 1361 source files
 
 git diff --check
 # PASS
@@ -117,20 +132,19 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ## Отдельные находки (не исправлялись)
 
-- **Одобрение заявки на доступ** (`PATCH /api/admin/access-requests/[id]`, PR #21) создаёт приглашение и отправляет письмо, но не пишет `InvitationDelivery`. Поэтому явная отправка из «Приглашений» в течение 60 с после одобрения вернёт `pending`. Решение — записывать доставку там так же; оставлено, чтобы не расширять PR.
-- **Самостоятельная активация карты** (`lib/card-activation.ts`) тоже вызывает `replaceInvitation`, без per-user lock. Гонка с одновременной отправкой администратора теоретически возможна. Без аудита — это не админское действие.
-- **Выдача карты существующему клиенту** перезаписывает другую карту без подтверждения. Поведение прежнее, теперь фиксируется как `cardChanged: true`.
-- **SMS вне production** записывает `InvitationDelivery.status = 'sent'` для симуляции. Поведение прежнее; в событии аудита явно `simulated: true`.
+- **`card-request` без `accessRequestId` — по сути open relay.** Любой сотрудник с `customers.read` (в том числе `manager`) может отправить брендированное письмо «об отклонении» на произвольный адрес с произвольными именем и комментарием. Поле оставлено необязательным ради контракта; теперь каждое такое письмо видно в журнале как `unlinked`. Рекомендация: после выката нового UI сделать `accessRequestId` обязательным и брать email и имя из заявки, а не из тела запроса.
+- **Обрыв процесса посреди пакета кампании.** Курсор пишется только в конце пакета или в `catch`. При убийстве процесса (а не исключении) продвижение теряется, и после истечения `CAMPAIGN_LOCK_MS` до 50 писем могут уйти повторно. Поведение прежнее; теперь такой случай виден как `batch_started` без `batch_completed`.
+- `getTemplates()` для кампании вызывается после захвата: его сбой даёт пустой прерванный пакет с событием `interrupted: true`. Поведение прежнее, теперь зафиксировано.
 
 ## Карта покрытия
 
 ### Постоянный аудит в той же транзакции
 
-К ранее покрытым добавлены `POST /api/admin/invitations` (выпуск и замена приглашений; результат доставки — отдельным событием после SMTP), `POST /api/admin/invitations/sms`, `POST /api/admin/invitations/card`.
+К ранее покрытым добавлены `POST /api/admin/card-rules-campaign` (захват или сброс + событие атомарно; результат — отдельной транзакцией после SMTP) и `POST /api/admin/card-request` (событие до SMTP атомарно с захватом ключа; результат — отдельно).
 
 ### Запись после операции или в отдельной транзакции
 
-Без изменений относительно PR #22:
+Без изменений относительно PR #23:
 
 - `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
 - `POST /api/admin/import`: started/completed окружают отдельные product operations;
@@ -140,7 +154,7 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ### Без записи в `AuditLog`
 
-После PR #22 было 23; этот PR закрывает три маршрута, остаётся **20**:
+После PR #23 было 20; этот PR закрывает два маршрута, остаётся **18**:
 
 1. `PUT /api/admin/banner-groups`
 2. `PUT /api/admin/banners/[id]`
@@ -153,37 +167,35 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 9. `PUT /api/admin/campaigns/[id]`
 10. `DELETE /api/admin/campaigns/[id]`
 11. `POST /api/admin/campaigns`
-12. `POST /api/admin/card-request`
-13. `POST /api/admin/card-rules-campaign`
-14. `PATCH /api/admin/contact-messages`
-15. `PUT /api/admin/dashboard-prefs`
-16. `PUT /api/admin/email-templates/[id]`
-17. `POST /api/admin/email-templates/[id]/send-test`
-18. `POST /api/admin/notifications/assets`
-19. `POST /api/admin/products/[id]/notify-promo`
-20. `POST /api/admin/stock-alerts/send`
+12. `PATCH /api/admin/contact-messages`
+13. `PUT /api/admin/dashboard-prefs`
+14. `PUT /api/admin/email-templates/[id]`
+15. `POST /api/admin/email-templates/[id]/send-test`
+16. `POST /api/admin/notifications/assets`
+17. `POST /api/admin/products/[id]/notify-promo`
+18. `POST /api/admin/stock-alerts/send`
 
 `POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin (по коду).
 
 ## Первый следующий шаг
 
-0. Создать Draft PR (base `fix/2026-11-09-admin-audit-media`, head `fix/2026-11-09-admin-audit-invitations`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-media --head fix/2026-11-09-admin-audit-invitations`.
-1. Следующий stacked PR — карточные рассылки: `POST /api/admin/card-request` (письмо об отклонении заявки) и `POST /api/admin/card-rules-campaign` (кампания правил карты: состояние в KV, пакетная отправка). Начать от зелёного head этого PR.
-2. Проследить изменения KV-состояния кампании и отправку; изменение состояния и аудит — в одной транзакции, результат доставки — отдельно после SMTP (по образцу этого PR, переиспользуя `lib/invitation-dispatch.ts` для `Idempotency-Key`).
-3. Сохранить права, размеры пакетов, блокировку кампании (`CAMPAIGN_LOCK_MS`) и API-контракт; в журнале — внутренние ID, канал, размеры и счётчики, без email, текста и заметок.
-4. Тесты: отказ без прав, невалидный ввод, пакет, повтор, конкуренция, откат при сбое аудита, сбой SMTP после коммита.
+0. Создать Draft PR (base `fix/2026-11-09-admin-audit-invitations`, head `fix/2026-11-09-admin-audit-card-mailings`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-invitations --head fix/2026-11-09-admin-audit-card-mailings`.
+1. Следующий stacked PR — массовые рассылки: `POST /api/admin/broadcast` и `POST /api/admin/stock-alerts/send`. Начать от зелёного head этого PR.
+2. Проследить выбор получателей, изменения в БД (флаги «уведомлён», очереди, KV) и SMTP; изменение состояния и событие — в одной транзакции, SMTP — после коммита, результат доставки — отдельно (по образцу кампании правил карты). Переиспользовать `Idempotency-Key` из `lib/invitation-dispatch.ts`.
+3. Сохранить права, лимиты пакетов и API-контракт; в журнале — внутренние ID, канал, счётчики и статусы, без адресов и текста.
+4. Тесты: отказ без прав, невалидный ввод, частичный сбой пакета, повтор, конкуренция, сбой аудита до отправки, сбой SMTP после коммита.
 
-Далее: остальные рассылки (`broadcast`, `notify-promo`, `stock-alerts/send`, `email-templates/[id]/send-test`), затем CMS-контент (баннеры, блог, кампании, шаблоны писем), hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
+Далее: `notify-promo`, `email-templates/[id]/send-test`, `notifications/assets`; затем CMS-контент (баннеры, блог, кампании, шаблоны писем), hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-invitations
+git switch fix/2026-11-09-admin-audit-card-mailings
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts app/api/admin/invitations lib/admin-log-store.test.ts 'app/[lang]/admin/invitations' lib/invitations.test.ts
+npx vitest run --config vitest.config.ts app/api/admin/card-request app/api/admin/card-rules-campaign lib/admin-log-store.test.ts
 npm run audit:architecture
 npm run typecheck
 ```

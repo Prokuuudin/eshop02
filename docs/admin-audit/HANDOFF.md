@@ -7,7 +7,7 @@
 - Ветка: `fix/2026-11-09-admin-audit-content-payment`.
 - База ветки: `a4cecbb34f37ef3653b44f190882b8300ae21e94` (`release/2026-11-08-prefetch-catalog`).
 - Коммит реализации: `d0bc0ccb79962e9bad53f7bf186b55ea52bddcb9`.
-- Draft PR: будет указан после создания PR.
+- Draft PR: https://github.com/Prokuuudin/eshop02/pull/15 (base: `release/2026-11-08-prefetch-catalog`).
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Почему выбрана эта база

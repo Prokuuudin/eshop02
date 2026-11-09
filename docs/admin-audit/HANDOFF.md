@@ -1,128 +1,113 @@
-# Hairshop Pro: аудит карточных рассылок — handoff
+# Hairshop Pro: аудит рассылок и отчёта по остаткам — handoff
 
 Дата: 2026-11-09 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-card-mailings`.
-- Stacked base: `a0370069ec0fe5a604c55fc83bf98d5d3a4e2095`, проверенный head открытого Draft PR #23 (`fix/2026-11-09-admin-audit-invitations`).
-- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #23 `open`, `draft=true`, `merged=false`, head точно `a0370069…`, base `fix/2026-11-09-admin-audit-media`; `static-and-unit` на `a0370069` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42693719976/job/129419894460.
-- Коммит реализации: `2c55020b` (`fix(audit): record card rejection emails and rules campaign batches`).
+- Ветка: `fix/2026-11-09-admin-audit-broadcasts`.
+- Stacked base: `a9950de0defb7e458179dbbc2d6a4c67ad2604d7`, проверенный head открытого Draft PR #24 (`fix/2026-11-09-admin-audit-card-mailings`).
+- Проверка перед работой (публичный GitHub API, 2026-11-09): PR #24 `open`, `draft=true`, `merged=false`, head точно `a9950de0…`, base `fix/2026-11-09-admin-audit-invitations`; `static-and-unit` на `a9950de0` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42695941625/job/129427681438.
+- Коммит реализации: `6a695d3c` (`fix(audit): record broadcasts and stock reports before and after SMTP`).
 - Draft PR: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
-  - base: `fix/2026-11-09-admin-audit-invitations`
-  - head: `fix/2026-11-09-admin-audit-card-mailings`
-  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-invitations...fix/2026-11-09-admin-audit-card-mailings?expand=1 («Create draft pull request»)
+  - base: `fix/2026-11-09-admin-audit-card-mailings`
+  - head: `fix/2026-11-09-admin-audit-broadcasts`
+  - ссылка: https://github.com/Prokuuudin/eshop02/compare/fix/2026-11-09-admin-audit-card-mailings...fix/2026-11-09-admin-audit-broadcasts?expand=1 («Create draft pull request»)
 - `static-and-unit` запускается только на `pull_request` (`.github/workflows/quality.yml`), поэтому CI появится после создания PR. Результат CI на финальном SHA **не проверен**.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Что делают маршруты
 
-| Маршрут | Состояние | Внешняя отправка |
-|---|---|---|
-| `POST /api/admin/card-request` (`action: 'reject'`) | Нет изменений в БД (заявка отклоняется раньше через `PATCH /api/admin/access-requests/[id]`) | SMTP-письмо об отклонении на `email` из тела запроса; `approve` → `410 legacy_approval_disabled` |
-| `POST /api/admin/card-rules-campaign` | KV `card-rules-campaign`: `runningSince` (замок на `CAMPAIGN_LOCK_MS = 120 000 мс`), `cursor`, `sentCount`, `errorCount`, `finished`, `lastRunAt`; `reset` обнуляет | SMTP: до `CAMPAIGN_BATCH_SIZE = 50` писем с правилами карты за вызов |
+Прослежено от выбора получателей до SMTP. **Ни один из маршрутов не меняет состояние в БД** — до этого PR они только читали и отправляли письма.
+
+| Маршрут | Получатели | Чтение БД | Отправка |
+|---|---|---|---|
+| `POST /api/admin/broadcast` (`requireAdmin`) | `audience` → сегмент разрешается на сервере (`getCustomerRecipients(segment, 501)`), иначе `recipients` из тела; фильтр по email-regex; лимит 500; opt-out через `getMarketingOptedOutSet` | клиенты сегмента, отписки | по письму на получателя, персонализация и подписанная ссылка отписки |
+| `POST /api/admin/stock-alerts/send` (`requireAdmin`) | один адрес `to` из тела | `Product` с `stock` от 0 до порога (по умолчанию 5) | одно письмо с отчётом |
 
 ## Реализовано
 
-Права сохранены: `card-request` — `requireAdminPermission('customers.read')`, кампания — `requireAdmin()`. Сохранены размер пакета, замок кампании, ответы `409 busy` / `409 finished`, `{ state }` для reset, `{ state, processed }` для пакета, коды card-request (`invalid_json` 400, `missing_fields` 422, `unknown_action` 400, `legacy_approval_disabled` 410, `email_failed` 500). Переиспользованы `invitationBatchId` и `lockBatch` из `lib/invitation-dispatch.ts` (PR #23).
+Новый `lib/audited-delivery.ts` — общий механизм для отправок, которые не меняют другое состояние БД.
 
-### Кампания правил карты
+1. **Подготовка** (`prepareAuditedDelivery`): транзакция под advisory lock ключа пакета. Проверка предыдущих попыток с тем же `requestId`, затем `appendServerAudit` события «prepared». Событие — durable claim: сбой аудита → ничего не отправляется.
+2. **SMTP** — после коммита, как раньше.
+3. **Результат** (`recordAuditedDelivery`): отдельное событие «recorded» с фактическим исходом; одна повторная попытка, затем лог `audited_delivery_result_not_recorded`. Ответ клиенту остаётся правдивым.
 
-1. **Захват или сброс** — одна транзакция под advisory lock кампании: чтение KV → проверка повтора по `Idempotency-Key` → `finished` / `busy` → запись KV → `appendServerAudit` (`card_rules_campaign.batch_started` или `card_rules_campaign.reset`). Сбой аудита откатывает захват: замок не ставится, письма не уходят. `Serializable` заменён advisory lock: снимок сериализуемой транзакции берётся до ожидания lock, и `appendServerAudit` прочитал бы устаревшую голову цепочки целостности.
-2. **SMTP** — после коммита, как раньше: курсор двигается на каждом получателе, неподходящие строки пропускаются.
-3. **Результат** — отдельная транзакция: итоговое KV (курсор, счётчики, снятый замок) + `card_rules_campaign.batch_completed`. Если аудит результата не записался, KV сохраняется отдельно (лог `card_rules_campaign_result_audit_failed`), чтобы следующий пакет не повторил отправленное; ответ 200. При исключении после захвата (например, недоступны шаблоны) KV сохраняется с `interrupted: true`, ответ `500 server_error`, как раньше.
-4. **Сброс** уже нулевой кампании — no-op без записи и события.
+Изменения состояния БД, которое нужно было бы связывать с событием в одной транзакции, у этих маршрутов нет. Единственная запись — сам аудит.
 
-### Письмо об отклонении
+### Повторы (`Idempotency-Key` из #23)
 
-1. Тело письма строится как раньше.
-2. Транзакция под lock ключа: проверка повтора → проверка необязательного `accessRequestId` (заявка должна существовать, иметь статус `rejected` и тот же email, иначе `409 request_mismatch`) → `access_request.rejection_email_prepared`. Сбой аудита → `500 email_failed`, письмо не уходит.
-3. SMTP после коммита.
-4. `access_request.rejection_email_recorded` со `status: 'sent' | 'failed'`. Сбой этой записи логируется, ответ остаётся правдивым.
-
-Без `accessRequestId` письмо отправляется как раньше, событие пишется с `entityId: 'unlinked'`, `linked: false`. UI теперь передаёт `accessRequestId`, а сообщение «уведомление отправлено» показывает только при `res.ok` (раньше показывалось и при 500).
-
-### Повторы и конкуренция (`Idempotency-Key` из #23)
-
-| Ситуация | Кампания | Письмо об отклонении |
+| Найдено по ключу | Ответ | Отправка |
 |---|---|---|
-| Технический повтор с тем же ключом после завершения | `{ state, processed, replayed: true }`; следующий пакет **не** отправляется | `{ ok: true, replayed: true }`; повторного письма нет |
-| Повтор сброса с тем же ключом | `{ state, replayed: true }`; прогресс после сброса **не** стирается | — |
-| Параллельный дубль с тем же ключом во время отправки | `409 busy` | `409 in_progress` |
-| Параллельный запуск с другим ключом | `409 busy` (как раньше) | Отдельная явная отправка |
-| Явный повтор (новое действие → новый ключ) | Следующий пакет, как раньше | Новое письмо, как раньше |
-| Тот же ключ после записанного сбоя SMTP | — | Разрешена новая попытка |
+| Ничего | Обычная отправка | Да |
+| «prepared» без «recorded» (отправка идёт, или результат не удалось записать) | `409 { error: 'in_progress' }` | **Нет** — уже доставленные письма не уходят повторно из-за сбоя записи результата |
+| «recorded», что-то доставлено | Повтор сохранённого результата, `replayed: true` | Нет |
+| «recorded», ничего не доставлено (broadcast `sent: 0`, отчёт `status: 'failed'`) | Новая попытка тем же ключом | Да |
 
-UI отправляет новый ключ на каждый вызов: каждый шаг цикла кампании, каждый сброс и каждое письмо об отклонении. Без заголовка запрос — новая явная операция.
+Новый ключ означает новое действие, то есть штатную явную повторную отправку. UI теперь отправляет новый ключ на каждый клик. Без заголовка запрос ведёт себя как раньше. Если результат не удалось записать, ключ навсегда остаётся в `in_progress`: сервер не может знать, что ушло, поэтому повтор тем же ключом не отправляет ничего, а решение о новой отправке принимает человек (новый клик = новый ключ).
 
 ### Содержимое журнала
 
 | Action | entity | Данные |
 |---|---|---|
-| `card_rules_campaign.batch_started` | `campaign` / `card-rules-campaign` | before/after: `sentCount`, `errorCount`, `cursor` (ID пользователя), `finished`, `running`; `channel`, `batchLimit` |
-| `card_rules_campaign.batch_completed` | то же | `processed`, `sent`, `failed`, `skipped`, `failedUserIds`, `interrupted` + итоговое состояние |
-| `card_rules_campaign.reset` | то же | состояние до и после |
-| `access_request.rejection_email_prepared` | `access_request` / ID заявки или `unlinked` | `channel`, `language`, `linked`, `hasNote` |
-| `access_request.rejection_email_recorded` | то же | `channel`, `status` |
+| `broadcast.prepared` | `broadcast` / batchId | `channel`, `audience` (`segment`/`manual`), `segment` (имя или `all`; `null` для ручного списка), `recipients`, `optedOut` |
+| `broadcast.delivery_recorded` | то же | `channel`, `sent`, `failed`, `skipped` |
+| `stock_alert.report_prepared` | `stock_alert_report` / batchId | `channel`, `threshold`, `products`, `outOfStock`, `lowStock`, `recipientIsActor` |
+| `stock_alert.report_recorded` | то же | `channel`, `status` (`sent`/`failed`) |
 
-Нет адресов, имён, номеров карт, заметок, темы и текста писем (проверено тестами по конкретным значениям). Названия RU/LV/EN: «Запуск пакета рассылки правил карты» / «Kartes noteikumu kampaņas pakete sākta» / «Card rules campaign batch started»; «Результат пакета рассылки правил карты» / «Kartes noteikumu kampaņas paketes rezultāts» / «Card rules campaign batch result»; «Сброс рассылки правил карты» / «Kartes noteikumu kampaņa atiestatīta» / «Card rules campaign reset»; «Подготовка письма об отклонении заявки» / «Sagatavota pieteikuma noraidījuma vēstule» / «Rejection email prepared»; «Результат письма об отклонении заявки» / «Pieteikuma noraidījuma vēstules rezultāts» / «Rejection email delivery result».
+Нет адресов, имён, темы, текста, ссылок отписки, названий товаров, брендов и SKU (проверено тестами по конкретным значениям). batchId = `<scope>:<ID сотрудника>:<ключ>` или `<scope>:<uuid>` без ключа. Названия RU/LV/EN: «Подготовка рассылки» / «Sagatavots e-pasta izsūtījums» / «Broadcast prepared»; «Результат рассылки» / «E-pasta izsūtījuma rezultāts» / «Broadcast delivery result»; «Подготовка отчёта по остаткам» / «Sagatavots krājumu pārskats» / «Stock report prepared»; «Результат отправки отчёта по остаткам» / «Krājumu pārskata nosūtīšanas rezultāts» / «Stock report delivery result».
 
-### Изменения контракта (совместимые)
+### Сохранено и совместимые изменения
 
-- Необязательный заголовок `Idempotency-Key` (некорректный → 400 `invalid_idempotency_key`; у card-request в формате `{ ok: false, code }`); поле `replayed: true` в ответах повтора.
-- card-request: необязательное поле `accessRequestId` (не строка или длиннее 100 → `422 invalid_access_request_id`; несовпадение → `409 request_mismatch`); `409 in_progress` для параллельного дубля.
-- Кампания: при сбое аудита результата ответ 200 (KV сохранён), а не 500.
+- Права, серверное разрешение сегментов (подменённые `recipients` при `audience` игнорируются), opt-out, лимит 500, порог по умолчанию 5 и его нормализация, все коды ошибок (`invalid_segment`, `subject_required`, `body_required`, `no_recipients`, `too_many_recipients`, `internal_error`, `invalid_email`, `send_failed`) и форма ответов.
+- Новое: необязательный `Idempotency-Key` (некорректный → `400 invalid_idempotency_key`), `409 in_progress`, `replayed: true`. В повторе broadcast `failedEmails: []`: адреса не сохраняются.
+- Валидация ключа в broadcast выполняется сразу после разбора тела, в отчёте — после проверки адреса.
 
 ## Что подтверждено
 
-- `card-rules-campaign/route.post.test.ts` (19, stateful harness: staged KV и аудит, сериализация как у advisory lock, реальные `readCampaign`/`writeCampaign`, SMTP подменён):
-  - права и ключ: отказ без прав без изменений; некорректный ключ; `finished` → 409;
-  - пакет: захват и событие закоммичены до первого письма; частичный сбой (2 отправлено, 1 ошибка; `failedUserIds`; курсор; `finished`); нет адресов, имён и текста в аудите; пропуск неподходящей строки; полный пакет 50 и продолжение без повторов;
-  - сбои: откат захвата при сбое аудита (писем нет, следующий запуск работает); сбой аудита результата (курсор сохранён, повторов нет); прерванный пакет (`interrupted`, замок снят);
-  - конкуренция и повторы: параллельный запуск → `busy`; технический повтор → replay без следующего пакета; параллельный дубль → `busy`, одна отправка; устаревший замок перехватывается, свежий — `busy`;
-  - сброс: событие before/after; no-op; повтор сброса не стирает прогресс; откат при сбое аудита.
-- `card-request/route.test.ts` (19, новый; SMTP подменён):
-  - права, JSON, поля, `unknown_action`, 410 для approve, `accessRequestId`, ключ — без отправки и аудита;
-  - три вида `request_mismatch`;
-  - порядок «событие → SMTP → результат»; отсутствие ПДн, заметки и текста; unlinked-вызов;
-  - сбой аудита до SMTP (письма нет); сбой SMTP (`failed`, 500); повтор тем же ключом после сбоя; сбой аудита результата (ответ `ok`);
-  - replay доставленного; параллельный дубль → `in_progress`; явный повтор новым ключом.
-- `card-rules-campaign/route.test.ts` (GET, 5) и `lib/admin-log-store.test.ts` (RU/LV/EN).
-- Мутационная проверка: при отключённых проверках повтора падают тесты технического повтора, параллельного дубля и повтора сброса.
+- `lib/audited-delivery.test.ts` (7): prepared под requestId; claim без результата → `in_progress` (в том числе после сбоя записи результата); replay; повтор после retryable-исхода; конкурентные claim — ровно один prepared; сбой аудита ничего не пишет; одна повторная попытка записи результата и лог.
+- `app/api/admin/broadcast/route.test.ts` (18; 4 прежних сценария сохранены, SMTP подменён):
+  - права, персонализация без утечек, opt-out и частичный сбой, серверный сегмент;
+  - 5 видов невалидного ввода и некорректный ключ — без аудита и отправки;
+  - порядок «prepared → SMTP → recorded»; счётчики без адресов и текста; сегмент `all`;
+  - сбой аудита до SMTP — ни одного письма; сбой записи результата (обе попытки) — ответ 200, а технический повтор → 409 без повторной отправки;
+  - replay; конкурентный дубль — каждое письмо один раз; повтор тем же ключом, когда ничего не доставлено; явная повторная отправка новым ключом.
+- `app/api/admin/stock-alerts/send/route.test.ts` (13, новый): права до запроса к БД; три невалидных адреса; ключ; порог и контракт; аудит без адреса и содержимого отчёта; сбой аудита до SMTP; сбой SMTP (`failed`, 500) и повтор тем же ключом; replay; сбой записи результата → 409 без повторной отправки; конкурентный дубль; явная повторная отправка.
+- `lib/admin-log-store.test.ts` (RU/LV/EN).
+- Мутационная проверка: без ветки `in_progress` падают 6 тестов (сбой записи результата и конкурентные дубли во всех трёх файлах).
 - Нового raw SQL нет; `pg_advisory_xact_lock(hashtext($1))` проверен на PGlite в PR #23. Реальная PostgreSQL-конкуренция проверена только моделью. Рабочая Neon не использовалась; реальные письма не отправлялись.
 
 ## Затронутые пути
 
-- `app/api/admin/card-request/route.ts`, `route.test.ts` (новый)
-- `app/api/admin/card-rules-campaign/route.ts`, `route.test.ts`, `route.post.test.ts` (новый)
-- `app/[lang]/admin/invitations/invitations-api.ts`
-- `app/[lang]/admin/client-barcodes/useAdminClientBarcodesPage.tsx`
+- `lib/audited-delivery.ts`, `lib/audited-delivery.test.ts` (новые)
+- `app/api/admin/broadcast/route.ts`, `route.test.ts`
+- `app/api/admin/stock-alerts/send/route.ts`, `send/route.test.ts` (новый)
+- `app/[lang]/admin/customers/segments/useCustomerSegmentsPage.ts`, `app/[lang]/admin/stock-alerts/page.tsx`
 - `lib/admin-log-store.ts`, `lib/admin-log-store.test.ts`
 - `docs/admin-audit/HANDOFF.md`
 
 ## Проверки
 
-Локально на `2c55020b` до push:
+Локально на `6a695d3c` до push:
 
 ```powershell
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts app/api/admin/card-request app/api/admin/card-rules-campaign lib/admin-log-store.test.ts
-# PASS: 4 files, 70 tests (19 + 19 + 5 + 27)
+npx vitest run --config vitest.config.ts lib/audited-delivery.test.ts app/api/admin/broadcast app/api/admin/stock-alerts lib/admin-log-store.test.ts
+# PASS: 5 files, 70 tests
 
 npm run typecheck
 # PASS
 
 npm run audit:architecture
-# PASS: 959 source modules
+# PASS: 960 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 374 files, 3217 tests
+# PASS: 376 files, 3254 tests
 
-npx eslint <9 изменённых файлов>
+npx eslint <10 изменённых файлов>
 # PASS
 
 npm run check:encoding
-# PASS: 1361 source files
+# PASS: 1364 source files
 
 git diff --check
 # PASS
@@ -132,19 +117,19 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ## Отдельные находки (не исправлялись)
 
-- **`card-request` без `accessRequestId` — по сути open relay.** Любой сотрудник с `customers.read` (в том числе `manager`) может отправить брендированное письмо «об отклонении» на произвольный адрес с произвольными именем и комментарием. Поле оставлено необязательным ради контракта; теперь каждое такое письмо видно в журнале как `unlinked`. Рекомендация: после выката нового UI сделать `accessRequestId` обязательным и брать email и имя из заявки, а не из тела запроса.
-- **Обрыв процесса посреди пакета кампании.** Курсор пишется только в конце пакета или в `catch`. При убийстве процесса (а не исключении) продвижение теряется, и после истечения `CAMPAIGN_LOCK_MS` до 50 писем могут уйти повторно. Поведение прежнее; теперь такой случай виден как `batch_started` без `batch_completed`.
-- `getTemplates()` для кампании вызывается после захвата: его сбой даёт пустой прерванный пакет с событием `interrupted: true`. Поведение прежнее, теперь зафиксировано.
+- **Отчёт по остаткам уходит на произвольный адрес.** Любой администратор может отправить внутренние данные (названия, бренды, SKU, остатки) на любой email. Теперь в журнале видно, совпадает ли получатель с сотрудником (`recipientIsActor`), но сам адрес не хранится. Это аналог задачи с `card-request`; решать вместе с ней (например, разрешённый список адресов).
+- **Длинная рассылка и таймаут.** У `broadcast` нет `maxDuration`, до 500 писем отправляются последовательно. При обрыве процесса после «prepared» ключ остаётся в `in_progress` (повторов нет), но фактический результат неизвестен: в журнале будет «prepared» без «recorded».
+- Отправка `card-request` на произвольный адрес — отдельная задача (по указанию владельца, не трогалась).
 
 ## Карта покрытия
 
 ### Постоянный аудит в той же транзакции
 
-К ранее покрытым добавлены `POST /api/admin/card-rules-campaign` (захват или сброс + событие атомарно; результат — отдельной транзакцией после SMTP) и `POST /api/admin/card-request` (событие до SMTP атомарно с захватом ключа; результат — отдельно).
+К ранее покрытым добавлены `POST /api/admin/broadcast` и `POST /api/admin/stock-alerts/send`: подготовка аудируется до SMTP (claim), результат — отдельным событием после.
 
 ### Запись после операции или в отдельной транзакции
 
-Без изменений относительно PR #23:
+Без изменений относительно PR #24:
 
 - `POST /api/admin/grins-import/apply`: каталог применяется до отдельной audit-транзакции; ошибка аудита не откатывает импорт;
 - `POST /api/admin/import`: started/completed окружают отдельные product operations;
@@ -154,7 +139,7 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 
 ### Без записи в `AuditLog`
 
-После PR #23 было 20; этот PR закрывает два маршрута, остаётся **18**:
+После PR #24 было 18; этот PR закрывает два маршрута, остаётся **16**:
 
 1. `PUT /api/admin/banner-groups`
 2. `PUT /api/admin/banners/[id]`
@@ -163,39 +148,37 @@ GitHub `static-and-unit`: не запущен — нужен PR (см. «Ста�
 5. `POST /api/admin/banners`
 6. `DELETE /api/admin/blog/[id]`
 7. `POST /api/admin/blog`
-8. `POST /api/admin/broadcast`
-9. `PUT /api/admin/campaigns/[id]`
-10. `DELETE /api/admin/campaigns/[id]`
-11. `POST /api/admin/campaigns`
-12. `PATCH /api/admin/contact-messages`
-13. `PUT /api/admin/dashboard-prefs`
-14. `PUT /api/admin/email-templates/[id]`
-15. `POST /api/admin/email-templates/[id]/send-test`
-16. `POST /api/admin/notifications/assets`
-17. `POST /api/admin/products/[id]/notify-promo`
-18. `POST /api/admin/stock-alerts/send`
+8. `PUT /api/admin/campaigns/[id]`
+9. `DELETE /api/admin/campaigns/[id]`
+10. `POST /api/admin/campaigns`
+11. `PATCH /api/admin/contact-messages`
+12. `PUT /api/admin/dashboard-prefs`
+13. `PUT /api/admin/email-templates/[id]`
+14. `POST /api/admin/email-templates/[id]/send-test`
+15. `POST /api/admin/notifications/assets`
+16. `POST /api/admin/products/[id]/notify-promo`
 
 `POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin (по коду).
 
 ## Первый следующий шаг
 
-0. Создать Draft PR (base `fix/2026-11-09-admin-audit-invitations`, head `fix/2026-11-09-admin-audit-card-mailings`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-invitations --head fix/2026-11-09-admin-audit-card-mailings`.
-1. Следующий stacked PR — массовые рассылки: `POST /api/admin/broadcast` и `POST /api/admin/stock-alerts/send`. Начать от зелёного head этого PR.
-2. Проследить выбор получателей, изменения в БД (флаги «уведомлён», очереди, KV) и SMTP; изменение состояния и событие — в одной транзакции, SMTP — после коммита, результат доставки — отдельно (по образцу кампании правил карты). Переиспользовать `Idempotency-Key` из `lib/invitation-dispatch.ts`.
-3. Сохранить права, лимиты пакетов и API-контракт; в журнале — внутренние ID, канал, счётчики и статусы, без адресов и текста.
-4. Тесты: отказ без прав, невалидный ввод, частичный сбой пакета, повтор, конкуренция, сбой аудита до отправки, сбой SMTP после коммита.
+0. Создать Draft PR (base `fix/2026-11-09-admin-audit-card-mailings`, head `fix/2026-11-09-admin-audit-broadcasts`) по ссылке выше и проверить `static-and-unit` на head ветки. С авторизованным `gh`: `gh pr create --draft --base fix/2026-11-09-admin-audit-card-mailings --head fix/2026-11-09-admin-audit-broadcasts`.
+1. Следующий stacked PR — оставшиеся отправки: `POST /api/admin/products/[id]/notify-promo` и `POST /api/admin/email-templates/[id]/send-test`. Начать от зелёного head этого PR.
+2. Проследить отбор получателей и возможные записи в БД (например, отметки «уведомлён» у подписок); если состояние меняется — изменение и событие в одной транзакции, иначе — `lib/audited-delivery.ts`. SMTP после коммита, результат отдельно, `Idempotency-Key` для технических повторов.
+3. Сохранить права, лимиты и API-контракт; в журнале — внутренние ID (товар, шаблон), канал, счётчики, без адресов и текста.
+4. Тесты: отказ без прав, невалидный ввод, частичный сбой, повтор, конкуренция, сбой аудита до и после SMTP.
 
-Далее: `notify-promo`, `email-templates/[id]/send-test`, `notifications/assets`; затем CMS-контент (баннеры, блог, кампании, шаблоны писем), hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events.
+Далее: `notifications/assets`, затем CMS-контент (баннеры, блог, кампании, шаблоны писем), `contact-messages`, `dashboard-prefs`; hardening post-operation audits (в первую очередь GrinS apply) и постоянные login/logout events. Отдельно — ограничение адресов для `card-request` и отчёта по остаткам.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-card-mailings
+git switch fix/2026-11-09-admin-audit-broadcasts
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
-npx vitest run --config vitest.config.ts app/api/admin/card-request app/api/admin/card-rules-campaign lib/admin-log-store.test.ts
+npx vitest run --config vitest.config.ts lib/audited-delivery.test.ts app/api/admin/broadcast app/api/admin/stock-alerts lib/admin-log-store.test.ts
 npm run audit:architecture
 npm run typecheck
 ```

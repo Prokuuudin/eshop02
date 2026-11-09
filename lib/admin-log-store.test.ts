@@ -31,4 +31,17 @@ describe('administrator audit event labels', () => {
     expect(labels['product.archived']).toBe(archived)
     expect(labels['product.override_reset']).toBe(overrideReset)
   })
+
+  it.each([
+    ['ru', 'Создание ценовой группы', 'Изменение ценовой группы', 'Удаление ценовой группы', 'Установка индивидуальной цены', 'Снятие индивидуальной цены'],
+    ['lv', 'Cenu grupa izveidota', 'Cenu grupa atjaunināta', 'Cenu grupa dzēsta', 'Individuālā cena iestatīta', 'Individuālā cena noņemta'],
+    ['en', 'Price group created', 'Price group updated', 'Price group deleted', 'Custom product price set', 'Custom product price removed'],
+  ] as const)('names price-group events in %s', (language, created, updated, deleted, priceSet, priceRemoved) => {
+    const labels = getAdminActionLabels(language)
+    expect(labels['price_group.created']).toBe(created)
+    expect(labels['price_group.updated']).toBe(updated)
+    expect(labels['price_group.deleted']).toBe(deleted)
+    expect(labels['price_group.product_price_set']).toBe(priceSet)
+    expect(labels['price_group.product_price_removed']).toBe(priceRemoved)
+  })
 })

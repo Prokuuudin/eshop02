@@ -17,6 +17,11 @@ export type AdminLogAction =
   | 'product.restored'
   | 'product.permanently_deleted'
   | 'product.created'
+  | 'price_group.created'
+  | 'price_group.updated'
+  | 'price_group.deleted'
+  | 'price_group.product_price_set'
+  | 'price_group.product_price_removed'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -56,6 +61,11 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'product.restored':          'Восстановление товара',
   'product.permanently_deleted': 'Окончательное удаление товара',
   'product.created':           'Создание товара',
+  'price_group.created':       'Создание ценовой группы',
+  'price_group.updated':       'Изменение ценовой группы',
+  'price_group.deleted':       'Удаление ценовой группы',
+  'price_group.product_price_set': 'Установка индивидуальной цены',
+  'price_group.product_price_removed': 'Снятие индивидуальной цены',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -82,6 +92,11 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'product.restored': 'Product restored',
   'product.permanently_deleted': 'Product permanently deleted',
   'product.created': 'Product created',
+  'price_group.created': 'Price group created',
+  'price_group.updated': 'Price group updated',
+  'price_group.deleted': 'Price group deleted',
+  'price_group.product_price_set': 'Custom product price set',
+  'price_group.product_price_removed': 'Custom product price removed',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -108,6 +123,11 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'product.restored': 'Produkts atjaunots',
   'product.permanently_deleted': 'Produkts neatgriezeniski dzēsts',
   'product.created': 'Produkts izveidots',
+  'price_group.created': 'Cenu grupa izveidota',
+  'price_group.updated': 'Cenu grupa atjaunināta',
+  'price_group.deleted': 'Cenu grupa dzēsta',
+  'price_group.product_price_set': 'Individuālā cena iestatīta',
+  'price_group.product_price_removed': 'Individuālā cena noņemta',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

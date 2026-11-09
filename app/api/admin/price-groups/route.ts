@@ -18,15 +18,15 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const parsed = priceGroupSchema.safeParse(await request.json())
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
     }
-    const result = await createPriceGroup(parsed.data)
+    const result = await createPriceGroup(parsed.data, { actor, request })
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 500 })
     }

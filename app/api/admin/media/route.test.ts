@@ -1,18 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { mediaFindManyMock, mediaDeleteManyMock, requireAdminMock } = vi.hoisted(() => ({
+const { mediaFindManyMock, deleteMediaAssetsMock, requireAdminMock } = vi.hoisted(() => ({
   mediaFindManyMock: vi.fn(),
-  mediaDeleteManyMock: vi.fn(),
+  deleteMediaAssetsMock: vi.fn(),
   requireAdminMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    mediaAsset: { findMany: mediaFindManyMock, deleteMany: mediaDeleteManyMock },
+    mediaAsset: { findMany: mediaFindManyMock },
   },
 }))
+vi.mock('@/lib/media-asset-store', () => ({ deleteMediaAssets: deleteMediaAssetsMock }))
 vi.mock('@/lib/server-auth', () => ({
   requireAdmin: requireAdminMock,
 }))
@@ -81,9 +82,15 @@ describe('DELETE /api/admin/media', () => {
     expect((await res.json()).error).toBe('name_required')
   })
 
+  it('rejects non-admins before touching the store', async () => {
+    requireAdminMock.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
+    const res = await DELETE(makeDeleteRequest({ name: 'a.png' }))
+    expect(res.status).toBe(403)
+    expect(deleteMediaAssetsMock).not.toHaveBeenCalled()
+  })
+
   it('deletes existing names, reports invalid and missing ones as errors', async () => {
-    mediaFindManyMock.mockResolvedValue([{ name: 'a.png' }])
-    mediaDeleteManyMock.mockResolvedValue({ count: 1 })
+    deleteMediaAssetsMock.mockResolvedValue(['a.png'])
 
     const res = await DELETE(
       makeDeleteRequest({ names: ['a.png', '../evil.png', 'missing.png'] })
@@ -93,14 +100,34 @@ describe('DELETE /api/admin/media', () => {
     expect(body.ok).toBe(true)
     expect(body.deleted).toBe(1)
     expect(body.errors).toEqual(expect.arrayContaining(['../evil.png', 'missing.png']))
-    expect(mediaDeleteManyMock).toHaveBeenCalledWith({
-      where: { name: { in: ['a.png'] } },
-    })
+    expect(body.errors).toEqual(['../evil.png', 'missing.png'])
+    const [names, auditContext] = deleteMediaAssetsMock.mock.calls[0] as [string[], { actor: unknown; request: unknown }]
+    expect(names).toEqual(['a.png', 'missing.png'])
+    expect(auditContext.actor).toBe(ADMIN_USER)
+    expect(auditContext.request).toBeInstanceOf(NextRequest)
+  })
+
+  it('reports an already deleted file as an error with deleted: 0', async () => {
+    deleteMediaAssetsMock.mockResolvedValue([])
+    const body = await (await DELETE(makeDeleteRequest({ name: 'a.png' }))).json()
+    expect(body).toEqual({ ok: true, deleted: 0, errors: ['a.png'] })
+  })
+
+  it('does not call the store when every name is invalid', async () => {
+    const body = await (await DELETE(makeDeleteRequest({ names: ['../x.png'] }))).json()
+    expect(body).toEqual({ ok: true, deleted: 0, errors: ['../x.png'] })
+    expect(deleteMediaAssetsMock).not.toHaveBeenCalled()
+  })
+
+  it('returns the existing 500 contract when the delete or its audit fails', async () => {
+    deleteMediaAssetsMock.mockRejectedValue(new Error('audit unavailable'))
+    const res = await DELETE(makeDeleteRequest({ name: 'a.png' }))
+    expect(res.status).toBe(500)
+    expect((await res.json()).error).toBe('failed_to_delete')
   })
 
   it('supports single-name form', async () => {
-    mediaFindManyMock.mockResolvedValue([{ name: 'a.png' }])
-    mediaDeleteManyMock.mockResolvedValue({ count: 1 })
+    deleteMediaAssetsMock.mockResolvedValue(['a.png'])
 
     const res = await DELETE(makeDeleteRequest({ name: 'a.png' }))
     const body = await res.json()

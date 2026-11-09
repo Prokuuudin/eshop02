@@ -62,4 +62,15 @@ describe('administrator audit event labels', () => {
     expect(labels['access_request.approved']).toBe(approved)
     expect(labels['access_request.rejected']).toBe(rejected)
   })
+
+  it.each([
+    ['ru', 'Загрузка медиафайла', 'Замена медиафайла', 'Удаление медиафайла'],
+    ['lv', 'Multivides fails augšupielādēts', 'Multivides fails aizstāts', 'Multivides fails dzēsts'],
+    ['en', 'Media file uploaded', 'Media file replaced', 'Media file deleted'],
+  ] as const)('names media events in %s', (language, uploaded, replaced, deleted) => {
+    const labels = getAdminActionLabels(language)
+    expect(labels['media.uploaded']).toBe(uploaded)
+    expect(labels['media.replaced']).toBe(replaced)
+    expect(labels['media.deleted']).toBe(deleted)
+  })
 })

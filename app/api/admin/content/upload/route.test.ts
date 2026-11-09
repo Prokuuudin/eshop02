@@ -7,10 +7,9 @@ const { mediaCreateMock, requireAdminMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('server-only', () => ({}))
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    mediaAsset: { create: mediaCreateMock },
-  },
+vi.mock('@/lib/media-asset-store', () => ({
+  createMediaAsset: mediaCreateMock,
+  mediaPath: (name: string) => `/api/media/${name}`,
 }))
 vi.mock('@/lib/server-auth', () => ({
   requireAdmin: requireAdminMock,
@@ -45,7 +44,7 @@ describe('POST /api/admin/content/upload', () => {
     const res = await POST(makeRequest(new File([bytes], name, { type: mimeType })))
     expect(res.status).toBe(200)
     expect(await res.json()).toMatchObject({ mimeType, originalName: name })
-    expect(mediaCreateMock).toHaveBeenCalledWith({ data: expect.objectContaining({ mimeType, size: bytes.length }) })
+    expect(mediaCreateMock).toHaveBeenCalledWith(expect.objectContaining({ mimeType, size: bytes.length }), expect.objectContaining({ actor: ADMIN_USER }))
   })
   it('allows videos larger than the photo limit', async () => {
     const bytes = new Uint8Array(10 * 1024 * 1024 + 1)
@@ -105,13 +104,23 @@ describe('POST /api/admin/content/upload', () => {
     expect(body.size).toBe(PNG_BYTES.length)
     expect(body.mimeType).toBe('image/png')
 
-    const createArg = mediaCreateMock.mock.calls[0][0] as {
-      data: { name: string; mimeType: string; size: number; data: Uint8Array }
-    }
-    expect(createArg.data.name).toMatch(/^\d+-my-photo\.png$/)
-    expect(createArg.data.mimeType).toBe('image/png')
-    expect(createArg.data.size).toBe(PNG_BYTES.length)
-    expect(Array.from(createArg.data.data)).toEqual(Array.from(PNG_BYTES))
+    const [createArg, auditContext] = mediaCreateMock.mock.calls[0] as [
+      { name: string; mimeType: string; size: number; bytes: Uint8Array },
+      { actor: unknown; request: unknown },
+    ]
+    expect(createArg.name).toMatch(/^\d+-my-photo\.png$/)
+    expect(createArg.mimeType).toBe('image/png')
+    expect(createArg.size).toBe(PNG_BYTES.length)
+    expect(Array.from(createArg.bytes)).toEqual(Array.from(PNG_BYTES))
+    expect(auditContext.actor).toBe(ADMIN_USER)
+    expect(auditContext.request).toBeInstanceOf(NextRequest)
+  })
+
+  it('returns the existing 500 contract when the upload or its audit fails', async () => {
+    mediaCreateMock.mockRejectedValue(new Error('audit unavailable'))
+    const res = await POST(makeRequest(new File([PNG_BYTES], 'a.png', { type: 'image/png' })))
+    expect(res.status).toBe(500)
+    expect((await res.json()).error).toBe('failed_to_upload_file')
   })
 
   it('rejects active content disguised with an allowed MIME type', async () => {

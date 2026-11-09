@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
+import { deleteMediaAssets } from '@/lib/media-asset-store'
 import path from 'path'
 
 export const runtime = 'nodejs'
@@ -38,8 +39,8 @@ function safeName(name: string): boolean {
 }
 
 export async function DELETE(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as { name?: string; names?: string[] }
@@ -50,20 +51,12 @@ export async function DELETE(request: NextRequest): Promise<Response> {
     const valid = targets.filter(safeName)
     const invalid = targets.filter((name) => !safeName(name))
 
-    const existing = valid.length
-      ? await prisma.mediaAsset.findMany({
-          where: { name: { in: valid } },
-          select: { name: true }
-        })
-      : []
-    const existingNames = existing.map((row) => row.name)
-    const missing = valid.filter((name) => !existingNames.includes(name))
+    // Existence is decided under the row lock, so a concurrent or repeated
+    // delete reports the file as missing instead of auditing it twice.
+    const deleted = valid.length ? await deleteMediaAssets(valid, { actor, request }) : []
+    const missing = valid.filter((name) => !deleted.includes(name))
 
-    const result = existingNames.length
-      ? await prisma.mediaAsset.deleteMany({ where: { name: { in: existingNames } } })
-      : { count: 0 }
-
-    return NextResponse.json({ ok: true, deleted: result.count, errors: [...invalid, ...missing] })
+    return NextResponse.json({ ok: true, deleted: deleted.length, errors: [...invalid, ...missing] })
   } catch {
     return NextResponse.json({ error: 'failed_to_delete' }, { status: 500 })
   }

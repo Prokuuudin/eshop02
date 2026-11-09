@@ -25,6 +25,9 @@ export type AdminLogAction =
   | 'settings.configuration_restored'
   | 'access_request.approved'
   | 'access_request.rejected'
+  | 'media.uploaded'
+  | 'media.replaced'
+  | 'media.deleted'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -72,6 +75,9 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'settings.configuration_restored': 'Восстановление конфигурации',
   'access_request.approved': 'Одобрение заявки на доступ',
   'access_request.rejected': 'Отклонение заявки на доступ',
+  'media.uploaded': 'Загрузка медиафайла',
+  'media.replaced': 'Замена медиафайла',
+  'media.deleted': 'Удаление медиафайла',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -106,6 +112,9 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'settings.configuration_restored': 'Configuration restored',
   'access_request.approved': 'Access request approved',
   'access_request.rejected': 'Access request rejected',
+  'media.uploaded': 'Media file uploaded',
+  'media.replaced': 'Media file replaced',
+  'media.deleted': 'Media file deleted',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -140,6 +149,9 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'settings.configuration_restored': 'Konfigurācija atjaunota',
   'access_request.approved': 'Piekļuves pieteikums apstiprināts',
   'access_request.rejected': 'Piekļuves pieteikums noraidīts',
+  'media.uploaded': 'Multivides fails augšupielādēts',
+  'media.replaced': 'Multivides fails aizstāts',
+  'media.deleted': 'Multivides fails dzēsts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

@@ -34,6 +34,9 @@ export type AdminLogAction =
   | 'campaign.created'
   | 'campaign.updated'
   | 'campaign.deleted'
+  | 'contact_message.marked_answered'
+  | 'contact_message.marked_unanswered'
+  | 'admin.dashboard_prefs_updated'
   | 'settings.configuration_restored'
   | 'access_request.approved'
   | 'access_request.rejected'
@@ -83,6 +86,9 @@ export type AdminLogEntry = {
 }
 
 export const ACTION_LABELS: Record<AdminLogAction, string> = {
+  'contact_message.marked_answered': 'Обращение отмечено как отвеченное',
+  'contact_message.marked_unanswered': 'Обращение отмечено как неотвеченное',
+  'admin.dashboard_prefs_updated': 'Изменение настроек панели',
   'order.updated':             'Редактирование заказа',
   'order.payment_status_updated': 'Ручное изменение статуса оплаты',
   'site_content.updated':      'Обновление контента сайта',
@@ -150,6 +156,9 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
+  'contact_message.marked_answered': 'Contact message marked answered',
+  'contact_message.marked_unanswered': 'Contact message marked unanswered',
+  'admin.dashboard_prefs_updated': 'Dashboard preferences updated',
   'order.updated': 'Order edited',
   'order.payment_status_updated': 'Payment status updated manually',
   'site_content.updated': 'Site content updated',
@@ -217,6 +226,9 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
+  'contact_message.marked_answered': 'Ziņojums atzīmēts kā atbildēts',
+  'contact_message.marked_unanswered': 'Ziņojums atzīmēts kā neatbildēts',
+  'admin.dashboard_prefs_updated': 'Paneļa iestatījumi mainīti',
   'order.updated': 'Pasūtījums rediģēts',
   'order.payment_status_updated': 'Maksājuma statuss mainīts manuāli',
   'site_content.updated': 'Vietnes saturs atjaunināts',

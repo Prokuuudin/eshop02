@@ -135,4 +135,14 @@ describe('administrator audit event labels', () => {
     ] as const
     expect(actions.map((action) => labels[action])).toEqual(expected)
   })
+
+  it.each([
+    ['ru', ['Обращение отмечено как отвеченное', 'Обращение отмечено как неотвеченное', 'Изменение настроек панели']],
+    ['lv', ['Ziņojums atzīmēts kā atbildēts', 'Ziņojums atzīmēts kā neatbildēts', 'Paneļa iestatījumi mainīti']],
+    ['en', ['Contact message marked answered', 'Contact message marked unanswered', 'Dashboard preferences updated']],
+  ] as const)('names contact message and dashboard events in %s', (language, expected) => {
+    const labels = getAdminActionLabels(language)
+    const actions = ['contact_message.marked_answered', 'contact_message.marked_unanswered', 'admin.dashboard_prefs_updated'] as const
+    expect(actions.map((action) => labels[action])).toEqual(expected)
+  })
 })

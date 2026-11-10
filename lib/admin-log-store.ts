@@ -23,6 +23,17 @@ export type AdminLogAction =
   | 'price_group.product_price_set'
   | 'price_group.product_price_removed'
   | 'email_template.updated'
+  | 'banner_groups.updated'
+  | 'banner.created'
+  | 'banner.updated'
+  | 'banner.deleted'
+  | 'banner.reordered'
+  | 'blog.created'
+  | 'blog.updated'
+  | 'blog.deleted'
+  | 'campaign.created'
+  | 'campaign.updated'
+  | 'campaign.deleted'
   | 'settings.configuration_restored'
   | 'access_request.approved'
   | 'access_request.rejected'
@@ -92,6 +103,17 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Установка индивидуальной цены',
   'price_group.product_price_removed': 'Снятие индивидуальной цены',
   'email_template.updated': 'Изменение шаблона письма',
+  'banner_groups.updated': 'Изменение групп баннеров',
+  'banner.created': 'Создание баннера',
+  'banner.updated': 'Изменение баннера',
+  'banner.deleted': 'Удаление баннера',
+  'banner.reordered': 'Изменение порядка баннеров',
+  'blog.created': 'Создание статьи',
+  'blog.updated': 'Изменение статьи',
+  'blog.deleted': 'Удаление статьи',
+  'campaign.created': 'Создание кампании',
+  'campaign.updated': 'Изменение кампании',
+  'campaign.deleted': 'Удаление кампании',
   'settings.configuration_restored': 'Восстановление конфигурации',
   'access_request.approved': 'Одобрение заявки на доступ',
   'access_request.rejected': 'Отклонение заявки на доступ',
@@ -148,6 +170,17 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Custom product price set',
   'price_group.product_price_removed': 'Custom product price removed',
   'email_template.updated': 'Email template updated',
+  'banner_groups.updated': 'Banner groups updated',
+  'banner.created': 'Banner created',
+  'banner.updated': 'Banner updated',
+  'banner.deleted': 'Banner deleted',
+  'banner.reordered': 'Banner order changed',
+  'blog.created': 'Blog post created',
+  'blog.updated': 'Blog post updated',
+  'blog.deleted': 'Blog post deleted',
+  'campaign.created': 'Campaign created',
+  'campaign.updated': 'Campaign updated',
+  'campaign.deleted': 'Campaign deleted',
   'settings.configuration_restored': 'Configuration restored',
   'access_request.approved': 'Access request approved',
   'access_request.rejected': 'Access request rejected',
@@ -204,6 +237,17 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'price_group.product_price_set': 'Individuālā cena iestatīta',
   'price_group.product_price_removed': 'Individuālā cena noņemta',
   'email_template.updated': 'E-pasta veidne atjaunināta',
+  'banner_groups.updated': 'Baneru grupas atjauninātas',
+  'banner.created': 'Baneris izveidots',
+  'banner.updated': 'Baneris atjaunināts',
+  'banner.deleted': 'Baneris dzēsts',
+  'banner.reordered': 'Baneru secība mainīta',
+  'blog.created': 'Raksts izveidots',
+  'blog.updated': 'Raksts atjaunināts',
+  'blog.deleted': 'Raksts dzēsts',
+  'campaign.created': 'Kampaņa izveidota',
+  'campaign.updated': 'Kampaņa atjaunināta',
+  'campaign.deleted': 'Kampaņa dzēsta',
   'settings.configuration_restored': 'Konfigurācija atjaunota',
   'access_request.approved': 'Piekļuves pieteikums apstiprināts',
   'access_request.rejected': 'Piekļuves pieteikums noraidīts',

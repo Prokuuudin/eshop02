@@ -26,13 +26,13 @@ export async function GET(): Promise<Response> {
 }
 
 export async function PUT(request: NextRequest): Promise<Response> {
-  const gate = await requireAdmin()
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   const parsed = groupsSchema.safeParse(await request.json())
   if (!parsed.success) return NextResponse.json({ error: 'invalid_groups' }, { status: 400 })
 
-  const groups = await saveBannerGroups(parsed.data.groups)
+  const { groups } = await saveBannerGroups(parsed.data.groups, { actor, request })
   revalidateTag(STOREFRONT_CACHE_TAGS.banners, { expire: 0 })
   revalidatePath('/[lang]', 'layout')
   return NextResponse.json({ groups })

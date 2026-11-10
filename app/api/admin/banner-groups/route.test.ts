@@ -22,7 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.admin.mockResolvedValue({ id: 'admin' })
   mocks.get.mockResolvedValue([group])
-  mocks.save.mockResolvedValue([group])
+  mocks.save.mockResolvedValue({ groups: [group], changed: true })
 })
 describe('banner groups', () => {
   it('returns the stored groups', async () => {
@@ -33,7 +33,10 @@ describe('banner groups', () => {
   it('saves a valid list of groups and expires the storefront cache', async () => {
     const res = await PUT(request([group, { ...group, id: 'g2', name: 'Топ', zone: 'hero', displayType: 'carousel', order: 1 }]))
     expect(res.status).toBe(200)
-    expect(mocks.save).toHaveBeenCalledWith([group, expect.objectContaining({ id: 'g2', zone: 'hero', displayType: 'carousel' })])
+    expect(mocks.save).toHaveBeenCalledWith(
+      [group, expect.objectContaining({ id: 'g2', zone: 'hero', displayType: 'carousel' })],
+      expect.objectContaining({ actor: { id: 'admin' }, request: expect.any(NextRequest) }),
+    )
     expect(mocks.tag).toHaveBeenCalledWith('storefront-banners', { expire: 0 })
     expect(mocks.path).toHaveBeenCalledWith('/[lang]', 'layout')
   })

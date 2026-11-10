@@ -121,4 +121,18 @@ describe('administrator audit event labels', () => {
   ] as const)('names the email-template update event in %s', (language, expected) => {
     expect(getAdminActionLabels(language)['email_template.updated']).toBe(expected)
   })
+
+  it.each([
+    ['ru', ['Изменение групп баннеров', 'Создание баннера', 'Изменение баннера', 'Удаление баннера', 'Изменение порядка баннеров', 'Создание статьи', 'Изменение статьи', 'Удаление статьи', 'Создание кампании', 'Изменение кампании', 'Удаление кампании']],
+    ['lv', ['Baneru grupas atjauninātas', 'Baneris izveidots', 'Baneris atjaunināts', 'Baneris dzēsts', 'Baneru secība mainīta', 'Raksts izveidots', 'Raksts atjaunināts', 'Raksts dzēsts', 'Kampaņa izveidota', 'Kampaņa atjaunināta', 'Kampaņa dzēsta']],
+    ['en', ['Banner groups updated', 'Banner created', 'Banner updated', 'Banner deleted', 'Banner order changed', 'Blog post created', 'Blog post updated', 'Blog post deleted', 'Campaign created', 'Campaign updated', 'Campaign deleted']],
+  ] as const)('names banner, blog and campaign events in %s', (language, expected) => {
+    const labels = getAdminActionLabels(language)
+    const actions = [
+      'banner_groups.updated', 'banner.created', 'banner.updated', 'banner.deleted', 'banner.reordered',
+      'blog.created', 'blog.updated', 'blog.deleted',
+      'campaign.created', 'campaign.updated', 'campaign.deleted',
+    ] as const
+    expect(actions.map((action) => labels[action])).toEqual(expected)
+  })
 })

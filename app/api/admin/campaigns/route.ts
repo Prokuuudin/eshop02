@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-line-membership'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag, parseCampaignType, secondItemProductsOutsideBrand, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
-import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
+import type { PromoCampaign } from '@/lib/promo-campaigns'
+import { createAdminCampaign, getAdminCampaigns } from '@/lib/campaigns-server-store'
 
 export const runtime = 'nodejs'
 
-const KV_KEY = 'promo-campaigns'
-
-async function readData(): Promise<PromoCampaign[]> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return []
-  return (row.value as PromoCampaign[]) ?? []
-}
-
-async function writeData(data: PromoCampaign[]): Promise<void> {
-  await prisma.keyValueSetting.upsert({
-    where: { key: KV_KEY },
-    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
-    update: { value: data as unknown as Prisma.InputJsonValue },
-  })
+function revalidateCampaigns(): void {
   revalidateTag('storefront-sale-products', { expire: 0 })
   revalidateTag('storefront-bestsellers', { expire: 0 })
   revalidatePath('/[lang]', 'layout')
@@ -33,7 +17,7 @@ export async function GET(): Promise<Response> {
   if (__gate instanceof NextResponse) return __gate
 
   try {
-    const data = await readData()
+    const data = await getAdminCampaigns()
     return NextResponse.json(data)
   } catch {
     return NextResponse.json({ error: 'failed_to_read' }, { status: 500 })
@@ -41,53 +25,15 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as Omit<PromoCampaign, 'id' | 'createdAt' | 'updatedAt'>
-    const name = String(body.name ?? '').trim()
-    const type = parseCampaignType(body.type)
-    const startDate = String(body.startDate ?? '').slice(0, 10)
-    const endDate = String(body.endDate ?? '').slice(0, 10)
-    if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
-    if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
-    if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
-    const data = await readData()
-    let secondItem: Extract<ReturnType<typeof validateSecondItemCampaignInput>, { ok: true }>['fields'] | undefined
-    if (type === SECOND_ITEM_DISCOUNT_TYPE) {
-      const checked = validateSecondItemCampaignInput(body as Record<string, unknown>, data, { startDate, endDate })
-      if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
-      const outsideBrand = await secondItemProductsOutsideBrand(prisma, checked.fields)
-      if (outsideBrand.length > 0) return NextResponse.json({ error: 'products_not_in_brand', ids: outsideBrand }, { status: 422 })
-      secondItem = checked.fields
-    }
-    const targetBrandLineIds = secondItem ? [] : brandLineIdList(body.targetBrandLineIds)
-    const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
-    if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
-    const now = new Date().toISOString()
-    const item: PromoCampaign = {
-      id: `campaign-${Date.now()}`,
-      name,
-      description: String(body.description ?? '').trim(),
-      showOldPrice: body.showOldPrice !== false,
-      type,
-      discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(body.discountPercent) || 0)) : 0,
-      startDate,
-      endDate,
-      active: campaignActiveFlag(startDate, body.active),
-      targetCategories: Array.isArray(body.targetCategories) ? [...new Set(body.targetCategories.map(String).filter(Boolean))] : [],
-      targetSubcategories: Array.isArray(body.targetSubcategories) ? [...new Set(body.targetSubcategories.map(String).filter(Boolean))] : [],
-      targetBrands: Array.isArray(body.targetBrands) ? [...new Set(body.targetBrands.map(String).filter(Boolean))] : [],
-      targetBrandLineIds,
-      minOrderAmount: Math.max(0, Number(body.minOrderAmount) || 0),
-      ...secondItem,
-      createdAt: now,
-      updatedAt: now,
-    }
-    data.push(item)
-    await writeData(data)
-    return NextResponse.json(item, { status: 201 })
+    const result = await createAdminCampaign(body, { actor, request })
+    if (!result.ok) return NextResponse.json(result.body, { status: result.status })
+    revalidateCampaigns()
+    return NextResponse.json(result.value, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'failed_to_create' }, { status: 400 })
   }

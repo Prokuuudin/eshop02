@@ -10,6 +10,7 @@
 - Коммит реализации: `42ddbd187fe25eeb1a5c6aad5cd286983e9a0844`.
 - Stacked Draft PR #28: https://github.com/Prokuuudin/eshop02/pull/28; base `fix/2026-11-09-admin-audit-email-assets`, base SHA `6495c287646ec67afd269d6831d258d4139417ce`.
 - Head до коммита, добавляющего ссылку PR в этот документ: `ead1ff2d8f43cdb9b74d35dd3ea0dc3db6287cd6`.
+- Проверенный head до этого документационного обновления: `2d7738a11e7c49d7f309232e297d765c53c73cfa`; `static-and-unit` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42773898047/job/129687809620.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Покрытые маршруты и события
@@ -102,7 +103,7 @@ git diff --check
 
 Первый `npm ci --prefer-offline --no-audit` установил пакеты, но завершился кодом 1 на lifecycle `prepare`: sandbox запретил `git config core.hooksPath` в общем `.git/config`. Это локальное ограничение установки hook, не ошибка исходников; Prisma generation, tests, lint и typecheck после этого выполнялись успешно.
 
-Известные browser jobs в предыдущих stacked PR отдельно падали на `playwright install` на `ubuntu26.04-x64`. Изменения Playwright/CI находятся вне этого PR.
+В Quality Gates для `2d7738a11e7c49d7f309232e297d765c53c73cfa` browser jobs WebKit, Firefox и Chromium отдельно упали на `playwright install --with-deps`; сами browser tests не запускались. Это известный инфраструктурный сбой на `ubuntu26.04-x64`. Изменения Playwright/CI находятся вне этого PR.
 
 ## Затронутые пути
 

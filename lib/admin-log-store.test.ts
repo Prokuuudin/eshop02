@@ -145,4 +145,14 @@ describe('administrator audit event labels', () => {
     const actions = ['contact_message.marked_answered', 'contact_message.marked_unanswered', 'admin.dashboard_prefs_updated'] as const
     expect(actions.map((action) => labels[action])).toEqual(expected)
   })
+
+  it.each([
+    ['ru', ['Вход сотрудника', 'Отклонённый вход сотрудника', 'Выход сотрудника']],
+    ['lv', ['Darbinieka pieteikšanās', 'Noraidīta darbinieka pieteikšanās', 'Darbinieka izrakstīšanās']],
+    ['en', ['Staff sign-in', 'Staff sign-in rejected', 'Staff sign-out']],
+  ] as const)('names staff session events in %s', (language, expected) => {
+    const labels = getAdminActionLabels(language)
+    const actions = ['auth.admin_login_succeeded', 'auth.admin_login_rejected', 'auth.admin_logout'] as const
+    expect(actions.map((action) => labels[action])).toEqual(expected)
+  })
 })

@@ -16,6 +16,7 @@ vi.mock('@/lib/server-auth', () => ({
   sessionCookieMaxAgeSeconds: vi.fn(() => 86_400),
   SESSION_COOKIE: 'eshop_session',
 }))
+vi.mock('@/lib/auth-session-audit', () => ({ createStaffSessionWithAudit: vi.fn(), recordRejectedStaffLogin: vi.fn(), revokeSessionWithAudit: vi.fn() }))
 vi.mock('@/lib/mfa', () => ({
   decryptSecret: vi.fn(() => 'RAWSECRET'),
   verifyTotpCode: vi.fn(),
@@ -24,7 +25,7 @@ vi.mock('@/lib/mfa', () => ({
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), resetRateLimit: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'
-import { createSession } from '@/lib/server-auth'
+import { createStaffSessionWithAudit, recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 import { verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { POST } from './route'
@@ -51,7 +52,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 4, resetAt: Date.now() + 60_000 })
   vi.mocked(resetRateLimit).mockResolvedValue(undefined)
-  vi.mocked(createSession).mockResolvedValue('new-token')
+  vi.mocked(createStaffSessionWithAudit).mockResolvedValue('new-token')
   vi.mocked(prisma.mfaChallenge.deleteMany).mockResolvedValue({ count: 1 })
   vi.mocked(prisma.user.updateMany).mockResolvedValue({ count: 1 })
 })
@@ -61,7 +62,7 @@ describe('POST /api/auth/mfa/verify', () => {
     vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue(null)
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
     expect(res.status).toBe(401)
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('rejects when the token/IP limit is hit, before any DB lookup', async () => {
@@ -83,14 +84,14 @@ describe('POST /api/auth/mfa/verify', () => {
     expect(res.status).toBe(429)
     expect(checkRateLimit).toHaveBeenCalledWith('mfa:user:u1', { windowMs: 24 * 60 * 60 * 1000, maxAttempts: 20 })
     expect(verifyTotpCode).not.toHaveBeenCalled()
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('rejects a stale challenge whose user no longer has admin access', async () => {
     vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue(challenge({ platformRole: 'customer' }))
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
     expect(res.status).toBe(401)
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('rejects an enrollment challenge (MFA not yet enabled) — that flow must go through /enroll', async () => {
@@ -98,7 +99,7 @@ describe('POST /api/auth/mfa/verify', () => {
     vi.mocked(verifyTotpCode).mockResolvedValue(true)
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
     expect(res.status).toBe(401)
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('rejects an expired challenge', async () => {
@@ -118,7 +119,7 @@ describe('POST /api/auth/mfa/verify', () => {
     expect(JSON.parse(text).user.id).toBe('u1')
     expect(text).not.toContain('ENCRYPTED')
     expect(text).not.toContain('RAWSECRET')
-    expect(createSession).toHaveBeenCalledWith('u1', { mfaVerified: true })
+    expect(createStaffSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), expect.any(String))
     expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
     expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { tokenHash: 'hash(tok)' } })
     expect(resetRateLimit).toHaveBeenCalledWith('mfa:token:hash(tok)')
@@ -131,7 +132,7 @@ describe('POST /api/auth/mfa/verify', () => {
     vi.mocked(verifyTotpCode).mockResolvedValue(true)
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
     expect(res.status).toBe(200)
-    expect(createSession).toHaveBeenCalledWith('u1', { mfaVerified: true })
+    expect(createStaffSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), expect.any(String))
   })
 
   it('is single-use: a concurrent second request that loses the challenge gets no session', async () => {
@@ -142,7 +143,7 @@ describe('POST /api/auth/mfa/verify', () => {
     const res = await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
 
     expect(res.status).toBe(401)
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('rejects a wrong TOTP code with no valid backup code, leaving the challenge intact for retry', async () => {
@@ -154,7 +155,7 @@ describe('POST /api/auth/mfa/verify', () => {
 
     expect(res.status).toBe(401)
     expect(prisma.mfaChallenge.deleteMany).not.toHaveBeenCalled()
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
     expect(prisma.user.updateMany).not.toHaveBeenCalled()
     expect(resetRateLimit).not.toHaveBeenCalled()
   })
@@ -171,7 +172,7 @@ describe('POST /api/auth/mfa/verify', () => {
       where: { id: 'u1', mfaBackupCodes: { equals: ['bhash1', 'bhash2'] } },
       data: { mfaBackupCodes: ['bhash2'] },
     })
-    expect(createSession).toHaveBeenCalledWith('u1', { mfaVerified: true })
+    expect(createStaffSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), expect.any(String))
   })
 
   it('rejects a recovery code that a concurrent request already consumed', async () => {
@@ -183,7 +184,7 @@ describe('POST /api/auth/mfa/verify', () => {
     const res = await POST(makeRequest({ challengeToken: 'tok', code: 'deadbeef01' }))
 
     expect(res.status).toBe(401)
-    expect(createSession).not.toHaveBeenCalled()
+    expect(createStaffSessionWithAudit).not.toHaveBeenCalled()
   })
 
   it('falls through to the recovery-code check when decrypting the TOTP secret throws', async () => {
@@ -194,7 +195,7 @@ describe('POST /api/auth/mfa/verify', () => {
     const res = await POST(makeRequest({ challengeToken: 'tok', code: 'deadbeef01' }))
 
     expect(res.status).toBe(200)
-    expect(createSession).toHaveBeenCalledWith('u1', { mfaVerified: true })
+    expect(createStaffSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), expect.any(String))
   })
 
   it('counts attempts per hashed token, never the raw one', async () => {
@@ -205,5 +206,18 @@ describe('POST /api/auth/mfa/verify', () => {
 
     expect(checkRateLimit).toHaveBeenCalledWith('mfa:token:hash(tok)', { windowMs: 15 * 60 * 1000, maxAttempts: 5 })
     expect(checkRateLimit).not.toHaveBeenCalledWith('mfa:token:tok', expect.anything())
+  })
+
+  it('records the sign-in method for TOTP and recovery codes, and audits a wrong code as a rejected staff login', async () => {
+    vi.mocked(prisma.mfaChallenge.findUnique).mockResolvedValue(challenge() as never)
+    vi.mocked(verifyTotpCode).mockResolvedValue(true)
+    await POST(makeRequest({ challengeToken: 'tok', code: '123456' }))
+    expect(createStaffSessionWithAudit).toHaveBeenLastCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), 'totp')
+    expect(recordRejectedStaffLogin).not.toHaveBeenCalled()
+
+    vi.mocked(verifyTotpCode).mockResolvedValue(false)
+    vi.mocked(consumeBackupCode).mockResolvedValueOnce({ ok: false, remaining: [] })
+    expect((await POST(makeRequest({ challengeToken: 'tok', code: '000000' }))).status).toBe(401)
+    expect(recordRejectedStaffLogin).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'u1' }), 'invalid_mfa_code')
   })
 })

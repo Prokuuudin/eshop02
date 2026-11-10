@@ -12,6 +12,7 @@ import { createMfaChallenge, setSessionCookie } from '@/lib/mfa-challenge'
 import { checkRateLimit, refundRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { normalizeCardNumber } from '@/lib/card-number'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
+import { recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 
 // A structurally valid bcrypt hash that matches no real password - used to pay the
 // same bcrypt.compare cost on the "account not found" path as on a real login attempt.
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // purely from response timing without ever guessing a correct password.
     const valid = await verifyPassword(password, eligible ? user!.passwordHash! : DUMMY_PASSWORD_HASH)
     if (!eligible || !valid) {
+      // Recognised staff account with a wrong password: audited after the response,
+      // so neither the response nor its timing changes. Customers are never audited.
+      if (eligible && requiresAdminMfa(user)) recordRejectedStaffLogin(req, user!, 'invalid_password')
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
     // A not-yet-activated customer proves nothing with an old or shared password, and the

@@ -34,6 +34,9 @@ export type AdminLogAction =
   | 'campaign.created'
   | 'campaign.updated'
   | 'campaign.deleted'
+  | 'auth.admin_login_succeeded'
+  | 'auth.admin_login_rejected'
+  | 'auth.admin_logout'
   | 'contact_message.marked_answered'
   | 'contact_message.marked_unanswered'
   | 'admin.dashboard_prefs_updated'
@@ -86,6 +89,9 @@ export type AdminLogEntry = {
 }
 
 export const ACTION_LABELS: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Вход сотрудника',
+  'auth.admin_login_rejected': 'Отклонённый вход сотрудника',
+  'auth.admin_logout': 'Выход сотрудника',
   'contact_message.marked_answered': 'Обращение отмечено как отвеченное',
   'contact_message.marked_unanswered': 'Обращение отмечено как неотвеченное',
   'admin.dashboard_prefs_updated': 'Изменение настроек панели',
@@ -156,6 +162,9 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Staff sign-in',
+  'auth.admin_login_rejected': 'Staff sign-in rejected',
+  'auth.admin_logout': 'Staff sign-out',
   'contact_message.marked_answered': 'Contact message marked answered',
   'contact_message.marked_unanswered': 'Contact message marked unanswered',
   'admin.dashboard_prefs_updated': 'Dashboard preferences updated',
@@ -226,6 +235,9 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Darbinieka pieteikšanās',
+  'auth.admin_login_rejected': 'Noraidīta darbinieka pieteikšanās',
+  'auth.admin_logout': 'Darbinieka izrakstīšanās',
   'contact_message.marked_answered': 'Ziņojums atzīmēts kā atbildēts',
   'contact_message.marked_unanswered': 'Ziņojums atzīmēts kā neatbildēts',
   'admin.dashboard_prefs_updated': 'Paneļa iestatījumi mainīti',

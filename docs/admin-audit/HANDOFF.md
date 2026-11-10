@@ -1,23 +1,67 @@
-# Hairshop Pro: кандидат для staging — аудит админских действий + аудит сессий + CI — handoff
+# Hairshop Pro: аудит админских действий — handoff (задача закрыта)
 
-Дата: 2026-11-10 (Europe/Riga)
+Обновлено: 2026-11-11 (Europe/Riga). Предыдущая версия: 2026-11-10, коммит `c0162740`.
 
-## Итог
+## Статус: ЗАКРЫТА
 
-- Ветка кандидата: `release/2026-11-10-staging-admin-audit-candidate`.
-- База staging: `release/2026-11-08-prefetch-catalog` = **`a4cecbb34f37ef3653b44f190882b8300ae21e94`**. Это база всей цепочки аудита (PR #15 направлен в эту ветку) и база PR #17. По памяти проекта — текущий прод Plesk с 2026-11-08 (подтверждено владельцем, не проверялось в этой сессии).
-- Состав кандидата: 43 коммита поверх базы — 42 коммита кода и CI (на `8374d61a`: 124 файла, +9086 / −1143) и коммит с этим handoff.
-  1. Цепочка аудита до PR #29 включительно: `a4cecbb3..d1c66959` (40 коммитов, PR #15–#29), без изменений.
-  2. Аудит сессий — отдельный коммит `a1d101f2` (`fix(audit): record staff sign-in, rejected sign-in and sign-out`).
-  3. Исправление раннера Playwright из PR #17 — отдельный коммит `8374d61a` (cherry-pick `66a1933a` с `-x`): `runs-on: ubuntu-24.04` для `accessibility-webkit`, `firefox-smoke`, `chromium-critical-smoke`.
-- Draft PR: **не создан** — `gh` не авторизован, токена в окружении нет, GitHub-подключения в сессии Claude нет. Ветка запушена.
-  - base: `release/2026-11-08-prefetch-catalog`
-  - head: `release/2026-11-10-staging-admin-audit-candidate`
-  - ссылка: https://github.com/Prokuuudin/eshop02/compare/release/2026-11-08-prefetch-catalog...release/2026-11-10-staging-admin-audit-candidate?expand=1 («Create draft pull request»)
-- Полный CI на финальном SHA кандидата **не запускался**: `quality.yml` срабатывает только на `pull_request` и на push в `main`. Он запустится после создания PR.
-- Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
+- Исходный список админских handler'ов, которые совсем не писали постоянный `AuditLog`, **закрыт: осталось 0**. Вход, отклонённый вход и выход сотрудников тоже пишутся.
+- Кандидат `c0162740dd406bbbc775ec449596e12ac7a36c58` (PR #30) **выложен на production** (Plesk, `hairshoppro.lv`).
+- Закрытие задачи **не означает merge и не закрывает PR**: PR #15–#30 открыты как Draft (см. «Состояние PR»).
+- Оставшиеся работы вынесены в [BACKLOG.md](BACKLOG.md).
 
-## Сверка с базой
+## Выкладка на production
+
+- Выложен: `c0162740dd406bbbc775ec449596e12ac7a36c58` (ветка `release/2026-11-10-staging-admin-audit-candidate`). Владелец, вручную, процедура «папка → `…prev`, чистый clone по прежнему пути, перенос серверных файлов, `npm ci`, `prisma:generate`, `build:plesk`, Restart App».
+- Миграций нет: кандидат не меняет `prisma/`, `package.json`/lock, `server.js`, `next.config.js`, `tsconfig.json`. Новых переменных окружения нет.
+- После рестарта, внешняя проверка: `/api/health` 200 `{"status":"ok","db":"ok"}`; `/`, `/lv`, `/en` — 200. Повторно 2026-11-10 23:18Z — то же.
+- Владелец подтвердил на production: успешное оформление заказа и аудит входа и выхода сотрудника.
+- Откат: прежняя папка `…prev` (переименовать обратно, Restart App). Прежний SHA ожидался `a4cecbb34f37ef3653b44f190882b8300ae21e94` (по внешним признакам и словам владельца от 2026-11-08); фактическое значение, считанное перед выкладкой, в эту сессию не передано — сверить с журналом выкладки. БД не откатывается: схема не менялась, записи `AuditLog` новой версии старой не мешают.
+- Резервная копия: Neon-ветка `backup-production-pre-pr30-*` на 2026-11-10 23:18Z не найдена. Если копия делалась другим способом — дописать сюда.
+- Важно для дальнейших релизов: production теперь на `c0162740`, а ветка `release/2026-11-08-prefetch-catalog` (база PR #30) по-прежнему `a4cecbb3`. Код production существует только в ветке кандидата; следующий production-релиз строить от `c0162740` (или от ветки кандидата после этого docs-коммита), а не от `a4cecbb3` и не от `main`.
+
+## Приёмка
+
+| Проверка | Где | Результат |
+|---|---|---|
+| Вход сотрудника с MFA (отказ по неверному коду, успешный вход), ровно один выход, `sessionHash` пустой | staging `staging.hairshoppro.lv`, `AuditLog` grins-staging | PASS (ручной smoke владельца) |
+| Оба перехода статуса обращения; повтор не создаёт второе событие | staging | PASS |
+| Временный админ `superAdmin=false` | staging | отозван: роль снята, пароль заменён случайным, MFA сброшен, сессии/MFA-challenge/токены сброса удалены; записи аудита сохранены |
+| Критические E2E на production-сборке `c0162740` (локальный HTTPS, одноразовая PostgreSQL 17 в Docker, 3 фиксированных товара, SMTP-заглушка) | Chromium / Firefox / WebKit | **23/23 / 23/23 / 23/23, всего 69/69, пропущено 0** |
+| Оформление заказа и аудит входа/выхода | production | PASS (подтверждено владельцем) |
+| CI на `c0162740` | GitHub | все 9 проверок success (см. оговорку про браузерные job в BACKLOG) |
+
+Состав 23 критических сценариев на браузер: гость без цен в HTML, meta, JSON-LD и RSC (`e2e/guest-price-leak.spec.ts`, 16); гость без цен в API и клиент с ценой (5); клиент входит через форму, кладёт товар в корзину и оформляет заказ банковским переводом — заказ создан в БД (1); удаление из корзины с подтверждением (1). Сценарии API и сквозного заказа были временным spec-файлом проверки и в репозиторий не добавлены.
+
+Полный набор (348 тестов, dev-сервер, одноразовая ветка Neon от grins-staging): 202 прошло, 146 упало. На базе `a4cecbb3` те же падения (Chromium: 35 из 38 совпали; 2 падения только у кандидата при повторе 6/6 PASS — нестабильность dev-сервера). Регрессий от PR #30 не найдено; ремонт набора — в BACKLOG.
+
+## Состояние PR (2026-11-10 23:18Z, GitHub API)
+
+Все PR открыты, все Draft, ни один не смержен.
+
+| PR | Head | База | Содержание |
+|---|---|---|---|
+| #30 | `release/2026-11-10-staging-admin-audit-candidate` (`c0162740` = production; после этого handoff — +1 docs-коммит) | `release/2026-11-08-prefetch-catalog` | кандидат: цепочка #15–#29 + аудит сессий + CI-фикс #17 |
+| #15 | `fix/2026-11-09-admin-audit-content-payment` `f53ea450` | `release/2026-11-08-prefetch-catalog` | начало цепочки |
+| #16 | `…-product-archive` `11bc9083` | #15 | |
+| #18 | `…-product-archive-move` `e91fc0fa` | #16 | |
+| #19 | `…-price-groups` `a700ccc2` | #18 | |
+| #20 | `…-configuration-restore` `5ff8204d` | #19 | |
+| #21 | `…-access-requests` `85198308` | #20 | |
+| #22 | `…-media` `055f3af7` | #21 | |
+| #23 | `…-invitations` `a0370069` | #22 | |
+| #24 | `…-card-mailings` `a9950de0` | #23 | |
+| #25 | `…-broadcasts` `8a1fc1da` | #24 | |
+| #26 | `…-promo-template-sends` `8f1e2249` | #25 | |
+| #27 | `…-email-assets` `6495c287` | #26 | |
+| #28 | `…-banners-blog-campaigns` `551dd70a` | #27 | |
+| #29 | `fix/2026-11-10-admin-audit-contact-dashboard` `d1c66959` | #28 | конец цепочки |
+| #17 | `ci/pin-playwright-ubuntu-24-04` `66a1933a` | `release/2026-11-08-prefetch-catalog` | вошёл в #30 cherry-pick'ом |
+
+Решение по слиянию (за владельцем): все изменения #15–#29 и #17 уже внутри #30. Обычный путь — смержить #30 в `release/2026-11-08-prefetch-catalog` и закрыть #15–#29 и #17 как вошедшие в #30; затем решить перенос продовой линии в `main` (`main` с ней расходится). До этого ничего не мержилось и не закрывалось.
+
+## Справка по реализации (без изменений с 2026-11-10)
+
+### Сверка с базой (2026-11-10)
 
 - `a4cecbb3` — предок `d1c66959`; ветка базы после открытия цепочки не двигалась (`d1c66959..a4cecbb3` = 0 коммитов).
 - Кандидат не меняет `prisma/` (схема и миграции), `package.json` и `package-lock.json`. Из `.github` меняется только `quality.yml` (коммит CI). **Миграции БД для выката не нужны.**
@@ -26,7 +70,7 @@
   2. `origin/main` (`dd3cec15`) не является предком базы: продовая линия `release/*` расходится с `main`, это известное состояние проекта. Кандидат строится от продовой линии, а не от `main`.
   3. Head PR #26 — `8f1e2249`, а не `9e01c7fa` из моего handoff: позже другой агент добавил в ветку документационные коммиты. В кандидат они входят через #27–#29.
 
-## Аудит сессий (новое в кандидате)
+### Аудит сессий
 
 Прослежены `POST /api/auth/login`, `POST /api/auth/mfa/enroll`, `POST /api/auth/mfa/enroll/confirm`, `POST /api/auth/mfa/verify`, `POST /api/auth/logout`. Сотрудник (`requiresAdminMfa`: platform admin или staff manager) от пароля сессию не получает: она выдаётся только на шаге MFA. Новый `lib/auth-session-audit.ts`:
 
@@ -47,7 +91,9 @@
 - Маршруты (`login` 19, `logout` 3, `mfa/verify`, `mfa/enroll/confirm` — всего 110 тестов `app/api/auth`): неверный пароль сотрудника аудируется без изменения ответа; клиент, неизвестный идентификатор и шаг пароля сотрудника не аудируются; метод входа (`totp`, `backup_code`, `enrollment`); неверный MFA-код; logout передаёт токен в аудируемый отзыв.
 - Изолированный PGlite (in-memory PostgreSQL вне репозитория, реальный `appendServerAudit`, `PrismaPg`): 10/10 PASS — сессия и событие в одной транзакции, `sessionHash = null`, `userAgent` сохранён, отзыв с событием, повторный logout без события, клиентский logout без события, сбой аудита: сессия не выдаётся, а logout всё равно отзывает. Новый процесс PGlite не смог занять порт 54329, поэтому проверка выполнялась на уже запущенном изолированном экземпляре из этой сессии.
 
-## Проверки кандидата
+### Проверки кандидата (до staging)
+
+> Снято после этого раздела: полная production-сборка прошла на staging (`build:plesk` против grins-staging) и локально на изолированной PostgreSQL 17; PR #30 создан, CI на `c0162740` — 9/9 success; критические E2E на production-сборке — 69/69 (см. «Приёмка»).
 
 Ранние прогоны в рабочем worktree шли на `node_modules` основного checkout (другая ветка, другой набор пакетов). Поэтому итоговые проверки повторены в **чистом worktree кандидата** (`C:/Users/User/eshop02-work/worktrees/eshop02-staging-candidate`, detached `8374d61a`) после `npm ci` по lockfile кандидата и `prisma generate`:
 
@@ -69,27 +115,13 @@ GitHub (кандидат ещё не прогонялся; ниже — дока
 
 Пропущено: изолированная PostgreSQL недоступна (`127.0.0.1:5432` закрыт, Docker не запущен). Integration и e2e на реальной PostgreSQL не выполнялись; проверки транзакций сделаны на stateful harness и на PGlite. Рабочая Neon не использовалась.
 
-## Блокеры перед staging
-
-1. **Создать Draft PR** по ссылке выше и дождаться полного CI на финальном SHA кандидата (`static-and-unit`, `check-encoding`, `email-delivery-mailpit`, `performance-smoke`, три браузерных job).
-2. **Полная production-сборка не подтверждена**: для prerender нужна настоящая изолированная PostgreSQL (preview или staging DB, не рабочая Neon). Сборка на staging (`build:plesk`) против staging-БД станет первой полной проверкой.
-3. **Браузерные тесты фактически не выполняются в CI**: нет `E2E_DATABASE_URL` для PR-запусков. Нужен отдельный изолированный E2E-стенд (не рабочая Neon) и секрет, иначе зелёные браузерные job означают только установку браузеров.
-4. **Решение по фиксу надбавок вариантов** (`5a6e46da`): он не входит в кандидат; на staging и прод в таком виде он не попадёт.
-5. Решения владельца по ранее зафиксированным находкам: отправка писем на произвольный адрес (`card-request` без `accessRequestId`, отчёт по остаткам, тестовое письмо шаблона); одобрение заявок на доступ по праву `customers.read` (есть у `manager`); `dashboard-prefs` сбрасывает поле некорректного типа вместо 400.
-
-## Открытые задачи (отдельные этапы)
-
-- **Аудит, который пишется после основного действия или в отдельной транзакции** (без изменений): `POST /api/admin/grins-import/apply` (импорт применяется до отдельной audit-транзакции), `POST /api/admin/import`, `POST /api/admin/notifications/send`, `orders/send-invoice`, `returns/notify`, `POST /api/admin/storefront-cache/revalidate`, `POST /api/admin/grins-import/preview`.
-- Кампания правил карты может повторить до 50 писем при убийстве процесса посреди пакета; у `broadcast` нет `maxDuration`.
-- В ранее выявленном списке админских маршрутов без записи в `AuditLog` осталось **0**; вход и выход сотрудников закрыты этим кандидатом.
-
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
 git switch release/2026-11-10-staging-admin-audit-candidate
 git log --oneline -3
-git rev-list --count a4cecbb34f37ef3653b44f190882b8300ae21e94..HEAD   # 43
+git rev-list --count a4cecbb34f37ef3653b44f190882b8300ae21e94..c0162740   # 43 (production)
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
 npx vitest run --config vitest.config.ts app/api/auth lib/auth-session-audit.test.ts lib/admin-log-store.test.ts
 npm run typecheck

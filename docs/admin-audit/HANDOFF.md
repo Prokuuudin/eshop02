@@ -34,9 +34,18 @@
 
 Полный набор (348 тестов, dev-сервер, одноразовая ветка Neon от grins-staging): 202 прошло, 146 упало. На базе `a4cecbb3` те же падения (Chromium: 35 из 38 совпали; 2 падения только у кандидата при повторе 6/6 PASS — нестабильность dev-сервера). Регрессий от PR #30 не найдено; ремонт набора — в BACKLOG.
 
+## Vercel Preview: исправление трассировки `/api/admin/backup` (PR #31, 2026-11-11)
+
+- Симптом: Vercel Preview падал на каждом коммите цепочки начиная с `5ff8204d` (PR #20), включая `c0162740` и `58333dbb`: сборка завершалась, шаг «Deploying outputs» — `ENOENT: lstat '/vercel/path0/.next/lock'`. Plesk не затронут (`server.js` не использует трассы), production работает.
+- Причина: `configurationPath()` в `lib/configuration-backup.ts` строил пути как `path.resolve(dataDir, name)`. Трассировка Next.js (`@vercel/nft`) не может вычислить такой путь и включала весь проект: `route.js.nft.json` — 2547 файлов (2368 вне `node_modules`), включая `.git`, документацию и временный `.next/lock`. Подтверждено бисекцией nft на транспилированном модуле: виновата только эта `path.resolve`.
+- Исправление (`90566757`, ветка `fix/2026-11-11-backup-route-tracing` от `58333dbb`): литеральные пути `path.join(process.cwd(), 'data', '<file>')` для 9 файлов конфигурации, как в других хранилищах; временные файлы — `path.join` рядом с целевым, проверка `dirname` сохранена. Создание и восстановление бэкапа, advisory lock, компенсация, разрешение неопределённого коммита и аудит `settings.configuration_restored` не менялись.
+- Проверено: тесты бэкапа 19/19 (новый — расположение по умолчанию `<cwd>/data`), `admin-log-store` 45/45, typecheck, eslint; production-сборка на одноразовой Docker PostgreSQL — трасса маршрута 196 файлов, 18 вне `node_modules` (9 `data/*.json`, `package.json`, чанки маршрута, `webpack-runtime.js`, manifest), всё на диске, без `.next/lock`, `.git`, документации и исходников; сквозной прогон на этой сборке по HTTPS: администратор с MFA выгружает бэкап, восстанавливает изменённую копию и оригинал, повтор ничего не меняет, в `AuditLog` ровно 2 события, временных файлов нет.
+- Draft PR #31: https://github.com/Prokuuudin/eshop02/pull/31 (база `release/2026-11-10-staging-admin-audit-candidate`). Vercel Preview для `90566757` — **Ready**: https://eshop02-oymy8kmdo-aleksandr-prokudins-projects.vercel.app (защищён Vercel Authentication; через `vercel curl`: `/api/health` 200 `db:ok`, `/api/admin/backup` 401 без входа).
+- На production (Plesk) эта правка не нужна для работы и не выкладывалась; войдёт со следующим релизом. Merge не выполнялся.
+
 ## Состояние PR (2026-11-10 23:18Z, GitHub API)
 
-Все PR открыты, все Draft, ни один не смержен.
+Все PR открыты, все Draft, ни один не смержен. С 2026-11-11 к ним добавлен #31 (исправление Vercel Preview, база — ветка PR #30).
 
 | PR | Head | База | Содержание |
 |---|---|---|---|

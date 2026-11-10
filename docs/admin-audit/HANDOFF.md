@@ -1,81 +1,74 @@
-# Hairshop Pro: аудит шаблонов писем и вложений уведомлений — handoff
+# Hairshop Pro: аудит баннеров, блога и кампаний — handoff
 
-Дата: 2026-11-09 (Europe/Riga)
+Дата: 2026-11-10 (Europe/Riga)
 
 ## Статус и база
 
-- Ветка: `fix/2026-11-09-admin-audit-email-assets`.
-- Stacked base: `8f1e224921f5ffa3a4900b4bfe36452e6af45392`, проверенный head открытого Draft PR #26 (`fix/2026-11-09-admin-audit-promo-template-sends`).
-- Перед созданием ветки GitHub подтвердил: PR #26 `open`, `draft=true`, `merged=false`, head точно `8f1e224921f5ffa3a4900b4bfe36452e6af45392`.
-- Коммит реализации: `1cf040ae10eed766fa4ff47fea707e3dcbff4e0f`.
-- Stacked Draft PR #27: https://github.com/Prokuuudin/eshop02/pull/27; base `fix/2026-11-09-admin-audit-promo-template-sends`.
-- Проверенный head до этого документационного обновления: `2a5efd2a41f364610553edb9297d15de9ce3d998`; `static-and-unit` — `success`: https://github.com/Prokuuudin/eshop02/actions/runs/42704103387/job/129456212408.
+- Ветка: `fix/2026-11-09-admin-audit-banners-blog-campaigns`.
+- Stacked base: `6495c287646ec67afd269d6831d258d4139417ce`, проверенный head открытого Draft PR #27 (`fix/2026-11-09-admin-audit-email-assets`).
+- Перед созданием ветки GitHub подтвердил: #27 `open`, `draft=true`, `merged=false`, head точно `6495c287646ec67afd269d6831d258d4139417ce`.
+- Коммит реализации: `42ddbd187fe25eeb1a5c6aad5cd286983e9a0844`.
+- Новый stacked Draft PR нужно направить в `fix/2026-11-09-admin-audit-email-assets`.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
-## Реализовано
+## Покрытые маршруты и события
 
-### Изменение шаблона письма
+Все перечисленные mutation хранят данные только в PostgreSQL; записей или замен файлов на диске нет.
 
-Путь: `PUT /api/admin/email-templates/[id]` → `upsertTemplate` → KV-строка `email-templates` в `KeyValueSetting`.
+| Маршрут | Фактическое хранилище | Событие |
+|---|---|---|
+| `PUT /api/admin/banner-groups` | `KeyValueSetting.banner-groups` | `banner_groups.updated` |
+| `POST /api/admin/banners` | `Banner` + `KeyValueSetting.banner-group-assignments` | `banner.created` |
+| `PUT /api/admin/banners/[id]` | `Banner` + assignment KV | `banner.updated` |
+| `DELETE /api/admin/banners/[id]` | `Banner` + assignment KV | `banner.deleted` |
+| `POST /api/admin/banners/reorder` | `Banner.order` | `banner.reordered` |
+| `POST /api/admin/blog` (create) | `BlogPost` | `blog.created` |
+| `POST /api/admin/blog` (edit) | `BlogPost` | `blog.updated` |
+| `DELETE /api/admin/blog/[id]` | `BlogPost` | `blog.deleted` |
+| `POST /api/admin/campaigns` | `KeyValueSetting.promo-campaigns` | `campaign.created` |
+| `PUT /api/admin/campaigns/[id]` | тот же KV | `campaign.updated` |
+| `DELETE /api/admin/campaigns/[id]` | тот же KV | `campaign.deleted` |
 
-- Существующий `requireAdmin()`, allowlist полей, validation, статусы и response body сохранены.
-- Actor и request передаются из авторизованной серверной сессии.
-- Read-modify-write KV, `email_template.updated` и существующий advisory lock выполняются в одной Prisma-транзакции.
-- Сравниваются только разрешённые поля `name`, `subject`, `body`, `variables`. Идентичный повтор возвращает существующий шаблон без upsert, изменения `updatedAt` и события.
-- Audit entity ID — ID шаблона. `before/after` содержат только список фактически изменившихся полей и для каждого поля `bytes`/SHA-256.
-- Строковые поля хешируются как UTF-8; `variables` — как JSON-массив.
-- Название, subject, body, значения variables и полный шаблон в `AuditLog` не попадают.
-- Ошибка `appendServerAudit` откатывает KV-изменение вместе с событием.
+Названия всех 11 событий добавлены в RU/LV/EN.
 
-Action label `email_template.updated`:
+## Фактические гарантии реализации
 
-- RU: «Изменение шаблона письма»;
-- LV: «E-pasta veidne atjaunināta»;
-- EN: “Email template updated”.
+- Actor и request берутся из существующей серверной `requireAdmin()`-сессии; прежние admin gates сохранены.
+- Mutation и `appendServerAudit` выполняются в одной Prisma-транзакции.
+- Domain advisory lock — первая команда транзакции. После ожидания lock данные читаются в стандартном `Read Committed`, поэтому конкурентный запрос видит уже зафиксированное состояние предыдущего запроса.
+- Banner row и assignment KV теперь меняются атомарно; раньше это были раздельные транзакции.
+- Reorder блокирует весь banner mutation-domain, сохраняет полный порядок одним transaction commit и пишет массив ID до/после. Ошибка любой позиции или аудита откатывает весь порядок.
+- Общий KV кампаний читается, валидируется и записывается под одним lock. Конкурентные create/update не теряют изменения и повторно проверяют пересечение second-item кампаний по актуальному состоянию.
+- Идентичные banner-group, banner, blog и campaign update не пишут данные, не меняют служебный timestamp и не создают событие.
+- Повторное удаление отсутствующей статьи остаётся прежним успешным no-op; повторное удаление отсутствующего banner/campaign сохраняет прежний `404`. Событие не дублируется.
+- Revalidation вызывается только после успешного возврата из транзакционного helper, то есть после commit.
+- Права, validation errors/statuses, banner order rules, campaign scheduling/second-item/BrandLine validation и response shapes сохранены.
 
-### Загрузка вложения уведомления
+## Состав AuditLog
 
-Путь: `POST /api/admin/notifications/assets` → `createMediaAsset` → `MediaAsset`.
-
-- Существующее право `marketing.manage`, лимит 10 MiB, image/PDF validation, safe filename, response и URL `/api/media/<encoded name>` сохранены.
-- Прямой `mediaAsset.create` заменён вызовом уже существующего транзакционного helper из `lib/media-asset-store.ts`.
-- Строка `MediaAsset` и `media.uploaded` создаются в одной Prisma-транзакции.
-- Событие содержит сгенерированный ID/имя ассета, API path, MIME, размер и SHA-256; байты файла и исходное содержимое не журналируются.
-- Ошибка аудита откатывает загрузку.
-- Поведение отдельной загрузки сохранено: каждый POST получает новое имя и создаёт отдельный ассет/событие, даже если байты совпадают.
-- Дисковой записи нет: содержимое хранится только в PostgreSQL `MediaAsset`, поэтому файловая staging/compensation не требуется.
-
-`media.uploaded` и его RU/LV/EN labels уже были добавлены и протестированы в предыдущем media PR; этот PR подключает notification-assets route к тому же helper.
+- Для update записываются только фактически изменившиеся поля; entity ID всегда хранится отдельно.
+- Для banner image reference сохраняются UTF-8 размер и SHA-256, но не сама ссылка/медиа.
+- Для статей `title`, `excerpt`, `content`, `contentBlocks`, `translations`, `authorBio` и `image` сохраняются как размер + SHA-256. Текст статьи, блоки и ссылки на медиа в журнал не попадают.
+- Для campaign description сохраняются размер + SHA-256; остальные изменившиеся настройки сохраняются как минимальные значения до/после.
+- Reorder хранит полный массив banner ID до и после.
 
 ## Что подтверждено тестами
 
-- отказ до mutation без требуемой server session/permission;
-- malformed template variables и неподдерживаемые file bytes не доходят до storage;
-- actor/request передаются из route в transactional helper;
-- только разрешённые template fields сохраняются;
-- успешное изменение шаблона создаёт fingerprint payload без текста;
-- идентичный template update — no-op без write/event;
-- параллельные изменения разных шаблонов не теряются;
-- конкурентный одинаковый update создаёт одно событие;
-- ошибка аудита откатывает изменение шаблона;
-- notification image/PDF сохраняются через `createMediaAsset`;
-- два одинаковых notification uploads остаются двумя отдельными операциями;
-- media helper подтверждает hash/size payload, отсутствие bytes, rollback при ошибке аудита, collision и concurrent replace/delete;
+Stateful transaction harness с staged commit/rollback подтвердил:
+
+- отказ без прав до вызова storage;
+- invalid JSON, group schema, blog blocks и campaign rules не создают mutation/event;
+- успешные create/update/delete и содержимое событий;
+- отсутствие текста статей, media references и campaign description в AuditLog;
+- идентичный повтор без write/event;
+- конкурентные одинаковые update создают одно событие;
+- конкурентные campaign create сохраняют обе записи KV;
+- audit failure откатывает Banner, assignment KV, BlogPost и campaign/banner-group KV;
+- сбой после первой позиции reorder и сбой аудита возвращают весь исходный порядок;
+- route actor/request передаются в transactional helper;
 - RU/LV/EN labels.
 
-Конкуренция и rollback подтверждены stateful unit harness с staged commit. Настоящая изолированная PostgreSQL в этом PR не использовалась; рабочая Neon не использовалась.
-
-## Затронутые пути
-
-- `app/api/admin/email-templates/[id]/route.ts`
-- `app/api/admin/email-templates/[id]/route.test.ts`
-- `app/api/admin/notifications/assets/route.ts`
-- `app/api/admin/notifications/assets/route.test.ts`
-- `lib/email-templates-server-store.ts`
-- `lib/email-templates-server-store.test.ts`
-- `lib/admin-log-store.ts`
-- `lib/admin-log-store.test.ts`
-- `docs/admin-audit/HANDOFF.md`
+Настоящая изолированная PostgreSQL в этом PR не использовалась. Конкуренция и rollback подтверждены stateful unit harness и структурой кода; рабочая Neon не использовалась.
 
 ## Проверки до push
 
@@ -84,38 +77,53 @@ $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
 npm run prisma:generate
 # PASS: Prisma Client 7.8.0; подключения к БД не было
 
-npx vitest run --config vitest.config.ts 'app/api/admin/email-templates/[id]/route.test.ts' app/api/admin/notifications/assets/route.test.ts lib/email-templates-server-store.test.ts lib/media-asset-store.test.ts lib/admin-log-store.test.ts
-# PASS: 5 files, 66 tests
+npx vitest run --config vitest.config.ts app/api/admin/banner-groups/route.test.ts app/api/admin/banners/route.test.ts app/api/admin/banners/reorder/route.test.ts app/api/admin/blog/route.test.ts app/api/admin/campaigns/route.test.ts lib/banner-groups-store.test.ts lib/banners-server-store.test.ts lib/blog-store.test.ts lib/campaigns-server-store.test.ts lib/admin-log-store.test.ts
+# PASS: 10 files, 99 tests
 
 npm run typecheck
 # PASS
 
 npm run audit:architecture
-# PASS: 960 source modules
+# PASS: 961 source modules
 
 npm run test:unit -- --reporter=dot
-# PASS: 376 files, 3285 tests
+# PASS: 381 files, 3315 tests
 
-npx eslint <8 изменённых TypeScript-файлов>
+npx eslint <23 changed TypeScript files>
 # PASS
 
 npm run check:encoding
-# PASS: 1364 source files
+# PASS: 1370 source files
 
 git diff --check
 # PASS
 ```
 
-GitHub `static-and-unit` на SHA `2a5efd2a41f364610553edb9297d15de9ce3d998` прошёл: lint, typecheck, security/architecture audits, unit, integration и ERP performance завершились успешно. Следующий коммит меняет только этот handoff; его CI нужно проверить как финальный branch head.
+Первый `npm ci --prefer-offline --no-audit` установил пакеты, но завершился кодом 1 на lifecycle `prepare`: sandbox запретил `git config core.hooksPath` в общем `.git/config`. Это локальное ограничение установки hook, не ошибка исходников; Prisma generation, tests, lint и typecheck после этого выполнялись успешно.
 
-## Карта покрытия
+Известные browser jobs в предыдущих stacked PR отдельно падали на `playwright install` на `ubuntu26.04-x64`. Изменения Playwright/CI находятся вне этого PR.
+
+## Затронутые пути
+
+- `app/api/admin/banner-groups/route.ts` и тест;
+- `app/api/admin/banners/route.ts`, `[id]/route.ts`, `reorder/route.ts` и тесты;
+- `app/api/admin/blog/route.ts`, `[id]/route.ts` и route test;
+- `app/api/admin/campaigns/route.ts`, `[id]/route.ts` и route test;
+- `lib/banner-groups-store.ts` и тест;
+- `lib/banners-server-store.ts` и тест;
+- `lib/blog-store.ts` и тест;
+- `lib/campaigns-server-store.ts` и тест;
+- `lib/admin-log-store.ts` и тест;
+- `docs/admin-audit/HANDOFF.md`.
+
+## Карта покрытия после этого PR
 
 ### Постоянный аудит в той же транзакции
 
-Добавлены:
+Этим PR закрыты все 10 handler из этапа banner/blog/campaign. В ранее найденной группе без `AuditLog` остаются **2**:
 
-- `PUT /api/admin/email-templates/[id]` — `email_template.updated`;
-- `POST /api/admin/notifications/assets` — `media.uploaded` через общий media helper.
+1. `PATCH /api/admin/contact-messages`
+2. `PUT /api/admin/dashboard-prefs`
 
 ### Запись после операции или в отдельной транзакции
 
@@ -127,49 +135,33 @@ GitHub `static-and-unit` на SHA `2a5efd2a41f364610553edb9297d15de9ce3d998` п�
 - `POST /api/admin/storefront-cache/revalidate`;
 - `POST /api/admin/grins-import/preview`.
 
-### Без записи в `AuditLog`
+### Отдельные пробелы
 
-После PR #26 оставалось 14 handler. Этот PR закрывает два, остаётся **12**:
-
-1. `PUT /api/admin/banner-groups`
-2. `PUT /api/admin/banners/[id]`
-3. `DELETE /api/admin/banners/[id]`
-4. `POST /api/admin/banners/reorder`
-5. `POST /api/admin/banners`
-6. `DELETE /api/admin/blog/[id]`
-7. `POST /api/admin/blog`
-8. `PUT /api/admin/campaigns/[id]`
-9. `DELETE /api/admin/campaigns/[id]`
-10. `POST /api/admin/campaigns`
-11. `PATCH /api/admin/contact-messages`
-12. `PUT /api/admin/dashboard-prefs`
-
-`POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin.
+- `POST /api/auth/login` и `POST /api/auth/logout` по-прежнему не создают постоянное событие `AuditLog` для platform admin.
+- Аудит импорта GrinS по-прежнему записывается после применения, а не атомарно с ним.
 
 ## Первый следующий шаг для Claude
 
-Следующий stacked PR: баннеры, блог и кампании.
+Следующий stacked PR: `PATCH /api/admin/contact-messages` и `PUT /api/admin/dashboard-prefs`.
 
-1. Начать с финального зелёного head этого PR и направить новый Draft PR в его ветку, если он открыт.
-2. Проследить `PUT /api/admin/banner-groups`, CRUD/reorder баннеров, create/delete блога и CRUD кампаний до DB/KV/media storage.
-3. Разделить реальные mutation types и no-op; использовать actor из server session и `appendServerAudit` в той же транзакции.
-4. Для ссылок/изображений журналировать только ID/path, размеры и хеши, без содержимого.
-5. Проверить permission, validation, success, no-op, concurrency и audit rollback.
-
-После этого: `contact-messages`, `dashboard-prefs`; затем hardening post-operation audits, постоянные login/logout events.
+1. Начать от финального зелёного head этого Draft PR и направить новый PR в его ветку, если он ещё открыт.
+2. Проследить contact-message mutation до фактического DB store и dashboard prefs до KV.
+3. Сохранить actor из server session, no-op semantics и `appendServerAudit` в одной транзакции.
+4. Проверить permission, invalid input, success payload, повтор, конкуренцию и audit rollback.
+5. После этого обновить карту: в исходной группе из 12 handler без записи должно остаться 0.
 
 ## Продолжение из чистого checkout
 
 ```powershell
 git fetch origin
-git switch fix/2026-11-09-admin-audit-email-assets
+git switch fix/2026-11-09-admin-audit-banners-blog-campaigns
 git status --short
 git log -3 --oneline
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'
 npm run prisma:generate
-npx vitest run --config vitest.config.ts 'app/api/admin/email-templates/[id]/route.test.ts' app/api/admin/notifications/assets/route.test.ts lib/email-templates-server-store.test.ts lib/media-asset-store.test.ts lib/admin-log-store.test.ts
-npm run audit:architecture
+npx vitest run --config vitest.config.ts app/api/admin/banner-groups/route.test.ts app/api/admin/banners/route.test.ts app/api/admin/banners/reorder/route.test.ts app/api/admin/blog/route.test.ts app/api/admin/campaigns/route.test.ts lib/banner-groups-store.test.ts lib/banners-server-store.test.ts lib/blog-store.test.ts lib/campaigns-server-store.test.ts lib/admin-log-store.test.ts
 npm run typecheck
+npm run audit:architecture
 ```
 
-Ожидается чистый checkout. Не подставлять production Neon URL; PostgreSQL integration/e2e запускать только на отдельной локальной, PGlite или preview DB.
+Ожидается чистый checkout. Не подставлять production Neon URL и не выполнять deploy.

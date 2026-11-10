@@ -8,7 +8,8 @@
 - Stacked base: `6495c287646ec67afd269d6831d258d4139417ce`, проверенный head открытого Draft PR #27 (`fix/2026-11-09-admin-audit-email-assets`).
 - Перед созданием ветки GitHub подтвердил: #27 `open`, `draft=true`, `merged=false`, head точно `6495c287646ec67afd269d6831d258d4139417ce`.
 - Коммит реализации: `42ddbd187fe25eeb1a5c6aad5cd286983e9a0844`.
-- Новый stacked Draft PR нужно направить в `fix/2026-11-09-admin-audit-email-assets`.
+- Stacked Draft PR #28: https://github.com/Prokuuudin/eshop02/pull/28; base `fix/2026-11-09-admin-audit-email-assets`, base SHA `6495c287646ec67afd269d6831d258d4139417ce`.
+- Head до коммита, добавляющего ссылку PR в этот документ: `ead1ff2d8f43cdb9b74d35dd3ea0dc3db6287cd6`.
 - Merge и deploy не выполнялись. Production, Plesk, рабочая Neon и `hairshop.lv` не читались и не изменялись.
 
 ## Покрытые маршруты и события

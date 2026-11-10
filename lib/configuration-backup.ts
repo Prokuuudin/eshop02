@@ -25,6 +25,21 @@ export type ConfigurationBackup = {
   files: Record<ConfigurationFile, unknown>
 }
 
+// One literal path per file, like the other data stores: Next.js output tracing then resolves exactly
+// these files. A directory combined with a computed name (path.resolve(dir, name)) is traced as the
+// whole project, which put .next/lock and .git into this route and broke Vercel deployments.
+const PRODUCTION_FILE_PATHS: Readonly<Record<ConfigurationFile, string>> = {
+  'blog-posts.json': path.join(process.cwd(), 'data', 'blog-posts.json'),
+  'site-content.json': path.join(process.cwd(), 'data', 'site-content.json'),
+  'custom-products.json': path.join(process.cwd(), 'data', 'custom-products.json'),
+  'product-overrides.json': path.join(process.cwd(), 'data', 'product-overrides.json'),
+  'banners.json': path.join(process.cwd(), 'data', 'banners.json'),
+  'promo-codes.json': path.join(process.cwd(), 'data', 'promo-codes.json'),
+  'shipping-settings.json': path.join(process.cwd(), 'data', 'shipping-settings.json'),
+  'email-templates.json': path.join(process.cwd(), 'data', 'email-templates.json'),
+  'price-groups.json': path.join(process.cwd(), 'data', 'price-groups.json'),
+}
+
 const canonicalJson = (value: unknown): string => JSON.stringify(value)
 const digest = (text: string): string => createHash('sha256').update(text).digest('hex')
 
@@ -74,9 +89,11 @@ function fileMetadata(name: ConfigurationFile, raw: string): FileMetadata {
   return { name, sha256: digest(raw), bytes: Buffer.byteLength(raw) }
 }
 
-function configurationPath(dataDir: string, filename: ConfigurationFile, suffix = ''): string {
-  const root = path.resolve(dataDir)
-  const target = path.resolve(root, `${suffix}${filename}`)
+/** `dataDir` overrides the production directory (tests); temporary files live next to their target. */
+function configurationPath(dataDir: string | undefined, filename: ConfigurationFile, suffix = ''): string {
+  const destination = dataDir === undefined ? PRODUCTION_FILE_PATHS[filename] : path.join(dataDir, filename)
+  const root = path.dirname(destination)
+  const target = path.join(root, `${suffix}${filename}`)
   if (path.dirname(target) !== root) throw new Error('invalid_configuration_path')
   return target
 }
@@ -105,11 +122,11 @@ export class ConfigurationRestoreError extends Error {
   }
 }
 
-export async function createConfigurationBackup(dataDir = path.join(process.cwd(), 'data')): Promise<ConfigurationBackup> {
+export async function createConfigurationBackup(dataDir?: string): Promise<ConfigurationBackup> {
   const files = {} as ConfigurationBackup['files']
   const manifest = {} as ConfigurationBackup['manifest']
   for (const filename of CONFIGURATION_FILES) {
-    const value: unknown = JSON.parse(await fs.readFile(path.join(dataDir, filename), 'utf8'))
+    const value: unknown = JSON.parse(await fs.readFile(configurationPath(dataDir, filename), 'utf8'))
     const canonical = canonicalJson(value)
     files[filename] = value
     manifest[filename] = { sha256: digest(canonical), bytes: Buffer.byteLength(canonical) }
@@ -134,7 +151,7 @@ export function validateConfigurationBackup(value: unknown): asserts value is Co
 
 async function stageFiles(
   backup: ConfigurationBackup,
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   files: FileOperations,
 ): Promise<void> {
@@ -148,7 +165,7 @@ async function stageFiles(
 
 async function inspectFiles(
   backup: ConfigurationBackup,
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   files: FileOperations,
 ): Promise<{ before: FileMetadata[]; after: FileMetadata[] }> {
@@ -171,7 +188,7 @@ async function inspectFiles(
 }
 
 async function replaceChangedFiles(
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   files: FileOperations,
 ): Promise<void> {
@@ -185,7 +202,7 @@ async function replaceChangedFiles(
 }
 
 async function compensate(
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   files: FileOperations,
 ): Promise<ConfigurationFile[]> {
@@ -236,7 +253,7 @@ async function restoreInsideTransaction(
   tx: ExtendedTransactionClient,
   backup: ConfigurationBackup,
   audit: AuditContext,
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   dependencies: RestoreDependencies,
 ): Promise<string[]> {
@@ -278,7 +295,7 @@ async function restoreInsideTransaction(
 
 async function resolveUncertainCommit(
   error: unknown,
-  dataDir: string,
+  dataDir: string | undefined,
   state: RestoreState,
   dependencies: RestoreDependencies,
 ): Promise<string[]> {
@@ -335,7 +352,7 @@ async function resolveUncertainCommit(
 export async function restoreConfigurationBackup(
   backup: ConfigurationBackup,
   audit: AuditContext,
-  dataDir = path.join(process.cwd(), 'data'),
+  dataDir?: string,
   dependencyOverrides: Partial<RestoreDependencies> = {},
 ): Promise<string[]> {
   validateConfigurationBackup(backup)

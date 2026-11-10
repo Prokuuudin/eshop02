@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mkdtemp, readdir, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises'
 import { NextRequest } from 'next/server'
 import path from 'node:path'
 import os from 'node:os'
@@ -288,5 +288,31 @@ describe('configuration backup', () => {
     await Promise.all(CONFIGURATION_FILES.map(async (name, index) => {
       expect(await readFile(path.join(target, name), 'utf8')).toBe(originals[index])
     }))
+  })
+})
+
+describe('configuration backup default location', () => {
+  it('reads and restores the production files under <cwd>/data when no directory is passed', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'configuration-backup-cwd-'))
+    directories.push(root)
+    const data = path.join(root, 'data')
+    await mkdir(data)
+    await Promise.all(CONFIGURATION_FILES.map((name, index) => writeFile(path.join(data, name), JSON.stringify({ index }))))
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(root)
+    try {
+      vi.resetModules()
+      // The production paths are fixed when the module loads, so it is loaded under the mocked cwd.
+      const fresh = await import('./configuration-backup')
+      const backup = await fresh.createConfigurationBackup()
+      expect(backup.files['price-groups.json']).toEqual({ index: CONFIGURATION_FILES.indexOf('price-groups.json') })
+
+      await writeFile(path.join(data, 'banners.json'), JSON.stringify({ index: 'changed' }))
+      const harness = dependencies()
+      await expect(fresh.restoreConfigurationBackup(backup, audit, undefined, harness.overrides as never)).resolves.toEqual(['banners.json'])
+      expect(JSON.parse(await readFile(path.join(data, 'banners.json'), 'utf8'))).toEqual({ index: CONFIGURATION_FILES.indexOf('banners.json') })
+      expect((await readdir(data)).sort()).toEqual([...CONFIGURATION_FILES].sort())
+    } finally {
+      cwd.mockRestore()
+    }
   })
 })

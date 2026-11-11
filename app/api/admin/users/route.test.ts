@@ -211,3 +211,120 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect(tx.user.updateMany).not.toHaveBeenCalled()
   })
 })
+
+describe('PATCH /api/admin/users from Clients → all card holders', () => {
+  const MANAGER = { id: 'manager-1', platformRole: 'customer', teamRole: 'manager', superAdmin: false, email: 'manager@test.com' }
+  // Exactly what useAdminClientBarcodesPage sends for an individual → company switch.
+  const CLIENT_SAVE = {
+    expectedUpdatedAt: now, name: 'SIA Salons', email: 'salons@example.com', phone: '+37122222222',
+    customerType: 'company', registrationNumber: '40003000001',
+  }
+  const CARD_CUSTOMER = row({
+    ...CUSTOMER_TARGET, cardNumber: '5070', name: 'Anna Ozola', phone: '+37111111111', companyName: null,
+    customerType: 'individual', registrationNumber: null, vatNumber: null, legalAddress: null,
+    checkoutProfile: { customerType: 'individual', firstName: 'Anna', lastName: 'Ozola', companyName: '', regNumber: '', phone: '+37111111111', address: 'Brīvības 1' },
+  })
+  const STAFF_MANAGER_CARD = row({ ...CARD_CUSTOMER, teamRole: 'manager' })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    verifyPasswordMock.mockResolvedValue(true)
+    verifyTotpMock.mockResolvedValue(true)
+  })
+
+  it.each([
+    ['Super Admin', SUPER_ADMIN],
+    ['regular admin', REGULAR_ADMIN],
+    ['manager', MANAGER],
+  ])('a %s saves an ordinary card holder without step-up, profile included', async (_label, caller) => {
+    permissionMock.mockResolvedValue(caller)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    const tx = txFor(CARD_CUSTOMER)
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ user: { customerType: 'company', registrationNumber: '40003000001', email: 'salons@example.com' } })
+    expect(verifyPasswordMock).not.toHaveBeenCalled()
+    expect(tx.user.updateMany).toHaveBeenCalledWith({
+      where: { id: 'u1', updatedAt: new Date(now) },
+      data: expect.objectContaining({
+        name: 'SIA Salons', email: 'salons@example.com', phone: '+37122222222', customerType: 'company', registrationNumber: '40003000001',
+        // The admin list reads the checkout profile first: without this the switch reverted on reload.
+        checkoutProfile: expect.objectContaining({ customerType: 'company', companyName: 'SIA Salons', regNumber: '40003000001', phone: '+37122222222', address: 'Brīvības 1' }),
+      }),
+    })
+  })
+
+  it('a manager cannot edit fields beyond customer details', async () => {
+    permissionMock.mockResolvedValue(MANAGER)
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber: '9999' })
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: 'forbidden' })
+  })
+
+  it('a manager cannot edit an account without a client card', async () => {
+    permissionMock.mockResolvedValue(MANAGER)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    const tx = txFor(row({ ...CARD_CUSTOMER, cardNumber: null }))
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE })
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: 'forbidden' })
+    expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['regular admin', REGULAR_ADMIN],
+    ['manager', MANAGER],
+  ])('a %s cannot edit a card holder who is staff', async (_label, caller) => {
+    permissionMock.mockResolvedValue(caller)
+    userFindMock.mockResolvedValueOnce({ ...CUSTOMER_TARGET, teamRole: 'manager' })
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE, ...STEP_UP })
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: 'super_admin_required' })
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it('a Super Admin editing a staff card holder must give a reason, then password and MFA', async () => {
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    userFindMock.mockResolvedValue({ ...CUSTOMER_TARGET, teamRole: 'manager' })
+    const noReason = await patch({ id: 'u1', ...CLIENT_SAVE })
+    expect(noReason.status).toBe(400)
+    expect(await noReason.json()).toEqual({ error: 'change_reason_required' })
+    const noCredentials = await patch({ id: 'u1', ...CLIENT_SAVE, reason: STEP_UP.reason })
+    expect(noCredentials.status).toBe(401)
+    expect(await noCredentials.json()).toEqual({ error: 'reauthentication_required' })
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it('a Super Admin with a wrong password or code gets reauthentication_failed', async () => {
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    userFindMock.mockResolvedValueOnce({ ...CUSTOMER_TARGET, teamRole: 'manager' }).mockResolvedValueOnce(CREDENTIALS)
+    verifyPasswordMock.mockResolvedValue(false)
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE, ...STEP_UP })
+    expect(response.status).toBe(401)
+    expect(await response.json()).toEqual({ error: 'reauthentication_failed' })
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it('a Super Admin saves a staff card holder after step-up and the reason is audited', async () => {
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    userFindMock.mockResolvedValueOnce({ ...CUSTOMER_TARGET, teamRole: 'manager' }).mockResolvedValueOnce(CREDENTIALS)
+    const tx = txFor(STAFF_MANAGER_CARD)
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE, ...STEP_UP })
+    expect(response.status).toBe(200)
+    expect(verifyPasswordMock).toHaveBeenCalledWith('password', 'hash')
+    expect(verifyTotpMock).toHaveBeenCalledWith('secret', '123456')
+    expect(tx.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ customerType: 'company' }) }))
+    // Step-up fields are never written to the account.
+    expect(tx.user.updateMany.mock.calls[0][0].data).not.toHaveProperty('currentPassword')
+    expect(auditMock).toHaveBeenCalledWith(tx, expect.anything(), SUPER_ADMIN, expect.objectContaining({ reason: STEP_UP.reason }))
+  })
+
+  it('leaves the checkout profile untouched for an email-only correction', async () => {
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    const tx = txFor(CARD_CUSTOMER)
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, email: 'anna@example.com' })
+    expect(response.status).toBe(200)
+    expect(tx.user.updateMany.mock.calls[0][0].data).toEqual({ email: 'anna@example.com' })
+  })
+})

@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage';
+import { isCompleteClientStepUp } from './client-barcodes-model';
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
     const pathname = usePathname();
@@ -39,6 +41,10 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         clientRowErrors,
         getClientEdit,
         handleSaveClientDetails,
+        clientStepUp,
+        setClientStepUp,
+        closeClientStepUp,
+        submitClientStepUp,
         noCardRequests,
         setNoCardDrafts,
         rejectNotes,
@@ -479,6 +485,41 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         </div>
                     )}
                 </section>
+                <Dialog open={clientStepUp !== null} onOpenChange={(open) => { if (!open) closeClientStepUp(); }}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>{l('Подтверждение изменения аккаунта сотрудника', 'Confirm a staff account change', 'Darbinieka konta izmaiņu apstiprināšana')}</DialogTitle>
+                            <DialogDescription>
+                                {l('Этот держатель карты — сотрудник. Изменение сохранится после подтверждения вашим паролем и кодом из приложения 2FA; причина попадёт в журнал аудита.', 'This card holder is a staff member. The change is saved after you confirm it with your password and 2FA app code; the reason is recorded in the audit log.', 'Šis kartes turētājs ir darbinieks. Izmaiņas tiks saglabātas pēc apstiprināšanas ar jūsu paroli un 2FA lietotnes kodu; iemesls tiks ierakstīts audita žurnālā.')}
+                            </DialogDescription>
+                        </DialogHeader>
+                        {clientStepUp && (
+                            <form
+                                className="space-y-2"
+                                onSubmit={(e) => { e.preventDefault(); void submitClientStepUp(); }}
+                            >
+                                <Input type="password" value={clientStepUp.currentPassword} autoComplete="current-password"
+                                    onChange={(e) => setClientStepUp((prev) => prev && { ...prev, currentPassword: e.target.value })}
+                                    placeholder={l('Ваш пароль', 'Your password', 'Jūsu parole')} />
+                                <Input value={clientStepUp.mfaCode} inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                                    onChange={(e) => setClientStepUp((prev) => prev && { ...prev, mfaCode: e.target.value })}
+                                    placeholder={l('Ваш код из приложения', 'Your code from the app', 'Jūsu kods no lietotnes')} />
+                                <Input value={clientStepUp.reason} maxLength={1000}
+                                    onChange={(e) => setClientStepUp((prev) => prev && { ...prev, reason: e.target.value })}
+                                    placeholder={l('Причина (минимум 5 символов)', 'Reason (at least 5 characters)', 'Iemesls (vismaz 5 rakstzīmes)')} />
+                                {clientStepUp.error && (
+                                    <p role="alert" className="text-sm text-red-600 dark:text-red-400">{clientStepUp.error}</p>
+                                )}
+                                <DialogFooter>
+                                    <Button type="button" variant="outline" onClick={closeClientStepUp}>{l('Отмена', 'Cancel', 'Atcelt')}</Button>
+                                    <Button type="submit" disabled={clientSaveBusy === clientStepUp.holderId || !isCompleteClientStepUp(clientStepUp)}>
+                                        {clientSaveBusy === clientStepUp.holderId ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Подтвердить и сохранить', 'Confirm and save', 'Apstiprināt un saglabāt')}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </main>
         </AdminGate>
     );

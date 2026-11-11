@@ -67,3 +67,42 @@ export function getCardHolderEdit(holder: CardHolder): CardHolderEdit {
     registrationNumber: holder.registrationNumber ?? '',
   }
 }
+
+/**
+ * Why a client save failed, from the real API status and error code. The same 403 can mean a
+ * missing permission, a staff account that only a Super Admin may edit, or a rejected request
+ * origin; step-up codes mean "confirm with password, 2FA code and reason", not "no permission".
+ */
+export type ClientSaveFailure =
+  | 'step_up_required'
+  | 'step_up_failed'
+  | 'session_expired'
+  | 'staff_account'
+  | 'forbidden'
+  | 'origin_rejected'
+  | 'email_taken'
+  | 'invalid'
+  | 'conflict'
+  | 'not_found'
+  | 'rate_limited'
+  | 'unknown'
+
+export function classifyClientSaveFailure(status: number, code: string | undefined): ClientSaveFailure {
+  if (code === 'change_reason_required' || code === 'reauthentication_required') return 'step_up_required'
+  if (code === 'reauthentication_failed') return 'step_up_failed'
+  if (status === 401) return 'session_expired'
+  if (code === 'super_admin_required') return 'staff_account'
+  if (status === 403 && code === 'forbidden') return 'forbidden'
+  if (status === 403 && code === 'Origin not allowed') return 'origin_rejected'
+  if (code === 'email_taken') return 'email_taken'
+  if (code === 'invalid_request') return 'invalid'
+  if (code === 'optimistic_conflict' || code === 'concurrent_update') return 'conflict'
+  if (status === 404) return 'not_found'
+  if (status === 429) return 'rate_limited'
+  return 'unknown'
+}
+
+export type ClientStepUp = { currentPassword: string; mfaCode: string; reason: string }
+
+export const isCompleteClientStepUp = (stepUp: ClientStepUp): boolean =>
+  stepUp.currentPassword.length > 0 && /^\d{6}$/u.test(stepUp.mfaCode.trim()) && stepUp.reason.trim().length >= 5

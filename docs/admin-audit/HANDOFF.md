@@ -1,12 +1,12 @@
 # Hairshop Pro: аудит админских действий — handoff (задача закрыта)
 
-Обновлено: 2026-11-11 (Europe/Riga). Предыдущая версия: 2026-11-10, коммит `c0162740`.
+Обновлено: 2026-11-11 (Europe/Riga), после слияния PR. Предыдущие версии: `c0162740` (2026-11-10), `58333dbb` и `fd3a3bb5` (2026-11-11).
 
 ## Статус: ЗАКРЫТА
 
 - Исходный список админских handler'ов, которые совсем не писали постоянный `AuditLog`, **закрыт: осталось 0**. Вход, отклонённый вход и выход сотрудников тоже пишутся.
 - Кандидат `c0162740dd406bbbc775ec449596e12ac7a36c58` (PR #30) **выложен на production** (Plesk, `hairshoppro.lv`).
-- Закрытие задачи **не означает merge и не закрывает PR**: PR #15–#30 открыты как Draft (см. «Состояние PR»).
+- PR слиты 2026-11-11 по решению владельца: #31 → ветка кандидата (`186e26df`), #30 → `release/2026-11-08-prefetch-catalog` (`8a16c48a`); #15–#29 и #17 закрыты как вошедшие в #30 (см. «Состояние PR»). Выкладки при слиянии не было.
 - Оставшиеся работы вынесены в [BACKLOG.md](BACKLOG.md).
 
 ## Выкладка на production
@@ -17,7 +17,7 @@
 - Владелец подтвердил на production: успешное оформление заказа и аудит входа и выхода сотрудника.
 - Откат: прежняя папка `…prev` (переименовать обратно, Restart App). Прежний SHA ожидался `a4cecbb34f37ef3653b44f190882b8300ae21e94` (по внешним признакам и словам владельца от 2026-11-08); фактическое значение, считанное перед выкладкой, в эту сессию не передано — сверить с журналом выкладки. БД не откатывается: схема не менялась, записи `AuditLog` новой версии старой не мешают.
 - Резервная копия: Neon-ветка `backup-production-pre-pr30-*` на 2026-11-10 23:18Z не найдена. Если копия делалась другим способом — дописать сюда.
-- Важно для дальнейших релизов: production теперь на `c0162740`, а ветка `release/2026-11-08-prefetch-catalog` (база PR #30) по-прежнему `a4cecbb3`. Код production существует только в ветке кандидата; следующий production-релиз строить от `c0162740` (или от ветки кандидата после этого docs-коммита), а не от `a4cecbb3` и не от `main`.
+- Продовая линия — ветка `release/2026-11-08-prefetch-catalog`: после слияния (`8a16c48a`) она содержит production `c0162740` плюс исправление трассировки бэкапа (PR #31) и документацию. Следующий production-релиз строить от этой ветки, а не от `a4cecbb3` и не от `main` (`main` с ней расходится).
 
 ## Приёмка
 
@@ -40,33 +40,20 @@
 - Причина: `configurationPath()` в `lib/configuration-backup.ts` строил пути как `path.resolve(dataDir, name)`. Трассировка Next.js (`@vercel/nft`) не может вычислить такой путь и включала весь проект: `route.js.nft.json` — 2547 файлов (2368 вне `node_modules`), включая `.git`, документацию и временный `.next/lock`. Подтверждено бисекцией nft на транспилированном модуле: виновата только эта `path.resolve`.
 - Исправление (`90566757`, ветка `fix/2026-11-11-backup-route-tracing` от `58333dbb`): литеральные пути `path.join(process.cwd(), 'data', '<file>')` для 9 файлов конфигурации, как в других хранилищах; временные файлы — `path.join` рядом с целевым, проверка `dirname` сохранена. Создание и восстановление бэкапа, advisory lock, компенсация, разрешение неопределённого коммита и аудит `settings.configuration_restored` не менялись.
 - Проверено: тесты бэкапа 19/19 (новый — расположение по умолчанию `<cwd>/data`), `admin-log-store` 45/45, typecheck, eslint; production-сборка на одноразовой Docker PostgreSQL — трасса маршрута 196 файлов, 18 вне `node_modules` (9 `data/*.json`, `package.json`, чанки маршрута, `webpack-runtime.js`, manifest), всё на диске, без `.next/lock`, `.git`, документации и исходников; сквозной прогон на этой сборке по HTTPS: администратор с MFA выгружает бэкап, восстанавливает изменённую копию и оригинал, повтор ничего не меняет, в `AuditLog` ровно 2 события, временных файлов нет.
-- Draft PR #31: https://github.com/Prokuuudin/eshop02/pull/31 (база `release/2026-11-10-staging-admin-audit-candidate`). Vercel Preview для `90566757` — **Ready**: https://eshop02-oymy8kmdo-aleksandr-prokudins-projects.vercel.app (защищён Vercel Authentication; через `vercel curl`: `/api/health` 200 `db:ok`, `/api/admin/backup` 401 без входа).
-- На production (Plesk) эта правка не нужна для работы и не выкладывалась; войдёт со следующим релизом. Merge не выполнялся.
+- PR #31: https://github.com/Prokuuudin/eshop02/pull/31 (база `release/2026-11-10-staging-admin-audit-candidate`), **смержен** 2026-11-11 merge-коммитом `186e26df`; CI 9/9 и Vercel на новой голове #30 — success. Vercel Preview для `90566757` — **Ready**: https://eshop02-oymy8kmdo-aleksandr-prokudins-projects.vercel.app (защищён Vercel Authentication; через `vercel curl`: `/api/health` 200 `db:ok`, `/api/admin/backup` 401 без входа).
+- На production (Plesk) эта правка не нужна для работы и не выкладывалась; войдёт со следующим релизом из `release/2026-11-08-prefetch-catalog`.
 
-## Состояние PR (2026-11-10 23:18Z, GitHub API)
+## Состояние PR (2026-11-11, после слияния)
 
-Все PR открыты, все Draft, ни один не смержен. С 2026-11-11 к ним добавлен #31 (исправление Vercel Preview, база — ветка PR #30).
+| PR | Итог | Коммит |
+|---|---|---|
+| #31 исправление трассировки бэкапа | смержен в `release/2026-11-10-staging-admin-audit-candidate` | merge `186e26df` (head `fd3a3bb5`) |
+| #30 кандидат: цепочка #15–#29 + аудит сессий + CI-фикс | смержен в `release/2026-11-08-prefetch-catalog` | merge `8a16c48a` (head `186e26df`; production `c0162740` в истории) |
+| #15 `fix/2026-11-09-admin-audit-content-payment` | GitHub сам отметил merged: head `f53ea450` вошёл в базу через #30 | — |
+| #16, #18–#29 (цепочка аудита) | закрыты с комментарием «вошло в #30» | head каждого — предок `8a16c48a` |
+| #17 `ci/pin-playwright-ubuntu-24-04` | закрыт с комментарием | тот же патч — `8374d61a` в #30 (cherry-pick `66a1933a` с `-x`) |
 
-| PR | Head | База | Содержание |
-|---|---|---|---|
-| #30 | `release/2026-11-10-staging-admin-audit-candidate` (`c0162740` = production; после этого handoff — +1 docs-коммит) | `release/2026-11-08-prefetch-catalog` | кандидат: цепочка #15–#29 + аудит сессий + CI-фикс #17 |
-| #15 | `fix/2026-11-09-admin-audit-content-payment` `f53ea450` | `release/2026-11-08-prefetch-catalog` | начало цепочки |
-| #16 | `…-product-archive` `11bc9083` | #15 | |
-| #18 | `…-product-archive-move` `e91fc0fa` | #16 | |
-| #19 | `…-price-groups` `a700ccc2` | #18 | |
-| #20 | `…-configuration-restore` `5ff8204d` | #19 | |
-| #21 | `…-access-requests` `85198308` | #20 | |
-| #22 | `…-media` `055f3af7` | #21 | |
-| #23 | `…-invitations` `a0370069` | #22 | |
-| #24 | `…-card-mailings` `a9950de0` | #23 | |
-| #25 | `…-broadcasts` `8a1fc1da` | #24 | |
-| #26 | `…-promo-template-sends` `8f1e2249` | #25 | |
-| #27 | `…-email-assets` `6495c287` | #26 | |
-| #28 | `…-banners-blog-campaigns` `551dd70a` | #27 | |
-| #29 | `fix/2026-11-10-admin-audit-contact-dashboard` `d1c66959` | #28 | конец цепочки |
-| #17 | `ci/pin-playwright-ubuntu-24-04` `66a1933a` | `release/2026-11-08-prefetch-catalog` | вошёл в #30 cherry-pick'ом |
-
-Решение по слиянию (за владельцем): все изменения #15–#29 и #17 уже внутри #30. Обычный путь — смержить #30 в `release/2026-11-08-prefetch-catalog` и закрыть #15–#29 и #17 как вошедшие в #30; затем решить перенос продовой линии в `main` (`main` с ней расходится). До этого ничего не мержилось и не закрывалось.
+Все слияния — merge-коммитами, ветки PR не удалены. Vercel на `8a16c48a` — success. Перенос продовой линии в `main` не выполнялся (см. BACKLOG).
 
 ## Справка по реализации (без изменений с 2026-11-10)
 
@@ -128,7 +115,7 @@ GitHub (кандидат ещё не прогонялся; ниже — дока
 
 ```powershell
 git fetch origin
-git switch release/2026-11-10-staging-admin-audit-candidate
+git switch release/2026-11-08-prefetch-catalog   # продовая линия после слияния (8a16c48a)
 git log --oneline -3
 git rev-list --count a4cecbb34f37ef3653b44f190882b8300ae21e94..c0162740   # 43 (production)
 $env:DATABASE_URL='postgresql://test:test@127.0.0.1:5432/test'

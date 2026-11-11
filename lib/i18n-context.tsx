@@ -10,7 +10,7 @@ export function useTranslation(): { t: (key: string) => string } {
 }
 
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Language } from '@/data/translations'
 import {
   DEFAULT_LANGUAGE,
@@ -57,33 +57,32 @@ export function I18nProvider({
   // Navigating to another language remounts nothing; the layout re-renders with
   // the new param and this provider receives the new value.
   const language: Language = isLanguage(initialLanguage) ? initialLanguage : DEFAULT_LANGUAGE
-  const router = useRouter()
 
-  // Keep the cookie/localStorage in sync with an explicitly visited language URL,
-  // and migrate legacy visitors whose choice only lives in localStorage (the
-  // middleware cannot see localStorage, so without the cookie they would be
-  // stuck on the default language).
+  // Migrate a legacy localStorage-only preference to a server-readable cookie.
+  // Never navigate during hydration: the server has already rendered the
+  // negotiated language, and a client redirect would visibly flash it.
+  // The migrated preference takes effect on the next navigation/request.
   useEffect(() => {
     const cookieLang = readLanguageCookie()
-
-    if (language !== DEFAULT_LANGUAGE) {
-      // On /en/* or /lv/* the URL is the explicit choice — persist it.
-      if (cookieLang !== language) writeLanguageCookie(language)
-      localStorage.setItem(LANGUAGE_KEY, language)
+    if (cookieLang) {
+      localStorage.setItem(LANGUAGE_KEY, cookieLang)
       return
     }
 
-    if (cookieLang) return
+    // Explicit /en and /lv URLs take precedence over legacy storage.
+    const { lang: urlLanguage } = stripLangPrefix(window.location.pathname)
+    const explicitLanguage = /^\\/(en|lv|ru)(?:\\/|$)/.test(window.location.pathname)
+    if (explicitLanguage) {
+      writeLanguageCookie(urlLanguage)
+      localStorage.setItem(LANGUAGE_KEY, urlLanguage)
+      return
+    }
 
     const saved = localStorage.getItem(LANGUAGE_KEY)
-    if (saved === 'en' || saved === 'lv') {
+    if (isLanguage(saved)) {
       writeLanguageCookie(saved)
-      router.replace(localizePath(currentUnprefixedLocation(), saved))
-      return
     }
-    // No saved choice: the middleware already picked this language server-side
-    // (browser Accept-Language → lv). Switching here would flash the page.
-  }, [language, router])
+  }, [])
 
   const setLanguage = (newLanguage: Language): void => {
     if (newLanguage === language) return

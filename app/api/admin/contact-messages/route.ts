@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
+import { setContactMessageAnswered } from '@/lib/contact-message-status'
 
 const DEFAULT_LIMIT = 20
 const MAX_LIMIT = 100
@@ -76,13 +77,9 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (!id) return NextResponse.json({ error: 'id_required' }, { status: 400 })
 
     const answered = body.answered !== false
-    const result = await prisma.contactMessage.updateMany({
-      where: { id },
-      data: answered
-        ? { answeredAt: new Date(), answeredById: actor.id }
-        : { answeredAt: null, answeredById: null },
-    })
-    if (result.count === 0) {
+    // Transition + audit in one transaction; repeating the current status is a no-op.
+    const result = await setContactMessageAnswered(id, answered, { actor, request: req })
+    if (result === 'not_found') {
       return NextResponse.json({ error: 'message_not_found' }, { status: 404 })
     }
 

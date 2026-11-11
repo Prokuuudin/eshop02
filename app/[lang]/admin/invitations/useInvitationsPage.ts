@@ -168,8 +168,11 @@ function useInvitationsPageState() {
             return;
         }
         const sent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
-        const failed = (json.results ?? []).length - sent;
-        setMessage(l(`Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`, `Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`, `Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`));
+        // pending: another request is still mailing this client — not an error.
+        const pending = (json.results ?? []).filter((r: { status: string }) => r.status === 'pending').length;
+        const failed = (json.results ?? []).length - sent - pending;
+        const pendingNote = pending ? l(`, уже отправляется: ${pending}`, `, already being sent: ${pending}`, `, jau tiek sūtīts: ${pending}`) : '';
+        setMessage(l(`Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`, `Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`, `Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`) + pendingNote);
         await loadHolders();
     };
 
@@ -279,8 +282,10 @@ function useInvitationsPageState() {
                     break;
                 }
                 const batchSent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
-                sent += batchSent;
-                failed += (json.results ?? []).length - batchSent;
+                // A pending client is being mailed by another request; count it as handled.
+                const batchPending = (json.results ?? []).filter((r: { status: string }) => r.status === 'pending').length;
+                sent += batchSent + batchPending;
+                failed += (json.results ?? []).length - batchSent - batchPending;
                 setSelectedIds((prev) => {
                     const next = new Set(prev);
                     chunk.forEach((id) => next.delete(id));

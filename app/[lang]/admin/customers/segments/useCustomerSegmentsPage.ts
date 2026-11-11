@@ -132,7 +132,8 @@ function useCustomerSegmentsPageState() {
         try {
             const res = await fetch('/api/admin/broadcast', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                // A key per click: a technical retry is replayed, not sent twice.
+                headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
                 body: JSON.stringify({
                     audience: { segment: activeTab === 'all' ? undefined : activeTab },
                     subject: bSubject,

@@ -97,11 +97,16 @@ describe('PATCH /api/orders/[id] — manual payment confirmation', () => {
 
     expect(res.status).toBe(200)
     expect(body.order.paymentStatus).toBe('paid')
-    expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', {
-      paymentStatus: 'paid',
-      paymentProvider: 'manual',
-      paymentSessionId: undefined,
-    })
+    expect(updateServerOrderPayment).toHaveBeenCalledWith(
+      '1001',
+      {
+        paymentStatus: 'paid',
+        paymentProvider: 'manual',
+        paymentSessionId: undefined,
+      },
+      undefined,
+      { actor: ADMIN_USER, request: expect.any(NextRequest) },
+    )
   })
 
   it('returns 404 for an order that does not exist', async () => {

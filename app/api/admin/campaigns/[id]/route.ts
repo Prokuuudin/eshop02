@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { brandLineIdList, invalidBrandLineIds } from '@/lib/brand-lines/brand-line-membership'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@/generated/prisma/client'
 import { revalidatePath, revalidateTag } from 'next/cache'
-import { campaignActiveFlag, parseCampaignType, secondItemProductsOutsideBrand, SECOND_ITEM_ONLY_FIELDS, validateSecondItemCampaignInput, type PromoCampaign } from '@/lib/promo-campaigns'
-import { SECOND_ITEM_DISCOUNT_TYPE } from '@/lib/second-item-discount'
+import type { PromoCampaign } from '@/lib/promo-campaigns'
+import { deleteAdminCampaign, updateAdminCampaign } from '@/lib/campaigns-server-store'
 
 export const runtime = 'nodejs'
 
-const KV_KEY = 'promo-campaigns'
-
-async function readData(): Promise<PromoCampaign[]> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: KV_KEY } })
-  if (!row) return []
-  return (row.value as PromoCampaign[]) ?? []
-}
-
-async function writeData(data: PromoCampaign[]): Promise<void> {
-  await prisma.keyValueSetting.upsert({
-    where: { key: KV_KEY },
-    create: { key: KV_KEY, value: data as unknown as Prisma.InputJsonValue },
-    update: { value: data as unknown as Prisma.InputJsonValue },
-  })
+function revalidateCampaigns(): void {
   revalidateTag('storefront-sale-products', { expire: 0 })
   revalidateTag('storefront-bestsellers', { expire: 0 })
   revalidatePath('/[lang]', 'layout')
@@ -31,74 +15,31 @@ async function writeData(data: PromoCampaign[]): Promise<void> {
 type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(request: NextRequest, { params }: Params): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { id } = await params
     const body = (await request.json()) as Partial<PromoCampaign>
-    const data = await readData()
-    const idx = data.findIndex((item) => item.id === id)
-    if (idx === -1) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    const merged = { ...data[idx], ...body }
-    const name = String(merged.name ?? '').trim()
-    const type = parseCampaignType(merged.type)
-    const startDate = String(merged.startDate ?? '').slice(0, 10)
-    const endDate = String(merged.endDate ?? '').slice(0, 10)
-    if (!name) return NextResponse.json({ error: 'name_required' }, { status: 400 })
-    if (!type) return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
-    if (!startDate || (endDate && endDate < startDate)) return NextResponse.json({ error: 'invalid_dates' }, { status: 400 })
-    let secondItem: Extract<ReturnType<typeof validateSecondItemCampaignInput>, { ok: true }>['fields'] | undefined
-    if (type === SECOND_ITEM_DISCOUNT_TYPE) {
-      const checked = validateSecondItemCampaignInput(merged as Record<string, unknown>, data, { id, startDate, endDate })
-      if (!checked.ok) return NextResponse.json(checked.body, { status: checked.status })
-      // Like brand lines: only a submitted brand/product list is checked, so a product that
-      // later changed brand cannot block an unrelated edit such as pausing the campaign.
-      const listsSubmitted = body.targetBrands !== undefined || body.productIds !== undefined || body.excludedProductIds !== undefined
-      const outsideBrand = listsSubmitted ? await secondItemProductsOutsideBrand(prisma, checked.fields) : []
-      if (outsideBrand.length > 0) return NextResponse.json({ error: 'products_not_in_brand', ids: outsideBrand }, { status: 422 })
-      secondItem = checked.fields
-    }
-    const targetBrandLineIds = secondItem ? [] : brandLineIdList(merged.targetBrandLineIds)
-    // Only newly submitted ids are checked: a line archived later must not block unrelated edits.
-    if (!secondItem && body.targetBrandLineIds !== undefined) {
-      const invalidLines = await invalidBrandLineIds(prisma, targetBrandLineIds)
-      if (invalidLines.length > 0) return NextResponse.json({ error: 'invalid_brand_lines', ids: invalidLines }, { status: 422 })
-    }
-    const now = new Date().toISOString()
-    data[idx] = {
-      ...data[idx], ...body, id, name, type, startDate, endDate,
-      active: campaignActiveFlag(startDate, merged.active),
-      description: String(merged.description ?? '').trim(),
-      showOldPrice: merged.showOldPrice !== false,
-      discountPercent: type === 'discount' ? Math.min(100, Math.max(0, Number(merged.discountPercent) || 0)) : 0,
-      minOrderAmount: Math.max(0, Number(merged.minOrderAmount) || 0),
-      targetCategories: Array.isArray(merged.targetCategories) ? [...new Set(merged.targetCategories.map(String).filter(Boolean))] : [],
-      targetSubcategories: Array.isArray(merged.targetSubcategories) ? [...new Set(merged.targetSubcategories.map(String).filter(Boolean))] : [],
-      targetBrands: Array.isArray(merged.targetBrands) ? [...new Set(merged.targetBrands.map(String).filter(Boolean))] : [],
-      targetBrandLineIds,
-      ...(secondItem ?? SECOND_ITEM_ONLY_FIELDS),
-      updatedAt: now,
-    }
-    await writeData(data)
-    return NextResponse.json(data[idx])
+    const result = await updateAdminCampaign(id, body, { actor, request })
+    if (!result.ok) return NextResponse.json(result.body, { status: result.status })
+    if (result.changed) revalidateCampaigns()
+    return NextResponse.json(result.value)
   } catch {
     return NextResponse.json({ error: 'failed_to_update' }, { status: 400 })
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: Params): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+export async function DELETE(request: NextRequest, { params }: Params): Promise<Response> {
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { id } = await params
-    const data = await readData()
-    const idx = data.findIndex((item) => item.id === id)
-    if (idx === -1) return NextResponse.json({ error: 'not_found' }, { status: 404 })
-    data.splice(idx, 1)
-    await writeData(data)
-    return NextResponse.json({ ok: true })
+    const result = await deleteAdminCampaign(id, { actor, request })
+    if (!result.ok) return NextResponse.json(result.body, { status: result.status })
+    revalidateCampaigns()
+    return NextResponse.json(result.value)
   } catch {
     return NextResponse.json({ error: 'failed_to_delete' }, { status: 400 })
   }

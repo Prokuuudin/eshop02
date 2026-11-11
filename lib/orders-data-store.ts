@@ -331,6 +331,7 @@ export const updateServerOrderPayment = async (
   orderId: string,
   updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>,
   evidence?: { sessionId: string; amount?: number; amountPaid?: number; currency?: string },
+  audit?: { actor: ServerUser; request: NextRequest },
 ): Promise<ServerOrder | null> => {
   const result = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
@@ -364,6 +365,25 @@ export const updateServerOrderPayment = async (
         paymentSessionId: updates.paymentSessionId ?? undefined,
       },
     })
+    const paymentChanged = (
+      (updates.paymentStatus !== undefined && updates.paymentStatus !== existing.paymentStatus)
+      || (updates.paymentProvider !== undefined && updates.paymentProvider !== existing.paymentProvider)
+    )
+    if (audit && paymentChanged) {
+      await appendServerAudit(tx, audit.request, audit.actor, {
+        action: 'order.payment_status_updated',
+        entityType: 'order',
+        entityId: orderId,
+        before: {
+          paymentStatus: existing.paymentStatus,
+          paymentProvider: existing.paymentProvider,
+        },
+        after: {
+          paymentStatus: row.paymentStatus,
+          paymentProvider: row.paymentProvider,
+        },
+      })
+    }
     if (reservation.latePaymentStockUnavailable) {
       await tx.orderOperationalException.upsert({
         where: { orderId_code: { orderId, code: 'late_payment_stock_unavailable' } },

@@ -145,8 +145,8 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   let payload: CreateBlogPostPayload
   try {
@@ -177,10 +177,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const createdAt = payload.createdAt ? new Date(payload.createdAt) : new Date()
   const safeReadTime = Number.isFinite(payload.readTime) && payload.readTime > 0 ? payload.readTime : 3
   const existingPosts = await getAllBlogPosts()
   const existingPost = existingPosts.find((item) => item.id === payload.id)
+  const createdAt = payload.createdAt ? new Date(payload.createdAt) : existingPost?.createdAt ?? new Date()
 
   const buildTranslation = (lang: 'en' | 'lv'): TranslationPayload | undefined => {
     const tr = payload.translations?.[lang]
@@ -227,13 +227,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     translations: translations as BlogPost['translations']
   }
 
-  await createBlogPost(post)
+  const saved = (await createBlogPost(post, { actor, request })).post
 
   revalidatePath('/blog')
-  revalidatePath(`/blog/${post.slug}`)
-  if (existingPost && existingPost.slug !== post.slug) {
+  revalidatePath(`/blog/${saved.slug}`)
+  if (existingPost && existingPost.slug !== saved.slug) {
     revalidatePath(`/blog/${existingPost.slug}`)
   }
 
-  return NextResponse.json({ ok: true, post })
+  return NextResponse.json({ ok: true, post: saved })
 }

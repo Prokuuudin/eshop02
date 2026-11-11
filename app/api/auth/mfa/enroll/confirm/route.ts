@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashToken, createSession, mapDbToServerUser } from '@/lib/server-auth'
+import { hashToken, mapDbToServerUser } from '@/lib/server-auth'
+import { createStaffSessionWithAudit, recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 import { decryptSecret, generateBackupCodes, hashBackupCodes, verifyTotpCode } from '@/lib/mfa'
 import {
   consumeMfaChallenge,
@@ -46,7 +47,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     logApiError('[auth/mfa/enroll/confirm] MFA decryption unavailable', error)
     return NextResponse.json({ error: 'mfa_not_configured' }, { status: 503 })
   }
-  if (!valid) return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
+  if (!valid) {
+    recordRejectedStaffLogin(req, user, 'invalid_mfa_code')
+    return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
+  }
 
   // Single winner on a double submit, so the recovery codes stored are the ones shown.
   if (!(await consumeMfaChallenge(tokenHash))) {
@@ -68,7 +72,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   await resetMfaAttempts(tokenHash, ip, user.id)
 
-  const token = await createSession(user.id, { mfaVerified: true })
+  // The staff session and its sign-in audit row commit together.
+  const token = await createStaffSessionWithAudit(req, user, 'enrollment')
   const res = NextResponse.json({
     user: mapDbToServerUser({ ...user, mfaEnabled: true }),
     backupCodes,

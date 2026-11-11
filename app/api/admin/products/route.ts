@@ -112,21 +112,22 @@ export async function POST(req: NextRequest): Promise<Response> {
 }
 
 export async function DELETE(req: NextRequest): Promise<Response> {
-  const gate = await requireAdminPermission('catalog.update')
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdminPermission('catalog.update')
+  if (actor instanceof NextResponse) return actor
   try {
     const body = (await req.json()) as { id?: string; ids?: string[]; permanently?: boolean }
     if (Array.isArray(body.ids)) {
       const ids = [...new Set(body.ids.map((id) => id.trim()).filter(Boolean))]
       if (ids.length === 0) return errorResponse('At least one product id is required', 400)
       if (ids.length > 100) return errorResponse('A maximum of 100 products can be deleted at once', 400)
-      const result = await deleteProductsAny(ids)
+      const result = await deleteProductsAny(ids, { actor, request: req })
       if (!result.success) return errorResponse(result.error, 400)
       return successResponse({ deletedCount: result.deletedCount })
     }
     const id = body.id?.trim()
     if (!id) return errorResponse('Product id is required', 400)
-    const result = body.permanently === true ? await deleteProductAny(id) : await resetProductOverride(id)
+    const audit = { actor, request: req }
+    const result = body.permanently === true ? await deleteProductAny(id, audit) : await resetProductOverride(id, audit)
     if (!result.success) return errorResponse(result.error, 400)
     return successResponse({ products: result.products })
   } catch (error) { logApiError("Admin products DELETE error:", error); return errorResponse('Internal server error', 500) }

@@ -8,8 +8,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { id } = await params
@@ -28,7 +28,7 @@ export async function PUT(
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'no_allowed_fields' }, { status: 400 })
     }
-    const result = await upsertTemplate(id, updates)
+    const result = await upsertTemplate(id, updates, { actor, request })
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 })
     }

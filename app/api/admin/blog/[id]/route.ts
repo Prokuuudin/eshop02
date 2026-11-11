@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from "@/lib/server-auth"
 import { revalidatePath } from 'next/cache'
-import { deleteBlogPostById, getAllBlogPosts } from '@/lib/blog-store'
+import { deleteBlogPostById } from '@/lib/blog-store'
 
 export const runtime = 'nodejs'
 
@@ -11,19 +11,16 @@ type RouteContext = {
   }>
 }
 
-export async function DELETE(_: Request, { params }: RouteContext): Promise<NextResponse> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+export async function DELETE(request: NextRequest, { params }: RouteContext): Promise<NextResponse> {
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   const { id } = await params
   if (!id) {
     return NextResponse.json({ ok: false, error: 'invalid_id' }, { status: 400 })
   }
 
-  const posts = await getAllBlogPosts()
-  const deletedPost = posts.find((post) => post.id === id)
-
-  await deleteBlogPostById(id)
+  const deletedPost = await deleteBlogPostById(id, { actor, request })
 
   revalidatePath('/blog')
   if (deletedPost?.slug) {

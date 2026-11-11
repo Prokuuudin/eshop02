@@ -10,7 +10,8 @@ import { POST } from './route'
 const post = (body: unknown) => POST(new NextRequest('https://shop.test/api/admin/products/restore', { method: 'POST', body: JSON.stringify(body) }))
 
 describe('POST /api/admin/products/restore', () => {
-  beforeEach(() => { vi.clearAllMocks(); vi.mocked(requireAdmin).mockResolvedValue({ id: 'admin' } as never) })
+  const actor = { id: 'admin', email: 'admin@example.test' }
+  beforeEach(() => { vi.clearAllMocks(); vi.mocked(requireAdmin).mockResolvedValue(actor as never) })
   it('stops at the admin gate', async () => {
     vi.mocked(requireAdmin).mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }) as never)
     expect((await post({ id: 'p1' })).status).toBe(403)
@@ -30,6 +31,9 @@ describe('POST /api/admin/products/restore', () => {
     vi.mocked(getDeletedProductsArchive).mockResolvedValue([])
     const response = await post({ id: ' p1 ' })
     expect(response.status).toBe(200)
-    expect(restoreDeletedProduct).toHaveBeenCalledWith('p1')
+    expect(restoreDeletedProduct).toHaveBeenCalledWith('p1', {
+      actor,
+      request: expect.any(NextRequest),
+    })
   })
 })

@@ -12,6 +12,7 @@ vi.mock('@/lib/server-auth', () => ({
   sessionCookieMaxAgeSeconds: vi.fn(() => 60),
   SESSION_COOKIE: 'eshop_session',
 }))
+vi.mock('@/lib/auth-session-audit', () => ({ createStaffSessionWithAudit: vi.fn(), recordRejectedStaffLogin: vi.fn(), revokeSessionWithAudit: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn(), resetRateLimit: vi.fn(), refundRateLimit: vi.fn(), gcRateLimitStore: vi.fn(),
 }))
@@ -19,6 +20,7 @@ vi.mock('@/lib/rate-limit', () => ({
 import { prisma } from '@/lib/prisma'
 import { verifyPassword, createSession } from '@/lib/server-auth'
 import { checkRateLimit, refundRateLimit, resetRateLimit } from '@/lib/rate-limit'
+import { recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 import { POST } from './route'
 
 function makeRequest(email = ' User@Test.COM ') {
@@ -298,6 +300,40 @@ describe('POST /api/auth/login', () => {
     expect(prisma.mfaChallenge.deleteMany).toHaveBeenCalledWith({ where: { userId: 'admin1' } })
     expect(prisma.mfaChallenge.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ userId: 'admin1' }),
+    })
+  })
+
+  describe('staff session audit', () => {
+    it('audits a wrong password for a recognised staff account without changing the response', async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: 'admin1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true,
+      } as never)
+      vi.mocked(verifyPassword).mockResolvedValue(false)
+
+      const res = await POST(makeRequest())
+
+      expect(res.status).toBe(401)
+      expect(await res.json()).toEqual({ error: 'invalid_credentials' })
+      expect(recordRejectedStaffLogin).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({ id: 'admin1' }), 'invalid_password')
+    })
+
+    it('never audits customer logins, unknown identifiers or the password step of a staff login', async () => {
+      vi.mocked(prisma.user.findFirst).mockResolvedValue({
+        id: 'c1', email: 'c@example.com', cardNumber: '1234', passwordHash: 'hash', platformRole: 'customer', teamRole: 'admin',
+      } as never)
+      vi.mocked(verifyPassword).mockResolvedValue(false)
+      expect((await POST(makeRequest('1234'))).status).toBe(401)
+
+      vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+      expect((await POST(makeRequest('ghost@test.com'))).status).toBe(401)
+
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: 'admin1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true,
+      } as never)
+      vi.mocked(verifyPassword).mockResolvedValue(true)
+      expect((await POST(makeRequest())).status).toBe(200)
+
+      expect(recordRejectedStaffLogin).not.toHaveBeenCalled()
     })
   })
 })

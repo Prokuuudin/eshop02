@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
 
   try {
     const payload = (await request.json()) as Partial<SiteContentOverrides>
-    const saved = await saveSiteContentOverridesToStore(payload)
+    const saved = await saveSiteContentOverridesToStore(payload, __gate, request)
 
     revalidatePath('/')
     revalidatePath('/blog')

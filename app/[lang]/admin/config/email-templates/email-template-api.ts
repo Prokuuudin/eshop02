@@ -19,9 +19,10 @@ export async function saveEmailTemplate(id: string, subject: string, body: strin
 }
 
 export async function sendEmailTemplateTest(id: string, to: string): Promise<boolean> {
+  // A key per click: a technical retry is replayed, not sent twice.
   const response = await fetch(`/api/admin/email-templates/${id}/send-test`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
     body: JSON.stringify({ to }),
   })
   return response.ok

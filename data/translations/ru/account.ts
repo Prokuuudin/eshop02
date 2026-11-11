@@ -201,8 +201,6 @@ const ruAccount: Record<string, string> = {
   'auth.connectionError': 'Ошибка соединения. Попробуйте ещё раз.',
   'auth.sending': 'Отправляем…',
   'auth.emailConfirmed': 'E-mail подтверждён! Войдите с номером карты и паролем.',
-  'auth.adminNotSetup': 'Первый администратор ещё не создан.',
-  'auth.openAdminSetup': 'Открыть первичную настройку',
   'auth.fileReadError': 'Не удалось прочитать файл',
   'account.showPassword': 'Показать пароль',
   'account.hidePassword': 'Скрыть пароль',

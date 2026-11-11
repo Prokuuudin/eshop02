@@ -5,7 +5,6 @@ import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import {
     confirmMfaEnrollment,
-    hasAdminUsers,
     loginUserAuto,
     startMfaEnrollment,
     verifyMfaAndLogin,
@@ -32,7 +31,6 @@ export default function LoginForm({
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [activationRequired, setActivationRequired] = useState(false);
-    const [setupRequired] = useState(() => !hasAdminUsers());
     const [showPassword, setShowPassword] = useState(false);
     const confirmed = searchParams.get('confirmed') === '1';
     const adminLogin = searchParams.get('admin') === '1';
@@ -387,14 +385,6 @@ export default function LoginForm({
                     </Button>
                 )}
             </div>
-            {setupRequired && (
-                <p className="text-sm text-center text-amber-700 dark:text-amber-400">
-                    {t('auth.adminNotSetup')}
-                    <Link href="/auth/admin-setup" className="ml-2 underline underline-offset-2">
-                        {t('auth.openAdminSetup')}
-                    </Link>
-                </p>
-            )}
         </form>
     );
 }

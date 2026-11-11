@@ -202,8 +202,6 @@ const enAccount: Record<string, string> = {
   'auth.connectionError': 'Connection error. Please try again.',
   'auth.sending': 'Sending…',
   'auth.emailConfirmed': 'Email confirmed! Sign in with your card number and password.',
-  'auth.adminNotSetup': 'The first administrator has not been set up yet.',
-  'auth.openAdminSetup': 'Open initial setup',
   'auth.fileReadError': 'Could not read file',
   'account.showPassword': 'Show password',
   'account.hidePassword': 'Hide password',

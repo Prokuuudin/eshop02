@@ -8,7 +8,9 @@
 //                  default language has exactly one canonical URL per page.
 //
 // The middleware rewrites unprefixed paths to /ru/* internally, so every route
-// physically lives under app/[lang]/.
+// physically lives under app/[lang]/. On an unprefixed URL it first picks the
+// language server-side (saved cookie → browser Accept-Language → lv) and
+// redirects to /en or /lv before anything renders.
 
 import type { Language } from '@/data/translations'
 
@@ -72,6 +74,31 @@ export function pageAlternates(path: string, lang: Language): {
       'x-default': localizePath(path, DEFAULT_LANGUAGE),
     },
   }
+}
+
+/** Language for a first visit whose browser languages are all unsupported. */
+export const AUTO_DETECT_FALLBACK_LANGUAGE: Language = 'lv'
+
+/**
+ * Pick the supported language the browser prefers most from an Accept-Language
+ * header ("lv-LV,lv;q=0.9,en;q=0.8" → 'lv'). Returns null when none is supported.
+ */
+export function negotiateLanguage(acceptLanguage: string): Language | null {
+  let best: Language | null = null
+  let bestQ = 0
+  for (const part of acceptLanguage.split(',')) {
+    const [tag, ...params] = part.split(';')
+    const lang = tag.trim().toLowerCase().split('-')[0]
+    if (!isLanguage(lang)) continue
+    const qParam = params.map((p) => p.trim().toLowerCase()).find((p) => p.startsWith('q='))
+    const q = qParam ? Number(qParam.slice(2)) : 1
+    // Equal weights keep header order (the first listed wins).
+    if (Number.isFinite(q) && q > bestQ) {
+      best = lang
+      bestQ = q
+    }
+  }
+  return best
 }
 
 /** Resolve a route param to a supported language (defensive fallback). */

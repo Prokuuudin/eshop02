@@ -154,7 +154,7 @@ export function Providers({
   localeConfig: LocaleConfig
 }): React.ReactNode {
   return (
-    <I18nProvider initialLanguage={initialLanguage} defaultLanguage={localeConfig.defaultLanguage}>
+    <I18nProvider initialLanguage={initialLanguage}>
       <ToastProvider>
         <SeedAccounts />
         <AuthStoreProvider />

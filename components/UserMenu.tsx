@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -9,7 +9,7 @@ import {
 } from './ui/dialog';
 import Link from '@/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
-import { canAccessAdminPanel, hasAdminUsers, logout } from '@/lib/auth';
+import { canAccessAdminPanel, logout } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { Button } from './ui/button';
 import { useTranslation } from '@/lib/use-translation';
@@ -27,14 +27,8 @@ export default function UserMenu(): React.ReactElement {
     const [registerOpen, setRegisterOpen] = useState(false);
     const [loginOpen, setLoginOpen] = useState(false);
     const [forgotOpen, setForgotOpen] = useState(false);
-    const [setupRequired, setSetupRequired] = useState(false);
     const router = useRouter();
     const { t } = useTranslation();
-
-    // Recompute "first admin not set up yet" whenever the current user changes (store-driven).
-    useEffect(() => {
-        queueMicrotask(() => setSetupRequired(!hasAdminUsers()));
-    }, [user]);
 
     const handleLoginSuccess = () => {
         setLoginOpen(false);
@@ -142,16 +136,6 @@ export default function UserMenu(): React.ReactElement {
                 >
                     {t('auth.registerButton', t('auth.register'))}
                 </Button>
-                <span className="inline-flex min-w-[74px] justify-start">
-                    <Link
-                        href="/auth/admin-setup"
-                        aria-hidden={!setupRequired}
-                        tabIndex={setupRequired ? undefined : -1}
-                        className={`text-xs text-amber-700 dark:text-amber-400 hover:underline ${setupRequired ? '' : 'invisible'}`}
-                    >
-                        Настройка admin
-                    </Link>
-                </span>
             </div>
         );
     }

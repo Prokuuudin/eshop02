@@ -68,6 +68,12 @@ describe('syncCheckoutProfile', () => {
     expect(reloaded(before, updates)).toMatchObject({ name: null, phone: null })
   })
 
+  it('does not copy the person name into an empty company name on an unrelated edit', () => {
+    const before = { ...columns, customerType: 'company', checkoutProfile: { ...profile, customerType: 'company', companyName: '' } }
+    const next = syncCheckoutProfile(before, { name: 'Column Name', phone: '+37155555555', customerType: 'company', registrationNumber: null })
+    expect(next).toMatchObject({ companyName: '', phone: '+37155555555' })
+  })
+
   it('does not touch the profile for email-only edits', () => {
     expect(syncCheckoutProfile({ ...columns, checkoutProfile: profile }, { email: 'new@example.com' })).toBeUndefined()
   })

@@ -95,7 +95,10 @@ export function syncCheckoutProfile(
     }
     const shown = readCustomerDetails(columnsAfter, next)
     if (shown.customerType === 'company') {
-      next.companyName = wanted ?? ''
+      // Only an actual rename or a switch to company sets the company name: an unrelated edit
+      // must not copy the person's name into an empty company name used by the checkout.
+      const switchedToCompany = readCustomerDetails(before, profile).customerType !== 'company'
+      if (switchedToCompany || shown.name !== wanted) next.companyName = wanted ?? ''
     } else if (shown.name !== wanted) {
       // Keep the customer's own first/last split unless the admin actually changed the name.
       const [firstName = '', ...rest] = (wanted ?? '').split(/\s+/u).filter(Boolean)

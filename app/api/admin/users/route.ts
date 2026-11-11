@@ -9,6 +9,7 @@ import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
 import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
+import { readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -122,27 +123,9 @@ export async function GET(req: NextRequest): Promise<Response> {
     ])
 
     const mapped = users.map(({ checkoutProfile, ...u }) => {
-      const profile = checkoutProfile && typeof checkoutProfile === 'object' && !Array.isArray(checkoutProfile)
-        ? checkoutProfile as Record<string, unknown>
-        : null
-      const profileText = (field: string): string => typeof profile?.[field] === 'string' ? String(profile[field]).trim() : ''
-      const profileType = profileText('customerType')
-      const customerType = profileType === 'company' || profileType === 'individual' ? profileType : u.customerType
-      const profileName = customerType === 'company'
-        ? profileText('companyName')
-        : [profileText('firstName'), profileText('lastName')].filter(Boolean).join(' ')
       return {
         ...u,
-        name: profileName || u.name,
-        phone: profileText('phone') || u.phone,
-        companyName: profileText('companyName') || u.companyName,
-        customerType,
-        registrationNumber: profileText('regNumber').replace(/\D/gu, '') || u.registrationNumber,
-        vatNumber: profileText('vatNumber') || u.vatNumber,
-        legalAddress: profileText('legalAddress') || u.legalAddress,
-        address: [profileText('address'), profileText('city'), profileText('postalCode')].filter(Boolean).join(', ') || u.legalAddress,
-        bankName: profileText('bankName') || null,
-        iban: profileText('iban') || null,
+        ...readCustomerDetails(u, checkoutProfile),
         registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
         registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,
         createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
@@ -280,9 +263,15 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
 
       // Leaving the admin role always drops the Super Admin flag with it.
-      const data = updates.platformRole !== undefined && updates.platformRole !== 'admin'
+      const roleData = updates.platformRole !== undefined && updates.platformRole !== 'admin'
         ? { ...updates, superAdmin: false }
         : updates
+      // The admin lists and the customer's checkout read the checkout profile first: keep it in
+      // step with the edited columns, or the change is hidden again on the next reload.
+      const checkoutProfile = syncCheckoutProfile(before, updates)
+      const data = checkoutProfile
+        ? { ...roleData, checkoutProfile: checkoutProfile as Prisma.InputJsonObject }
+        : roleData
       const updateResult = await tx.user.updateMany({
         where: { id, updatedAt: new Date(expectedUpdatedAt) },
         data,

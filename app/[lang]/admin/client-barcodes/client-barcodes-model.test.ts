@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  classifyClientSaveFailure,
   createNoCardDraft,
+  isCompleteClientStepUp,
   getCardHolderEdit,
   isValidCardNumber,
   isValidCompanyDraft,
@@ -34,5 +36,41 @@ describe('client barcode model', () => {
     expect(getCardHolderEdit(holder)).toEqual({
       name: '', email: '', phone: '', customerType: 'individual', registrationNumber: '',
     })
+  })
+})
+
+describe('classifyClientSaveFailure', () => {
+  it.each([
+    [400, 'change_reason_required', 'step_up_required'],
+    [401, 'reauthentication_required', 'step_up_required'],
+    [401, 'reauthentication_failed', 'step_up_failed'],
+    [401, 'unauthorized', 'session_expired'],
+    [403, 'super_admin_required', 'staff_account'],
+    [403, 'forbidden', 'forbidden'],
+    [403, 'Origin not allowed', 'origin_rejected'],
+    [409, 'email_taken', 'email_taken'],
+    [400, 'invalid_request', 'invalid'],
+    [409, 'optimistic_conflict', 'conflict'],
+    [409, 'concurrent_update', 'conflict'],
+    [404, 'not_found', 'not_found'],
+    [429, undefined, 'rate_limited'],
+    [500, 'server_error', 'unknown'],
+  ] as const)('HTTP %i %s → %s', (status, code, expected) => {
+    expect(classifyClientSaveFailure(status, code)).toBe(expected)
+  })
+
+  it('never reports step-up or a staff account as a plain permission error', () => {
+    for (const code of ['change_reason_required', 'reauthentication_required', 'reauthentication_failed', 'super_admin_required']) {
+      expect(classifyClientSaveFailure(403, code)).not.toBe('forbidden')
+    }
+  })
+})
+
+describe('isCompleteClientStepUp', () => {
+  it('needs a password, a six-digit code and a reason of at least five characters', () => {
+    expect(isCompleteClientStepUp({ currentPassword: 'pw', mfaCode: ' 123456 ', reason: 'typo fix' })).toBe(true)
+    expect(isCompleteClientStepUp({ currentPassword: '', mfaCode: '123456', reason: 'typo fix' })).toBe(false)
+    expect(isCompleteClientStepUp({ currentPassword: 'pw', mfaCode: '12345', reason: 'typo fix' })).toBe(false)
+    expect(isCompleteClientStepUp({ currentPassword: 'pw', mfaCode: '123456', reason: 'fix' })).toBe(false)
   })
 })

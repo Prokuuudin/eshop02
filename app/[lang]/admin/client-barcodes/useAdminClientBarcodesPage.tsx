@@ -3,13 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import {
+    classifyClientSaveFailure,
     createNoCardDraft,
     getCardHolderEdit,
+    isCompleteClientStepUp,
     isValidCardNumber,
     isValidCompanyDraft,
     normalizeCardDigits,
     normalizeRegistrationNumber,
     type CardHolder,
+    type ClientSaveFailure,
+    type ClientStepUp,
     type NoCardDraft,
     type NoCardRequest,
 } from './client-barcodes-model';
@@ -207,25 +211,41 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             return next;
         });
 
-    const clientSaveErrorText = (code: string) => {
-        switch (code) {
+    const clientSaveErrorText = (failure: ClientSaveFailure, status: number) => {
+        switch (failure) {
             case 'email_taken':
                 return l('Не сохранено: этот email уже есть у другого клиента. Найдите его поиском по email.', 'Not saved: this email already belongs to another customer. Search by email to find them.', 'Nav saglabāts: šis e-pasts jau pieder citam klientam. Atrodiet to, meklējot pēc e-pasta.');
-            case 'invalid_request':
+            case 'invalid':
                 return l('Не сохранено: проверьте данные (например, формат email).', 'Not saved: check the entered data (e.g. the email format).', 'Nav saglabāts: pārbaudiet ievadītos datus (piem., e-pasta formātu).');
-            case 'optimistic_conflict':
-            case 'concurrent_update':
+            case 'conflict':
                 return l('Не сохранено: данные клиента только что изменились. Обновите страницу и повторите.', 'Not saved: the customer was just changed. Reload the page and try again.', 'Nav saglabāts: klienta dati tikko mainījās. Pārlādējiet lapu un mēģiniet vēlreiz.');
+            case 'staff_account':
+                return l('Не сохранено: это аккаунт сотрудника — изменить его может только Super Admin.', 'Not saved: this is a staff account — only a Super Admin can edit it.', 'Nav saglabāts: šis ir darbinieka konts — to var labot tikai Super Admin.');
             case 'forbidden':
-            case 'super_admin_required':
-            case 'reauthentication_required':
                 return l('Не сохранено: недостаточно прав для изменения этого аккаунта.', 'Not saved: insufficient permission to edit this account.', 'Nav saglabāts: nepietiek tiesību šī konta labošanai.');
+            case 'step_up_required':
+                return l('Это аккаунт сотрудника: подтвердите изменение паролем, кодом 2FA и причиной.', 'This is a staff account: confirm the change with your password, 2FA code and a reason.', 'Šis ir darbinieka konts: apstipriniet izmaiņas ar paroli, 2FA kodu un iemeslu.');
+            case 'step_up_failed':
+                return l('Неверный пароль или код из приложения.', 'Invalid password or app code.', 'Nederīga parole vai lietotnes kods.');
+            case 'session_expired':
+                return l('Не сохранено: сессия истекла. Войдите в админ-панель снова.', 'Not saved: your session has expired. Sign in to the admin panel again.', 'Nav saglabāts: sesija ir beigusies. Piesakieties administrēšanas panelī vēlreiz.');
+            case 'origin_rejected':
+                return l('Не сохранено: запрос отклонён проверкой адреса сайта. Откройте админ-панель по основному адресу сайта (без www) и повторите.', 'Not saved: the request was rejected by the site address check. Open the admin panel on the main site address (without www) and try again.', 'Nav saglabāts: pieprasījumu noraidīja vietnes adreses pārbaude. Atveriet administrēšanas paneli galvenajā vietnes adresē (bez www) un mēģiniet vēlreiz.');
+            case 'not_found':
+                return l('Не сохранено: клиент не найден. Обновите страницу.', 'Not saved: the customer was not found. Reload the page.', 'Nav saglabāts: klients nav atrasts. Pārlādējiet lapu.');
+            case 'rate_limited':
+                return l('Не сохранено: слишком много попыток. Подождите и повторите.', 'Not saved: too many attempts. Wait and try again.', 'Nav saglabāts: pārāk daudz mēģinājumu. Uzgaidiet un mēģiniet vēlreiz.');
             default:
-                return l('Не сохранено: не удалось обновить клиента.', 'Not saved: failed to update the customer.', 'Nav saglabāts: neizdevās atjaunināt klienta datus.');
+                return l(`Не сохранено: не удалось обновить клиента (HTTP ${status}).`, `Not saved: failed to update the customer (HTTP ${status}).`, `Nav saglabāts: neizdevās atjaunināt klienta datus (HTTP ${status}).`);
         }
     };
 
-    const handleSaveClientDetails = async (holder: CardHolder) => {
+    // Step-up for staff accounts: the server demands the acting Super Admin's own password,
+    // TOTP code and a reason. They are kept only in memory for this one request.
+    const [clientStepUp, setClientStepUp] = useState<(ClientStepUp & { holderId: string; error: string }) | null>(null);
+    const closeClientStepUp = () => setClientStepUp(null);
+
+    const handleSaveClientDetails = async (holder: CardHolder, stepUp?: ClientStepUp) => {
         const edit = getClientEdit(holder);
         const registrationNumber = normalizeRegistrationNumber(edit.registrationNumber);
         if (edit.customerType === 'company' && registrationNumber.length !== 11) {
@@ -247,10 +267,33 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                     phone: edit.phone.trim() || null,
                     customerType: edit.customerType,
                     registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
+                    ...(stepUp ? { currentPassword: stepUp.currentPassword, mfaCode: stepUp.mfaCode.trim(), reason: stepUp.reason.trim() } : {}),
                 }),
             });
             const payload = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(typeof payload?.error === 'string' ? payload.error : 'client_update_failed');
+            if (!response.ok) {
+                const failure = classifyClientSaveFailure(response.status, typeof payload?.error === 'string' ? payload.error : undefined);
+                const error = clientSaveErrorText(failure, response.status);
+                if (failure === 'step_up_required' || failure === 'step_up_failed') {
+                    // Keep the draft and ask (again) for the confirmation instead of a dead-end error.
+                    setClientStepUp((prev) => ({
+                        holderId: holder.id,
+                        currentPassword: prev?.holderId === holder.id ? prev.currentPassword : '',
+                        mfaCode: '',
+                        reason: prev?.holderId === holder.id ? prev.reason : '',
+                        error: failure === 'step_up_failed' ? error : '',
+                    }));
+                    setClientRowError(holder.id, error);
+                    setMessage('');
+                    return;
+                }
+                closeClientStepUp();
+                setFormError(error);
+                setMessage('');
+                setClientRowError(holder.id, error);
+                return;
+            }
+            closeClientStepUp();
             setMessage(l('Данные клиента обновлены.', 'Customer details updated.', 'Klienta dati atjaunināti.'));
             setFormError('');
             // Drop the draft so the row shows what the server actually stored.
@@ -260,14 +303,24 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 return next;
             });
             await loadCardHolders();
-        } catch (cause) {
-            const error = clientSaveErrorText(cause instanceof Error ? cause.message : '');
+        } catch {
+            const error = l('Не сохранено: нет связи с сервером. Повторите.', 'Not saved: no connection to the server. Try again.', 'Nav saglabāts: nav savienojuma ar serveri. Mēģiniet vēlreiz.');
             setFormError(error);
             setMessage('');
             setClientRowError(holder.id, error);
         } finally {
             setClientSaveBusy(null);
         }
+    };
+
+    const submitClientStepUp = async () => {
+        if (!clientStepUp || !isCompleteClientStepUp(clientStepUp)) return;
+        const holder = cardHolders.find((candidate) => candidate.id === clientStepUp.holderId);
+        if (!holder) {
+            closeClientStepUp();
+            return;
+        }
+        await handleSaveClientDetails(holder, clientStepUp);
     };
 
     const handleRejectNoCardRequest = async (requestId: string, email: string, name: string) => {
@@ -308,7 +361,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

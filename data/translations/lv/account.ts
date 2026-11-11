@@ -202,8 +202,6 @@ const lvAccount: Record<string, string> = {
   'auth.connectionError': 'Savienojuma kļūda. Lūdzu, mēģiniet vēlreiz.',
   'auth.sending': 'Nosūtam…',
   'auth.emailConfirmed': 'E-pasts apstiprināts! Piesakieties ar kartes numuru un paroli.',
-  'auth.adminNotSetup': 'Pirmais administrators vēl nav izveidots.',
-  'auth.openAdminSetup': 'Atvērt sākotnējo iestatīšanu',
   'auth.fileReadError': 'Neizdevās nolasīt failu',
   'account.showPassword': 'Rādīt paroli',
   'account.hidePassword': 'Slēpt paroli',

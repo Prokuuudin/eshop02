@@ -29,6 +29,45 @@ describe('proxy', () => {
     expect(response.headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru/catalog')
   })
 
+  it('saves an explicit /ru link as the language choice', () => {
+    const response = proxy(request('/ru', { headers: { 'accept-language': 'lv-LV,lv;q=0.9' } }))
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe('https://hairshoppro.lv/')
+    expect(response.cookies.get('eshop_language')?.value).toBe('ru')
+    expect(response.headers.get('cache-control')).toBe('no-store')
+  })
+
+  it.each([
+    ['lv-LV,lv;q=0.9,en-US;q=0.8,en;q=0.7', '/lv'],
+    ['en-US,en;q=0.9', '/en'],
+    ['de-DE,de;q=0.9', '/lv'],
+  ])('redirects a first visit with Accept-Language %s to %s before rendering', (acceptLanguage, prefix) => {
+    const response = proxy(request('/', { headers: { 'accept-language': acceptLanguage } }))
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe(`https://hairshoppro.lv${prefix}`)
+  })
+
+  it('serves a first visit from a Russian browser in Russian without a redirect', () => {
+    const response = proxy(request('/catalog', { headers: { 'accept-language': 'ru-RU,ru;q=0.9,lv;q=0.8' } }))
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru/catalog')
+  })
+
+  it('prefers the saved language over the browser language', () => {
+    const saved = proxy(request('/', { headers: { cookie: 'eshop_language=ru', 'accept-language': 'lv' } }))
+    expect(saved.headers.get('location')).toBeNull()
+    expect(saved.headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru')
+
+    const savedEn = proxy(request('/', { headers: { cookie: 'eshop_language=en', 'accept-language': 'ru' } }))
+    expect(savedEn.headers.get('location')).toBe('https://hairshoppro.lv/en')
+  })
+
+  it.each(['/lv/catalog', '/en'])('never overrides an explicit %s URL', (path) => {
+    const response = proxy(request(path, { headers: { cookie: 'eshop_language=ru', 'accept-language': 'ru' } }))
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull()
+  })
+
   it('propagates a valid API correlation id', () => {
     const response = proxy(request('/api/products', { headers: { 'x-correlation-id': 'request-1234' } }))
     expect(response.headers.get('x-correlation-id')).toBe('request-1234')

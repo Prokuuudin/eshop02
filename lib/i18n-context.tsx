@@ -19,7 +19,6 @@ import {
   localizePath,
   stripLangPrefix,
 } from '@/lib/i18n-routing'
-import type { LocaleConfig } from '@/lib/locale-config'
 
 interface I18nContextType {
   language: Language
@@ -50,11 +49,9 @@ function currentUnprefixedLocation(): string {
 export function I18nProvider({
   children,
   initialLanguage,
-  defaultLanguage = DEFAULT_LANGUAGE,
 }: {
   children: ReactNode
   initialLanguage?: Language
-  defaultLanguage?: LocaleConfig['defaultLanguage']
 }): ReactNode {
   // The language is defined by the URL segment (app/[lang]) — no client state.
   // Navigating to another language remounts nothing; the layout re-renders with
@@ -84,13 +81,9 @@ export function I18nProvider({
       router.replace(localizePath(currentUnprefixedLocation(), saved))
       return
     }
-    if (saved === 'ru') return
-
-    if (isLanguage(defaultLanguage) && defaultLanguage !== DEFAULT_LANGUAGE) {
-      writeLanguageCookie(defaultLanguage)
-      router.replace(localizePath(currentUnprefixedLocation(), defaultLanguage))
-    }
-  }, [defaultLanguage, language, router])
+    // No saved choice: the middleware already picked this language server-side
+    // (browser Accept-Language → lv). Switching here would flash the page.
+  }, [language, router])
 
   const setLanguage = (newLanguage: Language): void => {
     if (newLanguage === language) return

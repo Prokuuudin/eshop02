@@ -5,11 +5,15 @@ import { sendEmail } from '@/lib/mailer'
 import { getSiteUrl } from '@/lib/site-url'
 import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
 import { CUSTOMER_SEGMENTS, getCustomerRecipients, type CustomerSegment } from '@/lib/admin/customer-segments'
+import { invitationBatchId } from '@/lib/invitation-dispatch'
+import { prepareAuditedDelivery, recordAuditedDelivery } from '@/lib/audited-delivery'
 
 export const runtime = 'nodejs'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_RECIPIENTS = 500
+const BROADCAST_EVENTS = { prepared: 'broadcast.prepared', recorded: 'broadcast.delivery_recorded' }
+type BroadcastResult = { channel: 'email'; sent: number; failed: number; skipped: number }
 
 type Recipient = { email: string; firstName: string; lastName: string }
 
@@ -39,8 +43,8 @@ function wrapHtml(content: string, unsubUrl: string): string {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await request.json()) as {
@@ -49,6 +53,8 @@ export async function POST(request: NextRequest): Promise<Response> {
       subject?: string
       body?: string
     }
+    const batchId = invitationBatchId(request, actor.id, 'broadcast')
+    if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
 
     const requestedSegment = body.audience?.segment
     if (requestedSegment && !CUSTOMER_SEGMENTS.includes(requestedSegment)) {
@@ -77,6 +83,28 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     // Honour prior opt-outs — never mail an address that unsubscribed (GDPR Art. 7(3)).
     const optedOut = await getMarketingOptedOutSet(recipients.map((r) => r.email))
+    const optedOutCount = recipients.filter((r) => optedOut.has(r.email.toLowerCase())).length
+
+    // Audit the send before SMTP (counts only — no addresses, subject or body).
+    // A technical retry with the same Idempotency-Key replays the recorded
+    // outcome; it only sends again when nothing was delivered.
+    const target = { entityType: 'broadcast', entityId: batchId }
+    const claim = await prepareAuditedDelivery({
+      request, actor, batchId, actions: BROADCAST_EVENTS, target,
+      after: {
+        channel: 'email',
+        audience: body.audience ? 'segment' : 'manual',
+        segment: body.audience ? (requestedSegment ?? 'all') : null,
+        recipients: recipients.length,
+        optedOut: optedOutCount,
+      },
+      retryable: (result) => (result as BroadcastResult | null)?.sent === 0,
+    })
+    if (claim.kind === 'in_progress') return NextResponse.json({ error: 'in_progress' }, { status: 409 })
+    if (claim.kind === 'replay') {
+      const result = claim.result as BroadcastResult
+      return NextResponse.json({ ok: true, sent: result.sent, failed: result.failed, skipped: result.skipped, failedEmails: [], replayed: true })
+    }
 
     for (const recipient of recipients) {
       if (optedOut.has(recipient.email.toLowerCase())) {
@@ -101,6 +129,11 @@ export async function POST(request: NextRequest): Promise<Response> {
         if (failedEmails.length < 10) failedEmails.push(recipient.email)
       }
     }
+
+    await recordAuditedDelivery({
+      request, actor, batchId, actions: BROADCAST_EVENTS, target,
+      result: { channel: 'email', sent, failed, skipped } satisfies BroadcastResult,
+    })
 
     return NextResponse.json({ ok: true, sent, failed, skipped, failedEmails })
   } catch (err) {

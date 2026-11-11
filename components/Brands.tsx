@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useTranslation } from '@/lib/use-translation'
 import { useSiteContent } from '@/lib/use-site-content'
 import { useBrandsConfig } from '@/lib/use-brands-config'
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import BrandCardSkeleton from './BrandCardSkeleton';
 import { Button } from '@/components/ui/button';
 import type { BrandConfigItem } from '@/lib/brands-config';

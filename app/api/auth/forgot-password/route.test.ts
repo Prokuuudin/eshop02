@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 
-const { transactionMock, userFindUniqueMock } = vi.hoisted(() => ({
+const { transactionMock, userFindUniqueMock, userFindManyMock } = vi.hoisted(() => ({
   transactionMock: vi.fn(),
   userFindUniqueMock: vi.fn(),
+  userFindManyMock: vi.fn(),
 }))
 
 vi.mock('@/lib/prisma', () => ({
-  prisma: { $transaction: transactionMock, user: { findUnique: userFindUniqueMock } },
+  prisma: { $transaction: transactionMock, user: { findUnique: userFindUniqueMock, findMany: userFindManyMock } },
 }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn(async () => []) }))
@@ -33,6 +34,7 @@ function request(email = 'user@test.com', language = 'en') {
 beforeEach(() => {
   vi.clearAllMocks()
   userFindUniqueMock.mockResolvedValue({ id: 'u1' })
+  userFindManyMock.mockResolvedValue([])
   vi.mocked(sendEmail).mockResolvedValue(undefined)
 })
 
@@ -87,6 +89,32 @@ describe('POST /api/auth/forgot-password', () => {
     expect(known.status).toBe(unknown.status)
     expect(await known.json()).toEqual(unknownBody)
     expect(unknownBody).toEqual({ ok: true })
+  })
+
+  it('falls back to a case-insensitive lookup only when there is no exact match', async () => {
+    const tx = { passwordResetToken: { deleteMany: vi.fn(), create: vi.fn() } }
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+    userFindUniqueMock.mockResolvedValue(null)
+    userFindManyMock.mockResolvedValue([{ id: 'mixed' }])
+
+    await POST(request('Mixed@Test.com'))
+
+    expect(userFindManyMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: { email: { equals: 'mixed@test.com', mode: 'insensitive' } }, take: 2,
+    }))
+    expect(tx.passwordResetToken.create).toHaveBeenCalledWith({ data: expect.objectContaining({ userId: 'mixed' }) })
+  })
+
+  it('does not guess between accounts that differ only by case', async () => {
+    userFindUniqueMock.mockResolvedValue(null)
+    userFindManyMock.mockResolvedValue([{ id: 'a' }, { id: 'b' }])
+
+    const res = await POST(request('twin@test.com'))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('rate-limits by both IP and normalized email', async () => {

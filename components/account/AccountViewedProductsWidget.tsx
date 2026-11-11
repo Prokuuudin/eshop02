@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { Eye, ChevronRight } from 'lucide-react';
 import { useViewedProducts } from '@/lib/viewed-products-store';

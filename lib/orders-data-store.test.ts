@@ -304,32 +304,45 @@ function makeUser(overrides: Partial<ServerUser> = {}): ServerUser {
 
 describe('canAccessOrder — IDOR guard for order/payment endpoints', () => {
   it('denies an unauthenticated caller', () => {
-    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, null)).toBe(false)
+    expect(canAccessOrder({ userId: 'user-1' }, null)).toBe(false)
   })
 
   it('allows an admin regardless of ownership', () => {
     const admin = makeUser({ id: 'admin-1', email: 'admin@example.com', platformRole: 'admin' })
-    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, admin)).toBe(true)
+    expect(canAccessOrder({ userId: 'user-1' }, admin)).toBe(true)
   })
 
   it('allows the account that owns the order by userId', () => {
     const owner = makeUser({ id: 'user-1', email: 'owner@example.com' })
-    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, owner)).toBe(true)
+    expect(canAccessOrder({ userId: 'user-1' }, owner)).toBe(true)
   })
 
   it('denies a different logged-in account even with a matching userId order', () => {
     const otherUser = makeUser({ id: 'user-2', email: 'attacker@example.com' })
-    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, otherUser)).toBe(false)
+    expect(canAccessOrder({ userId: 'user-1' }, otherUser)).toBe(false)
   })
 
-  it('falls back to email match only for legacy/guest orders with no userId', () => {
+  it('never grants a legacy order without a userId by a matching e-mail', () => {
+    const order = { userId: undefined, email: 'owner@example.com' }
     const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
-    expect(canAccessOrder({ userId: undefined, email: 'owner@example.com' }, caller)).toBe(true)
+    expect(canAccessOrder(order, caller)).toBe(false)
   })
 
-  it('denies email match when the order has an owning userId (no downgrade to email guessing)', () => {
+  it('never grants another account its order by a matching e-mail', () => {
+    const order = { userId: 'user-1', email: 'owner@example.com' }
     const caller = makeUser({ id: 'user-9', email: 'owner@example.com' })
-    expect(canAccessOrder({ userId: 'user-1', email: 'owner@example.com' }, caller)).toBe(false)
+    expect(canAccessOrder(order, caller)).toBe(false)
+  })
+
+  it('still grants the owner when the order e-mail differs from the account e-mail', () => {
+    const order = { userId: 'user-1', email: 'typed-at-checkout@example.com' }
+    const owner = makeUser({ id: 'user-1', email: 'card.1@client.local' })
+    expect(canAccessOrder(order, owner)).toBe(true)
+  })
+
+  it('leaves a legacy order without a userId to staff', () => {
+    const order = { userId: undefined, email: 'owner@example.com' }
+    expect(canAccessOrder(order, makeUser({ id: 'admin-1', email: 'admin@example.com', platformRole: 'admin' }))).toBe(true)
   })
 })
 

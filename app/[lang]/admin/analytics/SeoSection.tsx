@@ -1,6 +1,6 @@
 import { Hint } from '@/components/ui/tooltip';
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { AnalyticsPagination, Empty, LoadError, type SeoProduct } from './analytics-shared';
 import type { ReactElement } from 'react';
 import StickyTableHead from '@/components/admin/StickyTableHead';

@@ -9,13 +9,17 @@ import {
   requiresAdminMfa,
 } from '@/lib/server-auth'
 import { createMfaChallenge, setSessionCookie } from '@/lib/mfa-challenge'
-import { checkRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
+import { checkRateLimit, refundRateLimit, resetRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { normalizeCardNumber } from '@/lib/card-number'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
+import { recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 
 // A structurally valid bcrypt hash that matches no real password - used to pay the
 // same bcrypt.compare cost on the "account not found" path as on a real login attempt.
 const DUMMY_PASSWORD_HASH = '$2b$12$C6UzMDM.H6dfI/f/IKcEeO0z2Q2K3z8QeYfNqL4z8s7z8jN9z8jNu'
+// Successful logins are refunded, so this budget only counts failures. It is wider than the
+// per-card limit (10) because several clients of one salon or office can share an address.
+const LOGIN_IP_LIMIT = { windowMs: 15 * 60 * 1000, maxAttempts: 30 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -41,8 +45,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     const ip = getClientIp(req)
     const identifierLimitKey = isEmail ? `login:email:${lookupValue}` : `login:card:${lookupValue}`
-    const limitKeys = [`login:ip:${ip}`, identifierLimitKey]
-    const limits = await Promise.all(limitKeys.map((key) => checkRateLimit(key)))
+    const ipLimitKey = `login:ip:${ip}`
+    const limits = await Promise.all([checkRateLimit(ipLimitKey, LOGIN_IP_LIMIT), checkRateLimit(identifierLimitKey)])
     const limited = limits.find((result) => result.limited)
     if (limited) {
       return NextResponse.json(
@@ -69,10 +73,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // purely from response timing without ever guessing a correct password.
     const valid = await verifyPassword(password, eligible ? user!.passwordHash! : DUMMY_PASSWORD_HASH)
     if (!eligible || !valid) {
+      // Recognised staff account with a wrong password: audited after the response,
+      // so neither the response nor its timing changes. Customers are never audited.
+      if (eligible && requiresAdminMfa(user)) recordRejectedStaffLogin(req, user!, 'invalid_password')
       return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 })
     }
-    // Successful login נreset attempt counter
-    await Promise.all(limitKeys.map((key) => resetRateLimit(key)))
+    // A not-yet-activated customer proves nothing with an old or shared password, and the
+    // forced-change flow would turn it into a takeover. Only the e-mailed activation link
+    // (register-card -> /api/auth/invite) or password recovery can activate the account.
+    // Staff continue to the MFA step below. The attempt stays counted on both limits.
+    if (!requiresAdminMfa(user) && user.mustChangePassword) {
+      return NextResponse.json({ error: 'activation_required' }, { status: 403 })
+    }
+    // The card's own counter restarts; the IP budget only gets this attempt back, so failures
+    // against other cards survive a successful login from the same address.
+    await Promise.all([resetRateLimit(identifierLimitKey), refundRateLimit(ipLimitKey)])
 
     // Anyone with admin-panel access gets no session from the password alone: either
     // the TOTP step (enrolled) or mandatory first-time enrollment comes next.

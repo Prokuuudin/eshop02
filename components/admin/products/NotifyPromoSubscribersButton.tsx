@@ -22,9 +22,10 @@ export const NotifyPromoSubscribersButton: React.FC<NotifyPromoSubscribersButton
         setSending(true);
         setResult('');
         try {
+            // A key per click: a technical retry is replayed, not sent twice.
             const res = await fetch(`/api/admin/products/${encodeURIComponent(productId)}/notify-promo`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
                 body: JSON.stringify({ message: message.trim() || undefined }),
             });
             setResult(res.ok ? l('Отправлено', 'Sent', 'Nosūtīts') : l('Ошибка', 'Error', 'Kļūda'));

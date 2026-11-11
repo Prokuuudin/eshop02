@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import AdminGate from '@/components/admin/AdminGate';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useAdminLocale } from '@/lib/use-admin-locale';
 import StickyTableHead from '@/components/admin/StickyTableHead';
 import { Info } from 'lucide-react';
@@ -132,7 +132,8 @@ export default function StockAlertsPage(): React.ReactElement {
         try {
             const res = await fetch('/api/admin/stock-alerts/send', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                // A key per click: a technical retry is replayed, not sent twice.
+                headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
                 body: JSON.stringify({ to: alertEmail, threshold }),
             });
             const data = (await res.json()) as { ok: boolean; sent?: number };

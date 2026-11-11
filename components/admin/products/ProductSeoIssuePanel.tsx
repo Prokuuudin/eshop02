@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { useAdminLocale } from '@/lib/use-admin-locale';

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { BlogPost, localizeBlogPost } from '@/data/blog';
 import { Badge } from '@/components/ui/badge';

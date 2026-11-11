@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
-import { prisma } from '@/lib/prisma'
+import { Prisma } from '@/generated/prisma/client'
+import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
 import { deleteCertificate } from '@/lib/certificate-store'
 import { sendEmail } from '@/lib/mailer'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
@@ -32,6 +34,29 @@ const approvalBodySchema = z.object({
   registrationNumber: z.string().trim().max(50).optional(),
 }).strict()
 
+const REQUEST_SELECT = {
+  id: true, email: true, status: true, reviewedAt: true,
+  reviewedByEmail: true, approvedTeamRole: true, reviewNote: true,
+} as const
+
+/** Another reviewer decided the request between our read and our transaction. */
+class AlreadyDecidedError extends Error {
+  constructor() {
+    super('already_decided')
+    this.name = 'AlreadyDecidedError'
+  }
+}
+
+async function alreadyDecidedResponse(id: string): Promise<Response> {
+  const current = await prisma.accessRequest.findUnique({ where: { id }, select: { status: true } })
+  return NextResponse.json({ error: 'already_decided', status: current?.status ?? null }, { status: 409 })
+}
+
+function uniqueConflictTarget(error: unknown): string | null {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') return null
+  return JSON.stringify(error.meta?.target ?? '')
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -52,20 +77,35 @@ export async function PATCH(
     }
     const body = parsedBody.data
 
-    const requestUpdate = {
-      where: { id },
-      data: {
-        status: body.status,
-        reviewedAt: new Date(),
-        reviewedByUserId: user.id,
-        reviewedByEmail: user.email,
-        reviewNote: body.reviewNote ?? null,
-        approvedTeamRole: body.status === 'approved' ? (body.approvedTeamRole ?? 'viewer') : null,
-      },
-      select: {
-        id: true, email: true, status: true, reviewedAt: true,
-        reviewedByEmail: true, approvedTeamRole: true, reviewNote: true,
-      },
+    // Решение — однократный переход из pending. Повтор (двойной клик, ретрай сети,
+    // второй администратор) не должен заново создавать аккаунт, приглашение,
+    // письмо и событие аудита, а смена решения задним числом не отменяет уже
+    // выданную карту.
+    if (existing.status !== 'pending') {
+      return NextResponse.json({ error: 'already_decided', status: existing.status }, { status: 409 })
+    }
+
+    const approvedTeamRole = body.status === 'approved' ? (body.approvedTeamRole ?? 'viewer') : null
+    const decision = {
+      status: body.status,
+      reviewedAt: new Date(),
+      reviewedByUserId: user.id,
+      reviewedByEmail: user.email,
+      reviewNote: body.reviewNote ?? null,
+      approvedTeamRole,
+    }
+    // Условный UPDATE под row lock: из нескольких конкурентных решений
+    // проходит ровно одно, остальные откатывают свою транзакцию целиком.
+    const claimDecision = async (tx: ExtendedTransactionClient): Promise<void> => {
+      const claimed = await tx.accessRequest.updateMany({ where: { id, status: 'pending' }, data: decision })
+      if (claimed.count !== 1) throw new AlreadyDecidedError()
+    }
+    // Журнал хранит только решение: без email/имени/телефона заявителя,
+    // сертификата, номера карты, заметки и токена приглашения.
+    const auditBase = {
+      entityType: 'access_request',
+      entityId: id,
+      before: { status: 'pending', approvedTeamRole: null },
     }
 
     // Одобрение заявки на карту: карта должна попасть в Neon, иначе клиент
@@ -107,70 +147,96 @@ export async function PATCH(
         return NextResponse.json({ error: 'user_has_card', cardNumber: sameEmail.cardNumber }, { status: 409 })
       }
 
-      const result = await prisma.$transaction(async (tx) => {
-        let targetUserId: string
-        if (sameEmail) {
-          targetUserId = sameEmail.id
-          await tx.user.update({
-            where: { id: sameEmail.id },
-            data: {
-              cardNumber,
-              mustChangePassword: true,
-              privacyNoticeVersion: existing.privacyNoticeVersion,
-              privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
-              marketingConsent: existing.marketingConsent,
-              marketingConsentAt: existing.marketingConsentAt,
-              customerType,
-              companyName: customerType === 'company' ? body.companyName : null,
-              registrationNumber: customerType === 'company' ? registrationNumber : null,
-            },
-          })
-        } else {
-          const created = await tx.user.create({
-            data: {
-              id: randomUUID(),
-              email: existing.email.toLowerCase(),
-              // Хэш из заявки: это пароль, который клиент сам ввёл при подаче
-              // заявки (не общий дефолт) — но mustChangePassword:true всё равно
-              // блокирует им доступ до активации по инвайту, где выбирается
-              // финальный пароль.
-              passwordHash: existing.passwordHash,
-              name: existing.name,
-              phone: existing.phone,
-              cardNumber,
-              companyName: customerType === 'company' ? body.companyName : null,
-              customerType,
-              registrationNumber: customerType === 'company' ? registrationNumber : null,
-              platformRole: 'customer',
-              mustChangePassword: true,
-              privacyNoticeVersion: existing.privacyNoticeVersion,
-              privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
-              marketingConsent: existing.marketingConsent,
-              marketingConsentAt: existing.marketingConsentAt,
-            },
-          })
-          targetUserId = created.id
-        }
-        // Решение принято — временный сертификат больше не нужен
-        await deleteCertificate(tx, id)
-        const request = await tx.accessRequest.update(requestUpdate)
-        return { request, targetUserId }
-      })
-
-      // Approval and invitation creation are one server workflow. The token is
-      // persisted before SMTP is attempted, so a failed delivery can be safely
-      // retried from the invitations screen without recreating the account.
+      // The token is persisted in the same transaction as the decision, before
+      // SMTP is attempted: a failed delivery can be retried from the invitations
+      // screen without recreating the account, and a rolled-back decision never
+      // leaves a live invitation behind.
       const token = newInviteToken()
       const language = resolveInviteLang(existing.language ?? undefined)
       const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000)
-      await replaceInvitation(prisma, {
-        userId: result.targetUserId,
-        email: existing.email.toLowerCase(),
-        cardNumber,
-        token,
-        expiresAt: expiresAt.toISOString(),
-        language,
-      })
+
+      let result: { request: Prisma.AccessRequestGetPayload<{ select: typeof REQUEST_SELECT }>; targetUserId: string }
+      try {
+        result = await prisma.$transaction(async (tx) => {
+          await claimDecision(tx)
+          let targetUserId: string
+          if (sameEmail) {
+            targetUserId = sameEmail.id
+            await tx.user.update({
+              where: { id: sameEmail.id },
+              data: {
+                cardNumber,
+                mustChangePassword: true,
+                privacyNoticeVersion: existing.privacyNoticeVersion,
+                privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
+                marketingConsent: existing.marketingConsent,
+                marketingConsentAt: existing.marketingConsentAt,
+                customerType,
+                companyName: customerType === 'company' ? body.companyName : null,
+                registrationNumber: customerType === 'company' ? registrationNumber : null,
+              },
+            })
+          } else {
+            const created = await tx.user.create({
+              data: {
+                id: randomUUID(),
+                email: existing.email.toLowerCase(),
+                // Хэш из заявки: это пароль, который клиент сам ввёл при подаче
+                // заявки (не общий дефолт) — но mustChangePassword:true всё равно
+                // блокирует им доступ до активации по инвайту, где выбирается
+                // финальный пароль.
+                passwordHash: existing.passwordHash,
+                name: existing.name,
+                phone: existing.phone,
+                cardNumber,
+                companyName: customerType === 'company' ? body.companyName : null,
+                customerType,
+                registrationNumber: customerType === 'company' ? registrationNumber : null,
+                platformRole: 'customer',
+                mustChangePassword: true,
+                privacyNoticeVersion: existing.privacyNoticeVersion,
+                privacyAcknowledgedAt: existing.privacyAcknowledgedAt,
+                marketingConsent: existing.marketingConsent,
+                marketingConsentAt: existing.marketingConsentAt,
+              },
+            })
+            targetUserId = created.id
+          }
+          // Решение принято — временный сертификат больше не нужен
+          const certificateDeleted = await deleteCertificate(tx, id)
+          await replaceInvitation(tx, {
+            userId: targetUserId,
+            email: existing.email.toLowerCase(),
+            cardNumber,
+            token,
+            expiresAt: expiresAt.toISOString(),
+            language,
+          })
+          await appendServerAudit(tx, req, user, {
+            ...auditBase,
+            action: 'access_request.approved',
+            after: {
+              status: 'approved',
+              approvedTeamRole,
+              requestType: existing.requestType,
+              customerType,
+              account: { userId: targetUserId, action: sameEmail ? 'updated' : 'created' },
+              invitation: { created: true, expiresAt: expiresAt.toISOString() },
+              certificateDeleted,
+            },
+          })
+          const request = await tx.accessRequest.findUniqueOrThrow({ where: { id }, select: REQUEST_SELECT })
+          return { request, targetUserId }
+        })
+      } catch (error) {
+        if (error instanceof AlreadyDecidedError) return await alreadyDecidedResponse(id)
+        const target = uniqueConflictTarget(error)
+        // Concurrent approval of another request claimed the same card or email.
+        if (target !== null) {
+          return NextResponse.json({ error: target.includes('cardNumber') ? 'card_taken' : 'concurrent_update' }, { status: 409 })
+        }
+        throw error
+      }
 
       const templates = await getTemplates()
       const tpl = pickInviteTemplate(templates, language)
@@ -183,6 +249,7 @@ export async function PATCH(
       try {
         await sendEmail(existing.email, mail.subject, mail.html)
       } catch (emailError) {
+        // The decision, account, invitation and audit row are already committed.
         await prisma.invitationToken.updateMany({
           where: { tokenHash: hashInviteToken(token), status: 'sent' },
           data: { status: 'error' },
@@ -202,13 +269,25 @@ export async function PATCH(
       })
     }
 
-    const updated = await prisma.accessRequest.update(requestUpdate)
-    await deleteCertificate(prisma, id)
+    let updated: Prisma.AccessRequestGetPayload<{ select: typeof REQUEST_SELECT }>
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        await claimDecision(tx)
+        const certificateDeleted = await deleteCertificate(tx, id)
+        await appendServerAudit(tx, req, user, {
+          ...auditBase,
+          action: 'access_request.rejected',
+          after: { status: 'rejected', approvedTeamRole: null, requestType: existing.requestType, certificateDeleted },
+        })
+        return tx.accessRequest.findUniqueOrThrow({ where: { id }, select: REQUEST_SELECT })
+      })
+    } catch (error) {
+      if (error instanceof AlreadyDecidedError) return await alreadyDecidedResponse(id)
+      throw error
+    }
     return NextResponse.json({ request: updated })
   } catch (e) {
     logApiError("[admin/access-requests/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-

@@ -14,6 +14,8 @@ export type E2eUserFixture = {
   auditLoggingEnabled?: boolean
   /** Login identifier for non-admin accounts (customers and staff managers log in by card). */
   cardNumber?: string
+  /** Not-yet-activated account: password login must be refused until the e-mailed link is used. */
+  mustChangePassword?: boolean
 }
 
 /**
@@ -26,8 +28,8 @@ export const E2E_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
 export const requiresMfa = (fixture: E2eUserFixture): boolean =>
   fixture.platformRole === 'admin' || fixture.teamRole === 'manager'
 
-// Фикстуры существуют в БД (см. e2e/global-setup.ts). Клиенты получают
-// сессионную куку через /api/auth/sync, админ и менеджер — через login + TOTP.
+// Фикстуры существуют в изолированной тестовой БД (см. e2e/global-setup.ts). Клиенты входят
+// по номеру карты через /api/auth/login, админ и менеджер — через login + TOTP.
 export const E2E_MANAGER: E2eUserFixture = {
   id: 'u_e2e_manager_fixture',
   email: 'e2e-manager@hairshoppro.lv.local',
@@ -56,7 +58,18 @@ export const E2E_CUSTOMER: E2eUserFixture = {
   email: 'e2e-customer@hairshoppro.lv.local',
   password: 'StrongPass123',
   name: 'E2E Customer',
-  platformRole: 'customer'
+  platformRole: 'customer',
+  cardNumber: 'E2E-CUSTOMER-FIXTURE'
+}
+
+export const E2E_DORMANT_CUSTOMER: E2eUserFixture = {
+  id: 'u_e2e_dormant_customer_fixture',
+  email: 'e2e-dormant@hairshoppro.lv.local',
+  password: E2E_CUSTOMER.password,
+  name: 'E2E Dormant Customer',
+  platformRole: 'customer',
+  cardNumber: 'E2E-DORMANT-FIXTURE',
+  mustChangePassword: true
 }
 
 /**
@@ -86,10 +99,10 @@ export const loginAs = async (page: Page, fixture: E2eUserFixture): Promise<void
     expect(verify.ok(), `auth/mfa/verify failed for ${fixture.email}: ${verify.status()}`).toBeTruthy()
     return
   }
-  const response = await withTransportRetry(() => page.request.post('/api/auth/sync', {
-    data: { id: fixture.id, email: fixture.email, password: fixture.password }
+  const response = await withTransportRetry(() => page.request.post('/api/auth/login', {
+    data: { identifier: fixture.cardNumber, password: fixture.password }
   }))
-  expect(response.ok(), `auth/sync failed for ${fixture.email}: ${response.status()}`).toBeTruthy()
+  expect(response.ok(), `auth/login failed for ${fixture.email}: ${response.status()}`).toBeTruthy()
 }
 
 /** Живой товар из Neon — демо-товары (p1-p16) удалены из БД. */

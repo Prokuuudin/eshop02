@@ -48,8 +48,10 @@ export async function readCertificate(db: Db, requestId: string): Promise<Stored
   return { data: value.data, name: typeof value.name === 'string' ? value.name : 'certificate' }
 }
 
-export async function deleteCertificate(db: Db, requestId: string): Promise<void> {
-  await db.keyValueSetting.deleteMany({ where: { key: certKey(requestId) } })
+/** Idempotent; resolves to whether a stored certificate was actually removed. */
+export async function deleteCertificate(db: Db, requestId: string): Promise<boolean> {
+  const { count } = await db.keyValueSetting.deleteMany({ where: { key: certKey(requestId) } })
+  return count > 0
 }
 
 /** Remove certificate copies from requests left pending for more than 90 days. */

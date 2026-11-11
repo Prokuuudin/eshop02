@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useUnprefixedPathname } from '@/lib/i18n-context';
 import type { LucideIcon } from 'lucide-react';
 import {

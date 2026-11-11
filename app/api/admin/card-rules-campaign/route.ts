@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import type { Prisma } from '@/generated/prisma/client'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdmin, type ServerUser } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
+import { invitationBatchId, lockBatch } from '@/lib/invitation-dispatch'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
@@ -11,6 +13,7 @@ import {
   isEligibleRulesRecipient,
   CAMPAIGN_BATCH_SIZE,
   CAMPAIGN_LOCK_MS,
+  CAMPAIGN_KV_KEY,
   type CampaignState,
 } from '@/lib/invitations'
 import { buildRulesEmail } from '@/lib/invitation-emails'
@@ -87,35 +90,102 @@ export async function GET(req: NextRequest): Promise<Response> {
   }
 }
 
+const CAMPAIGN_LOCK_KEY = 'campaign:card-rules'
+const RESET = 'card_rules_campaign.reset'
+const STARTED = 'card_rules_campaign.batch_started'
+const COMPLETED = 'card_rules_campaign.batch_completed'
+
+type BatchOutcome = { processed: number; sent: number; failed: number; skipped: number; failedUserIds: string[] }
+
+// Internal IDs and counters only — no addresses or names.
+function auditState(s: CampaignState) {
+  return {
+    sentCount: s.sentCount, errorCount: s.errorCount, cursor: s.cursor,
+    finished: s.finished, running: Boolean(s.runningSince),
+  }
+}
+
+function sameState(a: CampaignState, b: CampaignState): boolean {
+  return a.sentCount === b.sentCount && a.errorCount === b.errorCount && a.cursor === b.cursor
+    && a.lastRunAt === b.lastRunAt && a.finished === b.finished && a.runningSince === b.runningSince
+}
+
+/**
+ * Persists the batch result (cursor, counters, released lock) together with its
+ * audit event, after SMTP. If the audit cannot be written the state is still
+ * saved on its own, so a later batch never re-sends what this one delivered.
+ */
+async function finishBatch(
+  req: NextRequest,
+  actor: ServerUser,
+  batchId: string,
+  state: CampaignState,
+  outcome: BatchOutcome,
+  interrupted: boolean,
+): Promise<void> {
+  try {
+    await prisma.$transaction(async (tx) => {
+      await writeCampaign(tx, state)
+      await appendServerAudit(tx, req, actor, {
+        action: COMPLETED, entityType: 'campaign', entityId: CAMPAIGN_KV_KEY, requestId: batchId,
+        after: { channel: 'email', ...outcome, interrupted, ...auditState(state) },
+      })
+    })
+  } catch (error) {
+    logApiError('card_rules_campaign_result_audit_failed', error)
+    await writeCampaign(prisma, state)
+  }
+}
+
 export async function POST(req: NextRequest): Promise<Response> {
-  const gate = await requireAdmin()
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   let state: CampaignState | undefined
+  let running = false
+  let batchId = ''
+  const outcome: BatchOutcome = { processed: 0, sent: 0, failed: 0, skipped: 0, failedUserIds: [] }
   try {
     const body = (await req.json().catch(() => ({}))) as { reset?: boolean }
+    const id = invitationBatchId(req, actor.id, 'card-rules-campaign')
+    if (!id) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
+    batchId = id
 
-    // Проверка и захват замка атомарны (serializable) — два параллельных POST
-    // не могут оба пройти busy-check и разослать один и тот же батч
+    // Проверка и захват замка атомарны: advisory lock кампании сериализует
+    // параллельные POST, а изменение KV и событие аудита коммитятся вместе.
+    let claim: { kind: 'reset' | 'run' | 'replay'; state: CampaignState; replayedAction?: string }
     try {
-      state = await prisma.$transaction(
-        async (tx) => {
-          const s = await readCampaign(tx)
-          if (body.reset) {
-            const zero: CampaignState = { sentCount: 0, errorCount: 0, cursor: null, lastRunAt: null, finished: false, runningSince: null }
-            await writeCampaign(tx, zero)
-            return zero
-          }
-          if (s.finished) throw new CampaignFinishedError()
-          if (s.runningSince && Date.now() - new Date(s.runningSince).getTime() < CAMPAIGN_LOCK_MS) {
-            throw new CampaignBusyError()
-          }
-          s.runningSince = new Date().toISOString()
-          await writeCampaign(tx, s)
-          return s
-        },
-        { isolationLevel: 'Serializable' }
-      )
+      claim = await prisma.$transaction(async (tx) => {
+        await lockBatch(tx, CAMPAIGN_LOCK_KEY)
+        const s = await readCampaign(tx)
+        const previous = await tx.auditLog.findFirst({
+          where: { requestId: batchId, action: { in: [RESET, STARTED] } },
+          select: { action: true },
+        })
+        if (previous) return { kind: 'replay' as const, state: s, replayedAction: previous.action }
+        if (body.reset) {
+          const zero: CampaignState = { sentCount: 0, errorCount: 0, cursor: null, lastRunAt: null, finished: false, runningSince: null }
+          if (sameState(s, zero)) return { kind: 'reset' as const, state: zero }
+          await writeCampaign(tx, zero)
+          await appendServerAudit(tx, req, actor, {
+            action: RESET, entityType: 'campaign', entityId: CAMPAIGN_KV_KEY, requestId: batchId,
+            before: auditState(s), after: auditState(zero),
+          })
+          return { kind: 'reset' as const, state: zero }
+        }
+        if (s.finished) throw new CampaignFinishedError()
+        if (s.runningSince && Date.now() - new Date(s.runningSince).getTime() < CAMPAIGN_LOCK_MS) {
+          throw new CampaignBusyError()
+        }
+        const before = auditState(s)
+        s.runningSince = new Date().toISOString()
+        await writeCampaign(tx, s)
+        await appendServerAudit(tx, req, actor, {
+          action: STARTED, entityType: 'campaign', entityId: CAMPAIGN_KV_KEY, requestId: batchId,
+          before, after: { channel: 'email', batchLimit: CAMPAIGN_BATCH_SIZE, ...auditState(s) },
+        })
+        return { kind: 'run' as const, state: s }
+      })
     } catch (e) {
       if (e instanceof CampaignFinishedError) {
         return NextResponse.json({ error: 'finished', state: await readCampaign(prisma) }, { status: 409 })
@@ -125,7 +195,21 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
       throw e
     }
-    if (body.reset) return NextResponse.json({ state })
+
+    if (claim.kind === 'replay') {
+      // Технический повтор того же запроса: не сбрасываем и не шлём следующий батч.
+      if (claim.replayedAction === RESET) return NextResponse.json({ state: claim.state, replayed: true })
+      const completed = await prisma.auditLog.findFirst({
+        where: { requestId: batchId, action: COMPLETED },
+        select: { after: true },
+      })
+      if (!completed) return NextResponse.json({ error: 'busy', state: claim.state }, { status: 409 })
+      const processed = (completed.after as { processed?: number } | null)?.processed ?? 0
+      return NextResponse.json({ state: claim.state, processed, replayed: true })
+    }
+    state = claim.state
+    if (claim.kind === 'reset') return NextResponse.json({ state })
+    running = true
 
     const users = await prisma.user.findMany({
       where: {
@@ -141,11 +225,11 @@ export async function POST(req: NextRequest): Promise<Response> {
     const tpl = templates.find((t) => t.id === 'card-rules-ru')
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hairshoppro.lv'
 
-    let processed = 0
     for (const u of users) {
       if (!isEligibleRulesRecipient(u)) {
         // Неподходящие строки пропускаются навсегда — курсор двигаем и здесь
         state.cursor = u.id
+        outcome.skipped++
         continue
       }
       const { subject, html } = buildRulesEmail(
@@ -156,11 +240,14 @@ export async function POST(req: NextRequest): Promise<Response> {
       try {
         await sendEmail(u.email, subject, html)
         state.sentCount++
+        outcome.sent++
       } catch (err) {
         logApiError('card_rules_campaign_email_failed', err)
         state.errorCount++
+        outcome.failed++
+        outcome.failedUserIds.push(u.id)
       }
-      processed++
+      outcome.processed++
       // Курсор двигаем на каждом получателе: обрыв середины батча не перешлёт уже отправленное
       state.cursor = u.id
     }
@@ -169,22 +256,19 @@ export async function POST(req: NextRequest): Promise<Response> {
     state.finished = users.length < CAMPAIGN_BATCH_SIZE
     state.lastRunAt = new Date().toISOString()
     state.runningSince = null
-    await writeCampaign(prisma, state)
+    await finishBatch(req, actor, batchId, state, outcome, false)
+    running = false
 
-    return NextResponse.json({ state, processed })
+    return NextResponse.json({ state, processed: outcome.processed })
   } catch (e) {
     logApiError("[card-rules-campaign POST]", e)
     // Сохраняем продвинутый cursor/sentCount — иначе повторный POST перешлёт тот же батч
     try {
-      if (state) {
+      if (state && running) {
         state.runningSince = null
-        await writeCampaign(prisma, state)
+        await finishBatch(req, actor, batchId, state, outcome, true)
       }
     } catch { /* уже залогировано выше */ }
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
-
-
-
-

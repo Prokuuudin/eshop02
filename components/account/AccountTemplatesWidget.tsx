@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useMemo } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { BookmarkPlus, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useOrderTemplatesStore } from '@/lib/order-templates-store';

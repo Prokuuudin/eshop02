@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest, context: Context): Promise<NextRes
       paymentStatus: body.paymentStatus,
       paymentProvider: body.paymentProvider as 'manual' | undefined,
       paymentSessionId: body.paymentSessionId
-    })
+    }, undefined, { actor: gate, request: req })
 
     if (!updated) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })

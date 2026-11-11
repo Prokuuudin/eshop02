@@ -1,6 +1,6 @@
 "use client";
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { useTranslation } from '@/lib/use-translation'
 import { COMPANY_CONTACT_LINES } from '@/data/company'
 import { resolveLocaleText } from '@/lib/locale-text'

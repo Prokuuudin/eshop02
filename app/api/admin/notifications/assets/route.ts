@@ -1,8 +1,8 @@
 import path from 'path'
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { validateUploadedImage } from '@/lib/image-upload-validation'
+import { createMediaAsset } from '@/lib/media-asset-store'
 
 export const runtime = 'nodejs'
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
@@ -27,6 +27,6 @@ export async function POST(request: NextRequest): Promise<Response> {
   const mimeType = imageMime ?? pdfMime
   if (!mimeType) return NextResponse.json({ error: 'unsupported_file_type' }, { status: 400 })
   const name = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName(file.name)}`
-  await prisma.mediaAsset.create({ data: { name, mimeType, size: file.size, data: bytes } })
+  await createMediaAsset({ name, mimeType, size: file.size, bytes }, { actor: caller, request })
   return NextResponse.json({ path: `/api/media/${encodeURIComponent(name)}`, name: file.name, size: file.size, mimeType })
 }

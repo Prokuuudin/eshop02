@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteSession, getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
+import { revokeSessionWithAudit } from '@/lib/auth-session-audit'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { logApiError } from '@/lib/observability'
 
@@ -16,7 +17,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         action: 'team_member_logout',
       }).catch((err) => logApiError('[auth/logout] activity log failed', err))
     }
-    await deleteSession(token)
+    // Revokes the session; a live staff session is audited in the same transaction,
+    // and an audit failure still revokes it.
+    await revokeSessionWithAudit(req, token)
   }
 
   const res = NextResponse.json({ ok: true })

@@ -39,14 +39,18 @@ export { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPoi
 
 // Order ids are sequential — never expose or mutate another customer's order (PII / IDOR).
 // Admin, the order's own account (userId), or a legacy/guest order's matching email may access it.
+/**
+ * The owner of an order is its userId. E-mail never grants access: Order.email is typed in at
+ * checkout and User.email can be changed by the account holder, so matching them would hand
+ * another person's order to whoever sets that address. Orders without a userId stay staff-only.
+ */
 export function canAccessOrder(
-  order: Pick<ServerOrder, 'userId' | 'email'>,
+  order: Pick<ServerOrder, 'userId'>,
   caller: ServerUser | null
 ): boolean {
   if (!caller) return false
   if (caller.platformRole === 'admin') return true
-  if (order.userId) return order.userId === caller.id
-  return !!caller.email && !!order.email && caller.email.toLowerCase() === order.email.toLowerCase()
+  return Boolean(order.userId) && order.userId === caller.id
 }
 
 export type CreateOrderOptions = {
@@ -327,6 +331,7 @@ export const updateServerOrderPayment = async (
   orderId: string,
   updates: Partial<Pick<ServerOrder, 'paymentStatus' | 'paymentProvider' | 'paymentSessionId'>>,
   evidence?: { sessionId: string; amount?: number; amountPaid?: number; currency?: string },
+  audit?: { actor: ServerUser; request: NextRequest },
 ): Promise<ServerOrder | null> => {
   const result = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
@@ -360,6 +365,25 @@ export const updateServerOrderPayment = async (
         paymentSessionId: updates.paymentSessionId ?? undefined,
       },
     })
+    const paymentChanged = (
+      (updates.paymentStatus !== undefined && updates.paymentStatus !== existing.paymentStatus)
+      || (updates.paymentProvider !== undefined && updates.paymentProvider !== existing.paymentProvider)
+    )
+    if (audit && paymentChanged) {
+      await appendServerAudit(tx, audit.request, audit.actor, {
+        action: 'order.payment_status_updated',
+        entityType: 'order',
+        entityId: orderId,
+        before: {
+          paymentStatus: existing.paymentStatus,
+          paymentProvider: existing.paymentProvider,
+        },
+        after: {
+          paymentStatus: row.paymentStatus,
+          paymentProvider: row.paymentProvider,
+        },
+      })
+    }
     if (reservation.latePaymentStockUnavailable) {
       await tx.orderOperationalException.upsert({
         where: { orderId_code: { orderId, code: 'late_payment_stock_unavailable' } },

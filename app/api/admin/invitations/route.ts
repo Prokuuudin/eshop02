@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/server-auth'
+import { requireAdmin, type ServerUser } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
+import {
+  emailDeliveryInFlight,
+  invitationBatchId,
+  lockBatch,
+  lockInvitationUsers,
+} from '@/lib/invitation-dispatch'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 import { sendEmail } from '@/lib/mailer'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -24,6 +31,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 const inviteUrlFor = (base: string, token: string) => `${base}/auth/invite?token=${token}`
+const INVITATION_ISSUE_ACTIONS = ['invitation.created', 'invitation.replaced'] as const
 
 const HOLDER_SORT_FIELDS = ['name', 'email', 'cardNumber'] as const
 type HolderSortField = (typeof HOLDER_SORT_FIELDS)[number]
@@ -137,12 +145,13 @@ export async function GET(req: NextRequest): Promise<Response> {
 
 // POST: отправить приглашения выбранным держателям карт.
 // Не больше INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
-// порциями. Токены сохраняются в БД ДО отправки писем: обрыв посреди порции
-// не оставит клиентам мёртвых ссылок (худший случай — статус sent без письма,
-// лечится повторной отправкой).
+// порциями. Токены и события аудита сохраняются в одной транзакции ДО отправки
+// писем: обрыв посреди порции не оставит клиентам мёртвых ссылок (худший
+// случай — статус sent без письма, лечится повторной отправкой). Результат
+// доставки фиксируется отдельно, после того как он стал известен.
 export async function POST(req: NextRequest): Promise<Response> {
-  const gate = await requireAdmin()
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await req.json()) as { userIds?: string[]; language?: string }
@@ -153,6 +162,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (userIds.length > INVITE_BATCH_SIZE) {
       return NextResponse.json({ error: 'too_many', max: INVITE_BATCH_SIZE }, { status: 400 })
     }
+    const batchId = invitationBatchId(req, actor.id, 'invitations-email')
+    if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
     const language = resolveInviteLang(body.language)
 
     const users = await prisma.user.findMany({
@@ -183,18 +194,48 @@ export async function POST(req: NextRequest): Promise<Response> {
       language,
     }))
 
-    // 1. Токены в БД до писем; serializable — параллельные отправки не теряют записи
-    await prisma.$transaction(
-      async (tx) => {
-        for (const r of records) await replaceInvitation(tx, r)
-      },
-      { isolationLevel: 'Serializable' }
-    )
+    // 1. Токены и аудит в одной транзакции до писем. Advisory locks (батч и
+    // каждый пользователь) сериализуют повторы и параллельные отправки; уровень
+    // изоляции по умолчанию — appendServerAudit должен видеть свежую голову цепочки.
+    const prepared = await prisma.$transaction(async (tx) => {
+      await lockBatch(tx, batchId)
+      const previous = await tx.auditLog.findMany({
+        where: { requestId: batchId, action: { in: [...INVITATION_ISSUE_ACTIONS] } },
+        select: { entityId: true },
+      })
+      if (previous.length > 0) return { kind: 'replay' as const, userIds: previous.map((row) => row.entityId) }
+
+      await lockInvitationUsers(tx, records.map((r) => r.userId))
+      const issued: NewInvitation[] = []
+      const pending: string[] = []
+      for (const record of records) {
+        if (await emailDeliveryInFlight(tx, record.userId, now)) {
+          pending.push(record.userId)
+          continue
+        }
+        const replaced = await replaceInvitation(tx, record)
+        await appendServerAudit(tx, req, actor, {
+          action: replaced > 0 ? 'invitation.replaced' : 'invitation.created',
+          entityType: 'user',
+          entityId: record.userId,
+          requestId: batchId,
+          before: replaced > 0 ? { openInvitations: replaced } : null,
+          after: { channel: 'email', language, expiresAt, batchSize: records.length },
+        })
+        issued.push(record)
+      }
+      return { kind: 'issued' as const, issued, pending }
+    })
+
+    if (prepared.kind === 'replay') {
+      return NextResponse.json({ results: await replayEmailResults(batchId, prepared.userIds, users), replayed: true })
+    }
 
     // 2. Отправка писем
-    const failedTokens: string[] = []
-    const results: Array<{ userId: string; email: string; status: 'sent' | 'error'; inviteUrl: string }> = []
-    for (const r of records) {
+    const sent: string[] = []
+    const failed: NewInvitation[] = []
+    const outcome = new Map<string, { status: 'sent' | 'error'; inviteUrl: string }>()
+    for (const r of prepared.issued) {
       const user = users.find((u) => u.id === r.userId)!
       const inviteUrl = inviteUrlFor(base, r.token)
       const { subject, html } = buildInviteEmail(
@@ -202,30 +243,29 @@ export async function POST(req: NextRequest): Promise<Response> {
         { name: user.name ?? '', cardNumber: r.cardNumber, inviteUrl },
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
-      let status: 'sent' | 'error' = 'sent'
       try {
         await sendEmail(user.email, subject, html)
+        sent.push(r.userId)
+        outcome.set(r.userId, { status: 'sent', inviteUrl })
       } catch (err) {
         logApiError('admin_invitations_email_failed', err)
-        status = 'error'
-        failedTokens.push(r.token)
+        failed.push(r)
+        outcome.set(r.userId, { status: 'error', inviteUrl })
       }
-      results.push({ userId: r.userId, email: user.email, status, inviteUrl })
     }
 
-    // 3. Неушедшие письма помечаем error — их токены гасятся (findValid отвергает error)
-    if (failedTokens.length > 0) {
-      await prisma.$transaction(
-        async (tx) => {
-          await tx.invitationToken.updateMany({
-            where: { tokenHash: { in: failedTokens.map(hashInviteToken) }, status: 'sent' },
-            data: { status: 'error' },
-          })
-        },
-        { isolationLevel: 'Serializable' }
-      )
+    // 3. Результат доставки известен: неушедшие письма помечаем error (их токены
+    // гасятся — findValid отвергает error), доставку и итог пишем после коммита токенов.
+    if (prepared.issued.length > 0) {
+      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending)
     }
 
+    const results = users.map((user) => {
+      const delivered = outcome.get(user.id)
+      return delivered
+        ? { userId: user.id, email: user.email, status: delivered.status, inviteUrl: delivered.inviteUrl }
+        : { userId: user.id, email: user.email, status: 'pending' as const }
+    })
     return NextResponse.json({ results })
   } catch (e) {
     logApiError("[admin/invitations POST]", e)
@@ -233,6 +273,68 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 }
 
+async function recordEmailDelivery(
+  req: NextRequest,
+  actor: ServerUser,
+  batchId: string,
+  batchSize: number,
+  sent: string[],
+  failed: NewInvitation[],
+  pending: string[],
+): Promise<void> {
+  const failedUserIds = failed.map((r) => r.userId)
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (failed.length > 0) {
+        await tx.invitationToken.updateMany({
+          where: { tokenHash: { in: failed.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
+          data: { status: 'error' },
+        })
+      }
+      await tx.invitationDelivery.createMany({
+        data: [
+          ...sent.map((userId) => ({ userId, channel: 'email', status: 'sent' })),
+          ...failedUserIds.map((userId) => ({ userId, channel: 'email', status: 'error' })),
+        ],
+      })
+      await appendServerAudit(tx, req, actor, {
+        action: 'invitation.delivery_recorded',
+        entityType: 'invitation_batch',
+        entityId: batchId,
+        requestId: batchId,
+        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending },
+      })
+    })
+  } catch (error) {
+    // The emails already left (or failed); keep the response truthful and at
+    // least retire the tokens of undelivered emails.
+    logApiError('admin_invitations_delivery_record_failed', error)
+    if (failed.length > 0) {
+      await prisma.invitationToken.updateMany({
+        where: { tokenHash: { in: failed.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
+        data: { status: 'error' },
+      }).catch((retireError: unknown) => logApiError('admin_invitations_token_retire_failed', retireError))
+    }
+  }
+}
 
-
-
+/** Outcome of an already processed batch, without new tokens, emails or events. */
+async function replayEmailResults(
+  batchId: string,
+  issuedUserIds: string[],
+  users: Array<{ id: string; email: string }>,
+): Promise<Array<{ userId: string; email: string; status: 'sent' | 'error' | 'pending' }>> {
+  const delivery = await prisma.auditLog.findFirst({
+    where: { requestId: batchId, action: 'invitation.delivery_recorded' },
+    select: { after: true },
+  })
+  const recorded = (delivery?.after ?? {}) as { sent?: string[]; failed?: string[] }
+  const issued = new Set(issuedUserIds)
+  return users
+    .filter((user) => issued.has(user.id))
+    .map((user) => ({
+      userId: user.id,
+      email: user.email,
+      status: recorded.sent?.includes(user.id) ? 'sent' : recorded.failed?.includes(user.id) ? 'error' : 'pending',
+    }))
+}

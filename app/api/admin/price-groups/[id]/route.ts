@@ -14,8 +14,8 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { id } = await params
@@ -24,7 +24,7 @@ export async function PUT(
     if (body.action === 'set_override') {
       const parsed = priceOverrideSchema.safeParse(body)
       if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
-      const result = await setOverride(id, parsed.data.productId, parsed.data.price)
+      const result = await setOverride(id, parsed.data.productId, parsed.data.price, { actor, request })
       return result.success
         ? NextResponse.json({ ok: true })
         : NextResponse.json({ error: result.error }, { status: 500 })
@@ -33,7 +33,7 @@ export async function PUT(
     if (body.action === 'remove_override') {
       const parsed = removeOverrideSchema.safeParse(body)
       if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
-      const result = await removeOverride(id, parsed.data.productId)
+      const result = await removeOverride(id, parsed.data.productId, { actor, request })
       return result.success
         ? NextResponse.json({ ok: true })
         : NextResponse.json({ error: result.error }, { status: 500 })
@@ -41,7 +41,7 @@ export async function PUT(
 
     const parsed = priceGroupSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'invalid_data' }, { status: 400 })
-    const result = await updatePriceGroup(id, parsed.data)
+    const result = await updatePriceGroup(id, parsed.data, { actor, request })
     return result.success
       ? NextResponse.json({ ok: true })
       : NextResponse.json({ error: result.error }, { status: result.error === 'not_found' ? 404 : 500 })
@@ -51,15 +51,15 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const { id } = await params
-    const result = await deletePriceGroup(id)
+    const result = await deletePriceGroup(id, { actor, request })
     return result.success
       ? NextResponse.json({ ok: true })
       : NextResponse.json({ error: result.error }, { status: 500 })

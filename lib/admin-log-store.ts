@@ -7,10 +7,63 @@ export type AdminLogAction =
   | 'order.bulk_status_changed'
   | 'order.note_saved'
   | 'order.updated'
+  | 'order.payment_status_updated'
+  | 'site_content.updated'
   | 'product.price_changed'
   | 'product.stock_changed'
   | 'product.deleted'
+  | 'product.archived'
+  | 'product.override_reset'
+  | 'product.restored'
+  | 'product.permanently_deleted'
   | 'product.created'
+  | 'price_group.created'
+  | 'price_group.updated'
+  | 'price_group.deleted'
+  | 'price_group.product_price_set'
+  | 'price_group.product_price_removed'
+  | 'email_template.updated'
+  | 'banner_groups.updated'
+  | 'banner.created'
+  | 'banner.updated'
+  | 'banner.deleted'
+  | 'banner.reordered'
+  | 'blog.created'
+  | 'blog.updated'
+  | 'blog.deleted'
+  | 'campaign.created'
+  | 'campaign.updated'
+  | 'campaign.deleted'
+  | 'auth.admin_login_succeeded'
+  | 'auth.admin_login_rejected'
+  | 'auth.admin_logout'
+  | 'contact_message.marked_answered'
+  | 'contact_message.marked_unanswered'
+  | 'admin.dashboard_prefs_updated'
+  | 'settings.configuration_restored'
+  | 'access_request.approved'
+  | 'access_request.rejected'
+  | 'media.uploaded'
+  | 'media.replaced'
+  | 'media.deleted'
+  | 'invitation.created'
+  | 'invitation.replaced'
+  | 'invitation.delivery_recorded'
+  | 'invitation.sms_recorded'
+  | 'invitation.card_assigned'
+  | 'access_request.rejection_email_prepared'
+  | 'access_request.rejection_email_recorded'
+  | 'card_rules_campaign.reset'
+  | 'card_rules_campaign.batch_started'
+  | 'card_rules_campaign.batch_completed'
+  | 'broadcast.prepared'
+  | 'broadcast.delivery_recorded'
+  | 'stock_alert.report_prepared'
+  | 'stock_alert.report_recorded'
+  | 'product.promo_notification_prepared'
+  | 'product.promo_notification_recorded'
+  | 'email_template.test_prepared'
+  | 'email_template.test_recorded'
   | 'promo.created'
   | 'promo.updated'
   | 'promo.deleted'
@@ -36,14 +89,67 @@ export type AdminLogEntry = {
 }
 
 export const ACTION_LABELS: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Вход сотрудника',
+  'auth.admin_login_rejected': 'Отклонённый вход сотрудника',
+  'auth.admin_logout': 'Выход сотрудника',
+  'contact_message.marked_answered': 'Обращение отмечено как отвеченное',
+  'contact_message.marked_unanswered': 'Обращение отмечено как неотвеченное',
+  'admin.dashboard_prefs_updated': 'Изменение настроек панели',
   'order.updated':             'Редактирование заказа',
+  'order.payment_status_updated': 'Ручное изменение статуса оплаты',
+  'site_content.updated':      'Обновление контента сайта',
   'order.status_changed':      'Смена статуса заказа',
   'order.bulk_status_changed': 'Массовая смена статуса',
   'order.note_saved':          'Заметка к заказу',
   'product.price_changed':     'Изменение цены',
   'product.stock_changed':     'Изменение остатка',
   'product.deleted':           'Удаление товара',
+  'product.archived':          'Перенос товара в архив',
+  'product.override_reset':    'Сброс переопределения товара',
+  'product.restored':          'Восстановление товара',
+  'product.permanently_deleted': 'Окончательное удаление товара',
   'product.created':           'Создание товара',
+  'price_group.created':       'Создание ценовой группы',
+  'price_group.updated':       'Изменение ценовой группы',
+  'price_group.deleted':       'Удаление ценовой группы',
+  'price_group.product_price_set': 'Установка индивидуальной цены',
+  'price_group.product_price_removed': 'Снятие индивидуальной цены',
+  'email_template.updated': 'Изменение шаблона письма',
+  'banner_groups.updated': 'Изменение групп баннеров',
+  'banner.created': 'Создание баннера',
+  'banner.updated': 'Изменение баннера',
+  'banner.deleted': 'Удаление баннера',
+  'banner.reordered': 'Изменение порядка баннеров',
+  'blog.created': 'Создание статьи',
+  'blog.updated': 'Изменение статьи',
+  'blog.deleted': 'Удаление статьи',
+  'campaign.created': 'Создание кампании',
+  'campaign.updated': 'Изменение кампании',
+  'campaign.deleted': 'Удаление кампании',
+  'settings.configuration_restored': 'Восстановление конфигурации',
+  'access_request.approved': 'Одобрение заявки на доступ',
+  'access_request.rejected': 'Отклонение заявки на доступ',
+  'media.uploaded': 'Загрузка медиафайла',
+  'media.replaced': 'Замена медиафайла',
+  'media.deleted': 'Удаление медиафайла',
+  'invitation.created': 'Создание приглашения',
+  'invitation.replaced': 'Замена приглашения',
+  'invitation.delivery_recorded': 'Результат отправки приглашений',
+  'invitation.sms_recorded': 'Запись SMS-приглашений',
+  'invitation.card_assigned': 'Назначение карты клиенту',
+  'access_request.rejection_email_prepared': 'Подготовка письма об отклонении заявки',
+  'access_request.rejection_email_recorded': 'Результат письма об отклонении заявки',
+  'card_rules_campaign.reset': 'Сброс рассылки правил карты',
+  'card_rules_campaign.batch_started': 'Запуск пакета рассылки правил карты',
+  'card_rules_campaign.batch_completed': 'Результат пакета рассылки правил карты',
+  'broadcast.prepared': 'Подготовка рассылки',
+  'broadcast.delivery_recorded': 'Результат рассылки',
+  'stock_alert.report_prepared': 'Подготовка отчёта по остаткам',
+  'stock_alert.report_recorded': 'Результат отправки отчёта по остаткам',
+  'product.promo_notification_prepared': 'Подготовка уведомления об акции',
+  'product.promo_notification_recorded': 'Результат уведомления об акции',
+  'email_template.test_prepared': 'Подготовка тестового письма шаблона',
+  'email_template.test_recorded': 'Результат тестового письма шаблона',
   'promo.created':             'Создание промокода',
   'promo.updated':             'Обновление промокода',
   'promo.deleted':             'Удаление промокода',
@@ -56,14 +162,67 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Staff sign-in',
+  'auth.admin_login_rejected': 'Staff sign-in rejected',
+  'auth.admin_logout': 'Staff sign-out',
+  'contact_message.marked_answered': 'Contact message marked answered',
+  'contact_message.marked_unanswered': 'Contact message marked unanswered',
+  'admin.dashboard_prefs_updated': 'Dashboard preferences updated',
   'order.updated': 'Order edited',
+  'order.payment_status_updated': 'Payment status updated manually',
+  'site_content.updated': 'Site content updated',
   'order.status_changed': 'Order status changed',
   'order.bulk_status_changed': 'Bulk status change',
   'order.note_saved': 'Order note saved',
   'product.price_changed': 'Price changed',
   'product.stock_changed': 'Stock changed',
   'product.deleted': 'Product deleted',
+  'product.archived': 'Product moved to archive',
+  'product.override_reset': 'Product override reset',
+  'product.restored': 'Product restored',
+  'product.permanently_deleted': 'Product permanently deleted',
   'product.created': 'Product created',
+  'price_group.created': 'Price group created',
+  'price_group.updated': 'Price group updated',
+  'price_group.deleted': 'Price group deleted',
+  'price_group.product_price_set': 'Custom product price set',
+  'price_group.product_price_removed': 'Custom product price removed',
+  'email_template.updated': 'Email template updated',
+  'banner_groups.updated': 'Banner groups updated',
+  'banner.created': 'Banner created',
+  'banner.updated': 'Banner updated',
+  'banner.deleted': 'Banner deleted',
+  'banner.reordered': 'Banner order changed',
+  'blog.created': 'Blog post created',
+  'blog.updated': 'Blog post updated',
+  'blog.deleted': 'Blog post deleted',
+  'campaign.created': 'Campaign created',
+  'campaign.updated': 'Campaign updated',
+  'campaign.deleted': 'Campaign deleted',
+  'settings.configuration_restored': 'Configuration restored',
+  'access_request.approved': 'Access request approved',
+  'access_request.rejected': 'Access request rejected',
+  'media.uploaded': 'Media file uploaded',
+  'media.replaced': 'Media file replaced',
+  'media.deleted': 'Media file deleted',
+  'invitation.created': 'Invitation created',
+  'invitation.replaced': 'Invitation replaced',
+  'invitation.delivery_recorded': 'Invitation delivery result',
+  'invitation.sms_recorded': 'SMS invitations recorded',
+  'invitation.card_assigned': 'Customer card assigned',
+  'access_request.rejection_email_prepared': 'Rejection email prepared',
+  'access_request.rejection_email_recorded': 'Rejection email delivery result',
+  'card_rules_campaign.reset': 'Card rules campaign reset',
+  'card_rules_campaign.batch_started': 'Card rules campaign batch started',
+  'card_rules_campaign.batch_completed': 'Card rules campaign batch result',
+  'broadcast.prepared': 'Broadcast prepared',
+  'broadcast.delivery_recorded': 'Broadcast delivery result',
+  'stock_alert.report_prepared': 'Stock report prepared',
+  'stock_alert.report_recorded': 'Stock report delivery result',
+  'product.promo_notification_prepared': 'Promo notification prepared',
+  'product.promo_notification_recorded': 'Promo notification result',
+  'email_template.test_prepared': 'Template test email prepared',
+  'email_template.test_recorded': 'Template test email result',
   'promo.created': 'Promo code created',
   'promo.updated': 'Promo code updated',
   'promo.deleted': 'Promo code deleted',
@@ -76,14 +235,67 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
 }
 
 const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
+  'auth.admin_login_succeeded': 'Darbinieka pieteikšanās',
+  'auth.admin_login_rejected': 'Noraidīta darbinieka pieteikšanās',
+  'auth.admin_logout': 'Darbinieka izrakstīšanās',
+  'contact_message.marked_answered': 'Ziņojums atzīmēts kā atbildēts',
+  'contact_message.marked_unanswered': 'Ziņojums atzīmēts kā neatbildēts',
+  'admin.dashboard_prefs_updated': 'Paneļa iestatījumi mainīti',
   'order.updated': 'Pasūtījums rediģēts',
+  'order.payment_status_updated': 'Maksājuma statuss mainīts manuāli',
+  'site_content.updated': 'Vietnes saturs atjaunināts',
   'order.status_changed': 'Pasūtījuma statuss mainīts',
   'order.bulk_status_changed': 'Masveida statusa maiņa',
   'order.note_saved': 'Pasūtījuma piezīme saglabāta',
   'product.price_changed': 'Cena mainīta',
   'product.stock_changed': 'Atlikums mainīts',
   'product.deleted': 'Produkts dzēsts',
+  'product.archived': 'Produkts pārvietots uz arhīvu',
+  'product.override_reset': 'Produkta pārrakstījums atiestatīts',
+  'product.restored': 'Produkts atjaunots',
+  'product.permanently_deleted': 'Produkts neatgriezeniski dzēsts',
   'product.created': 'Produkts izveidots',
+  'price_group.created': 'Cenu grupa izveidota',
+  'price_group.updated': 'Cenu grupa atjaunināta',
+  'price_group.deleted': 'Cenu grupa dzēsta',
+  'price_group.product_price_set': 'Individuālā cena iestatīta',
+  'price_group.product_price_removed': 'Individuālā cena noņemta',
+  'email_template.updated': 'E-pasta veidne atjaunināta',
+  'banner_groups.updated': 'Baneru grupas atjauninātas',
+  'banner.created': 'Baneris izveidots',
+  'banner.updated': 'Baneris atjaunināts',
+  'banner.deleted': 'Baneris dzēsts',
+  'banner.reordered': 'Baneru secība mainīta',
+  'blog.created': 'Raksts izveidots',
+  'blog.updated': 'Raksts atjaunināts',
+  'blog.deleted': 'Raksts dzēsts',
+  'campaign.created': 'Kampaņa izveidota',
+  'campaign.updated': 'Kampaņa atjaunināta',
+  'campaign.deleted': 'Kampaņa dzēsta',
+  'settings.configuration_restored': 'Konfigurācija atjaunota',
+  'access_request.approved': 'Piekļuves pieteikums apstiprināts',
+  'access_request.rejected': 'Piekļuves pieteikums noraidīts',
+  'media.uploaded': 'Multivides fails augšupielādēts',
+  'media.replaced': 'Multivides fails aizstāts',
+  'media.deleted': 'Multivides fails dzēsts',
+  'invitation.created': 'Ielūgums izveidots',
+  'invitation.replaced': 'Ielūgums aizstāts',
+  'invitation.delivery_recorded': 'Ielūgumu nosūtīšanas rezultāts',
+  'invitation.sms_recorded': 'SMS ielūgumi reģistrēti',
+  'invitation.card_assigned': 'Klientam piešķirta karte',
+  'access_request.rejection_email_prepared': 'Sagatavota pieteikuma noraidījuma vēstule',
+  'access_request.rejection_email_recorded': 'Pieteikuma noraidījuma vēstules rezultāts',
+  'card_rules_campaign.reset': 'Kartes noteikumu kampaņa atiestatīta',
+  'card_rules_campaign.batch_started': 'Kartes noteikumu kampaņas pakete sākta',
+  'card_rules_campaign.batch_completed': 'Kartes noteikumu kampaņas paketes rezultāts',
+  'broadcast.prepared': 'Sagatavots e-pasta izsūtījums',
+  'broadcast.delivery_recorded': 'E-pasta izsūtījuma rezultāts',
+  'stock_alert.report_prepared': 'Sagatavots krājumu pārskats',
+  'stock_alert.report_recorded': 'Krājumu pārskata nosūtīšanas rezultāts',
+  'product.promo_notification_prepared': 'Sagatavots akcijas paziņojums',
+  'product.promo_notification_recorded': 'Akcijas paziņojuma rezultāts',
+  'email_template.test_prepared': 'Sagatavota veidnes testa vēstule',
+  'email_template.test_recorded': 'Veidnes testa vēstules rezultāts',
   'promo.created': 'Promokods izveidots',
   'promo.updated': 'Promokods atjaunināts',
   'promo.deleted': 'Promokods dzēsts',

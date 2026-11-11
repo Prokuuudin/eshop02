@@ -7,7 +7,7 @@ import {
     DialogTitle,
     DialogClose,
 } from './ui/dialog';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
 import { canAccessAdminPanel, hasAdminUsers, logout } from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';

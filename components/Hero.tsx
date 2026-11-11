@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import type { JSX } from 'react'
 import type { Language } from '@/data/translations'
 import { Button } from '@/components/ui/button'

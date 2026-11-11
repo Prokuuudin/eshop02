@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { AlertTriangle, CheckCircle2, ExternalLink } from 'lucide-react'
 import { useTranslation } from '@/lib/use-translation'
 import { DELIVERY_METHOD_LABEL_KEYS } from '@/lib/delivery'

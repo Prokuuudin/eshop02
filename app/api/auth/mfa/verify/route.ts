@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { hashToken, createSession, mapDbToServerUser } from '@/lib/server-auth'
+import { hashToken, mapDbToServerUser } from '@/lib/server-auth'
+import { createStaffSessionWithAudit, recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 import { decryptSecret, verifyTotpCode, consumeBackupCode } from '@/lib/mfa'
 import {
   consumeMfaChallenge,
@@ -54,6 +55,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!totpOk) {
     const backupResult = await consumeBackupCode(user.mfaBackupCodes, code)
     if (!backupResult.ok) {
+      recordRejectedStaffLogin(req, user, 'invalid_mfa_code')
       return NextResponse.json({ error: 'invalid_code' }, { status: 401 })
     }
     // Compare-and-swap on the exact list we read: two concurrent requests with the
@@ -73,7 +75,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Code confirmed valid — a normal successful login doesn't count against later attempts.
   await resetMfaAttempts(tokenHash, ip, user.id)
 
-  const token = await createSession(user.id, { mfaVerified: true })
+  // The staff session and its sign-in audit row commit together.
+  const token = await createStaffSessionWithAudit(req, user, totpOk ? 'totp' : 'backup_code')
   const res = NextResponse.json({ user: mapDbToServerUser(user) })
   setSessionCookie(res, token, user)
   return res

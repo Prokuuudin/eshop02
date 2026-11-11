@@ -68,19 +68,18 @@ function useAccountProfileImpl(
 
     const saveProfile = async () => {
         if (!profileDraft || !user) return;
-        const errors = validateProfile(profileDraft, t);
+        // The e-mail is read-only here: it changes through the confirmed flow in AccountEmailSection.
+        const errors = validateProfile(profileDraft, t, true);
         if (Object.keys(errors).length > 0) {
             setProfileErrors(errors);
             return;
         }
-        const normalizedEmail = profileDraft.email.trim().toLowerCase();
         try {
             const response = await fetch('/api/user/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: profileDraft.name,
-                    email: normalizedEmail,
                     phone: profileDraft.phone,
                     avatarUrl: profileDraft.avatarUrl,
                     checkoutProfile: {
@@ -102,13 +101,9 @@ function useAccountProfileImpl(
             });
             const result = await response.json().catch(() => ({})) as { error?: string };
             if (!response.ok) {
-                const message = result.error === 'email_taken'
-                    ? t('account.errors.emailTaken')
-                    : result.error === 'invalid_email'
-                        ? t('account.errors.emailInvalid')
-                        : result.error === 'unauthorized'
-                            ? t('account.errors.sessionExpired')
-                            : t('account.errors.saveFailed');
+                const message = result.error === 'unauthorized'
+                    ? t('account.errors.sessionExpired')
+                    : t('account.errors.saveFailed');
                 setProfileErrors({ email: message });
                 return;
             }
@@ -123,7 +118,6 @@ function useAccountProfileImpl(
         const updatedUser = {
             ...users[idx],
             name: profileDraft.name,
-            email: normalizedEmail,
             phone: profileDraft.phone,
             companyName: profileDraft.companyName,
             avatarUrl: profileDraft.avatarUrl || users[idx].avatarUrl || '',

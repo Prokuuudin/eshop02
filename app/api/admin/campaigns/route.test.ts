@@ -4,18 +4,23 @@ import { NextRequest, NextResponse } from 'next/server'
 vi.mock('server-only', () => ({}))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn(), revalidateTag: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
+vi.mock('@/lib/prisma', () => {
+  const client = {
     brandLine: { findMany: vi.fn() },
     product: { findMany: vi.fn() },
     keyValueSetting: { findUnique: vi.fn(), upsert: vi.fn() },
-  },
-}))
+    $executeRaw: vi.fn(),
+    $transaction: vi.fn(),
+  }
+  client.$transaction.mockImplementation(async (run: (tx: typeof client) => unknown) => run(client))
+  return { prisma: client }
+})
 
 import { requireAdmin } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { POST } from './route'
-import { PUT } from './[id]/route'
+import { DELETE, PUT } from './[id]/route'
 
 const ADMIN = { id: 'admin-1', email: 'admin@example.test', platformRole: 'admin' }
 const base = {
@@ -32,6 +37,7 @@ beforeEach(() => {
   vi.mocked(requireAdmin).mockResolvedValue(ADMIN as never)
   vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null as never)
   vi.mocked(prisma.keyValueSetting.upsert).mockResolvedValue({} as never)
+  vi.mocked(prisma.$executeRaw).mockResolvedValue(0 as never)
   vi.mocked(prisma.product.findMany).mockImplementation((async ({ where }: { where: { id: { in: string[] } } }) =>
     where.id.in.map((id) => ({ id, brand: id.startsWith('other') ? 'Other' : 'KEMON' }))) as never)
 })
@@ -41,7 +47,25 @@ describe('BrandLine campaign admin API', () => {
     vi.mocked(requireAdmin).mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
     const response = await POST(request('http://localhost/api/admin/campaigns', base))
     expect(response.status).toBe(403)
+    const deleted = await DELETE(
+      new NextRequest('http://localhost/api/admin/campaigns/campaign-1', { method: 'DELETE' }),
+      { params: Promise.resolve({ id: 'campaign-1' }) },
+    )
+    expect(deleted.status).toBe(403)
     expect(prisma.keyValueSetting.upsert).not.toHaveBeenCalled()
+  })
+
+  it('deletes an existing campaign through the transactional store contract', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue({
+      value: [{ ...base, id: 'campaign-1', description: '', showOldPrice: true, targetBrandLineIds: [], createdAt: '', updatedAt: '' }],
+    } as never)
+    const response = await DELETE(
+      new NextRequest('http://localhost/api/admin/campaigns/campaign-1', { method: 'DELETE' }),
+      { params: Promise.resolve({ id: 'campaign-1' }) },
+    )
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({ ok: true })
+    expect(prisma.keyValueSetting.upsert).toHaveBeenCalledWith(expect.objectContaining({ update: { value: [] } }))
   })
 
   it('rejects unknown lines on create and stores a valid stable id', async () => {

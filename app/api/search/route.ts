@@ -4,6 +4,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
 import { getMergedProductsByIds } from '@/lib/product-overrides-store'
 import { getProductSearchIndex } from '@/lib/product-search-index'
+import { redactProductPrices } from '@/lib/product-price-visibility'
 import { matchesProductSearch, parseProductSearchQuery, rankProductSearchMatch, SEARCH_MAX_LENGTH } from '@/lib/product-search'
 import type { Product } from '@/data/products'
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       .slice(0, take)
       .map(({ id }) => id)
 
-    const products: SearchSuggestion[] = (await getMergedProductsByIds(ids)).map((product) => ({
+    const products: SearchSuggestion[] = redactProductPrices(await getMergedProductsByIds(ids)).map((product) => ({
       id: product.id,
       title: localizedTitle(product, lang),
       brand: product.brand,

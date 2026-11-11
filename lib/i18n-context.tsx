@@ -69,20 +69,22 @@ export function I18nProvider({
       return
     }
 
-    // Explicit /en and /lv URLs take precedence over legacy storage.
-    const { lang: urlLanguage } = stripLangPrefix(window.location.pathname)
-    const explicitLanguage = /^\\/(en|lv|ru)(?:\\/|$)/.test(window.location.pathname)
-    if (explicitLanguage) {
-      writeLanguageCookie(urlLanguage)
-      localStorage.setItem(LANGUAGE_KEY, urlLanguage)
-      return
-    }
-
+    // A legacy saved choice wins over the URL language: without a cookie the
+    // proxy may have auto-redirected this visitor to /lv or /en, so the URL is
+    // not necessarily their choice. The URL still decides what is shown now.
     const saved = localStorage.getItem(LANGUAGE_KEY)
     if (isLanguage(saved)) {
       writeLanguageCookie(saved)
+      return
     }
-  }, [])
+
+    // No saved choice: persist an explicit /en or /lv visit (unprefixed ru is
+    // left to browser negotiation).
+    if (language !== DEFAULT_LANGUAGE) {
+      writeLanguageCookie(language)
+      localStorage.setItem(LANGUAGE_KEY, language)
+    }
+  }, [language])
 
   const setLanguage = (newLanguage: Language): void => {
     if (newLanguage === language) return

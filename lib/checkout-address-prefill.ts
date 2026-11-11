@@ -50,14 +50,20 @@ export function mergeEmptyAddressFields(
   return result
 }
 
+/**
+ * Fills empty fields from `fallback`. Fields in `protectedKeys` are never filled: the customer has
+ * focused or edited them, and a value arriving late would land under the cursor and merge with the
+ * typing (e.g. "profile@mail.lvivan@example.com").
+ */
 export function mergeEmptyCheckoutFields<T extends Record<string, string>>(
   current: T,
-  fallback: Partial<T>
+  fallback: Partial<T>,
+  protectedKeys: ReadonlySet<string> = new Set()
 ): T {
   const result = { ...current }
   for (const key of Object.keys(current) as Array<keyof T>) {
     const value = fallback[key]
-    if (!result[key] && value) result[key] = value
+    if (!result[key] && value && !protectedKeys.has(String(key))) result[key] = value
   }
   return result
 }

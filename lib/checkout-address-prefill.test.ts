@@ -19,6 +19,17 @@ describe('full checkout prefill', () => {
     expect(result).toEqual({ firstName: 'Query name', city: 'Riga', iban: 'LV00' })
   })
 
+  it('never fills a protected field, even when it is still empty', () => {
+    const current = { email: '', firstName: '', phone: '' }
+    const result = mergeEmptyCheckoutFields(current, { email: 'profile@example.com', firstName: 'Anna', phone: '+37120000000' }, new Set(['email', 'phone']))
+    expect(result).toEqual({ email: '', firstName: 'Anna', phone: '' })
+  })
+
+  it('keeps a value the customer is typing instead of merging the profile into it', () => {
+    const result = mergeEmptyCheckoutFields({ email: 'ivan.p' }, { email: 'profile@example.com' }, new Set(['email']))
+    expect(result.email).toBe('ivan.p')
+  })
+
   it('maps the saved checkout profile and account email', () => {
     const fallback = buildCheckoutProfileFallback({
       email: 'anna@example.com',

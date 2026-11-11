@@ -80,6 +80,10 @@ function useCheckoutPageState() {
         paymentMethod: 'bank',
     }));
 
+    // Fields the customer has edited. Together with the focused field they are never prefilled:
+    // profile data arrives asynchronously and must not merge with what the customer is typing.
+    const editedFields = React.useRef(new Set<string>());
+
     // Prefill from the user's saved address / profile, but never clobber a field
     // that's already filled (e.g. from a "Use this address" query-param link above).
     React.useEffect(() => {
@@ -94,10 +98,14 @@ function useCheckoutPageState() {
             const hasExplicitAddress = !!searchParams.get('address');
             const savedFallback = buildPrefillFallback(currentUser, saved, hasExplicitAddress);
             const profileFallback = buildCheckoutProfileFallback(currentUser);
+            const protectedFields = new Set(editedFields.current);
+            const focused = document.activeElement;
+            if (focused instanceof HTMLInputElement && focused.name) protectedFields.add(focused.name);
+            if (focused instanceof Element && focused.closest('.phone-input')) protectedFields.add('phone');
             setFormData((previous) => {
-                let next = mergeEmptyCheckoutFields<CheckoutFormData>(previous, profileFallback);
-                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, savedFallback);
-                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, buildLastOrderFallback(lastOrder));
+                let next = mergeEmptyCheckoutFields<CheckoutFormData>(previous, profileFallback, protectedFields);
+                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, savedFallback, protectedFields);
+                next = mergeEmptyCheckoutFields<CheckoutFormData>(next, buildLastOrderFallback(lastOrder), protectedFields);
                 return next;
             });
         });
@@ -202,6 +210,7 @@ function useCheckoutPageState() {
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+        editedFields.current.add(e.target.name);
         if (e.target.name === 'country') setSelectedDeliveryLocationId('');
         setFormData((prev) => ({
             ...prev,

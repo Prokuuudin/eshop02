@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
 import AccountProfileCard from '@/components/account/AccountProfileCard';
+import { AccountEmailSection } from '@/components/account/AccountEmailSection';
 import { AccountPasswordSection } from '@/components/account/AccountPasswordSection';
 import { AccountDataSection } from '@/components/account/AccountDataSection';
 import { useLocaleHelpers } from '@/hooks/useLocaleHelpers';
@@ -87,6 +88,7 @@ export default function AccountProfilePage(): React.ReactElement {
                         />
                     </div>
                     <div className="min-w-0 lg:col-span-1 flex flex-col [&>*]:flex-1">
+                        <AccountEmailSection />
                         <AccountPasswordSection defaultOpen />
                     </div>
                 </div>

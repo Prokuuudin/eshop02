@@ -29,23 +29,23 @@ describe('storefront banner rendering', () => {
     }))
     expect(html).toContain('href="/auth/register"')
     expect(html.indexOf('Up to 70%')).toBeLessThan(html.indexOf('src="/ready.png"'))
-    expect(html).toContain('/girl1.png')
+    expect(html).toContain('/girl1-v2.png')
   })
   it('keeps a text banner assigned to a carousel inside that carousel', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {
       products: [], banners: [{ ...image, type: 'sale', placement: 'carousel' }],
     }))
     expect(html).toContain('data-count="1"')
-    expect(html).toContain('/girl1.png')
+    expect(html).toContain('/girl1-v2.png')
   })
   it('keeps the decorative girl when only image banners are present', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, { products: [], banners: [image] }))
-    expect(html).toContain('/girl1.png')
+    expect(html).toContain('/girl1-v2.png')
   })
   it('keeps the decorative girl beside the subscription form when there are no promotions at all', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, { products: [], banners: [] }))
     expect(html).toContain('href="/auth/register"')
-    expect(html).toContain('/girl1.png')
+    expect(html).toContain('/girl1-v2.png')
   })
   it('renders video with playback controls and a separate link button', () => {
     const html = renderToStaticMarkup(React.createElement(SaleBanner, { banner: { ...image, type: 'video', image: '/banner.mp4' } }))
@@ -75,7 +75,7 @@ describe('storefront banner rendering', () => {
     }))
     expect(html.indexOf('Text promotion')).toBeLessThan(html.indexOf('src="/ready.png"'))
     expect(html.indexOf('src="/ready.png"')).toBeLessThan(html.indexOf('src="/second.png"'))
-    expect(html).toContain('/girl1.png')
+    expect(html).toContain('/girl1-v2.png')
   })
   it('renders banners placed in the carousel through BannerCarousel, separately from the stacked list', () => {
     const html = renderToStaticMarkup(React.createElement(SaleSection, {

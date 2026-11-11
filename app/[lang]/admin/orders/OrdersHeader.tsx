@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { useAdminLocale } from '@/lib/use-admin-locale';

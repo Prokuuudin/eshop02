@@ -33,11 +33,26 @@ const request = (items: Array<{ productId: string; quantity: number }>) => new N
 describe('POST /api/returns reservations', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(getServerUser).mockResolvedValue({ email: 'buyer@example.com', platformRole: 'customer' } as never)
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'buyer@example.com', platformRole: 'customer' } as never)
     tx.order.findUnique.mockResolvedValue({
-      id: 'o1', email: 'buyer@example.com', items: [{ id: 'p1', price: 10, quantity: 3 }],
+      id: 'o1', userId: 'u1', email: 'buyer@example.com', items: [{ id: 'p1', price: 10, quantity: 3 }],
     })
     tx.returnRequest.create.mockResolvedValue({ id: 'r-new' })
+  })
+
+  it('refuses another account even when the e-mail matches, and an order without an owner', async () => {
+    tx.order.findUnique.mockResolvedValue({ id: 'o1', userId: 'victim', email: 'buyer@example.com', items: [{ id: 'p1', price: 10, quantity: 3 }] })
+    expect((await POST(request([{ productId: 'p1', quantity: 1 }]))).status).toBe(403)
+    tx.order.findUnique.mockResolvedValue({ id: 'o1', userId: null, email: 'buyer@example.com', items: [{ id: 'p1', price: 10, quantity: 3 }] })
+    expect((await POST(request([{ productId: 'p1', quantity: 1 }]))).status).toBe(403)
+    expect(tx.returnRequest.create).not.toHaveBeenCalled()
+  })
+
+  it('lets the owner return an order placed with a different contact e-mail, and keeps that contact', async () => {
+    tx.order.findUnique.mockResolvedValue({ id: 'o1', userId: 'u1', email: 'typed@example.com', items: [{ id: 'p1', price: 10, quantity: 3 }] })
+    tx.returnRequest.findMany.mockResolvedValue([])
+    expect((await POST(request([{ productId: 'p1', quantity: 1 }]))).status).toBe(201)
+    expect(tx.returnRequest.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ email: 'typed@example.com' }) }))
   })
 
   it('includes quantities reserved by earlier returns', async () => {
@@ -124,11 +139,13 @@ describe('GET /api/returns', () => {
     expect(body.returns[0].email).toBe('customer@example.com')
   })
 
-  it('non-admin is always scoped to their own email, ignoring ?email=', async () => {
-    vi.mocked(getServerUser).mockResolvedValue({ email: 'buyer@example.com', platformRole: 'customer' } as never)
+  it('non-admin only sees returns of orders they own, ignoring ?email=', async () => {
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'u1', email: 'buyer@example.com', platformRole: 'customer' } as never)
+    orderTop.findMany.mockResolvedValue([{ id: 'o1', items: [] }])
     await GET(new NextRequest('http://localhost/api/returns?email=someone-else@example.com'))
+    expect(orderTop.findMany).toHaveBeenCalledWith({ where: { userId: 'u1' }, select: { id: true } })
     expect(returnRequestTop.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { email: 'buyer@example.com' } })
+      expect.objectContaining({ where: { orderId: { in: ['o1'] } } })
     )
   })
 

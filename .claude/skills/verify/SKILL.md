@@ -12,7 +12,7 @@ description: How to build, run and drive eshop02 to verify changes end-to-end
 
 ## Drive
 
-- **API surfaces**: plain `curl` against `localhost:3000/api/...`. Orders: `POST /api/orders` with `{ order: {...} }` — server generates the id, returns `{ success, orderId }`. Auth: `POST /api/auth/sync` with `{ id, email, password }` (mirrors LoginForm).
+- **API surfaces**: plain `curl` against `localhost:3000/api/...`. Orders: `POST /api/orders` with `{ order: {...} }` — server generates the id, returns `{ success, orderId }`. Auth: `POST /api/auth/login` with `{ identifier: <card or staff email>, password }` (mirrors LoginForm).
 - **UI surfaces**: Playwright script (not the test suite) run from repo root, `import { chromium } from '@playwright/test'`. Seed state via `page.addInitScript`: cart in localStorage key `cart-store` (`{ state: { items: [...] }, version: 0 }`, items need `lineKey`), user in `eshop_current_user`.
 - Checkout gotchas: delivery radios are Radix (`label[for^="delivery-"]`, no `input[type=radio]`); phone field is `.phone-input input`; dismiss cookie banner («Принять все») before clicking submit; wait for `label[for^="delivery-"]` — `networkidle` fires before CSR hydration (page is a Suspense spinner first).
 

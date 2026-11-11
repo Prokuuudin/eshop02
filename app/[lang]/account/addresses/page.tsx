@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useRouter } from 'next/navigation';
 import { MapPin, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';

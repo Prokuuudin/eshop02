@@ -50,6 +50,22 @@ const CONTENT: Record<Lang, { subject: string; title: string; intro: string; but
   },
 }
 
+/**
+ * Imported accounts can hold capitals in the stored address, and the typed address is lower-cased.
+ * The exact match wins. The unique index is case-sensitive, so two accounts can differ only by
+ * case: with no exact match that is ambiguous, and no reset link is issued rather than guessing.
+ */
+async function findAccountByEmail(email: string): Promise<{ id: string } | null> {
+  const exact = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+  if (exact) return exact
+  const matches = await prisma.user.findMany({
+    where: { email: { equals: email, mode: 'insensitive' } },
+    select: { id: true },
+    take: 2,
+  })
+  return matches.length === 1 ? matches[0] : null
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let email: string
   let language: Lang
@@ -76,7 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     )
   }
 
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+  const user = await findAccountByEmail(email)
   if (!user) return NextResponse.json({ ok: true })
 
   const token = crypto.randomBytes(32).toString('hex')

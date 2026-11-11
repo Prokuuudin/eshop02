@@ -8,6 +8,7 @@ const { userFindManyMock, userCountMock, requireAdminMock, readCampaignMock } = 
   readCampaignMock: vi.fn(),
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
   prisma: { user: { findMany: userFindManyMock, count: userCountMock } },

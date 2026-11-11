@@ -33,13 +33,16 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
     const { skip, take } = parseOffsetPagination(req.nextUrl.searchParams)
     // Admins may scope the list to a single customer (e.g. the customer profile
-    // page's Returns tab) via ?email=. Non-admins are always scoped to their own
-    // email regardless of this param. Omitting it keeps the existing unfiltered
+    // page's Returns tab) via ?email=. Non-admins only ever see returns of orders
+    // they own, regardless of this param. Omitting it keeps the existing unfiltered
     // behavior for callers like the /admin/returns page.
     const emailFilter = req.nextUrl.searchParams.get('email')?.trim().toLowerCase() || undefined
+    const ownedOrders = user.platformRole === 'admin'
+      ? []
+      : await prisma.order.findMany({ where: { userId: user.id }, select: { id: true } })
     const where = user.platformRole === 'admin'
       ? (emailFilter ? { email: { equals: emailFilter, mode: 'insensitive' as const } } : {})
-      : { email: user.email }
+      : { orderId: { in: ownedOrders.map((order) => order.id) } }
     const [returns, total] = await Promise.all([
       prisma.returnRequest.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take }),
       prisma.returnRequest.count({ where }),
@@ -94,7 +97,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const result = await withSerializableRetry(() => prisma.$transaction(async (tx) => {
       const order = await tx.order.findUnique({ where: { id: body.orderId! } })
       if (!order) throw new ReturnValidationError('order_not_found', 404)
-      if (user.platformRole !== 'admin' && order.email !== user.email) {
+      if (user.platformRole !== 'admin' && order.userId !== user.id) {
         throw new ReturnValidationError('forbidden', 403)
       }
 
@@ -128,7 +131,7 @@ export async function POST(req: NextRequest): Promise<Response> {
           comment: typeof body.comment === 'string' ? body.comment : null,
           firstName: user.platformRole === 'admin' ? order.firstName : (user.name ?? order.firstName),
           lastName: order.lastName,
-          email: user.platformRole === 'admin' ? order.email : user.email,
+          email: order.email,
           phone: order.phone,
           status: 'pending',
         },

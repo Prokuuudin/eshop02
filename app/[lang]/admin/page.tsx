@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import type { Order } from '@/lib/orders-store';
 import { useAdminStore, type OrderStatus } from '@/lib/admin-store';
 import { Button } from '@/components/ui/button';

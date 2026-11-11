@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { randomBytes, createHash } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import type { User as PrismaUser } from '@/generated/prisma/client'
 import { SESSION_COOKIE } from '@/lib/auth-constants'
 import {
@@ -99,14 +99,18 @@ export function sessionCookieMaxAgeSeconds(subject: { platformRole?: string | nu
  * `mfaVerified` must only be true when the caller has just checked a TOTP or
  * recovery code (or is rotating a session that getServerUser already accepted).
  */
-export async function createSession(userId: string, options: { mfaVerified?: boolean } = {}): Promise<string> {
+export async function createSession(
+  userId: string,
+  options: { mfaVerified?: boolean } = {},
+  db: Pick<ExtendedTransactionClient, 'user' | 'session'> = prisma,
+): Promise<string> {
   const token = generateToken()
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { platformRole: true, teamRole: true } })
+  const user = await db.user.findUnique({ where: { id: userId }, select: { platformRole: true, teamRole: true } })
   const durationDays = user && requiresAdminMfa(user) ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + durationDays)
 
-  await prisma.session.create({
+  await db.session.create({
     data: {
       id: `sess_${Date.now()}_${randomBytes(4).toString('hex')}`,
       userId,

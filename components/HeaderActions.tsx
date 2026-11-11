@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';

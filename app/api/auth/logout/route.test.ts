@@ -3,12 +3,13 @@ import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: vi.fn(),
-  deleteSession: vi.fn().mockResolvedValue(undefined),
   SESSION_COOKIE: 'session',
 }))
+vi.mock('@/lib/auth-session-audit', () => ({ createStaffSessionWithAudit: vi.fn(), recordRejectedStaffLogin: vi.fn(), revokeSessionWithAudit: vi.fn() }))
 vi.mock('@/lib/company-activity-log', () => ({ recordCompanyActivity: vi.fn().mockResolvedValue(undefined) }))
 
-import { getServerUser, deleteSession } from '@/lib/server-auth'
+import { getServerUser } from '@/lib/server-auth'
+import { revokeSessionWithAudit } from '@/lib/auth-session-audit'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { POST } from './route'
 
@@ -28,7 +29,7 @@ describe('POST /api/auth/logout', () => {
 
     const res = await POST(requestWithCookie())
     expect(res.status).toBe(200)
-    expect(deleteSession).toHaveBeenCalledWith('token-abc')
+    expect(revokeSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), 'token-abc')
     expect(recordCompanyActivity).toHaveBeenCalledWith(
       expect.objectContaining({ companyId: 'company-a', userId: 'user-a', action: 'team_member_logout' })
     )
@@ -41,14 +42,14 @@ describe('POST /api/auth/logout', () => {
 
     const res = await POST(requestWithCookie())
     expect(res.status).toBe(200)
-    expect(deleteSession).toHaveBeenCalledWith('token-abc')
+    expect(revokeSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), 'token-abc')
     expect(recordCompanyActivity).not.toHaveBeenCalled()
   })
 
   it('is a no-op when there is no session cookie', async () => {
     const res = await POST(new NextRequest('https://shop.test/api/auth/logout', { method: 'POST' }))
     expect(res.status).toBe(200)
-    expect(deleteSession).not.toHaveBeenCalled()
+    expect(revokeSessionWithAudit).not.toHaveBeenCalled()
     expect(recordCompanyActivity).not.toHaveBeenCalled()
   })
 })

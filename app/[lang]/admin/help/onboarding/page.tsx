@@ -1,6 +1,6 @@
 ﻿'use client';
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import AdminGate from '@/components/admin/AdminGate';
 import { useAdminLocale } from '@/lib/use-admin-locale';

@@ -180,6 +180,8 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                         ? l(`У клиента уже есть карта №${json.cardNumber}.`, `The customer already has card No. ${json.cardNumber}.`, `Klientam jau ir karte Nr. ${json.cardNumber}.`)
                         : json.error === 'staff_account'
                         ? l('Email заявки принадлежит сотруднику — заявку нельзя одобрить.', 'The application email belongs to a staff account — it cannot be approved.', 'Pieteikuma e-pasts pieder darbiniekam — to nevar apstiprināt.')
+                        : json.error === 'already_decided'
+                        ? l('Заявка уже обработана. Список обновлён.', 'The application has already been processed. The list has been refreshed.', 'Pieteikums jau ir apstrādāts. Saraksts ir atjaunināts.')
                         : l('Не удалось одобрить заявку', 'Failed to approve the application', 'Neizdevās apstiprināt pieteikumu')
                 );
                 setMessage('');
@@ -278,16 +280,22 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 body: JSON.stringify({ status: 'rejected', reviewNote: note ?? l('Отклонено администратором', 'Rejected by administrator', 'Administrators noraidīja') }),
             });
             if (!res.ok) {
-                setFormError(l('Не удалось отклонить заявку', 'Failed to reject the application', 'Neizdevās noraidīt pieteikumu'));
+                const json = await res.json().catch(() => ({}));
+                setFormError(json.error === 'already_decided'
+                    ? l('Заявка уже обработана. Список обновлён.', 'The application has already been processed. The list has been refreshed.', 'Pieteikums jau ir apstrādāts. Saraksts ir atjaunināts.')
+                    : l('Не удалось отклонить заявку', 'Failed to reject the application', 'Neizdevās noraidīt pieteikumu'));
                 setMessage('');
                 return;
             }
             try {
-                await fetch('/api/admin/card-request', {
+                // One key per admin action: a technical retry is replayed by the
+                // server instead of sending the rejection email twice.
+                const notify = await fetch('/api/admin/card-request', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'reject', email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
+                    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+                    body: JSON.stringify({ action: 'reject', accessRequestId: requestId, email, name, note, language: noCardRequests.find(r => r.id === requestId)?.language ?? 'ru' }),
                 });
+                if (!notify.ok) throw new Error('rejection_email_failed');
                 setMessage(l(`Заявка отклонена. Уведомление отправлено на ${email}.`, `Application rejected. A notification was sent to ${email}.`, `Pieteikums noraidīts. Paziņojums nosūtīts uz ${email}.`));
             } catch {
                 setMessage(l('Заявка отклонена. Не удалось отправить уведомление.', 'Application rejected. Failed to send the notification.', 'Pieteikums noraidīts. Paziņojumu neizdevās nosūtīt.'));

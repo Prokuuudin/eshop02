@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { prisma } from '@/lib/prisma'
+import { createMediaAsset, mediaPath } from '@/lib/media-asset-store'
 import path from 'path'
 import { validateUploadedMedia } from '@/lib/media-upload-validation'
 import { BANNER_IMAGE_MAX_BYTES, BANNER_VIDEO_MAX_BYTES } from '@/lib/banner-media'
@@ -21,8 +21,8 @@ function normalizeFileBaseName(name: string): string {
 }
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const formData = await request.formData()
@@ -45,17 +45,13 @@ export async function POST(request: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'unsupported_file_type' }, { status: 400 })
     }
 
-    await prisma.mediaAsset.create({
-      data: {
-        name: finalName,
-        mimeType: verifiedMime,
-        size: file.size,
-        data: bytes
-      }
-    })
+    await createMediaAsset(
+      { name: finalName, mimeType: verifiedMime, size: file.size, bytes },
+      { actor, request },
+    )
 
     return NextResponse.json({
-      path: `/api/media/${finalName}`,
+      path: mediaPath(finalName),
       originalName: file.name,
       size: file.size,
       mimeType: verifiedMime

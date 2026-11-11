@@ -28,13 +28,13 @@ describe('GET /api/orders/my', () => {
     expect(findManyMock).not.toHaveBeenCalled()
   })
 
-  it('scopes by both immutable user id and the account email', async () => {
+  it('scopes by the immutable user id only, never by the changeable account e-mail', async () => {
     getServerUserMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com' })
     findManyMock.mockResolvedValue([{ id: 'o1', createdAt: new Date('2026-01-01') }])
     const response = await GET(request('?take=25'))
     expect(response.status).toBe(200)
     expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({
-      where: { OR: [{ userId: 'u1' }, { email: 'buyer@test.com' }] },
+      where: { userId: 'u1' },
       take: 26,
     }))
   })

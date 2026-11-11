@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { notFound } from 'next/navigation'
 import Products from '@/components/Products'
 import { getSiteUrl } from '@/lib/site-url'

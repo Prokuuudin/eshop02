@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, requireAdmin } from '@/lib/server-auth'
+import { appendServerAudit } from '@/lib/server-audit'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
 
@@ -13,8 +14,8 @@ export const runtime = 'nodejs'
 // Если email в системе ещё нет — заводим «спящий» аккаунт (паттерн import-client-cards):
 // вход по паролю невозможен, активация только через инвайт с этой страницы.
 export async function POST(req: NextRequest): Promise<Response> {
-  const gate = await requireAdmin()
-  if (gate instanceof NextResponse) return gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const body = (await req.json()) as { email?: string; cardNumber?: string; name?: string; phone?: string }
@@ -45,9 +46,23 @@ export async function POST(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'staff_account' }, { status: 409 })
     }
 
+    // The audit keeps internal IDs and flags only: no email, phone, name or card number.
     try {
       if (user) {
-        await prisma.user.update({ where: { id: user.id }, data: { cardNumber } })
+        await prisma.$transaction(async (tx) => {
+          // Row lock: a retry or a parallel identical request sees the committed
+          // card and becomes a no-op instead of a second update and event.
+          const [current] = await tx.$queryRaw<Array<{ cardNumber: string | null }>>`
+            SELECT "cardNumber" FROM "User" WHERE id = ${user.id} FOR UPDATE`
+          const previous = current?.cardNumber ? normalizeCardNumber(current.cardNumber) : null
+          if (previous === cardNumber) return
+          await tx.user.update({ where: { id: user.id }, data: { cardNumber } })
+          await appendServerAudit(tx, req, actor, {
+            action: 'invitation.card_assigned', entityType: 'user', entityId: user.id,
+            before: { hasCard: previous !== null },
+            after: { hasCard: true, cardChanged: previous !== null, accountCreated: false },
+          })
+        })
         return NextResponse.json({ ok: true, userId: user.id, created: false })
       }
 
@@ -57,18 +72,26 @@ export async function POST(req: NextRequest): Promise<Response> {
         return NextResponse.json({ error: 'phone_required' }, { status: 400 })
       }
       const passwordHash = await hashPassword(randomBytes(32).toString('hex'))
-      const created = await prisma.user.create({
-        data: {
-          id: randomUUID(),
-          email: email.toLowerCase(),
-          passwordHash,
-          name,
-          phone,
-          cardNumber,
-          platformRole: 'customer',
-          mustChangePassword: true,
-        },
-        select: { id: true },
+      const created = await prisma.$transaction(async (tx) => {
+        const row = await tx.user.create({
+          data: {
+            id: randomUUID(),
+            email: email.toLowerCase(),
+            passwordHash,
+            name,
+            phone,
+            cardNumber,
+            platformRole: 'customer',
+            mustChangePassword: true,
+          },
+          select: { id: true },
+        })
+        await appendServerAudit(tx, req, actor, {
+          action: 'invitation.card_assigned', entityType: 'user', entityId: row.id,
+          before: null,
+          after: { hasCard: true, cardChanged: false, accountCreated: true },
+        })
+        return row
       })
       return NextResponse.json({ ok: true, userId: created.id, created: true })
     } catch (e) {

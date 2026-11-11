@@ -1,7 +1,7 @@
 ﻿'use client';
 import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/delivery';
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { useOrders, type Order } from '@/lib/orders-store';
 import { useAdminStore } from '@/lib/admin-store';

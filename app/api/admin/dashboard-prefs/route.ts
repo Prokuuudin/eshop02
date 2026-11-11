@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
 
   try {
     const payload = (await request.json()) as Partial<AdminDashboardPrefs>
-    const saved = await saveAdminDashboardPrefs(actor.id, payload)
+    const saved = await saveAdminDashboardPrefs(actor.id, payload, { actor, request })
     return NextResponse.json(saved)
   } catch {
     return NextResponse.json({ error: 'failed_to_save_dashboard_prefs' }, { status: 400 })

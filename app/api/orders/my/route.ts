@@ -12,7 +12,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const take = Number.isInteger(rawTake) ? Math.min(100, Math.max(1, rawTake)) : 50
     const cursor = req.nextUrl.searchParams.get('cursor') || undefined
     const rows = await prisma.order.findMany({
-      where: { OR: [{ userId: user.id }, { email: user.email }] },
+      // Ownership is the userId only: the account e-mail is changeable, see canAccessOrder.
+      where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       take: take + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

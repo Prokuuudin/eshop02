@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/server-auth'
-import { prisma } from '@/lib/prisma'
+import { mediaPath, replaceMediaAsset } from '@/lib/media-asset-store'
 import { validateUploadedImage } from '@/lib/image-upload-validation'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest): Promise<Response> {
-  const __gate = await requireAdmin()
-  if (__gate instanceof NextResponse) return __gate
+  const actor = await requireAdmin()
+  if (actor instanceof NextResponse) return actor
 
   try {
     const formData = await request.formData()
@@ -30,20 +30,18 @@ export async function POST(request: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'unsupported_type' }, { status: 400 })
     }
 
-    try {
-      // Update in place — keeping the same name so all references stay valid
-      await prisma.mediaAsset.update({
-        where: { name },
-        data: { data: bytes, mimeType: verifiedMime, size: file.size }
-      })
-    } catch (e) {
-      if ((e as { code?: string })?.code === 'P2025') {
-        return NextResponse.json({ error: 'not_found' }, { status: 404 })
-      }
-      throw e
+    // Update in place — keeping the same name so all references stay valid.
+    // Identical bytes and type are a no-op: no write, no audit event.
+    const result = await replaceMediaAsset(
+      name,
+      { mimeType: verifiedMime, size: file.size, bytes },
+      { actor, request },
+    )
+    if (result === 'not_found') {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 })
     }
 
-    return NextResponse.json({ ok: true, path: `/api/media/${name}` })
+    return NextResponse.json({ ok: true, path: mediaPath(name) })
   } catch {
     return NextResponse.json({ error: 'replace_failed' }, { status: 500 })
   }

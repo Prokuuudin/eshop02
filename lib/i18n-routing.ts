@@ -33,6 +33,21 @@ export function localizePath(path: string, lang: Language): string {
   return normalized === '/' ? prefix : `${prefix}${normalized}`
 }
 
+/**
+ * Localize an internal link href, keeping its query and hash:
+ * localizeInternalHref('/#faq', 'lv') → '/lv#faq'. Left unchanged: external and
+ * protocol-relative URLs, already prefixed paths, API routes and files (paths with an
+ * extension), which live outside app/[lang].
+ */
+export function localizeInternalHref(href: string, lang: Language): string {
+  if (!href.startsWith('/') || href.startsWith('//')) return href
+  const queryOrHash = href.search(/[?#]/)
+  const pathname = queryOrHash === -1 ? href : href.slice(0, queryOrHash)
+  const suffix = queryOrHash === -1 ? '' : href.slice(queryOrHash)
+  if (/^\/(?:ru|en|lv|api|_next)(?:\/|$)/.test(pathname) || /\.[^/]+$/.test(pathname)) return href
+  return localizePath(pathname, lang) + suffix
+}
+
 /** Split a pathname into its language and unprefixed path. */
 export function stripLangPrefix(pathname: string): { lang: Language; path: string } {
   const match = pathname.match(/^\/(ru|en|lv)(\/.*)?$/)

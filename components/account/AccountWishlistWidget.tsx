@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import Image from 'next/image';
 import { Heart, ChevronRight } from 'lucide-react';
 import { useWishlist } from '@/lib/wishlist-store';

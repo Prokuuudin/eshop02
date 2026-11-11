@@ -42,6 +42,17 @@ describe('invitations api', () => {
         expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ userIds: ['u1', 'u2'] });
     });
 
+    it('gives every send action its own idempotency key', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await sendInvitationBatch(['u1']);
+        await sendInvitationBatch(['u1']);
+        const keys = fetchMock.mock.calls.map((call) => call[1].headers['Idempotency-Key']);
+        expect(keys[0]).toMatch(/^[0-9a-f-]{36}$/u);
+        expect(keys[1]).not.toBe(keys[0]);
+    });
+
     it('loads the phone-message template for the selected language', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,

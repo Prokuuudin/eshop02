@@ -2,7 +2,7 @@
 
 import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { ChevronDown, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

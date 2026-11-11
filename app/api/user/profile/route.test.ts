@@ -112,41 +112,42 @@ describe('PATCH /api/user/profile', () => {
     expect(data.checkoutProfile).not.toHaveProperty('invoicePersonalCode')
   })
 
-  it('updates email and related user records', async () => {
-    userUpdateMock.mockResolvedValue({
-      id: 'u1', email: 'new@example.com', name: null, phone: null, avatarUrl: null, cardNumber: null,
-    })
-    const res = await PATCH(makeRequest({ email: 'New@Example.com' }))
+  it('refuses a direct e-mail change and writes nothing', async () => {
+    const res = await PATCH(makeRequest({ email: 'New@Example.com', name: 'Changed' }))
+
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'email_change_requires_confirmation' })
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(companyMemberUpdateManyMock).not.toHaveBeenCalled()
+    expect(savedAddressUpdateManyMock).not.toHaveBeenCalled()
+  })
+
+  it('answers the same whether or not the requested address belongs to someone', async () => {
+    userFindFirstMock.mockResolvedValue({ id: 'u2' })
+    savedAddressFindFirstMock.mockResolvedValue({ id: 'a1' })
+    const taken = await PATCH(makeRequest({ email: 'taken@example.com' }))
+    userFindFirstMock.mockResolvedValue(null)
+    savedAddressFindFirstMock.mockResolvedValue(null)
+    const free = await PATCH(makeRequest({ email: 'free@example.com' }))
+
+    expect(taken.status).toBe(free.status)
+    expect(await taken.json()).toEqual(await free.json())
+    expect(userFindFirstMock).not.toHaveBeenCalled()
+  })
+
+  it('accepts the unchanged address in any case and never writes the e-mail field', async () => {
+    const res = await PATCH(makeRequest({ email: ' USER@test.com ', name: 'Renamed' }))
 
     expect(res.status).toBe(200)
-    expect(userUpdateMock).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ email: 'new@example.com' }),
-    }))
-    expect(companyMemberUpdateManyMock).toHaveBeenCalledWith({
-      where: { userId: 'u1' }, data: { email: 'new@example.com' },
-    })
-    expect(savedAddressUpdateManyMock).toHaveBeenCalledWith({
-      where: { userId: 'u1' }, data: { email: 'new@example.com' },
-    })
+    const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
+    expect(data).not.toHaveProperty('email')
+    expect(data.name).toBe('Renamed')
   })
 
-  it('rejects an email already owned by another user', async () => {
-    userFindFirstMock.mockResolvedValue({ id: 'u2' })
-
-    const res = await PATCH(makeRequest({ email: 'taken@example.com' }))
-
-    expect(res.status).toBe(409)
-    expect(await res.json()).toEqual({ error: 'email_taken' })
-    expect(userUpdateMock).not.toHaveBeenCalled()
-  })
-
-  it('rejects an email matching an existing legacy SavedAddress', async () => {
-    savedAddressFindFirstMock.mockResolvedValue({ id: 'addr1' })
-
-    const res = await PATCH(makeRequest({ email: 'victim@example.com' }))
-
-    expect(res.status).toBe(409)
-    expect(await res.json()).toEqual({ error: 'email_taken' })
+  it('still rejects a malformed address', async () => {
+    const res = await PATCH(makeRequest({ email: 'not-an-email' }))
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'invalid_email' })
     expect(userUpdateMock).not.toHaveBeenCalled()
   })
 })

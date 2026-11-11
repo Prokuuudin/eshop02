@@ -18,7 +18,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       return errorResponse('Product id is required', 400)
     }
 
-    const result = await restoreDeletedProduct(id)
+    const result = await restoreDeletedProduct(id, { actor: __gate, request: req })
     if (!result.success) {
       return errorResponse(result.error, 400)
     }

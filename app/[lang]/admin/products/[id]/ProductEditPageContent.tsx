@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import AdminGate from '@/components/admin/AdminGate';

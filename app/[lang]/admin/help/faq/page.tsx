@@ -1,6 +1,6 @@
 'use client'
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import AdminGate from '@/components/admin/AdminGate'

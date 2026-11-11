@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import { formatEuro } from '@/lib/utils'
 import { AnalyticsPagination, GRADE_STYLES, XYZ_STYLES, type AbcGrade, type AbcRow, type XyzGrade, Empty, LoadError } from './analytics-shared'
 import type { ReactElement } from 'react'

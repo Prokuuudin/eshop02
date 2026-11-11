@@ -8,8 +8,8 @@ import { authenticateRequest, successResponse, errorResponse, parsePagination } 
 import { prisma } from '@/lib/prisma'
 import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pricing'
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
-import { withPromotionDiscount } from '@/lib/orders-data-mapping'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
+import { withPromotionDiscount } from '@/lib/orders-data-mapping'
 
 export const runtime = 'nodejs'
 

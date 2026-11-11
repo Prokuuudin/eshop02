@@ -3,7 +3,7 @@ import { Hint } from '@/components/ui/tooltip';
 import React from 'react';
 import { useTranslation } from '@/lib/use-translation';
 import Image from 'next/image';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Product } from '../data/products';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import Image from 'next/image'
 import AdminGate from '@/components/admin/AdminGate'
 import { formatEuro } from '@/lib/utils'

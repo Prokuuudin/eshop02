@@ -2,7 +2,7 @@
 
 import { Hint } from '@/components/ui/tooltip';
 import React, { useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import Link from '@/components/LocalizedLink';
 import { Bell, ShoppingBag, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';

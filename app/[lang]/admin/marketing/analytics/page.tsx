@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/LocalizedLink'
 import AdminGate from '@/components/admin/AdminGate'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 

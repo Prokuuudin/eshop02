@@ -24,11 +24,14 @@ import { exportUserData } from './user-erasure'
 describe('exportUserData', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('with a real id, scopes order/user/wishlist queries by userId (and email as a fallback where applicable)', async () => {
+  it('with a real id, selects everything by owner and nothing by the changeable e-mail', async () => {
     await exportUserData({ id: 'user-1', email: 'A@B.com' })
     expect(prisma.order.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { OR: [{ userId: 'user-1' }, { email: 'a@b.com' }] } })
+      expect.objectContaining({ where: { userId: 'user-1' } })
     )
+    expect(prisma.savedAddress.findMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } })
+    expect(prisma.returnRequest.findMany).toHaveBeenCalledWith({ where: { orderId: { in: [] } } })
+    expect(prisma.accessRequest.findMany).not.toHaveBeenCalled()
     expect(prisma.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'user-1' } }))
     expect(prisma.wishlistItem.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'user-1' } }))
   })

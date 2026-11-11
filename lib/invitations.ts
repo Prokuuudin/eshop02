@@ -77,8 +77,9 @@ export async function readInvitations(db: Db, emails?: string[]): Promise<ProInv
   }))
 }
 
-export async function replaceInvitation(db: Db, invitation: NewInvitation): Promise<void> {
-  await db.invitationToken.deleteMany({
+/** Replaces the user's open invitations; resolves to how many were replaced. */
+export async function replaceInvitation(db: Db, invitation: NewInvitation): Promise<number> {
+  const { count } = await db.invitationToken.deleteMany({
     where: { userId: invitation.userId, status: { not: 'accepted' } },
   })
   await db.invitationToken.create({
@@ -91,6 +92,7 @@ export async function replaceInvitation(db: Db, invitation: NewInvitation): Prom
       expiresAt: new Date(invitation.expiresAt),
     },
   })
+  return count
 }
 
 export async function readCampaign(db: Db): Promise<CampaignState> {

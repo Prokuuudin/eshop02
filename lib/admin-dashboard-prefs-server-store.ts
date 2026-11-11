@@ -1,14 +1,20 @@
 import 'server-only'
+import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { appendServerAudit } from '@/lib/server-audit'
+import type { ServerUser } from '@/lib/server-auth'
 
 export type AdminDashboardPrefs = {
   cardOrder: string[] | null
   favoriteCardIds: string[]
 }
 
+export type DashboardPrefsAuditContext = { actor: ServerUser; request: NextRequest }
+
 const DEFAULT_PREFS: AdminDashboardPrefs = { cardOrder: null, favoriteCardIds: [] }
+const PREF_FIELDS = ['cardOrder', 'favoriteCardIds'] as const
 
 const kvKey = (userId: string) => `admin-dashboard-prefs:${userId}`
 
@@ -37,19 +43,40 @@ export async function getAdminDashboardPrefs(
   }
 }
 
+/**
+ * Partial update of the acting admin's dashboard preferences. The per-user
+ * advisory lock makes read-merge-write atomic, so a card-order change and a
+ * favourites change sent in parallel cannot overwrite each other. Normalised
+ * values are compared: an unchanged request writes nothing and creates no
+ * event; otherwise the KV write and its audit row (changed fields only)
+ * commit together.
+ */
 export async function saveAdminDashboardPrefs(
   userId: string,
   input: Partial<AdminDashboardPrefs>,
-  db: ExtendedTransactionClient = prisma,
+  audit: DashboardPrefsAuditContext,
 ): Promise<AdminDashboardPrefs> {
-  const existing = await getAdminDashboardPrefs(userId, db)
-  const next = normalize({ ...existing, ...input })
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${kvKey(userId)}))`
+    const row = await tx.keyValueSetting.findUnique({ where: { key: kvKey(userId) } })
+    const existing = row ? normalize(row.value as Partial<AdminDashboardPrefs>) : DEFAULT_PREFS
+    const next = normalize({ ...existing, ...input })
+    const changed = PREF_FIELDS.filter((field) => JSON.stringify(existing[field]) !== JSON.stringify(next[field]))
+    if (changed.length === 0) return next
 
-  await db.keyValueSetting.upsert({
-    where: { key: kvKey(userId) },
-    create: { key: kvKey(userId), value: next as unknown as Prisma.InputJsonValue },
-    update: { value: next as unknown as Prisma.InputJsonValue },
+    await tx.keyValueSetting.upsert({
+      where: { key: kvKey(userId) },
+      create: { key: kvKey(userId), value: next as unknown as Prisma.InputJsonValue },
+      update: { value: next as unknown as Prisma.InputJsonValue },
+    })
+    const pick = (prefs: AdminDashboardPrefs) => Object.fromEntries(changed.map((field) => [field, prefs[field]]))
+    await appendServerAudit(tx, audit.request, audit.actor, {
+      action: 'admin.dashboard_prefs_updated',
+      entityType: 'admin_dashboard_prefs',
+      entityId: userId,
+      before: pick(existing),
+      after: pick(next),
+    })
+    return next
   })
-
-  return next
 }

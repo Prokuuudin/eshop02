@@ -354,6 +354,7 @@ export const loginUserAuto = async (
     mfaRequired?: boolean;
     enrollmentRequired?: boolean;
     challengeToken?: string;
+    activationRequired?: boolean;
 }> => {
     const trimmed = identifier.trim();
 
@@ -373,6 +374,10 @@ export const loginUserAuto = async (
 
     if (res.status === 429) {
         return { success: false, error: 'Слишком много попыток входа. Попробуйте позже.' };
+    }
+    if (res.status === 403) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        if (body.error === 'activation_required') return { success: false, activationRequired: true };
     }
     if (!res.ok) {
         return {

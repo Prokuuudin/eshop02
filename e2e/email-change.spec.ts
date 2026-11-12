@@ -1,14 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { expect, test, type Page } from '@playwright/test'
 import bcrypt from 'bcryptjs'
-import { Client } from 'pg'
-import { resolveE2eDatabaseUrl } from '../scripts/e2e-database-guard'
+import { connectE2eDatabase } from './database'
 import { E2E_CUSTOMER } from './helpers'
 
 // Own customer per test: changing the e-mail must not disturb the shared fixtures.
 const query = async <T extends Record<string, unknown>>(text: string, params: unknown[] = []): Promise<T[]> => {
-  const client = new Client({ connectionString: resolveE2eDatabaseUrl(process.env) })
-  await client.connect()
+  const client = await connectE2eDatabase()
   try {
     return (await client.query<T>(text, params)).rows
   } finally {

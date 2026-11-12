@@ -1,6 +1,5 @@
 import { expect, request as playwrightRequest, test, type APIRequestContext } from '@playwright/test'
-import { Client } from 'pg'
-import { resolveE2eDatabaseUrl } from '../scripts/e2e-database-guard'
+import { connectE2eDatabase } from './database'
 import { E2E_CUSTOMER } from './helpers'
 
 // Raw responses, as a scraper or a search engine reads them: rendered HTML with its meta tags and
@@ -22,8 +21,7 @@ const expectVisibleContains = (body: string, text: string, label: string): void 
 }
 
 test.beforeAll(async () => {
-  const client = new Client({ connectionString: resolveE2eDatabaseUrl(process.env) })
-  await client.connect()
+  const client = await connectE2eDatabase()
   try {
     const insert = `INSERT INTO "Product" (id, title, "titleEn", "titleLv", brand, category, image, price, "oldPrice", stock, "isActive", badges, description, "metaTitle", "metaDescription", "ogAlt", "technicalSpecs", "bulkPricingTiers", "updatedAt")
       VALUES ($1,$2,$3,$4,'${BRAND}','hair','/placeholder.png',$5,$6,100,true,ARRAY['sale'],$7,$8,$9,$10,$11,$12,now())
@@ -54,8 +52,7 @@ test.beforeAll(async () => {
 })
 
 test.afterAll(async () => {
-  const client = new Client({ connectionString: resolveE2eDatabaseUrl(process.env) })
-  await client.connect()
+  const client = await connectE2eDatabase()
   try {
     await client.query(`DELETE FROM "KeyValueSetting" WHERE key = 'promo-campaigns'`)
     await client.query('DELETE FROM "Order" WHERE id = $1', [ORDER])

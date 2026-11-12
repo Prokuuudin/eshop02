@@ -1,9 +1,8 @@
 import { config } from 'dotenv'
-import { Client } from 'pg'
 import bcrypt from 'bcryptjs'
 import { createCipheriv, randomBytes } from 'node:crypto'
-import { resolveE2eDatabaseUrl } from '../scripts/e2e-database-guard'
-import { E2E_ADMIN, E2E_CUSTOMER, E2E_DORMANT_CUSTOMER, E2E_MANAGER, E2E_TOTP_SECRET, requiresMfa } from './helpers'
+import { connectE2eDatabase } from './database'
+import { E2E_ADMIN, E2E_CUSTOMER, E2E_DORMANT_CUSTOMER, E2E_MANAGER, E2E_PRODUCT_ID, E2E_TOTP_SECRET, requiresMfa } from './helpers'
 
 /** Same format as lib/mfa.ts encryptSecret (which is server-only and can't be imported here). */
 function encryptTotpSecret(secret: string): string {
@@ -25,9 +24,9 @@ function encryptTotpSecret(secret: string): string {
  * изолированной тестовой БД (scripts/e2e-database-guard.ts): у фикстур публичные пароль и TOTP.
  */
 export default async function globalSetup(): Promise<void> {
-  config({ path: '.env.e2e' })
-  const client = new Client({ connectionString: resolveE2eDatabaseUrl(process.env) })
-  await client.connect()
+  config({ path: '.env.e2e', quiet: true })
+  // Identity re-checked on this connection (playwright.config.ts already did) before any write.
+  const client = await connectE2eDatabase()
   try {
     const passwordHash = await bcrypt.hash(E2E_MANAGER.password, 10)
     for (const fixture of [E2E_MANAGER, E2E_ADMIN, E2E_CUSTOMER, E2E_DORMANT_CUSTOMER]) {
@@ -63,6 +62,14 @@ export default async function globalSetup(): Promise<void> {
         ],
       )
     }
+    // The isolated database starts with an empty catalog; specs that need "a product in stock"
+    // (fetchRealProduct) get this one.
+    await client.query(
+      `INSERT INTO "Product" (id, title, "titleEn", "titleLv", brand, category, image, price, stock, "isActive", "updatedAt")
+       VALUES ($1, 'E2E шампунь', 'E2E shampoo', 'E2E šampūns', 'E2E Brand', 'hair', '/placeholder.png', 25, 500, true, now())
+       ON CONFLICT (id) DO UPDATE SET price = EXCLUDED.price, stock = EXCLUDED.stock, "isActive" = true, category = EXCLUDED.category, "updatedAt" = now()`,
+      [E2E_PRODUCT_ID],
+    )
   } finally {
     await client.end()
   }

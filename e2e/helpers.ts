@@ -105,7 +105,10 @@ export const loginAs = async (page: Page, fixture: E2eUserFixture): Promise<void
   expect(response.ok(), `auth/login failed for ${fixture.email}: ${response.status()}`).toBeTruthy()
 }
 
-/** Живой товар из Neon — демо-товары (p1-p16) удалены из БД. */
+/** Товар в наличии, который e2e/global-setup.ts создаёт в изолированной тестовой БД. */
+export const E2E_PRODUCT_ID = 'e2e-fixture-product'
+
+/** Товар в наличии из каталога тестовой БД (как минимум фикстура E2E_PRODUCT_ID). */
 export const fetchRealProduct = async (
   page: Page,
   category = 'hair'

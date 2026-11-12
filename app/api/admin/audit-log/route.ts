@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auditActorLookups, classifyAuditActors } from '@/lib/audit-actor-status'
 import { logApiError } from '@/lib/observability'
 import { parseOffsetPagination } from '@/lib/pagination'
 import { prisma } from '@/lib/prisma'
@@ -16,7 +17,17 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.auditLog.findMany({ where, orderBy: { at: 'desc' }, skip, take }),
       prisma.auditLog.count({ where }),
     ])
-    return NextResponse.json({ entries: entries.map((entry) => ({ ...entry, sequence: entry.sequence.toString(), at: entry.at.toISOString() })), total })
+    // Current standing of this page's actors, so the admin filter can mark former and deleted ones.
+    const { ids, emails } = auditActorLookups(entries)
+    const actorUsers = ids.length + emails.length === 0 ? [] : await prisma.user.findMany({
+      where: { OR: [{ id: { in: ids } }, { email: { in: emails, mode: 'insensitive' } }] },
+      select: { id: true, email: true, platformRole: true, teamRole: true },
+    })
+    return NextResponse.json({
+      entries: entries.map((entry) => ({ ...entry, sequence: entry.sequence.toString(), at: entry.at.toISOString() })),
+      total,
+      actorStatus: classifyAuditActors(entries, actorUsers),
+    })
   } catch (error) {
     logApiError("[audit-log GET]", error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

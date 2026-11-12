@@ -9,6 +9,26 @@ export function interpolate(template: string, vars: Record<string, string>): str
 
 type Tpl = { subject: string; body: string }
 
+/** Срез конфига бонусной программы, нужный письму-приглашению. */
+export type InviteBonusInfo = { enabled: boolean; welcomeBonusPoints: number; earnRatePercent: number }
+
+// Блок о приветственном бонусе в шаблоне обёрнут маркерами: если бонус не
+// начисляется (программа выключена или 0 баллов), блок вырезается целиком,
+// чтобы письмо не обещало «0 €» или несуществующий бонус.
+const BONUS_SECTION_RE = /<!--bonus-->[\s\S]*?<!--\/bonus-->/g
+
+/** 1 балл = 1 цент; целочисленно, без float: 500 → "5", 550 → "5.50". */
+export function formatPointsAsEuros(points: number): string {
+  const cents = Math.max(0, Math.round(points))
+  const euros = Math.floor(cents / 100)
+  const rest = cents % 100
+  return rest === 0 ? String(euros) : `${euros}.${String(rest).padStart(2, '0')}`
+}
+
+function welcomeBonusPoints(bonus: InviteBonusInfo): number {
+  return bonus.enabled ? Math.max(0, Math.round(bonus.welcomeBonusPoints)) : 0
+}
+
 /** Языковой вариант шаблона приоритетнее базового трёхъязычного pro-invite. */
 export function pickInviteTemplate<T extends { id: string }>(
   templates: T[],
@@ -24,9 +44,10 @@ export function pickInviteTemplate<T extends { id: string }>(
 const INVITE_SUBJECT =
   'Jauns veikals profesionāļiem · Новый магазин для профессионалов · A new store for professionals'
 
-const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
+const INVITE_BLOCKS: Array<{ intro: string; bonus: string; steps: string[] }> = [
   {
     intro: '<strong>LV</strong> — MIKS PLUS ir atvēris jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:',
+    bonus: 'Sveiciena bonuss: pēc reģistrācijas jūsu kontā tiks ieskaitīti {{welcome_bonus_points}} bonusa punkti ({{welcome_bonus_eur}} €). Par katru pasūtījumu krājas {{bonus_earn_rate}}% no summas punktos; 1 punkts = 1 cents, punktus var izmantot nākamo pirkumu apmaksai.',
     steps: [
       'Nospiediet zemāk pogu “Aktivizēt kontu” — saite ir personīga un derīga ierobežotu laiku.',
       'Iestatiet savu paroli.',
@@ -35,6 +56,7 @@ const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
   },
   {
     intro: '<strong>RU</strong> — MIKS PLUS открыл новый интернет-магазин для профессионалов индустрии красоты — <strong>hairshoppro.lv</strong>. Напоминаем: у вас есть карта клиента MIKS PLUS № <strong>{{card_number}}</strong>. После регистрации вам будут доступны профессиональные цены, онлайн-заказы, накопление бонусных баллов и их использование при следующих покупках. Как зарегистрироваться:',
+    bonus: 'Приветственный бонус: после регистрации на ваш счёт будет зачислено {{welcome_bonus_points}} бонусных баллов ({{welcome_bonus_eur}} €). С каждого заказа начисляется {{bonus_earn_rate}}% от суммы; 1 балл = 1 цент, баллами можно оплачивать следующие покупки.',
     steps: [
       'Нажмите ниже кнопку «Активировать аккаунт» — ссылка персональная и действует ограниченное время.',
       'Задайте свой пароль.',
@@ -43,6 +65,7 @@ const INVITE_BLOCKS: Array<{ intro: string; steps: string[] }> = [
   },
   {
     intro: '<strong>EN</strong> — MIKS PLUS has opened a new online store for beauty professionals — <strong>hairshoppro.lv</strong>. A reminder: you have MIKS PLUS client card No. <strong>{{card_number}}</strong>. Once registered, you can access professional prices, order online, earn bonus points and redeem them on future purchases. How to register:',
+    bonus: 'Welcome bonus: once you register, {{welcome_bonus_points}} bonus points ({{welcome_bonus_eur}} €) will be credited to your account. Every order earns {{bonus_earn_rate}}% of its value in points; 1 point = 1 cent, and points can be used to pay for future purchases.',
     steps: [
       'Click the “Activate account” button below — the link is personal and valid for a limited time.',
       'Set your password.',
@@ -93,25 +116,31 @@ function wrap(title: string, paragraphs: string[], buttonText: string, buttonUrl
 
 export function buildInviteEmail(
   _lang: InviteLang,
-  vars: { name: string; cardNumber: string; inviteUrl: string },
+  vars: { name: string; cardNumber: string; inviteUrl: string; bonus: InviteBonusInfo },
   tpl?: Tpl
 ): { subject: string; html: string } {
   // Card activation happens only through the personal one-time link. A stored template that still
   // uses the retired {{registration_link}} placeholder gets the same personal link.
   const activationLink = vars.inviteUrl
+  const bonusPoints = welcomeBonusPoints(vars.bonus)
   const safe = {
     name: escapeHtml(vars.name),
     card_number: escapeHtml(vars.cardNumber),
     invite_link: activationLink,
     registration_link: activationLink,
+    welcome_bonus_points: String(bonusPoints),
+    welcome_bonus_eur: formatPointsAsEuros(bonusPoints),
+    bonus_earn_rate: String(Math.max(0, vars.bonus.earnRatePercent)),
   }
   if (tpl) {
-    return { subject: interpolate(tpl.subject, safe), html: interpolate(tpl.body, safe) }
+    const body = bonusPoints > 0 ? tpl.body : tpl.body.replace(BONUS_SECTION_RE, '')
+    return { subject: interpolate(tpl.subject, safe), html: interpolate(body, safe) }
   }
   const blocks = INVITE_BLOCKS.map(
     (b) =>
       `<p>${interpolate(b.intro, safe)}</p>
-    <ol style="margin:4px 0 16px;padding-left:20px">${b.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`
+    <ol style="margin:4px 0 16px;padding-left:20px">${b.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
+    ${bonusPoints > 0 ? `<p><strong>${interpolate(b.bonus, safe)}</strong></p>` : ''}`
   )
   const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
     <h2 style="color:#4f46e5">Laipni lūdzam! · Добро пожаловать! · Welcome!</h2>

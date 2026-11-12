@@ -24,6 +24,7 @@ import {
   type NewInvitation,
 } from '@/lib/invitations'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
+import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { parseOffsetPagination } from '@/lib/pagination'
 
@@ -181,6 +182,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const templates = await getTemplates()
     // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override
     const tpl = pickInviteTemplate(templates, language)
+    const bonus = await getBonusProgramConfig()
     const base = getSiteUrl()
     const now = new Date()
     const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()
@@ -240,7 +242,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const inviteUrl = inviteUrlFor(base, r.token)
       const { subject, html } = buildInviteEmail(
         language,
-        { name: user.name ?? '', cardNumber: r.cardNumber, inviteUrl },
+        { name: user.name ?? '', cardNumber: r.cardNumber, inviteUrl, bonus },
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
       try {

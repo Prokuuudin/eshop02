@@ -6,9 +6,25 @@ import { useTranslation } from '@/lib/use-translation';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+type CampaignOffer = NonNullable<Product['campaignOffers']>[number];
+
+function visibleOffers(offers: CampaignOffer[]): CampaignOffer[] {
+  const unique = new Map<string, CampaignOffer>();
+
+  for (const offer of offers) {
+    const key = `${offer.discountPercent}:${offer.minOrderAmount}`;
+    const current = unique.get(key);
+    if (!current || (offer.name?.trim().length ?? 0) > (current.name?.trim().length ?? 0)) {
+      unique.set(key, offer);
+    }
+  }
+
+  return [...unique.values()];
+}
+
 export default function ProductCampaignOffers({ product }: { product: Product }): React.ReactElement | null {
   const { language } = useTranslation();
-  const offers = product.campaignOffers ?? [];
+  const offers = visibleOffers(product.campaignOffers ?? []);
   const secondItemOffers = product.secondItemOffers ?? [];
   if (!offers.length && !secondItemOffers.length) return null;
   const text = {

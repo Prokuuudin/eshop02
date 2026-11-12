@@ -57,6 +57,21 @@ short sha256 fingerprint, secrets and tokens as `[redacted]`).
    `changes: 0`. In the admin panel, the audit-log integrity check must stay green and the
    new audit rows must name the operator.
 
+## Stale order links of the E2E customer fixture
+
+`npm run repair:test-bonus-links` (logic: `lib/test-bonus-link-repair.ts`) clears `orderId` on
+two exact bonus rows of `u_e2e_customer_fixture`. Their test orders were deleted outside the admin
+delete route (which unlinks bonus rows), and because order ids are `max(id) + 1`, later real
+orders of other customers received the same ids. Only `orderId` of those two rows changes; points,
+balances, reasons, orders and every other customer's bonus rows stay untouched. Any other stale
+link found by the review is only reported. Same protocol and flags as above (review, approve the
+fingerprint, `--apply --confirm ... --expect-host ... --operator-email ... --reason ...`, review
+again: both rows `noop`). Run it before the account clean-up; the fixture itself stays `blocked`
+(it holds bonus history) until the owner decides otherwise.
+
+Never delete production orders by hand: use the admin delete route, which unlinks dependent rows
+and writes an audit entry.
+
 ## Rollback
 
 - Neutralize cannot and should not restore the old credentials. If the account must be used

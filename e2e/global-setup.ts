@@ -2,7 +2,7 @@ import { config } from 'dotenv'
 import bcrypt from 'bcryptjs'
 import { createCipheriv, randomBytes } from 'node:crypto'
 import { connectE2eDatabase } from './database'
-import { E2E_ADMIN, E2E_CUSTOMER, E2E_DORMANT_CUSTOMER, E2E_MANAGER, E2E_TOTP_SECRET, requiresMfa } from './helpers'
+import { E2E_ADMIN, E2E_CUSTOMER, E2E_DORMANT_CUSTOMER, E2E_MANAGER, E2E_PRODUCT_ID, E2E_TOTP_SECRET, requiresMfa } from './helpers'
 
 /** Same format as lib/mfa.ts encryptSecret (which is server-only and can't be imported here). */
 function encryptTotpSecret(secret: string): string {
@@ -62,6 +62,14 @@ export default async function globalSetup(): Promise<void> {
         ],
       )
     }
+    // The isolated database starts with an empty catalog; specs that need "a product in stock"
+    // (fetchRealProduct) get this one.
+    await client.query(
+      `INSERT INTO "Product" (id, title, "titleEn", "titleLv", brand, category, image, price, stock, "isActive", "updatedAt")
+       VALUES ($1, 'E2E шампунь', 'E2E shampoo', 'E2E šampūns', 'E2E Brand', 'hair', '/placeholder.png', 25, 500, true, now())
+       ON CONFLICT (id) DO UPDATE SET price = EXCLUDED.price, stock = EXCLUDED.stock, "isActive" = true, category = EXCLUDED.category, "updatedAt" = now()`,
+      [E2E_PRODUCT_ID],
+    )
   } finally {
     await client.end()
   }

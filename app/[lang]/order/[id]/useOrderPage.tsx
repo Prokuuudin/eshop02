@@ -16,6 +16,7 @@ import {
     pollForPaymentConfirmation,
     type PaymentReturnState,
 } from '@/lib/payment-return-polling';
+import { GA4_READY_EVENT, trackPurchaseOnce } from '@/lib/analytics';
 
 type PageProps = {
     params: Promise<{
@@ -166,6 +167,36 @@ function useOrderPageState({ params, searchParams }: PageProps) {
             return 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200';
         return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200';
     };
+
+    React.useEffect(() => {
+        const attempt = (): void => {
+            // Only the freshly loaded API snapshot is authoritative. The persisted Zustand
+            // order may be stale or user-modified and must never create a conversion.
+            if (!serverOrder || serverOrder.paymentStatus !== 'paid') return;
+            trackPurchaseOnce({
+                id: serverOrder.id,
+                paymentStatus: serverOrder.paymentStatus,
+                total: serverOrder.total,
+                tax: serverOrder.tax,
+                delivery: serverOrder.delivery,
+                promoCode: serverOrder.promoCode,
+                items: serverOrder.items.map((item) => ({
+                    id: item.id,
+                    sku: item.sku,
+                    title: item.title,
+                    brand: item.brand,
+                    category: item.category,
+                    price: item.price,
+                    quantity: item.quantity,
+                    variant: item.variantLabel,
+                })),
+            });
+        };
+
+        attempt();
+        window.addEventListener(GA4_READY_EVENT, attempt);
+        return () => window.removeEventListener(GA4_READY_EVENT, attempt);
+    }, [serverOrder]);
 
     if (serverOrderLoading && !serverOrder && !localOrder) {
         return (

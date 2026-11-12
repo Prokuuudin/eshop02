@@ -11,31 +11,9 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/use-translation'
+import { getCookieConsent, saveCookieConsent } from '@/lib/cookie-consent'
 
-export type CookieConsentValue = {
-  necessary: true
-  analytics: boolean
-  marketing: boolean
-  ts: number
-}
-
-const CONSENT_KEY = 'cookie_consent'
-
-export function getCookieConsent(): CookieConsentValue | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const raw = localStorage.getItem(CONSENT_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as CookieConsentValue
-  } catch {
-    return null
-  }
-}
-
-function saveConsent(analytics: boolean, marketing: boolean): void {
-  const value: CookieConsentValue = { necessary: true, analytics, marketing, ts: Date.now() }
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(value))
-}
+export { getCookieConsent, type CookieConsentValue } from '@/lib/cookie-consent'
 
 export default function CookieConsent(): React.ReactElement | null {
   const { t } = useTranslation()
@@ -76,18 +54,18 @@ export default function CookieConsent(): React.ReactElement | null {
   }
 
   const acceptAll = () => {
-    saveConsent(true, true)
+    saveCookieConsent(true, true)
     dismiss()
     setConfigOpen(false)
   }
 
   const necessaryOnly = () => {
-    saveConsent(false, false)
+    saveCookieConsent(false, false)
     dismiss()
   }
 
   const saveSelection = () => {
-    saveConsent(analytics, marketing)
+    saveCookieConsent(analytics, marketing)
     dismiss()
     setConfigOpen(false)
   }

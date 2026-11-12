@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { Suspense, useEffect, useRef } from 'react'
 import { I18nProvider } from '@/lib/i18n-context'
 import type { Language } from '@/data/translations'
 import { ToastProvider, useToast } from '@/lib/toast-context'
@@ -13,6 +13,7 @@ import { useAdminStore } from '@/lib/admin-store'
 import { setLocaleFormatConfig } from '@/lib/utils'
 import FlyToCart from '@/components/FlyToCart'
 import CookieConsent from '@/components/CookieConsent'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 import TelemetryReporter from '@/components/TelemetryReporter'
 import type { BonusProgramConfig } from '@/lib/bonus-program'
 import type { LocaleConfig } from '@/lib/locale-config'
@@ -167,6 +168,9 @@ export function Providers({
         <TelemetryReporter />
         <FlyToCart />
         <CookieConsent />
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         {children}
       </ToastProvider>
     </I18nProvider>

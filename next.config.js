@@ -72,8 +72,8 @@ const nextConfig = {
         // production build (next build && next start) that eval is NOT needed outside dev.
         const scriptSrc =
             process.env.NODE_ENV === 'development'
-                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com"
-                : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com";
+                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.googletagmanager.com"
+                : "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.googletagmanager.com";
 
         const csp = [
             "default-src 'self'",
@@ -85,7 +85,7 @@ const nextConfig = {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https://hairshop.lv",
             "font-src 'self' data:",
-            "connect-src 'self' https://challenges.cloudflare.com",
+            "connect-src 'self' https://challenges.cloudflare.com https://www.google-analytics.com https://*.google-analytics.com",
             // Facebook/YouTube/Vimeo: product demo-video embeds (see isEmbedUrl in ProductVideoGallery).
             "frame-src https://challenges.cloudflare.com https://www.facebook.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com",
             "object-src 'none'",

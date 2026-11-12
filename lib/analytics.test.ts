@@ -4,6 +4,9 @@ import {
   isGa4Host,
   isPayseraReturn,
   purchaseStorageKey,
+  revokeGa4Runtime,
+  sendGa4Event,
+  setGa4Operational,
   toGa4Item,
   trackPurchaseOnce,
 } from './analytics'
@@ -23,6 +26,7 @@ class MemoryStorage {
 
 describe('GA4 analytics', () => {
   afterEach(() => {
+    setGa4Operational(false)
     vi.unstubAllGlobals()
   })
 
@@ -59,10 +63,25 @@ describe('GA4 analytics', () => {
       id: '1001', paymentStatus: 'paid', total: 25.5, tax: 4.43, delivery: 2.5,
       promoCode: 'SAVE10', items: [{ id: 'product-1', title: 'Shampoo', price: 11.5, quantity: 2 }],
     })).toEqual({
-      transaction_id: '1001', value: 25.5, currency: 'EUR', tax: 4.43, shipping: 2.5,
+      transaction_id: '1001', value: 18.57, currency: 'EUR', tax: 4.43, shipping: 2.5,
       coupon: 'SAVE10',
-      items: [{ item_id: 'product-1', item_name: 'Shampoo', price: 11.5, quantity: 2 }],
+      items: [{ item_id: 'product-1', item_name: 'Shampoo', price: 9.285, quantity: 2 }],
     })
+  })
+
+  it('keeps discounted item lines equal to purchase value while preserving variants', () => {
+    const parameters = buildPurchaseParameters({
+      id: '1002', paymentStatus: 'paid', total: 24.2, tax: 3.2, delivery: 2,
+      items: [
+        { id: 'p1', title: 'Color', variant: 'Tone: 7.1', price: 10, quantity: 2 },
+        { id: 'p2', title: 'Mask', price: 5, quantity: 1 },
+      ],
+    })
+    const items = parameters.items as Array<{ price: number; quantity: number; item_variant?: string }>
+
+    expect(parameters.value).toBe(19)
+    expect(items[0].item_variant).toBe('Tone: 7.1')
+    expect(items.reduce((sum, item) => sum + item.price * item.quantity, 0)).toBeCloseTo(19, 10)
   })
 
   it('sends only paid purchases and persists refresh deduplication', () => {
@@ -72,6 +91,7 @@ describe('GA4 analytics', () => {
     }))
     const gtag = vi.fn()
     vi.stubGlobal('window', { localStorage: storage, gtag })
+    setGa4Operational(true)
     const order = {
       id: '1001', paymentStatus: 'paid', total: 10,
       items: [{ id: 'p1', title: 'Product', price: 10, quantity: 1 }],
@@ -85,6 +105,47 @@ describe('GA4 analytics', () => {
       transaction_id: '1001', currency: 'EUR', send_to: GA4_MEASUREMENT_ID,
     }))
     expect(storage.getItem(purchaseStorageKey('1001'))).toBeTruthy()
+  })
+
+  it('does not mark a purchase as sent while the Google tag is blocked', () => {
+    const storage = new MemoryStorage()
+    storage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({
+      necessary: true, analytics: true, marketing: false, ts: 1,
+    }))
+    const gtag = vi.fn()
+    vi.stubGlobal('window', { localStorage: storage, gtag })
+
+    expect(trackPurchaseOnce({
+      id: 'blocked-1', paymentStatus: 'paid', total: 10,
+      items: [{ id: 'p1', title: 'Product', price: 10 }],
+    }, storage)).toBe(false)
+    expect(gtag).not.toHaveBeenCalled()
+    expect(storage.getItem(purchaseStorageKey('blocked-1'))).toBeNull()
+  })
+
+  it('denies consent and clears queued commands when analytics consent is revoked', () => {
+    const storage = new MemoryStorage()
+    storage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({
+      necessary: true, analytics: true, marketing: false, ts: 1,
+    }))
+    const gtag = vi.fn()
+    const dataLayer: unknown[] = [['event', 'purchase', { transaction_id: 'queued-1' }]]
+    const runtime = { localStorage: storage, gtag, dataLayer } as Record<string, unknown>
+    vi.stubGlobal('window', runtime)
+    setGa4Operational(true)
+
+    revokeGa4Runtime()
+
+    expect(runtime[`ga-disable-${GA4_MEASUREMENT_ID}`]).toBe(true)
+    expect(gtag).toHaveBeenCalledWith('consent', 'update', {
+      analytics_storage: 'denied',
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+    })
+    expect(dataLayer).toEqual([])
+    expect(runtime.gtag).toBeUndefined()
+    expect(sendGa4Event('page_view')).toBe(false)
   })
 
   it('does not send a purchase without analytics consent', () => {

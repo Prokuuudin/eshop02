@@ -39,6 +39,7 @@ export type PurchaseInput = {
 
 type AnalyticsStorage = Pick<Storage, 'getItem' | 'setItem'>
 type Ga4EventParameters = Record<string, unknown>
+let ga4Operational = false
 
 declare global {
   interface Window {
@@ -49,6 +50,27 @@ declare global {
 
 function money(value: number): number {
   return Math.round(value * 100) / 100
+}
+
+export function setGa4Operational(operational: boolean): void {
+  ga4Operational = operational
+}
+
+export function revokeGa4Runtime(): void {
+  if (typeof window === 'undefined') return
+
+  ga4Operational = false
+  ;(window as unknown as Record<string, unknown>)[`ga-disable-${GA4_MEASUREMENT_ID}`] = true
+  window.gtag?.('consent', 'update', {
+    analytics_storage: 'denied',
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+  })
+  // Commands queued before gtag.js finished loading must never be replayed after
+  // consent is granted again. A same-document re-enable is handled by a reload.
+  if (window.dataLayer) window.dataLayer.length = 0
+  delete window.gtag
 }
 
 export function isGa4Host(hostname: string): boolean {
@@ -82,15 +104,48 @@ export function toGa4Item(item: AnalyticsItemInput): Ga4Item {
   }
 }
 
+function buildPurchaseItems(items: AnalyticsItemInput[], targetValueCents: number): Ga4Item[] {
+  const lineGrossCents = items.map((item) => Math.max(0, Math.round(item.price * (item.quantity ?? 1) * 100)))
+  const grossCents = lineGrossCents.reduce((sum, value) => sum + value, 0)
+  if (grossCents <= 0) return items.map(toGa4Item)
+
+  const allocatedTargetCents = Math.min(Math.max(0, targetValueCents), grossCents)
+  let remainingTargetCents = allocatedTargetCents
+  let remainingGrossCents = grossCents
+  return items.map((item, index) => {
+    const quantity = Math.max(1, item.quantity ?? 1)
+    const lineCents = index === items.length - 1
+      ? remainingTargetCents
+      : Math.min(
+          remainingTargetCents,
+          Math.round((remainingTargetCents * lineGrossCents[index]) / remainingGrossCents)
+        )
+    remainingTargetCents -= lineCents
+    remainingGrossCents -= lineGrossCents[index]
+    return {
+      ...toGa4Item(item),
+      // GA4 requires purchase value to equal Σ(price × quantity), excluding
+      // tax and shipping. Fractional cents are valid for proportional order discounts.
+      price: lineCents / 100 / quantity,
+      quantity,
+    }
+  })
+}
+
 export function buildPurchaseParameters(order: PurchaseInput): Ga4EventParameters {
+  const shipping = typeof order.delivery === 'number' ? money(order.delivery) : 0
+  const tax = typeof order.tax === 'number' ? money(order.tax) : 0
+  const targetValueCents = Math.max(0, Math.round((order.total - shipping - tax) * 100))
+  const items = buildPurchaseItems(order.items, targetValueCents)
+  const value = money(items.reduce((sum, item) => sum + item.price * item.quantity, 0))
   return {
     transaction_id: order.id,
-    value: money(order.total),
+    value,
     currency: 'EUR',
-    ...(typeof order.tax === 'number' ? { tax: money(order.tax) } : {}),
-    ...(typeof order.delivery === 'number' ? { shipping: money(order.delivery) } : {}),
+    ...(typeof order.tax === 'number' ? { tax } : {}),
+    ...(typeof order.delivery === 'number' ? { shipping } : {}),
     ...(order.promoCode ? { coupon: order.promoCode } : {}),
-    items: order.items.map(toGa4Item),
+    items,
   }
 }
 
@@ -99,7 +154,12 @@ export function purchaseStorageKey(transactionId: string): string {
 }
 
 export function sendGa4Event(name: string, parameters: Ga4EventParameters = {}): boolean {
-  if (typeof window === 'undefined' || !getCookieConsent()?.analytics || typeof window.gtag !== 'function') {
+  if (
+    typeof window === 'undefined'
+    || !ga4Operational
+    || !getCookieConsent()?.analytics
+    || typeof window.gtag !== 'function'
+  ) {
     return false
   }
 

@@ -8,6 +8,8 @@ import {
   GA4_SCRIPT_ID,
   isGa4Host,
   isPayseraReturn,
+  revokeGa4Runtime,
+  setGa4Operational,
 } from '@/lib/analytics'
 import {
   COOKIE_CONSENT_CHANGED_EVENT,
@@ -65,13 +67,30 @@ function configureGtag(ignoreReferrer: boolean): void {
   })
 }
 
-function ensureGtagScript(): void {
-  if (document.getElementById(GA4_SCRIPT_ID)) return
-  const script = document.createElement('script')
-  script.id = GA4_SCRIPT_ID
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA4_MEASUREMENT_ID)}`
-  document.head.appendChild(script)
+function ensureGtagScript(onLoad: () => void, onError: () => void): () => void {
+  const existing = document.getElementById(GA4_SCRIPT_ID) as HTMLScriptElement | null
+  const script = existing ?? document.createElement('script')
+  if (script.dataset.ga4Loaded === 'true') {
+    queueMicrotask(onLoad)
+    return () => undefined
+  }
+
+  const handleLoad = (): void => {
+    script.dataset.ga4Loaded = 'true'
+    onLoad()
+  }
+  script.addEventListener('load', handleLoad)
+  script.addEventListener('error', onError)
+  if (!existing) {
+    script.id = GA4_SCRIPT_ID
+    script.async = true
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GA4_MEASUREMENT_ID)}`
+    document.head.appendChild(script)
+  }
+  return () => {
+    script.removeEventListener('load', handleLoad)
+    script.removeEventListener('error', onError)
+  }
 }
 
 export default function GoogleAnalytics(): null {
@@ -81,19 +100,29 @@ export default function GoogleAnalytics(): null {
   const [consentRevision, setConsentRevision] = useState(0)
   const [configured, setConfigured] = useState(false)
   const configuredRef = useRef(false)
+  const revokedInDocumentRef = useRef(false)
   const lastPageRef = useRef('')
 
   useEffect(() => {
     const onConsentChanged = (event: Event): void => {
       const consent = (event as CustomEvent<CookieConsentValue>).detail
       if (!consent.analytics) {
-        setGaDisabled(true)
+        const hadGaRuntime = configuredRef.current
+          || Boolean(document.getElementById(GA4_SCRIPT_ID))
+          || typeof window.gtag === 'function'
+        revokeGa4Runtime()
         document.getElementById(GA4_SCRIPT_ID)?.remove()
         removeGaCookies()
         removeGaClientStorage()
+        revokedInDocumentRef.current = hadGaRuntime
         configuredRef.current = false
         setConfigured(false)
         lastPageRef.current = ''
+      } else if (revokedInDocumentRef.current) {
+        // A loaded Google tag cannot be unloaded safely. Reloading after the saved
+        // choice prevents stale listeners or pre-revoke commands from resuming.
+        window.location.reload()
+        return
       }
       setConsentRevision((value) => value + 1)
     }
@@ -107,10 +136,20 @@ export default function GoogleAnalytics(): null {
     setGaDisabled(false)
     if (configuredRef.current) return
     configureGtag(isPayseraReturn(window.location.pathname, window.location.search, document.referrer))
-    ensureGtagScript()
     configuredRef.current = true
-    setConfigured(true)
-    window.dispatchEvent(new Event(GA4_READY_EVENT))
+    return ensureGtagScript(
+      () => {
+        if (!getCookieConsent()?.analytics) return
+        setGa4Operational(true)
+        setConfigured(true)
+        window.dispatchEvent(new Event(GA4_READY_EVENT))
+      },
+      () => {
+        setGa4Operational(false)
+        configuredRef.current = false
+        document.getElementById(GA4_SCRIPT_ID)?.remove()
+      }
+    )
   }, [consentRevision])
 
   useEffect(() => {

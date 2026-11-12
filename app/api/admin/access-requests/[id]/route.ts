@@ -8,6 +8,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { deleteCertificate } from '@/lib/certificate-store'
 import { sendEmail } from '@/lib/mailer'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
+import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
   hashInviteToken,
@@ -243,7 +244,7 @@ export async function PATCH(
       const inviteUrl = `${getSiteUrl()}/auth/invite?token=${token}`
       const mail = buildInviteEmail(
         language,
-        { name: existing.name ?? '', cardNumber, inviteUrl },
+        { name: existing.name ?? '', cardNumber, inviteUrl, bonus: await getBonusProgramConfig() },
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
       )
       try {

@@ -51,6 +51,9 @@ export function renderPreview(body: string, vars: string[], language: 'ru' | 'en
         invite_link: 'https://hairshoppro.lv/auth/invite?token=example',
         registration_link: 'https://hairshoppro.lv/auth/register',
         registration_url: 'https://hairshoppro.lv/auth/register',
+        welcome_bonus_points: '500',
+        welcome_bonus_eur: '5',
+        bonus_earn_rate: '0.5',
         site_url: 'https://hairshoppro.lv',
         note_block: '',
     };

@@ -144,6 +144,9 @@ vi.mock('@/lib/invitation-emails', () => ({
   buildInviteEmail: vi.fn((_lang: string, vars: { inviteUrl: string }) => ({ subject: 'Invite', html: `<a href="${vars.inviteUrl}">Invite</a>` })),
   pickInviteTemplate: vi.fn(() => undefined),
 }))
+vi.mock('@/lib/bonus-config-server-store', () => ({
+  getBonusProgramConfig: vi.fn(async () => ({ enabled: true, welcomeBonusPoints: 500, earnRatePercent: 0.5 })),
+}))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://example.com') }))
 vi.mock('node:crypto', async (importOriginal) => {

@@ -1,6 +1,7 @@
 import 'server-only'
 import { prisma } from '@/lib/prisma'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
+import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
 import { hashInviteToken, newInviteToken, replaceInvitation, type InviteLang } from '@/lib/invitations'
@@ -89,7 +90,7 @@ export async function sendCardActivationInvite(user: ActivationCandidate & { car
     const tpl = pickInviteTemplate(templates, language)
     const { subject, html } = buildInviteEmail(
       language,
-      { name: user.name ?? '', cardNumber: user.cardNumber, inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}` },
+      { name: user.name ?? '', cardNumber: user.cardNumber, inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}`, bonus: await getBonusProgramConfig() },
       tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
     )
     try {

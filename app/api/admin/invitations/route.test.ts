@@ -24,6 +24,9 @@ vi.mock('@/lib/prisma', () => ({
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: requireAdminMock }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
+vi.mock('@/lib/bonus-config-server-store', () => ({
+  getBonusProgramConfig: vi.fn(async () => ({ enabled: true, welcomeBonusPoints: 500, earnRatePercent: 0.5 })),
+}))
 vi.mock('@/lib/invitation-emails', () => ({ buildInviteEmail: vi.fn(), pickInviteTemplate: vi.fn() }))
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://example.test') }))
 vi.mock('@/lib/invitations', async (importOriginal) => {

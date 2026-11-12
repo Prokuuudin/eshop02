@@ -68,7 +68,13 @@ export type TargetUser = {
   mfaEnabled: boolean; hasMfaSecret: boolean; mfaBackupCodeCount: number; createdAt: string; updatedAt: string
 }
 export type ReferenceCount = { table: string; column: string; kind: ReferenceKind; count: number }
-export type TargetState = { target: CleanupTarget; user: TargetUser | null; references: ReferenceCount[]; neutralizedEarlier: boolean }
+/** Bonus rows of an E2E fixture (collected for delete targets only). */
+export type TestBonusRow = {
+  id: string; orderId: string | null; actorUserId: string | null; type: string; points: number; balanceAfter: number; createdAt: string
+}
+export type TargetState = {
+  target: CleanupTarget; user: TargetUser | null; references: ReferenceCount[]; neutralizedEarlier: boolean; bonusRows: TestBonusRow[]
+}
 export type Outcome = 'neutralize' | 'delete' | 'noop' | 'blocked' | 'abort'
 export type Decision = { id: string; email: string; action: CleanupTarget['action']; outcome: Outcome; reasons: string[] }
 export type CleanupPlan = { runId: string; decisions: Decision[]; fingerprint: string; refused: boolean; changes: number }
@@ -77,6 +83,20 @@ const listed = (refs: ReferenceCount[], kind: ReferenceKind): string[] =>
   refs.filter((ref) => ref.kind === kind && ref.count > 0).map((ref) => `${ref.table}.${ref.column}=${ref.count}`)
 
 const FIXTURE_ID = /^u_e2e_[a-z]+_fixture$/
+
+/**
+ * A fixture's own bonus history is test data that may go with it only when every row is an
+ * automatic order credit no longer linked to any order, nobody else acted on it, and the
+ * balance is exactly what those rows produced. Anything else stays a business blocker.
+ */
+export function detachedTestBonus(user: TargetUser, rows: TestBonusRow[]): { ok: boolean; reason?: string } {
+  if (rows.length === 0) return { ok: user.bonusPoints === 0, reason: user.bonusPoints === 0 ? undefined : `bonusPoints=${user.bonusPoints} without bonus rows` }
+  const linked = rows.filter((row) => row.orderId != null || row.actorUserId != null || row.type !== 'order_earn')
+  if (linked.length > 0) return { ok: false, reason: `bonus rows linked to orders/actors or not order_earn: ${linked.map((row) => row.id).join(',')}` }
+  const latest = [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)).at(-1)!
+  if (latest.balanceAfter !== user.bonusPoints) return { ok: false, reason: `bonusPoints=${user.bonusPoints} differs from the bonus history (${latest.balanceAfter})` }
+  return { ok: true }
+}
 
 function decide(state: TargetState): Decision {
   const { target, user, references } = state
@@ -98,14 +118,19 @@ function decide(state: TargetState): Decision {
     return reasons.length > 0 ? { ...base, outcome: 'neutralize', reasons } : { ...base, outcome: 'noop', reasons: ['already neutralized'] }
   }
 
+  const bonus = detachedTestBonus(user, state.bonusRows)
+  const ownBonusRows = (ref: ReferenceCount): boolean => bonus.ok && ref.table === 'BonusTransaction' && ref.column === 'userId'
   const blocked = [
     ...(FIXTURE_ID.test(user.id) && user.email.startsWith('e2e-') && user.email.endsWith('@hairshoppro.lv.local') && (user.name ?? '').startsWith('E2E ')
       ? [] : ['test origin not confirmed (id, e-mail and name must match the E2E fixture pattern)']),
-    ...(user.bonusPoints !== 0 ? [`bonusPoints=${user.bonusPoints}`] : []),
-    ...listed(references, 'business'),
+    ...(bonus.ok ? [] : [bonus.reason!]),
+    ...listed(references.filter((ref) => !ownBonusRows(ref)), 'business'),
   ]
   if (blocked.length > 0) return { ...base, outcome: 'blocked', reasons: blocked }
-  return { ...base, outcome: 'delete', reasons: [...listed(references, 'credential'), ...listed(references, 'auxiliary')] }
+  const bonusNote = state.bonusRows.length > 0
+    ? [`test bonus rows=${state.bonusRows.length} (${state.bonusRows.map((row) => row.points).join('+')} points, balance ${user.bonusPoints})`]
+    : []
+  return { ...base, outcome: 'delete', reasons: [...listed(references, 'credential'), ...listed(references, 'auxiliary'), ...bonusNote] }
 }
 
 function canonical(value: unknown): string {
@@ -137,9 +162,14 @@ const quote = (identifier: string): string => {
   return `"${identifier}"`
 }
 
-async function tableExists(tx: Tx, table: string): Promise<boolean> {
-  const rows = await tx.$queryRawUnsafe<Array<{ found: string | null }>>('SELECT to_regclass($1)::text AS found', `public.${quote(table)}`)
-  return rows[0]?.found != null
+// Every query is a network round trip inside one transaction (Neon: ~100 ms each), so lookups
+// are batched: one catalog read, one count query per target, one digest query.
+async function existingTables(tx: Tx): Promise<Set<string>> {
+  const rows = await tx.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT c.relname::text AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')`,
+  )
+  return new Set(rows.map((row) => row.name))
 }
 
 /** Listed references plus any foreign key to "User" that the list does not know (counted as business). */
@@ -159,19 +189,15 @@ async function referenceList(tx: Tx): Promise<Reference[]> {
   return [...USER_REFERENCES, ...unlisted]
 }
 
-async function countReferences(tx: Tx, refs: Reference[], user: { id: string; email: string }): Promise<ReferenceCount[]> {
-  const counts: ReferenceCount[] = []
-  for (const ref of refs) {
-    if (!(await tableExists(tx, ref.table))) continue
-    const rows = await tx.$queryRawUnsafe<Array<{ n: number }>>(
-      ref.byEmail
-        ? `SELECT count(*)::int AS n FROM ${quote(ref.table)} WHERE lower(${quote(ref.column)}) = lower($1)`
-        : `SELECT count(*)::int AS n FROM ${quote(ref.table)} WHERE ${quote(ref.column)} = $1`,
-      ref.byEmail ? user.email : user.id,
-    )
-    counts.push({ table: ref.table, column: ref.column, kind: ref.kind, count: Number(rows[0]?.n ?? 0) })
-  }
-  return counts
+async function countReferences(tx: Tx, refs: Reference[], tables: Set<string>, user: { id: string; email: string }): Promise<ReferenceCount[]> {
+  const present = refs.filter((ref) => tables.has(ref.table))
+  if (present.length === 0) return []
+  const sql = present.map((ref, index) => `SELECT ${index} AS i, count(*)::int AS n FROM ${quote(ref.table)} WHERE ${
+    ref.byEmail ? `lower(${quote(ref.column)}) = lower($2)` : `${quote(ref.column)} = $1`}`).join(' UNION ALL ')
+  const rows = await tx.$queryRawUnsafe<Array<{ i: number; n: number }>>(sql, user.id, user.email)
+  return present.map((ref, index) => ({
+    table: ref.table, column: ref.column, kind: ref.kind, count: Number(rows.find((row) => Number(row.i) === index)?.n ?? 0),
+  }))
 }
 
 type UserRow = {
@@ -189,6 +215,15 @@ export async function collectCleanupStates(tx: Tx, lock = false): Promise<Target
     ids,
   )
   const refs = await referenceList(tx)
+  const tables = await existingTables(tx)
+  const bonusByUser = await tx.$queryRawUnsafe<Array<Omit<TestBonusRow, 'createdAt'> & { userId: string; createdAt: Date }>>(
+    `SELECT id, "userId", "orderId", "actorUserId", type, points, "balanceAfter", "createdAt" FROM "BonusTransaction"
+      WHERE "userId" = ANY($1::text[]) ORDER BY "createdAt", id`,
+    CLEANUP_TARGETS.filter((target) => target.action === 'delete').map((target) => target.id),
+  )
+  const neutralized = new Set((await tx.$queryRawUnsafe<Array<{ id: string }>>(
+    'SELECT DISTINCT "entityId" AS id FROM "AuditLog" WHERE action = $1 AND "entityId" = ANY($2::text[])', NEUTRALIZED_ACTION, ids,
+  )).map((row) => row.id))
   const states: TargetState[] = []
   for (const target of CLEANUP_TARGETS) {
     const row = rows.find((candidate) => candidate.id === target.id)
@@ -199,11 +234,14 @@ export async function collectCleanupStates(tx: Tx, lock = false): Promise<Target
       mfaBackupCodeCount: row.mfaBackupCodes?.length ?? 0,
       createdAt: new Date(row.createdAt).toISOString(), updatedAt: new Date(row.updatedAt).toISOString(),
     } : null
-    const references = user ? await countReferences(tx, refs, user) : []
-    const earlier = await tx.$queryRawUnsafe<Array<{ n: number }>>(
-      'SELECT count(*)::int AS n FROM "AuditLog" WHERE action = $1 AND "entityId" = $2', NEUTRALIZED_ACTION, target.id,
-    )
-    states.push({ target, user, references, neutralizedEarlier: Number(earlier[0]?.n ?? 0) > 0 })
+    const references = user ? await countReferences(tx, refs, tables, user) : []
+    const bonusRows: TestBonusRow[] = user && target.action === 'delete'
+      ? bonusByUser.filter((row) => row.userId === user.id).map((row) => ({
+          id: row.id, orderId: row.orderId, actorUserId: row.actorUserId, type: row.type,
+          points: Number(row.points), balanceAfter: Number(row.balanceAfter), createdAt: new Date(row.createdAt).toISOString(),
+        }))
+      : []
+    states.push({ target, user, references, neutralizedEarlier: neutralized.has(target.id), bonusRows })
   }
   return states
 }
@@ -231,8 +269,9 @@ export async function snapshotCleanupRows(tx: Tx): Promise<Record<string, unknow
     'SELECT to_jsonb(u) AS row FROM "User" u WHERE id = ANY($1::text[]) ORDER BY id', ids,
   )
   snapshot.User = users.map(({ row }) => redactRow(row))
+  const tables = await existingTables(tx)
   for (const ref of USER_REFERENCES.filter((candidate) => candidate.kind === 'credential' || candidate.kind === 'auxiliary')) {
-    if (!(await tableExists(tx, ref.table))) continue
+    if (!tables.has(ref.table)) continue
     const rows = await tx.$queryRawUnsafe<Array<{ row: Record<string, unknown> }>>(
       `SELECT to_jsonb(t) AS row FROM ${quote(ref.table)} t WHERE ${quote(ref.column)} = ANY($1::text[])`, ids,
     )
@@ -241,17 +280,48 @@ export async function snapshotCleanupRows(tx: Tx): Promise<Record<string, unknow
   return snapshot
 }
 
-async function deleteReferences(tx: Tx, userId: string, kinds: ReferenceKind[]): Promise<Record<string, number>> {
+/** Deletes the rows counted inside this transaction (target rows are locked, so counts are current). */
+async function deleteReferences(tx: Tx, state: TargetState, kinds: ReferenceKind[]): Promise<Record<string, number>> {
   const removed: Record<string, number> = {}
-  for (const ref of USER_REFERENCES.filter((candidate) => kinds.includes(candidate.kind) && !candidate.byEmail)) {
-    if (!(await tableExists(tx, ref.table))) continue
+  const userId = state.target.id
+  const listed = new Set(USER_REFERENCES.filter((ref) => kinds.includes(ref.kind) && !ref.byEmail).map((ref) => `${ref.table}.${ref.column}`))
+  for (const ref of state.references.filter((candidate) => candidate.count > 0 && listed.has(`${candidate.table}.${candidate.column}`))) {
     const n = await tx.$executeRawUnsafe(`DELETE FROM ${quote(ref.table)} WHERE ${quote(ref.column)} = $1`, userId)
-    if (n > 0) removed[`${ref.table}.${ref.column}`] = n
+    if (n !== ref.count) throw new Error(`expected to delete ${ref.count} rows from ${ref.table}.${ref.column} of ${userId}, deleted ${n}`)
+    removed[`${ref.table}.${ref.column}`] = n
   }
   return removed
 }
 
 export type AppliedChange = { id: string; email: string; outcome: Outcome; removed: Record<string, number> }
+
+/**
+ * Everything the clean-up must leave untouched, hashed inside the apply transaction before and
+ * after the changes: any difference throws, so the whole transaction rolls back.
+ */
+async function invariantDigests(
+  tx: Tx, tables: Set<string>, excluded: { userIds: string[]; bonusIds: string[]; auditUpTo: string },
+): Promise<Record<string, string>> {
+  const parts: Array<[string, string, string]> = [
+    ['orders', 'Order', 'true'],
+    ['invoices', 'Invoice', 'true'],
+    ['returns', 'ReturnRequest', 'true'],
+    ['stockAllocations', 'StockAllocation', 'true'],
+    ['promoRedemptions', 'PromoCodeRedemption', 'true'],
+    ['otherBonusRows', 'BonusTransaction', 'NOT (t.id = ANY($1::text[]))'],
+    ['otherUsers', 'User', 'NOT (t.id = ANY($2::text[]))'],
+    ['earlierAudit', 'AuditLog', 't.sequence <= $3::bigint'],
+  ]
+  const present = parts.filter(([, table]) => tables.has(table))
+  const sql = present.map(([label, table, where]) =>
+    `SELECT '${label}' AS label, count(*)::int AS n, md5(string_agg(to_jsonb(t)::text, ',' ORDER BY to_jsonb(t)::text)) AS h FROM ${quote(table)} t WHERE ${where}`,
+  ).join(' UNION ALL ')
+  const rows = await tx.$queryRawUnsafe<Array<{ label: string; n: number; h: string | null }>>(sql, excluded.bonusIds, excluded.userIds, excluded.auditUpTo)
+  return Object.fromEntries(parts.map(([label]) => {
+    const row = rows.find((candidate) => candidate.label === label)
+    return [label, row ? `${row.n}:${row.h ?? '-'}` : 'missing']
+  }))
+}
 
 /**
  * Applies a reviewed plan inside the caller's transaction. Target rows are locked and the plan is
@@ -262,11 +332,20 @@ export async function applyTestAccountCleanup(
   input: { confirmFingerprint: string; operator: ServerUser; reason: string },
 ): Promise<{ plan: CleanupPlan; applied: AppliedChange[] }> {
   if (!input.reason.trim()) throw new Error('a reason is required')
-  const plan = planTestAccountCleanup(await collectCleanupStates(tx, true))
+  const states = await collectCleanupStates(tx, true)
+  const plan = planTestAccountCleanup(states)
   if (plan.refused) throw new Error('plan is refused (abort outcome); nothing changed')
   if (plan.fingerprint !== input.confirmFingerprint) {
     throw new Error(`state changed since review: plan ${plan.fingerprint} does not match --confirm; nothing changed`)
   }
+
+  const touchedUsers = plan.decisions.filter((d) => d.outcome === 'neutralize' || d.outcome === 'delete').map((d) => d.id)
+  const tables = await existingTables(tx)
+  const deletedBonusIds = plan.decisions
+    .filter((d) => d.outcome === 'delete')
+    .flatMap((d) => states.find((state) => state.target.id === d.id)?.bonusRows.map((row) => row.id) ?? [])
+  const auditUpTo = (await tx.$queryRawUnsafe<Array<{ s: string | null }>>('SELECT coalesce(max(sequence), 0)::text AS s FROM "AuditLog"'))[0]?.s ?? '0'
+  const invariantsBefore = await invariantDigests(tx, tables, { userIds: touchedUsers, bonusIds: deletedBonusIds, auditUpTo })
 
   const request = new NextRequest('http://maintenance.invalid/cleanup-test-accounts', {
     headers: { 'user-agent': 'scripts/cleanup-test-accounts.ts', 'x-request-id': `${CLEANUP_RUN_ID}-${plan.fingerprint}` },
@@ -279,7 +358,7 @@ export async function applyTestAccountCleanup(
         where: { id: decision.id },
         data: { passwordHash: unknownPassword, mfaSecret: null, mfaEnabled: false, mfaBackupCodes: [], mfaEnrolledAt: null },
       })
-      const removed = await deleteReferences(tx, decision.id, ['credential'])
+      const removed = await deleteReferences(tx, states.find((state) => state.target.id === decision.id)!, ['credential'])
       await appendServerAudit(tx, request, input.operator, {
         action: NEUTRALIZED_ACTION, entityType: 'user', entityId: decision.id, entityTitle: decision.email,
         before: { reasons: decision.reasons }, after: { passwordReplaced: true, mfaRemoved: true, removed },
@@ -287,12 +366,24 @@ export async function applyTestAccountCleanup(
       })
       applied.push({ id: decision.id, email: decision.email, outcome: decision.outcome, removed })
     } else if (decision.outcome === 'delete') {
-      const removed = await deleteReferences(tx, decision.id, ['credential', 'auxiliary'])
+      const removed = await deleteReferences(tx, states.find((state) => state.target.id === decision.id)!, ['credential', 'auxiliary'])
+      const bonusRows = states.find((state) => state.target.id === decision.id)?.bonusRows ?? []
+      if (bonusRows.length > 0) {
+        // Exactly the reviewed rows, and only while they are still detached test credits.
+        const n = await tx.$executeRawUnsafe(
+          `DELETE FROM "BonusTransaction" WHERE id = ANY($1::text[]) AND "userId" = $2 AND "orderId" IS NULL AND "actorUserId" IS NULL`,
+          bonusRows.map((row) => row.id), decision.id,
+        )
+        if (n !== bonusRows.length) throw new Error(`expected to delete ${bonusRows.length} test bonus rows of ${decision.id}, deleted ${n}`)
+        removed['BonusTransaction.userId'] = n
+      }
+      const bonusPoints = states.find((state) => state.target.id === decision.id)?.user?.bonusPoints ?? 0
       const deleted = await tx.$executeRawUnsafe('DELETE FROM "User" WHERE id = $1', decision.id)
       if (deleted !== 1) throw new Error(`expected to delete exactly one user ${decision.id}`)
       await appendServerAudit(tx, request, input.operator, {
         action: DELETED_ACTION, entityType: 'user', entityId: decision.id, entityTitle: decision.email,
-        before: { removedWithUser: removed }, after: null,
+        before: { removedWithUser: removed, bonusPoints, bonusRows: bonusRows.map((row) => ({ id: row.id, points: row.points, balanceAfter: row.balanceAfter })) },
+        after: null,
         details: `run=${CLEANUP_RUN_ID}; plan=${plan.fingerprint}`, reason: input.reason,
       })
       applied.push({ id: decision.id, email: decision.email, outcome: decision.outcome, removed })
@@ -300,6 +391,10 @@ export async function applyTestAccountCleanup(
       applied.push({ id: decision.id, email: decision.email, outcome: decision.outcome, removed: {} })
     }
   }
+
+  const invariantsAfter = await invariantDigests(tx, tables, { userIds: touchedUsers, bonusIds: deletedBonusIds, auditUpTo })
+  const changed = Object.keys(invariantsBefore).filter((key) => invariantsBefore[key] !== invariantsAfter[key])
+  if (changed.length > 0) throw new Error(`invariant violated (${changed.join(', ')}); transaction rolled back`)
   return { plan, applied }
 }
 

@@ -81,7 +81,7 @@ async function main(): Promise<void> {
       fs.writeFileSync(file, JSON.stringify({ host, mode: 'apply-pending', snapshot }, null, 2))
       const result = await cleanup.applyTestAccountCleanup(tx, { confirmFingerprint: args.confirm!, operator, reason: args.reason! })
       return { host, mode: 'applied', operator: operator.email, reason: args.reason, snapshot, ...result }
-    }, { timeout: 60_000, isolationLevel: 'Serializable' })
+    }, { timeout: 120_000, maxWait: 20_000, isolationLevel: 'Serializable' })
     fs.writeFileSync(file, JSON.stringify(report, null, 2))
     for (const change of report.applied) console.log(`${change.outcome.padEnd(10)} ${change.id} <${change.email}> ${JSON.stringify(change.removed)}`)
     console.log(`applied plan ${report.plan.fingerprint}; report written to ${file}`)

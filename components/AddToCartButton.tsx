@@ -5,13 +5,15 @@ import { useTranslation } from '@/lib/use-translation'
 import { localizeVariantGroupName } from '@/lib/variant-group-label'
 import { Product, SelectedVariant } from '@/data/products'
 import { Button } from './ui/button'
-import { useCart } from '@/lib/cart-store'
+import { buildLineKey, useCart } from '@/lib/cart-store'
 import { useToast } from '@/lib/toast-context'
 import { useAuthStore } from '@/lib/auth-store'
 import { getMinimumOrderQuantity, calculatePrice } from '@/lib/customer-segmentation'
 import { formatEuro } from '@/lib/utils'
 import { getVariantGroups, getMissingRequiredGroups } from '@/lib/product-variants'
 import AuthGateDialog from '@/components/AuthGateDialog'
+import { getLocalizedCartItemTitle } from '@/lib/cart-localization'
+import { trackAddToCart } from '@/lib/analytics'
 
 type Props = {
   product: Product
@@ -103,6 +105,21 @@ export default function AddToCartButton({ product, selectedVariants, onQuantityC
     }
 
     addItem(product, quantity, selectedVariants)
+    const addedLine = useCart.getState().items.find(
+      (item) => item.lineKey === buildLineKey(product.id, selectedVariants)
+    )
+    if (addedLine) {
+      trackAddToCart({
+        id: addedLine.id,
+        sku: addedLine.sku,
+        title: getLocalizedCartItemTitle(addedLine, language, t),
+        brand: addedLine.brand,
+        category: addedLine.category,
+        price: calculatePrice(addedLine, addedLine.quantity),
+        quantity,
+        variant: addedLine.variantLabel,
+      })
+    }
     showToast(t('toast.addedToCart'), 'success')
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)

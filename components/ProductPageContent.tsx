@@ -9,7 +9,7 @@ import { ProductBenefits } from '@/components/ProductBenefits';
 import ProductRequestSection from '@/components/ProductRequestSection';
 import ProductQuestionSection from '@/components/ProductQuestionSection';
 
-import React, { useEffect, useSyncExternalStore } from 'react';
+import React, { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { JSX } from 'react';
 import { Product } from '@/data/products';
 import { useViewedProducts } from '@/lib/viewed-products-store';
@@ -19,6 +19,7 @@ import type { BrandManufacturerInfo } from '@/lib/brands-config';
 import { useProductLocalization } from '@/hooks/useProductLocalization';
 
 import { getMinimumOrderQuantity, getDisplayPrice } from '@/lib/customer-segmentation';
+import { GA4_READY_EVENT, trackViewItem } from '@/lib/analytics';
 
 type Props = {
     product: Product;
@@ -51,6 +52,7 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
         () => false
     );
     const recentViews = isClient ? getRecentViews(4) : [];
+    const trackedProductRef = useRef<string | null>(null);
 
     const minOrderQuantity = getMinimumOrderQuantity(product);
     const ratingCount = product.ratingCount ?? product.reviewCount ?? 0;
@@ -59,6 +61,26 @@ export default function ProductPageContent({ product, relatedProducts, oftenBoug
     useEffect(() => {
         addView(product);
     }, [product, addView]);
+
+    useEffect(() => {
+        const attempt = (): void => {
+            if (trackedProductRef.current === product.id) return;
+            if (trackViewItem({
+                id: product.id,
+                sku: product.sku,
+                title: localizedTitle,
+                brand: product.brand,
+                category: product.category,
+                price: displayPrice,
+            })) {
+                trackedProductRef.current = product.id;
+            }
+        };
+
+        attempt();
+        window.addEventListener(GA4_READY_EVENT, attempt);
+        return () => window.removeEventListener(GA4_READY_EVENT, attempt);
+    }, [displayPrice, localizedTitle, product.brand, product.category, product.id, product.sku]);
 
     // Формируем ссылки для категории и бренда
     const categoryUrl = product.category

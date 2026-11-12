@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { syncCurrentSessionUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
+import { trackClientCardActivation, trackSignUp } from '@/lib/analytics';
 
 type Stage = 'loading' | 'form' | 'submitting' | 'done' | 'error';
 
@@ -89,6 +90,8 @@ export default function InvitePage(): React.ReactElement {
                 setStage('form');
                 return;
             }
+            trackSignUp('client_card');
+            trackClientCardActivation();
             // POST /api/auth/invite already created the server session. Mirror
             // that verified session locally without attempting email login:
             // customer email is deliberately not a valid login identifier.

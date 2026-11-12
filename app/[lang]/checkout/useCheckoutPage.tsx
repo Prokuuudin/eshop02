@@ -38,6 +38,8 @@ import { validateCheckoutForm } from './checkout-validation';
 import { createCheckoutOrder, checkoutOrderFailureMessage } from './checkout-order-api';
 import { calculateCheckoutTotals } from './checkout-totals';
 import { evaluateCampaignOffer, validatePromoCode, type CampaignOffer } from './checkout-promo-api';
+import { GA4_READY_EVENT, trackBeginCheckout } from '@/lib/analytics';
+import { getLocalizedCartItemTitle } from '@/lib/cart-localization';
 
 function useCheckoutPageState() {
     const { t, language } = useTranslation();
@@ -185,6 +187,31 @@ function useCheckoutPageState() {
             ),
         [checkoutItems]
     );
+    const beginCheckoutTrackedRef = useRef(false);
+
+    React.useEffect(() => {
+        const attempt = (): void => {
+            if (beginCheckoutTrackedRef.current || checkoutItems.length === 0) return;
+            const sent = trackBeginCheckout(
+                checkoutItems.map((item) => ({
+                    id: item.id,
+                    sku: item.sku,
+                    title: getLocalizedCartItemTitle(item, language, t),
+                    brand: item.brand,
+                    category: item.category,
+                    price: calculatePrice(item, item.quantity),
+                    quantity: item.quantity,
+                    variant: item.variantLabel,
+                })),
+                subtotal
+            );
+            if (sent) beginCheckoutTrackedRef.current = true;
+        };
+
+        attempt();
+        window.addEventListener(GA4_READY_EVENT, attempt);
+        return () => window.removeEventListener(GA4_READY_EVENT, attempt);
+    }, [checkoutItems, language, subtotal, t]);
 
     React.useEffect(() => {
         let cancelled = false;

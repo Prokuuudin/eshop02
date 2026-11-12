@@ -219,12 +219,12 @@ export default function AdminLogPage(): React.ReactElement {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-1 items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
             placeholder={l('Поиск по объекту, email, деталям...', 'Search by object, email or details...', 'Meklēt pēc objekta, e-pasta vai informācijas...')}
-            className="w-64"
+            className="w-full"
           />
           <Select value={actionFilter || 'all'} onValueChange={(v) => { setActionFilter(v === 'all' ? '' : v as AdminLogAction); setPage(0) }}>
             <SelectTrigger className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
@@ -246,7 +246,7 @@ export default function AdminLogPage(): React.ReactElement {
               {uniqueAdmins.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
-          <span className="self-center text-sm text-muted-foreground ml-auto">
+          <span className="whitespace-nowrap text-sm text-muted-foreground md:text-right">
             {filtered.length} {l('из', 'of', 'no')} {entries.length}
           </span>
         </div>

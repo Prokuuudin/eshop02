@@ -37,6 +37,7 @@ jobs:
       E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       E2E_DATABASE_ALLOWED_HOST: ${{ secrets.E2E_DATABASE_ALLOWED_HOST }}
       E2E_DATABASE_ISOLATED_ACK: isolated-test-db
+      E2E_DATABASE_MARKER: ${{ secrets.E2E_DATABASE_MARKER }}
       MFA_ENCRYPTION_KEY: ${{ secrets.E2E_MFA_ENCRYPTION_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -60,6 +61,7 @@ jobs:
       E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       E2E_DATABASE_ALLOWED_HOST: ${{ secrets.E2E_DATABASE_ALLOWED_HOST }}
       E2E_DATABASE_ISOLATED_ACK: isolated-test-db
+      E2E_DATABASE_MARKER: ${{ secrets.E2E_DATABASE_MARKER }}
       MFA_ENCRYPTION_KEY: ${{ secrets.E2E_MFA_ENCRYPTION_KEY }}
       PLAYWRIGHT_WEB_SERVER_COMMAND: npx next start -p 3005
     steps:
@@ -88,6 +90,7 @@ jobs:
       E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       E2E_DATABASE_ALLOWED_HOST: ${{ secrets.E2E_DATABASE_ALLOWED_HOST }}
       E2E_DATABASE_ISOLATED_ACK: isolated-test-db
+      E2E_DATABASE_MARKER: ${{ secrets.E2E_DATABASE_MARKER }}
       MFA_ENCRYPTION_KEY: ${{ secrets.E2E_MFA_ENCRYPTION_KEY }}
       PLAYWRIGHT_WEB_SERVER_COMMAND: npx next start -p 3005
     steps:
@@ -141,6 +144,7 @@ jobs:
       E2E_DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
       E2E_DATABASE_ALLOWED_HOST: ${{ secrets.E2E_DATABASE_ALLOWED_HOST }}
       E2E_DATABASE_ISOLATED_ACK: isolated-test-db
+      E2E_DATABASE_MARKER: ${{ secrets.E2E_DATABASE_MARKER }}
       MFA_ENCRYPTION_KEY: ${{ secrets.E2E_MFA_ENCRYPTION_KEY }}
       LOAD_BASE_URL: http://localhost:3000
       LOAD_CONCURRENCY: 5

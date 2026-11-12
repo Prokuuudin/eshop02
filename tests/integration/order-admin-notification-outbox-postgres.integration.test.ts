@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { assertNotProductionDatabaseUrl } from '../../scripts/e2e-database-guard'
 import { randomUUID } from 'node:crypto'
 
 vi.mock('server-only', () => ({}))
@@ -18,6 +19,7 @@ suite('admin order notification outbox on isolated Postgres', () => {
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required for isolated outbox integration tests')
+    assertNotProductionDatabaseUrl(process.env.DATABASE_URL, 'outbox integration tests')
     ;({ prisma } = await import('@/lib/prisma'))
     ;({ enqueueAdminOrderNotification: enqueue } = await import('@/lib/order-admin-notification-outbox'))
     ;({

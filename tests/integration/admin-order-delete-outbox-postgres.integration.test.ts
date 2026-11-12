@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { assertNotProductionDatabaseUrl } from '../../scripts/e2e-database-guard'
 import { randomUUID } from 'node:crypto'
 import { NextRequest } from 'next/server'
 
@@ -19,6 +20,7 @@ suite('DELETE /api/admin/orders with the admin notification outbox on isolated P
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required for isolated outbox integration tests')
+    assertNotProductionDatabaseUrl(process.env.DATABASE_URL, 'outbox integration tests')
     ;({ prisma } = await import('@/lib/prisma'))
     ;({ enqueueAdminOrderNotification: enqueue } = await import('@/lib/order-admin-notification-outbox'))
     ;({ DELETE } = await import('@/app/api/admin/orders/route'))

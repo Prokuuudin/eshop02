@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAdminLogStore, mapServerLogEntry, getAdminActionLabels, type AdminLogAction } from '@/lib/admin-log-store'
 import { adminFetchJson, classifyAdminError } from '@/lib/admin-ui-errors'
+import { mergeAuditActorStatuses, type AuditActorStatus } from '@/lib/audit-actor-status'
 import { useAdminLocale } from '@/lib/use-admin-locale'
 import StickyTableHead from '@/components/admin/StickyTableHead'
 
@@ -55,23 +56,28 @@ export default function AdminLogPage(): React.ReactElement {
   const [loadError, setLoadError] = useState('')
   const [integrity, setIntegrity] = useState<IntegrityResult | null>(null)
   const [integrityError, setIntegrityError] = useState(false)
+  const [actorStatus, setActorStatus] = useState<Record<string, AuditActorStatus>>({})
 
   useEffect(() => {
     const controller = new AbortController()
     const loadAllEntries = async (): Promise<void> => {
       const all: Array<Parameters<typeof mapServerLogEntry>[0]> = []
+      let statuses: Record<string, AuditActorStatus> = {}
       let total = 0
       do {
         const payload = await adminFetchJson<{
           entries?: Array<Parameters<typeof mapServerLogEntry>[0]>
           total?: number
+          actorStatus?: Record<string, AuditActorStatus>
         }>(`/api/admin/audit-log?skip=${all.length}&take=${API_PAGE_SIZE}`, { signal: controller.signal })
         const batch = Array.isArray(payload.entries) ? payload.entries : []
         all.push(...batch)
+        statuses = mergeAuditActorStatuses(statuses, payload.actorStatus)
         total = typeof payload.total === 'number' ? payload.total : all.length
         if (batch.length === 0) break
       } while (all.length < total)
       setEntries(all.map(mapServerLogEntry))
+      setActorStatus(statuses)
     }
 
     void Promise.all([
@@ -243,7 +249,18 @@ export default function AdminLogPage(): React.ReactElement {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{l('Все администраторы', 'All administrators', 'Visi administratori')}</SelectItem>
-              {uniqueAdmins.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+              {uniqueAdmins.map((a) => {
+                // The log keeps historical e-mails; mark actors who are no longer staff.
+                const status = actorStatus[a]
+                const note = status === 'former'
+                  ? l('бывший', 'former', 'bijušais')
+                  : status === 'deleted' ? l('удалён', 'deleted', 'dzēsts') : ''
+                return (
+                  <SelectItem key={a} value={a}>
+                    {a}{note && <span className="text-muted-foreground"> · {note}</span>}
+                  </SelectItem>
+                )
+              })}
             </SelectContent>
           </Select>
           <span className="whitespace-nowrap text-sm text-muted-foreground md:text-right">

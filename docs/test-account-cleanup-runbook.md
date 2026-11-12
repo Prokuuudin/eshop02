@@ -14,11 +14,19 @@ Safety rules, re-evaluated inside the apply transaction with the target rows loc
 
 - The whole run is refused if a target id has a different e-mail, admin-panel access (admin or
   manager) or Super Admin, or if the user to neutralize is missing.
-- A fixture is deleted only when its id, e-mail and name match the E2E fixture pattern, its
-  bonus balance is 0, and no business row references it (orders by id or e-mail, returns, bonus
-  transactions, promo redemptions, company membership, account-manager messages, company
-  activity, access/RFQ/role-change requests, or any other foreign key to `User`). Otherwise it
-  is reported as `blocked` and left untouched.
+- A fixture is deleted only when its id, e-mail and name match the E2E fixture pattern and no
+  business row references it (orders by id or e-mail, returns, bonus transactions, promo
+  redemptions, company membership, account-manager messages, company activity,
+  access/RFQ/role-change requests, or any other foreign key to `User`). Otherwise it is reported
+  as `blocked` and left untouched.
+- Exception: a fixture's own bonus history goes with it when every row is an `order_earn`
+  credit with no order link and no actor, and its balance equals the last `balanceAfter`.
+  Exactly the reviewed row ids are deleted; any other bonus row keeps the fixture `blocked`.
+- The demo account is never deleted: its orders (including a real customer's order and paid
+  Paysera orders) and bonus rows stay untouched.
+- Inside the apply transaction, orders, invoices, returns, stock allocations, promo
+  redemptions, every other bonus row, every other user and all earlier audit rows are hashed
+  before and after the change; any difference rolls the whole transaction back.
 - Sessions, tokens, wishlist items, saved addresses, notifications and product-news
   subscriptions of a deleted fixture are removed with it. `AuditLog` is never modified; each
   change appends one hash-chained audit row (`user.test_account_neutralized` /
@@ -66,8 +74,8 @@ orders of other customers received the same ids. Only `orderId` of those two row
 balances, reasons, orders and every other customer's bonus rows stay untouched. Any other stale
 link found by the review is only reported. Same protocol and flags as above (review, approve the
 fingerprint, `--apply --confirm ... --expect-host ... --operator-email ... --reason ...`, review
-again: both rows `noop`). Run it before the account clean-up; the fixture itself stays `blocked`
-(it holds bonus history) until the owner decides otherwise.
+again: both rows `noop`). Run it before the account clean-up, which then deletes the detached
+rows together with the fixture.
 
 Never delete production orders by hand: use the admin delete route, which unlinks dependent rows
 and writes an audit entry.

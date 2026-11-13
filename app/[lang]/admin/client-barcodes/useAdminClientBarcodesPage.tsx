@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
+import { useAuthStore } from '@/lib/auth-store';
 import {
+    buildClientDetailsPatch,
     classifyClientSaveFailure,
     createNoCardDraft,
     getCardHolderEdit,
@@ -12,6 +14,7 @@ import {
     normalizeCardDigits,
     normalizeRegistrationNumber,
     type CardHolder,
+    type CardHolderEdit,
     type ClientSaveFailure,
     type ClientStepUp,
     type NoCardDraft,
@@ -33,6 +36,8 @@ async function fetchNextCardNumber(): Promise<string> {
 
 function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const { t, language } = useTranslation();
+    // Bank and IBAN are admin-only; the server enforces it, this only avoids a guaranteed 403.
+    const canEditBankDetails = useAuthStore((s) => s.user?.platformRole === 'admin');
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
     const tl = (
@@ -56,7 +61,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [cardHoldersTotal, setCardHoldersTotal] = useState(0);
     const [cardHoldersLoading, setCardHoldersLoading] = useState(false);
     const [cardHoldersError, setCardHoldersError] = useState('');
-    const [clientEdits, setClientEdits] = useState<Record<string, { name: string; email: string; phone: string; customerType: 'individual' | 'company'; registrationNumber: string }>>({});
+    const [clientEdits, setClientEdits] = useState<Record<string, CardHolderEdit>>({});
     const [clientSaveBusy, setClientSaveBusy] = useState<string | null>(null);
     // Save errors are shown next to the row: the page-level banner is often scrolled out of view,
     // and the edited value stays in the input, so a failed save looked like a successful one.
@@ -262,11 +267,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 body: JSON.stringify({
                     id: holder.id,
                     expectedUpdatedAt: holder.updatedAt,
-                    name: edit.name.trim() || null,
-                    ...(edit.email.trim() ? { email: edit.email.trim().toLowerCase() } : {}),
-                    phone: edit.phone.trim() || null,
-                    customerType: edit.customerType,
-                    registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
+                    ...buildClientDetailsPatch(edit, { canEditBankDetails }),
                     ...(stepUp ? { currentPassword: stepUp.currentPassword, mfaCode: stepUp.mfaCode.trim(), reason: stepUp.reason.trim() } : {}),
                 }),
             });
@@ -361,7 +362,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

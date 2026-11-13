@@ -23,6 +23,9 @@ export type CardHolder = {
   vatNumber: string | null
   legalAddress: string | null
   address: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPostalCode?: string | null
   bankName: string | null
   iban: string | null
   registered: boolean
@@ -43,6 +46,37 @@ export type CardHolderEdit = {
   phone: string
   customerType: 'individual' | 'company'
   registrationNumber: string
+  vatNumber: string
+  legalAddress: string
+  bankName: string
+  iban: string
+  deliveryAddress: string
+  deliveryCity: string
+  deliveryPostalCode: string
+}
+
+/**
+ * The customer-detail fields of a Clients-page save. Bank name and IBAN are sent only by a
+ * platform admin (the server rejects them from a manager with 403); a manager's save keeps the
+ * stored values. Company-only fields are cleared for an individual: the server then keeps the
+ * stored profile values (unused while individual) and clears the account columns.
+ */
+export function buildClientDetailsPatch(edit: CardHolderEdit, options: { canEditBankDetails: boolean }): Record<string, string | null> {
+  const isCompany = edit.customerType === 'company'
+  const companyText = (value: string): string | null => isCompany ? value.trim() || null : null
+  return {
+    name: edit.name.trim() || null,
+    ...(edit.email.trim() ? { email: edit.email.trim().toLowerCase() } : {}),
+    phone: edit.phone.trim() || null,
+    customerType: edit.customerType,
+    registrationNumber: isCompany ? normalizeRegistrationNumber(edit.registrationNumber) : null,
+    vatNumber: companyText(edit.vatNumber),
+    legalAddress: companyText(edit.legalAddress),
+    ...(options.canEditBankDetails ? { bankName: companyText(edit.bankName), iban: companyText(edit.iban) } : {}),
+    deliveryAddress: edit.deliveryAddress.trim() || null,
+    deliveryCity: edit.deliveryCity.trim() || null,
+    deliveryPostalCode: edit.deliveryPostalCode.trim() || null,
+  }
 }
 
 export const normalizeCardDigits = (value: string): string => value.replace(/\D/g, '')
@@ -65,6 +99,13 @@ export function getCardHolderEdit(holder: CardHolder): CardHolderEdit {
     phone: holder.phone ?? '',
     customerType: holder.customerType === 'company' ? 'company' : 'individual',
     registrationNumber: holder.registrationNumber ?? '',
+    vatNumber: holder.vatNumber ?? '',
+    legalAddress: holder.legalAddress ?? '',
+    bankName: holder.bankName ?? '',
+    iban: holder.iban ?? '',
+    deliveryAddress: holder.deliveryAddress ?? '',
+    deliveryCity: holder.deliveryCity ?? '',
+    deliveryPostalCode: holder.deliveryPostalCode ?? '',
   }
 }
 

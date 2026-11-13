@@ -21,6 +21,23 @@ export type CustomerDetailUpdates = {
   phone?: string | null
   customerType?: 'individual' | 'company'
   registrationNumber?: string | null
+  vatNumber?: string | null
+  legalAddress?: string | null
+  bankName?: string | null
+  iban?: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPostalCode?: string | null
+}
+
+/** Admin-editable details stored only in the checkout profile: there are no User columns for them. */
+const PROFILE_ONLY_FIELDS = ['bankName', 'iban', 'deliveryAddress', 'deliveryCity', 'deliveryPostalCode'] as const
+
+/** The update without the profile-only fields, i.e. what may be written to the User columns. */
+export function omitProfileOnlyFields<T extends Record<string, unknown>>(updates: T): Omit<T, typeof PROFILE_ONLY_FIELDS[number]> {
+  const columns: Record<string, unknown> = { ...updates }
+  for (const field of PROFILE_ONLY_FIELDS) delete columns[field]
+  return columns as Omit<T, typeof PROFILE_ONLY_FIELDS[number]>
 }
 
 export type CustomerDetails = {
@@ -32,6 +49,9 @@ export type CustomerDetails = {
   vatNumber: string | null
   legalAddress: string | null
   address: string | null
+  deliveryAddress: string | null
+  deliveryCity: string | null
+  deliveryPostalCode: string | null
   bankName: string | null
   iban: string | null
 }
@@ -58,25 +78,38 @@ export function readCustomerDetails(columns: CustomerColumns, checkoutProfile: u
     vatNumber: text('vatNumber') || columns.vatNumber,
     legalAddress: text('legalAddress') || columns.legalAddress,
     address: [text('address'), text('city'), text('postalCode')].filter(Boolean).join(', ') || columns.legalAddress,
+    deliveryAddress: text('address') || null,
+    deliveryCity: text('city') || null,
+    deliveryPostalCode: text('postalCode') || null,
     bankName: text('bankName') || null,
     iban: text('iban') || null,
   }
 }
 
 /**
- * The checkout profile to store with an admin edit of name/phone/type/registration number, so
- * the edit is what the admin lists and the customer's checkout show afterwards. Returns
- * undefined when the account has no checkout profile or the edit does not touch these fields.
- * Fields the admin cannot edit (address, bank, VAT, …) are kept as the customer entered them.
+ * The checkout profile to store with an admin edit of the customer details (name, phone, type,
+ * registration/VAT number, legal address, bank, IBAN, delivery address), so the edit is what the
+ * admin lists and the customer's checkout (and so the next invoice) show afterwards. Returns
+ * undefined when the edit does not touch these fields, or when the account has no checkout
+ * profile and the edit sets none of the profile-backed legal/bank/delivery fields. Profile keys
+ * the admin does not edit are kept as the customer entered them.
  */
 export function syncCheckoutProfile(
   before: CustomerColumns & { checkoutProfile: unknown },
   updates: CustomerDetailUpdates & Record<string, unknown>,
 ): Record<string, unknown> | undefined {
-  const profile = asCheckoutProfile(before.checkoutProfile)
+  const stored = asCheckoutProfile(before.checkoutProfile)
+  // Checkout prefills VAT number, legal address, bank, IBAN and delivery address from the
+  // checkout profile only, never from the account columns: without a profile an admin-entered
+  // VAT number would never reach an order. Such an account gets a minimal profile holding just
+  // its type and the edited fields.
+  const profileBacked = ['vatNumber', 'legalAddress', ...PROFILE_ONLY_FIELDS] as const
+  const setsProfileDetails = profileBacked.some((field) => !!updates[field])
+  const profile = stored ?? (setsProfileDetails ? { customerType: before.customerType === 'company' ? 'company' : 'individual' } : null)
   if (!profile) return undefined
   const touched = updates.name !== undefined || updates.phone !== undefined
     || updates.customerType !== undefined || updates.registrationNumber !== undefined
+    || profileBacked.some((field) => updates[field] !== undefined)
   if (!touched) return undefined
 
   const next: Record<string, unknown> = { ...profile }
@@ -85,6 +118,20 @@ export function syncCheckoutProfile(
   // (unused while individual), only a real number replaces it.
   if (updates.registrationNumber) next.regNumber = updates.registrationNumber
   if (updates.phone !== undefined) next.phone = updates.phone ?? ''
+  // Same rule for the company-only checkout fields (VAT number, legal address, bank, IBAN),
+  // except that a company may also clear them.
+  const companyAfter = readCustomerDetails(
+    { ...before, ...(updates.customerType !== undefined ? { customerType: updates.customerType } : {}) },
+    next,
+  ).customerType === 'company'
+  for (const field of ['vatNumber', 'legalAddress', 'bankName', 'iban'] as const) {
+    const value = updates[field]
+    if (value !== undefined && (value || companyAfter)) next[field] = value ?? ''
+  }
+  // The delivery address is used by individuals and companies alike.
+  if (updates.deliveryAddress !== undefined) next.address = updates.deliveryAddress ?? ''
+  if (updates.deliveryCity !== undefined) next.city = updates.deliveryCity ?? ''
+  if (updates.deliveryPostalCode !== undefined) next.postalCode = updates.deliveryPostalCode ?? ''
 
   if (updates.name !== undefined) {
     const wanted = updates.name ?? null

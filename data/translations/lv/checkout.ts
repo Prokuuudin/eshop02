@@ -125,6 +125,7 @@ const lvCheckout: Record<string, string> = {
   'checkout.errors.phone': 'Tālrunis ir obligāts',
   'checkout.errors.address': 'Adrese ir obligāta',
   'checkout.errors.city': 'Pilsēta ir obligāta',
+  'checkout.errors.postalCode': 'Pasta indekss ir obligāts',
   'checkout.errors.terms': 'Jāpiekrīt pakalpojumu sniegšanas noteikumiem',
   'checkout.errors.pickupStore': 'Lūdzu, izvēlieties saņemšanas veikalu',
   'checkout.delivery.moreInfo': 'Vairāk par piegādi',

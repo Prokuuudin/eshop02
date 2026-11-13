@@ -15,6 +15,9 @@ const ruCatalog: Record<string, string> = {
   'product.decreaseQuantityAria': 'Уменьшить количество',
   'product.increaseQuantityAria': 'Увеличить количество',
   'catalog.filters.from': 'от',
+  'catalog.filters.to': 'до',
+  'catalog.filters.selected': 'Выбранные фильтры',
+  'catalog.filters.remove': 'Удалить фильтр',
   'catalog.filters.orderBy': 'Упорядочить по',
   'catalog.filters.subcategory': 'Подкатегория',
   'catalog.filters.orderBy.default': 'По умолчанию',
@@ -327,6 +330,10 @@ const ruCatalog: Record<string, string> = {
   'blog.savedToFavorites': 'В избранном',
   'products.moreProducts': 'Показать ещё',
   'brands.viewAllProducts': 'Смотреть все товары бренда',
+  'brands.viewAll': 'Все бренды',
+  'categories.makeup': 'Косметика',
+  'categories.fragrances': 'Ароматы',
+  'products.allProducts': 'Все товары',
   'brands.productsOfBrand': 'Товары бренда',
 }
 

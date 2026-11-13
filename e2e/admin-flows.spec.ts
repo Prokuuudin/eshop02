@@ -45,7 +45,6 @@ test('admin can open client barcodes page', async ({ page }) => {
 
   // Заголовок редактируется через CMS-реестр — принимаем дефолт и текущий override
   await expect(page.getByRole('heading', { name: /Клиентские баркоды|Карты клиентов/ })).toBeVisible()
-  await expect(page.getByText(/Заявки мастеров/)).toBeVisible()
   await expect(page.getByPlaceholder(/Поиск по карте/)).toBeVisible()
 })
 

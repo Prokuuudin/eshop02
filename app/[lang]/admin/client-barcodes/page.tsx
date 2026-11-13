@@ -5,11 +5,11 @@ import Link from '@/components/LocalizedLink';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AdminGate from '@/components/admin/AdminGate';
 import IconSearch from '@/components/ui/icon-search';
+import CardRequestsPanel from '../CardRequestsPanel';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
@@ -34,6 +34,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         cardHoldersPage,
         setCardHoldersPage,
         cardHolders,
+        loadCardHolders,
         cardHoldersTotal,
         cardHoldersLoading,
         cardHoldersError,
@@ -47,15 +48,6 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         setClientStepUp,
         closeClientStepUp,
         submitClientStepUp,
-        noCardRequests,
-        setNoCardDrafts,
-        rejectNotes,
-        setRejectNotes,
-        emailBusy,
-        getNoCardDraft,
-        regenerateCardNumber,
-        handleApproveNoCardRequest,
-        handleRejectNoCardRequest,
     } = pageState;
     const locale = getLocaleFromLanguage(language);
     const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
@@ -87,183 +79,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     </div>
                 )}
 
-                {/* ── Заявки мастеров без карты ── */}
-                {registeredOnly && (
-                    <section className="rounded-lg border border-amber-200 dark:border-amber-800 bg-card p-6">
-                        <div className="mb-4">
-                            <h2 className="text-xl font-semibold text-foreground">
-                                {l('Заявки клиентов без карты', 'Customers without a card', 'Klientu pieteikumi bez kartes')}{' '}
-                                <span className="ml-1 rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-sm font-medium text-amber-800 dark:text-amber-300">{noCardRequests.length}</span>
-                            </h2>
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {l(
-                                    'Проверьте заявку, выберите тип клиента и выдайте свободный номер карты.',
-                                    'Review the application, select the customer type, and assign an available card number.',
-                                    'Pārbaudiet pieteikumu, izvēlieties klienta veidu un piešķiriet brīvu kartes numuru.'
-                                )}
-                            </p>
-                        </div>
-
-                        {noCardRequests.length === 0 ? (
-                            <div className="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-                                {l('Новых заявок от мастеров нет.', 'There are no new specialist applications.', 'Nav jaunu speciālistu pieteikumu.')}
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {noCardRequests.map((req) => {
-                                    const draft = getNoCardDraft(req.id, req.name || req.email);
-                                    return (
-                                        <div key={req.id} className="rounded-lg border border-border p-4 space-y-3">
-                                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <div className="space-y-1 min-w-0">
-                                                    <p className="font-semibold text-foreground">{req.name || req.email}</p>
-                                                    <p className="text-sm text-muted-foreground">Email: {req.email}</p>
-                                                    {req.phone && (
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {l('Телефон', 'Phone', 'Tālrunis')}: {req.phone}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-sm text-muted-foreground">{new Date(req.requestedAt).toLocaleString(locale)}</p>
-                                                </div>
-                                                {req.certificateName && (
-                                                    <a
-                                                        href={`/api/admin/access-requests/${encodeURIComponent(req.id)}/certificate`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors shrink-0"
-                                                    >
-                                                        📄 {req.certificateName}
-                                                    </a>
-                                                )}
-                                            </div>
-
-                                            {req.message && <p className="rounded bg-muted px-3 py-2 text-sm text-muted-foreground italic">«{req.message}»</p>}
-
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                                <label htmlFor={`customer-type-${req.id}`} className="text-sm">
-                                                    <span className="block mb-1 text-muted-foreground">{l('Тип клиента', 'Customer type', 'Klienta veids')}</span>
-                                                    <Select
-                                                        value={draft.customerType}
-                                                        onValueChange={(value: 'individual' | 'company') =>
-                                                            setNoCardDrafts((prev) => ({
-                                                                ...prev,
-                                                                [req.id]: {
-                                                                    ...draft,
-                                                                    customerType: value,
-                                                                },
-                                                            }))
-                                                        }
-                                                    >
-                                                        <SelectTrigger id={`customer-type-${req.id}`}>
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="individual">{l('Физлицо', 'Individual', 'Privātpersona')}</SelectItem>
-                                                            <SelectItem value="company">{l('Юрлицо', 'Company', 'Uzņēmums')}</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </label>
-                                                {draft.customerType === 'company' && (
-                                                    <label htmlFor={`company-name-${req.id}`} className="text-sm">
-                                                        <span className="block mb-1 text-muted-foreground">{l('Название компании', 'Company name', 'Uzņēmuma nosaukums')}</span>
-                                                        <Input
-                                                            id={`company-name-${req.id}`}
-                                                            value={draft.companyName}
-                                                            onChange={(e) =>
-                                                                setNoCardDrafts((prev) => ({
-                                                                    ...prev,
-                                                                    [req.id]: {
-                                                                        ...draft,
-                                                                        companyName: e.target.value,
-                                                                    },
-                                                                }))
-                                                            }
-                                                            placeholder="SIA …"
-                                                        />
-                                                    </label>
-                                                )}
-                                                {draft.customerType === 'company' && (
-                                                    <label htmlFor={`registration-number-${req.id}`} className="text-sm">
-                                                        <span className="block mb-1 text-muted-foreground">{l('Регистрационный номер', 'Registration number', 'Reģistrācijas numurs')}</span>
-                                                        <Input
-                                                            id={`registration-number-${req.id}`}
-                                                            value={draft.registrationNumber}
-                                                            onChange={(e) =>
-                                                                setNoCardDrafts((prev) => ({
-                                                                    ...prev,
-                                                                    [req.id]: {
-                                                                        ...draft,
-                                                                        registrationNumber: e.target.value,
-                                                                    },
-                                                                }))
-                                                            }
-                                                            placeholder={l('11 цифр', '11 digits', '11 cipari')}
-                                                            inputMode="numeric"
-                                                        />
-                                                    </label>
-                                                )}
-                                                <label htmlFor={`card-number-${req.id}`} className="text-sm">
-                                                    <span className="block mb-1 text-muted-foreground">{l('Номер карты', 'Card number', 'Kartes numurs')}</span>
-                                                    <div className="flex gap-2">
-                                                        <Input
-                                                            id={`card-number-${req.id}`}
-                                                            value={draft.cardNumber}
-                                                            onChange={(e) =>
-                                                                setNoCardDrafts((prev) => ({
-                                                                    ...prev,
-                                                                    [req.id]: {
-                                                                        ...draft,
-                                                                        cardNumber: e.target.value,
-                                                                    },
-                                                                }))
-                                                            }
-                                                            placeholder="1000"
-                                                            className="font-mono"
-                                                        />
-                                                        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => void regenerateCardNumber(req.id)}>
-                                                            ↺
-                                                        </Button>
-                                                    </div>
-                                                </label>
-                                            </div>
-
-                                            <div className="pt-1">
-                                                <label className="text-sm text-muted-foreground block mb-1">
-                                                    {l('Комментарий к отказу', 'Rejection comment', 'Noraidījuma komentārs')}{' '}
-                                                    <span className="text-muted-foreground">{l('(необязательно — будет добавлен в письмо)', '(optional — it will be added to the email)', '(neobligāti — tiks pievienots e-pastam)')}</span>
-                                                </label>
-                                                <Textarea
-                                                    value={rejectNotes[req.id] ?? ''}
-                                                    onChange={(e) =>
-                                                        setRejectNotes((prev) => ({
-                                                            ...prev,
-                                                            [req.id]: e.target.value,
-                                                        }))
-                                                    }
-                                                    rows={2}
-                                                    placeholder={l(
-                                                        'Например: предоставленный документ не является действующим сертификатом...',
-                                                        'For example: the submitted document is not a valid certificate...',
-                                                        'Piemēram: iesniegtais dokuments nav derīgs sertifikāts...'
-                                                    )}
-                                                    className="w-full resize-none text-sm"
-                                                />
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" disabled={emailBusy[req.id]} onClick={() => handleApproveNoCardRequest(req.id, req.email)}>
-                                                    {emailBusy[req.id] ? l('Отправка...', 'Sending...', 'Nosūta...') : l('Выдать карту и уведомить', 'Issue card and notify', 'Izsniegt karti un paziņot')}
-                                                </Button>
-                                                <Button size="sm" variant="outline" disabled={emailBusy[req.id]} onClick={() => handleRejectNoCardRequest(req.id, req.email, req.name || req.email)}>
-                                                    {l('Отклонить', 'Reject', 'Noraidīt')}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </section>
-                )}
+                {/* ── Заявки клиентов без карты (та же панель, что на главной админки) ── */}
+                {registeredOnly && <CardRequestsPanel locale={locale} l={l} enabled alwaysVisible onChanged={loadCardHolders} />}
 
                 {/* ── Держатели карт ── */}
                 <section className="min-h-[70vh] rounded-lg border border-border bg-card p-6">

@@ -41,7 +41,7 @@ async function notifyAdminOfAccessRequest(input: AdminNoticeInput): Promise<void
     const typeLabel = isNoCard ? 'Без карты клиента' : 'С картой клиента'
     let adminUrl = ''
     try {
-      adminUrl = `${getSiteUrl()}/admin/client-barcodes`
+      adminUrl = `${getSiteUrl()}/admin`
     } catch {
       // Site URL not configured — send the notice without a link.
     }

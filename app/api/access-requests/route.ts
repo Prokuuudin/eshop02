@@ -12,8 +12,65 @@ import {
 import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isTurnstileRequired, TurnstileConfigurationError, verifyTurnstile } from '@/lib/turnstile-server'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { sendEmail } from '@/lib/mailer'
+import { escapeHtml } from '@/lib/escape-html'
+import { getSiteUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
+
+type AdminNoticeInput = {
+  requestType: 'card' | 'no-card'
+  email: string
+  name?: string | null
+  phone?: string | null
+  companyName?: string | null
+  companyId?: string | null
+  cardNumber?: string | null
+  language?: string | null
+  message?: string | null
+  hasCertificate: boolean
+}
+
+// Best-effort notice to the shop admin (same CONTACT_TO inbox as new orders).
+// The request is already persisted, so a mail failure must never fail the response.
+async function notifyAdminOfAccessRequest(input: AdminNoticeInput): Promise<void> {
+  const adminEmail = process.env.CONTACT_TO
+  if (!adminEmail) return
+  try {
+    const isNoCard = input.requestType === 'no-card'
+    const typeLabel = isNoCard ? 'Без карты клиента' : 'С картой клиента'
+    let adminUrl = ''
+    try {
+      adminUrl = `${getSiteUrl()}/admin/client-barcodes`
+    } catch {
+      // Site URL not configured — send the notice without a link.
+    }
+    const row = (label: string, value?: string | null) =>
+      value?.trim()
+        ? `<tr><td style="padding:4px 8px;color:#666">${label}</td><td style="padding:4px 8px">${escapeHtml(value.trim())}</td></tr>`
+        : ''
+    const html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#222">
+  <h2 style="margin:0 0 12px">Новая заявка на доступ</h2>
+  <table style="border-collapse:collapse">
+    ${row('Тип', typeLabel)}
+    ${row('Имя', input.name)}
+    ${row('E-mail', input.email)}
+    ${row('Телефон', input.phone)}
+    ${row('Компания', input.companyName)}
+    ${row('Рег. номер', input.companyId)}
+    ${row('Карта клиента', input.cardNumber)}
+    ${row('Язык', input.language)}
+    ${row('Сертификат', input.hasCertificate ? 'приложен' : '')}
+    ${row('Сообщение', input.message)}
+  </table>
+  ${adminUrl ? `<p style="margin-top:16px"><a href="${escapeHtml(adminUrl)}">Открыть заявки в админке</a></p>` : ''}
+</div>`
+    const who = (input.name?.trim() || input.email).replace(/[\r\n]+/g, ' ')
+    await sendEmail(adminEmail, `Новая заявка на доступ (${typeLabel.toLowerCase()}) — ${who}`, html)
+  } catch (error) {
+    logApiError('[access-requests] admin notification failed', error)
+  }
+}
 
 const ACCESS_REQUEST_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 3 }
 const PRIVACY_NOTICE_VERSION = '2026-07-03'
@@ -154,6 +211,19 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
       throw error
     }
+
+    await notifyAdminOfAccessRequest({
+      requestType: isNoCard ? 'no-card' : 'card',
+      email,
+      name: body.name,
+      phone: body.phone,
+      companyName: body.companyName,
+      companyId: body.companyId,
+      cardNumber,
+      language: body.language,
+      message: body.message,
+      hasCertificate: Boolean(certificateData),
+    })
 
     if (Math.random() < 0.01) {
       void gcRateLimitStore()

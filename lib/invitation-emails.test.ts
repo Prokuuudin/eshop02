@@ -54,16 +54,30 @@ describe('buildInviteEmail', () => {
   })
 })
 
-describe('buildInviteEmail — трёхъязычный дефолт', () => {
-  it('письмо содержит латышский, русский и английский блоки', () => {
-    const { subject, html } = buildInviteEmail('lv', {
+describe('buildInviteEmail — латышский дефолт', () => {
+  it('письмо только на латышском, при любом языке приглашения', () => {
+    for (const lang of ['lv', 'ru', 'en'] as const) {
+      const { subject, html } = buildInviteEmail(lang, {
+        name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus,
+      })
+      expect(html).toContain('Aktivizēt kontu')
+      expect(html).not.toMatch(/[А-Яа-яЁё]/)
+      expect(html).not.toContain('Activate account')
+      expect(subject).toBe('Jauns veikals profesionāļiem')
+    }
+  })
+
+  it('MIKS PLUS везде с SIA, синие шапка и кнопка, дисклеймер в конце', () => {
+    const { html } = buildInviteEmail('lv', {
       name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus,
     })
-    expect(html).toContain('Aktivizēt kontu')
-    expect(html).toContain('Активировать аккаунт')
-    expect(html).toContain('Activate account')
-    expect(subject.length).toBeGreaterThan(0)
-    expect(subject).not.toContain('{{') // без неподставленных плейсхолдеров
+    expect(html).toContain('SIA MIKS PLUS')
+    expect(html).not.toMatch(/(?<!SIA )MIKS PLUS/)
+    expect(html.match(/background:#0088C4/g)).toHaveLength(2)
+    expect(html).not.toContain('#4f46e5')
+    expect(html.trimEnd().endsWith('</div>')).toBe(true)
+    expect(html.lastIndexOf('Paldies par sapratni!')).toBeGreaterThan(html.lastIndexOf('Aktivizēt kontu'))
+    expect(html).toContain('office@miksplus.eu')
   })
 
   it('инструкция пошаговая: есть нумерованный список', () => {
@@ -108,15 +122,14 @@ describe('buildInviteEmail — приветственный бонус', () => {
     }
   })
 
-  it('встроенный дефолт упоминает бонус на трёх языках только когда он есть', () => {
+  it('встроенный дефолт упоминает бонус (оранжевым) только когда он есть', () => {
     const on = buildInviteEmail('lv', { ...base, bonus }).html
     expect(on).toContain('Sveiciena bonuss')
-    expect(on).toContain('Приветственный бонус')
-    expect(on).toContain('Welcome bonus')
+    expect(on).toContain('color:#c2410c')
     expect(on).toContain('500')
     expect(on).not.toContain('{{')
     const off = buildInviteEmail('lv', { ...base, bonus: { ...bonus, welcomeBonusPoints: 0 } }).html
-    expect(off).not.toContain('Welcome bonus')
+    expect(off).not.toContain('Sveiciena bonuss')
   })
 
   it('formatPointsAsEuros: 1 балл = 1 цент, без float-артефактов', () => {
@@ -155,12 +168,30 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
     expect(tpl!.body).not.toContain('{{registration_link}}')
   })
 
-  it('трёхъязычный с номером карты, инструкцией и кнопкой активации', () => {
+  it('только латышский, с номером карты, инструкцией и кнопкой активации', () => {
     expect(tpl!.body).toContain('{{card_number}}')
     expect(tpl!.body).toContain('Aktivizēt kontu')
-    expect(tpl!.body).toContain('Активировать аккаунт')
-    expect(tpl!.body).toContain('Activate account')
     expect(tpl!.body).toContain('<ol')
+    expect(tpl!.body).not.toMatch(/[А-Яа-яЁё]/)
+    expect(tpl!.subject).not.toMatch(/[А-Яа-яЁё]/)
+    expect(tpl!.body).not.toMatch(/Activate account|How to register/)
+  })
+
+  it('синие (как кружок логотипа) только шапка и кнопка, бонус оранжевый, старых зелёных нет', () => {
+    expect(tpl!.body.match(/background:#0088C4/g)).toHaveLength(2)
+    expect(tpl!.body).toMatch(/<a href="\{\{invite_link\}\}" style="[^"]*background:#0088C4/)
+    expect(tpl!.body).toMatch(/<!--bonus--><div style="[^"]*background:#fff7ed/)
+    expect(tpl!.body).not.toMatch(/#0f766e|#ecfdf5|#edf5f2/)
+  })
+
+  it('MIKS PLUS везде с SIA; дисклеймер мелким шрифтом в самом конце', () => {
+    expect(tpl!.body).toContain('SIA MIKS PLUS')
+    expect(tpl!.body).not.toMatch(/(?<!SIA )MIKS PLUS/)
+    const tail = tpl!.body.slice(tpl!.body.lastIndexOf('</table>'))
+    expect(tail).toContain('font-size:11px')
+    expect(tail).toContain('Šī e-pasta ziņojuma saturs ir konfidenciāls un juridiski aizsargāts.')
+    expect(tail).toContain('rakstot uz e-pasta adresi: office@miksplus.eu.')
+    expect(tail).toContain('Paldies par sapratni!')
   })
 
   it('содержит вырезаемый блок приветственного бонуса с переменными из конфига', () => {
@@ -172,15 +203,14 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
     }
   })
 
-  it('сообщает об открытии магазина, карте MIKS PLUS и реальных бонусах', () => {
-    expect(tpl!.body).toContain('новый интернет-магазин для профессионалов')
-    expect(tpl!.body).toContain('карта MIKS PLUS')
-    expect(tpl!.body).toContain('профессиональные цены')
-    expect(tpl!.body).toContain('бонусных баллов')
-    expect(tpl!.body).toContain('следующих покупках')
-    expect(tpl!.body).toContain('Задайте свой пароль')
+  it('сообщает об открытии магазина, карте SIA MIKS PLUS и реальных бонусах', () => {
+    expect(tpl!.body).toContain('jaunu interneta veikalu skaistumkopšanas profesionāļiem')
+    expect(tpl!.body).toContain('Jūsu SIA MIKS PLUS klienta karte')
+    expect(tpl!.body).toContain('profesionālās cenas')
+    expect(tpl!.body).toContain('bonusa punkti')
+    expect(tpl!.body).toContain('nākamajiem pirkumiem')
+    expect(tpl!.body).toContain('Iestatiet savu paroli')
     expect(tpl!.body).not.toMatch(/4 cipar|4 цифр|last 4 digits/)
-    expect(tpl!.body).not.toMatch(/войдите.*e-?mail/i)
   })
 
   it('variables описывают все плейсхолдеры', () => {

@@ -29,7 +29,7 @@ function welcomeBonusPoints(bonus: InviteBonusInfo): number {
   return bonus.enabled ? Math.max(0, Math.round(bonus.welcomeBonusPoints)) : 0
 }
 
-/** Языковой вариант шаблона приоритетнее базового трёхъязычного pro-invite. */
+/** Языковой вариант шаблона приоритетнее базового pro-invite. */
 export function pickInviteTemplate<T extends { id: string }>(
   templates: T[],
   lang: InviteLang
@@ -40,43 +40,34 @@ export function pickInviteTemplate<T extends { id: string }>(
   )
 }
 
-// Трёхъязычное письмо ведёт держателя карты по персональной одноразовой ссылке (/auth/invite).
-const INVITE_SUBJECT =
-  'Jauns veikals profesionāļiem · Новый магазин для профессионалов · A new store for professionals'
+// Письмо-приглашение только на латышском (решение владельца 2026-11-13) и ведёт
+// держателя карты по персональной одноразовой ссылке (/auth/invite).
+// Синий — цвет кружка в логотипе (public/logo-2026.svg): шапка и кнопка;
+// остальные акценты голубые, блок бонуса оранжевый.
+const INVITE_BRAND_BLUE = '#0088C4'
+const INVITE_LIGHT_BLUE = '#1a9ad6'
+const INVITE_SUBJECT = 'Jauns veikals profesionāļiem'
 
-const INVITE_BLOCKS: Array<{ intro: string; bonus: string; steps: string[] }> = [
-  {
-    intro: '<strong>LV</strong> — MIKS PLUS ir atvēris jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:',
-    bonus: 'Sveiciena bonuss: pēc reģistrācijas jūsu kontā tiks ieskaitīti {{welcome_bonus_points}} bonusa punkti ({{welcome_bonus_eur}} €). Par katru pasūtījumu krājas {{bonus_earn_rate}}% no summas punktos; 1 punkts = 1 cents, punktus var izmantot nākamo pirkumu apmaksai.',
-    steps: [
-      'Nospiediet zemāk pogu “Aktivizēt kontu” — saite ir personīga un derīga ierobežotu laiku.',
-      'Iestatiet savu paroli.',
-      'Turpmāk piesakieties ar kartes numuru un šo paroli.',
-    ],
-  },
-  {
-    intro: '<strong>RU</strong> — MIKS PLUS открыл новый интернет-магазин для профессионалов индустрии красоты — <strong>hairshoppro.lv</strong>. Напоминаем: у вас есть карта клиента MIKS PLUS № <strong>{{card_number}}</strong>. После регистрации вам будут доступны профессиональные цены, онлайн-заказы, накопление бонусных баллов и их использование при следующих покупках. Как зарегистрироваться:',
-    bonus: 'Приветственный бонус: после регистрации на ваш счёт будет зачислено {{welcome_bonus_points}} бонусных баллов ({{welcome_bonus_eur}} €). С каждого заказа начисляется {{bonus_earn_rate}}% от суммы; 1 балл = 1 цент, баллами можно оплачивать следующие покупки.',
-    steps: [
-      'Нажмите ниже кнопку «Активировать аккаунт» — ссылка персональная и действует ограниченное время.',
-      'Задайте свой пароль.',
-      'Дальше входите по номеру карты и этому паролю.',
-    ],
-  },
-  {
-    intro: '<strong>EN</strong> — MIKS PLUS has opened a new online store for beauty professionals — <strong>hairshoppro.lv</strong>. A reminder: you have MIKS PLUS client card No. <strong>{{card_number}}</strong>. Once registered, you can access professional prices, order online, earn bonus points and redeem them on future purchases. How to register:',
-    bonus: 'Welcome bonus: once you register, {{welcome_bonus_points}} bonus points ({{welcome_bonus_eur}} €) will be credited to your account. Every order earns {{bonus_earn_rate}}% of its value in points; 1 point = 1 cent, and points can be used to pay for future purchases.',
-    steps: [
-      'Click the “Activate account” button below — the link is personal and valid for a limited time.',
-      'Set your password.',
-      'From then on, log in with your card number and this password.',
-    ],
-  },
+const INVITE_INTRO =
+  '<strong>SIA MIKS PLUS</strong> ir atvērusi jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir SIA MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:'
+const INVITE_BONUS =
+  'Sveiciena bonuss: pēc reģistrācijas jūsu kontā tiks ieskaitīti {{welcome_bonus_points}} bonusa punkti ({{welcome_bonus_eur}} €). Par katru pasūtījumu krājas {{bonus_earn_rate}}% no summas punktos; 1 punkts = 1 cents, punktus var izmantot nākamo pirkumu apmaksai.'
+const INVITE_STEPS = [
+  'Nospiediet zemāk pogu “Aktivizēt kontu” — saite ir personīga un derīga ierobežotu laiku.',
+  'Iestatiet savu paroli.',
+  'Turpmāk piesakieties ar kartes numuru un šo paroli.',
+]
+const INVITE_BUTTON = 'Aktivizēt kontu'
+const INVITE_LINK_FALLBACK = 'Ja poga nedarbojas, atveriet šo saiti:'
+
+/** Конфиденциальность/отписка — мелким шрифтом в самом конце письма-приглашения. */
+export const INVITE_DISCLAIMER = [
+  'Šī e-pasta ziņojuma saturs ir konfidenciāls un juridiski aizsargāts. Tas ir paredzēts tikai norādītajam adresātam. Ja neesat šī ziņojuma adresāts, jebkāda tā satura izpaušana, kopēšana, izplatīšana vai cita veida izmantošana, kā arī jebkāda rīcība, pamatojoties uz tajā ietverto informāciju, ir stingri aizliegta un var būt prettiesiska.',
+  'Ja turpmāk nevēlaties saņemt e-pasta ziņojumus no SIA MIKS PLUS, lūdzam par to informēt mūs, rakstot uz e-pasta adresi: office@miksplus.eu.',
+  'Ja esat saņēmis šo ziņojumu kļūdas dēļ, lūdzam nekavējoties informēt sūtītāju, atbildot uz šo e-pastu, un dzēst ziņojumu no savas sistēmas.',
+  'Paldies par sapratni!',
 ]
 
-const INVITE_BUTTON = 'Aktivizēt kontu · Активировать аккаунт · Activate account'
-const INVITE_LINK_FALLBACK =
-  'Ja poga nedarbojas, atveriet šo saiti · Если кнопка не работает, откройте эту ссылку · If the button does not work, open this link:'
 const RULES_CONTENT: Record<InviteLang, { subject: string; title: string; body1: string; body2: string; button: string }> = {
   ru: {
     subject: 'Как получить карту клиента',
@@ -136,22 +127,22 @@ export function buildInviteEmail(
     const body = bonusPoints > 0 ? tpl.body : tpl.body.replace(BONUS_SECTION_RE, '')
     return { subject: interpolate(tpl.subject, safe), html: interpolate(body, safe) }
   }
-  const blocks = INVITE_BLOCKS.map(
-    (b) =>
-      `<p>${interpolate(b.intro, safe)}</p>
-    <ol style="margin:4px 0 16px;padding-left:20px">${b.steps.map((s) => `<li>${s}</li>`).join('')}</ol>
-    ${bonusPoints > 0 ? `<p><strong>${interpolate(b.bonus, safe)}</strong></p>` : ''}`
-  )
   const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
-    <h2 style="color:#4f46e5">Laipni lūdzam! · Добро пожаловать! · Welcome!</h2>
+    <div style="padding:20px;background:${INVITE_BRAND_BLUE};color:#fff;text-align:center;border-radius:8px 8px 0 0">
+      <div style="font-size:13px;font-weight:700;letter-spacing:.12em">SIA MIKS PLUS</div>
+      <h2 style="margin:8px 0 0">Laipni lūdzam!</h2>
+    </div>
     ${safe.name ? `<p>${safe.name}</p>` : ''}
-    ${blocks.join('\n    ')}
+    <p>${interpolate(INVITE_INTRO, safe)}</p>
+    <ol style="margin:4px 0 16px;padding-left:20px">${INVITE_STEPS.map((s) => `<li>${s}</li>`).join('')}</ol>
+    ${bonusPoints > 0 ? `<p style="color:#c2410c"><strong>${interpolate(INVITE_BONUS, safe)}</strong></p>` : ''}
     <p>
-      <a href="${activationLink}" style="display:inline-block;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
+      <a href="${activationLink}" style="display:inline-block;padding:12px 24px;background:${INVITE_BRAND_BLUE};color:#fff;border-radius:6px;text-decoration:none;font-weight:600">
         ${INVITE_BUTTON}
       </a>
     </p>
-    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${activationLink}">${activationLink}</a></p>
+    <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${activationLink}" style="color:${INVITE_LIGHT_BLUE}">${activationLink}</a></p>
+    <div style="margin-top:24px;color:#6b8290;font-size:11px;line-height:1.5">${INVITE_DISCLAIMER.map((p) => `<p style="margin:0 0 6px">${p}</p>`).join('')}</div>
   </div>`
   return { subject: INVITE_SUBJECT, html }
 }

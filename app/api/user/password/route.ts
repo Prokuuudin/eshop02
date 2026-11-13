@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
-import { getServerUser, hashPassword, verifyPassword, createSession, requiresAdminMfa, SESSION_COOKIE } from '@/lib/server-auth'
+import { getServerUser, hashPassword, verifyPassword, createSession, requiresAdminMfa, hashToken, SESSION_COOKIE } from '@/lib/server-auth'
+import { setSessionCookie } from '@/lib/mfa-challenge'
 import { guardOrigin } from '@/lib/api-guard'
 
 export const runtime = 'nodejs'
@@ -19,6 +21,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await getServerUser({ allowPasswordChangeRequired: true })
     if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+    // A staff session keeps its original sign-in time through the rotation below, so
+    // changing the password never extends the 8-hour session limit.
+    const staff = requiresAdminMfa(session)
+    // Same cookie source getServerUser() just authenticated.
+    const currentToken = (await cookies()).get(SESSION_COOKIE)?.value
+    const currentSession = staff && currentToken
+      ? await prisma.session.findUnique({ where: { tokenHash: hashToken(currentToken) }, select: { createdAt: true } })
+      : null
+    if (staff && !currentSession) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
     const body = await req.json().catch(() => ({}))
     const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : ''
@@ -65,16 +77,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await prisma.session.deleteMany({ where: { userId: user.id } })
     // getServerUser only returns an admin-capable user for an MFA-verified session,
     // so the rotated session keeps that status; for customers it is irrelevant.
-    const newToken = await createSession(user.id, { mfaVerified: requiresAdminMfa(session) })
+    const newToken = await createSession(user.id, {
+      mfaVerified: staff,
+      authenticatedAt: currentSession?.createdAt,
+    })
 
     const res = NextResponse.json({ ok: true })
-    res.cookies.set(SESSION_COOKIE, newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30,
-    })
+    // Customers: the same 30-day cookie as before. Staff: a browser session cookie.
+    setSessionCookie(res, newToken, session)
     return res
   } catch (e) {
     logApiError("[user/password POST]", e)

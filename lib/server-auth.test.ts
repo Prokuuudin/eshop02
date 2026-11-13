@@ -4,9 +4,18 @@ import { NextResponse } from 'next/server'
 vi.mock('server-only', () => ({}))
 
 const cookieGet = vi.fn()
-const { sessionFindUniqueMock, sessionCreateMock, userCountMock, userFindUniqueMock } = vi.hoisted(() => ({
+const {
+  sessionFindUniqueMock,
+  sessionCreateMock,
+  sessionUpdateManyMock,
+  sessionDeleteManyMock,
+  userCountMock,
+  userFindUniqueMock,
+} = vi.hoisted(() => ({
   sessionFindUniqueMock: vi.fn(),
   sessionCreateMock: vi.fn(),
+  sessionUpdateManyMock: vi.fn(),
+  sessionDeleteManyMock: vi.fn(),
   userCountMock: vi.fn(),
   userFindUniqueMock: vi.fn(),
 }))
@@ -16,23 +25,39 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    session: { findUnique: sessionFindUniqueMock, create: sessionCreateMock, delete: vi.fn(), deleteMany: vi.fn() },
+    session: {
+      findUnique: sessionFindUniqueMock,
+      create: sessionCreateMock,
+      updateMany: sessionUpdateManyMock,
+      delete: vi.fn(),
+      deleteMany: sessionDeleteManyMock,
+    },
     user: { count: userCountMock, findUnique: userFindUniqueMock },
   },
 }))
 
-import { createSession, getAdminAccessLevel, getServerUser, hasAdminUsersInDb, requireAdmin, requireAdminPermission, type ServerUser } from './server-auth'
+import {
+  createSession,
+  getAdminAccessLevel,
+  getServerUser,
+  hasAdminUsersInDb,
+  requireAdmin,
+  requireAdminPermission,
+  sessionCookieMaxAgeSeconds,
+  ADMIN_SESSION_MAX_AGE_MS,
+  type ServerUser,
+} from './server-auth'
 
-function futureDate() {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  return d
-}
+const MINUTE = 60 * 1000
+const HOUR = 60 * MINUTE
 
+// Defaults fit both policies: a staff session signed in a minute ago and an
+// ordinary customer session.
 function makeSession(platformRole: string, mfaVerified = true) {
   return {
     tokenHash: 'hash',
-    expiresAt: futureDate(),
+    createdAt: new Date(Date.now() - MINUTE),
+    expiresAt: new Date(Date.now() + 2 * MINUTE),
     mfaVerified,
     user: {
       id: 'u1',
@@ -49,6 +74,11 @@ function makeSession(platformRole: string, mfaVerified = true) {
     },
   }
 }
+
+beforeEach(() => {
+  sessionUpdateManyMock.mockResolvedValue({ count: 1 })
+  sessionDeleteManyMock.mockResolvedValue({ count: 1 })
+})
 
 describe('requireAdmin', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -247,13 +277,13 @@ describe('createSession', () => {
     sessionCreateMock.mockResolvedValue(undefined)
   })
 
-  it('gives an admin a ~1 day session', async () => {
+  it('gives an admin an 8-hour session and records the sign-in time', async () => {
     userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
-    await createSession('u1')
-    const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
-    const days = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    expect(days).toBeGreaterThan(0.9)
-    expect(days).toBeLessThan(1.1)
+    const before = Date.now()
+    await createSession('u1', { mfaVerified: true })
+    const { expiresAt, createdAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date; createdAt: Date }
+    expect(createdAt.getTime()).toBeGreaterThanOrEqual(before)
+    expect(expiresAt.getTime() - createdAt.getTime()).toBe(ADMIN_SESSION_MAX_AGE_MS)
   })
 
   it('stores mfaVerified=false unless the caller explicitly verified a second factor', async () => {
@@ -264,11 +294,38 @@ describe('createSession', () => {
     expect(sessionCreateMock.mock.calls[1][0].data.mfaVerified).toBe(true)
   })
 
-  it('gives a staff manager the short admin session lifetime', async () => {
+  it('gives a staff manager the same staff session policy', async () => {
     userFindUniqueMock.mockResolvedValue({ platformRole: 'customer', teamRole: 'manager' })
     await createSession('u1', { mfaVerified: true })
     const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
-    expect((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)).toBeLessThan(1.1)
+    expect(expiresAt.getTime() - Date.now()).toBeLessThanOrEqual(ADMIN_SESSION_MAX_AGE_MS)
+    expect(expiresAt.getTime() - Date.now()).toBeGreaterThan(ADMIN_SESSION_MAX_AGE_MS - 5000)
+  })
+
+  it('keeps the original sign-in time when a staff session is rotated', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
+    const signedInAt = new Date(Date.now() - 2 * HOUR)
+    await createSession('u1', { mfaVerified: true, authenticatedAt: signedInAt })
+    const { createdAt } = sessionCreateMock.mock.calls[0][0].data as { createdAt: Date }
+    expect(createdAt).toEqual(signedInAt)
+  })
+
+  it('never lets a rotation outlive 8 hours from the original sign-in', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
+    const signedInAt = new Date(Date.now() - ADMIN_SESSION_MAX_AGE_MS - MINUTE)
+    await createSession('u1', { mfaVerified: true, authenticatedAt: signedInAt })
+    const { expiresAt } = sessionCreateMock.mock.calls[0][0].data as { expiresAt: Date }
+    expect(expiresAt.getTime()).toBe(signedInAt.getTime() + ADMIN_SESSION_MAX_AGE_MS)
+    expect(expiresAt.getTime()).toBeLessThan(Date.now())
+  })
+
+  it('ignores a sign-in time in the future', async () => {
+    userFindUniqueMock.mockResolvedValue({ platformRole: 'admin' })
+    const before = Date.now()
+    await createSession('u1', { mfaVerified: true, authenticatedAt: new Date(Date.now() + HOUR) })
+    const { createdAt } = sessionCreateMock.mock.calls[0][0].data as { createdAt: Date }
+    expect(createdAt.getTime()).toBeLessThanOrEqual(Date.now())
+    expect(createdAt.getTime()).toBeGreaterThanOrEqual(before)
   })
 
   it('gives a non-admin a ~30 day session', async () => {
@@ -278,6 +335,7 @@ describe('createSession', () => {
     const days = (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     expect(days).toBeGreaterThan(29.9)
     expect(days).toBeLessThan(30.1)
+    expect(sessionCreateMock.mock.calls[0][0].data).not.toHaveProperty('createdAt')
   })
 })
 
@@ -297,5 +355,116 @@ describe('hasAdminUsersInDb', () => {
   it('fails closed to true (assume admin exists) if the DB call throws', async () => {
     userCountMock.mockRejectedValue(new Error('db down'))
     expect(await hasAdminUsersInDb()).toBe(true)
+  })
+})
+
+describe('staff session: 8 hours from sign-in', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    cookieGet.mockReturnValue({ value: 'tok' })
+    sessionUpdateManyMock.mockResolvedValue({ count: 1 })
+    sessionDeleteManyMock.mockResolvedValue({ count: 1 })
+  })
+
+  function staffSession(createdAgoMs: number, role: 'admin' | 'manager' = 'admin') {
+    const session = makeSession(role === 'admin' ? 'admin' : 'customer')
+    if (role === 'manager') session.user.teamRole = 'manager'
+    session.createdAt = new Date(Date.now() - createdAgoMs)
+    session.expiresAt = new Date(session.createdAt.getTime() + ADMIN_SESSION_MAX_AGE_MS)
+    return session
+  }
+
+  it('ends 8 hours after sign-in and revokes the row', async () => {
+    const s = staffSession(ADMIN_SESSION_MAX_AGE_MS + 1000)
+    s.expiresAt = new Date(Date.now() + MINUTE) // even if the stored expiry were later
+    sessionFindUniqueMock.mockResolvedValue(s)
+
+    expect(await getServerUser()).toBeNull()
+    expect(sessionDeleteManyMock).toHaveBeenCalledWith({ where: { tokenHash: expect.any(String) } })
+  })
+
+  it('applies the 8-hour limit to managers too', async () => {
+    const s = staffSession(ADMIN_SESSION_MAX_AGE_MS + 1000, 'manager')
+    s.expiresAt = new Date(Date.now() + MINUTE)
+    sessionFindUniqueMock.mockResolvedValue(s)
+    const gate = await requireAdminPermission('orders.read')
+    expect((gate as NextResponse).status).toBe(401)
+  })
+
+  it('caps sessions issued before this limit (1-day expiry) at 8 hours from sign-in', async () => {
+    const live = staffSession(HOUR)
+    live.expiresAt = new Date(live.createdAt.getTime() + 24 * HOUR)
+    sessionFindUniqueMock.mockResolvedValue(live)
+    expect(await getServerUser()).toMatchObject({ id: 'u1' })
+
+    const old = staffSession(9 * HOUR)
+    old.expiresAt = new Date(old.createdAt.getTime() + 24 * HOUR)
+    sessionFindUniqueMock.mockResolvedValue(old)
+    expect(await getServerUser()).toBeNull()
+  })
+
+  it('survives long inactivity, computer sleep or a suspended tab: only the 8-hour limit counts', async () => {
+    // Last request ~7h59m after sign-in, nothing in between: still valid.
+    sessionFindUniqueMock.mockResolvedValue(staffSession(ADMIN_SESSION_MAX_AGE_MS - MINUTE))
+    expect(await getServerUser()).toMatchObject({ id: 'u1', platformRole: 'admin' })
+  })
+
+  it('never writes to the session row on an authenticated request (no sliding expiry)', async () => {
+    sessionFindUniqueMock.mockResolvedValue(staffSession(HOUR))
+    await getServerUser()
+    await requireAdminPermission('admin.access')
+    expect(sessionUpdateManyMock).not.toHaveBeenCalled()
+    expect(sessionCreateMock).not.toHaveBeenCalled()
+    expect(sessionDeleteManyMock).not.toHaveBeenCalled()
+  })
+
+  it('handles parallel requests on a live session', async () => {
+    sessionFindUniqueMock.mockResolvedValue(staffSession(HOUR))
+    const results = await Promise.all(Array.from({ length: 10 }, () => getServerUser()))
+    expect(results.every((u) => u?.id === 'u1')).toBe(true)
+  })
+
+  it('handles parallel requests after the limit: all denied', async () => {
+    sessionFindUniqueMock.mockResolvedValue(staffSession(ADMIN_SESSION_MAX_AGE_MS + 1000))
+    const gates = await Promise.all(Array.from({ length: 5 }, () => requireAdminPermission('orders.read')))
+    expect(gates.map((g) => (g as NextResponse).status)).toEqual([401, 401, 401, 401, 401])
+  })
+
+  it('denies every admin API once the session row is revoked (after logout)', async () => {
+    sessionFindUniqueMock.mockResolvedValue(null)
+    for (const permission of ['admin.access', 'orders.read', 'users.manage', 'staff.manage'] as const) {
+      const gate = await requireAdminPermission(permission)
+      expect((gate as NextResponse).status).toBe(401)
+    }
+  })
+
+  it('still requires MFA: a non-verified staff session is rejected inside the 8 hours', async () => {
+    const session = staffSession(MINUTE)
+    session.mfaVerified = false
+    sessionFindUniqueMock.mockResolvedValue(session)
+    expect(await getServerUser()).toBeNull()
+  })
+
+  it('leaves customer sessions untouched: no 8-hour limit, no writes', async () => {
+    const session = makeSession('customer', false)
+    session.createdAt = new Date(Date.now() - 10 * 24 * HOUR)
+    session.expiresAt = new Date(Date.now() + 20 * 24 * HOUR)
+    sessionFindUniqueMock.mockResolvedValue(session)
+
+    expect(await getServerUser()).toMatchObject({ id: 'u1', platformRole: 'customer' })
+    expect(sessionUpdateManyMock).not.toHaveBeenCalled()
+    expect(sessionDeleteManyMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('sessionCookieMaxAgeSeconds', () => {
+  it('gives staff a browser session cookie (no Max-Age)', () => {
+    expect(sessionCookieMaxAgeSeconds({ platformRole: 'admin' })).toBeUndefined()
+    expect(sessionCookieMaxAgeSeconds({ platformRole: 'customer', teamRole: 'manager' })).toBeUndefined()
+  })
+
+  it('keeps the 30-day cookie for customers', () => {
+    expect(sessionCookieMaxAgeSeconds({ platformRole: 'customer' })).toBe(30 * 24 * 60 * 60)
+    expect(sessionCookieMaxAgeSeconds({ platformRole: 'customer', teamRole: 'admin' })).toBe(30 * 24 * 60 * 60)
   })
 })

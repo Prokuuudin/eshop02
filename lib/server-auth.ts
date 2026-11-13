@@ -15,9 +15,16 @@ import type { CheckoutProfile } from '@/lib/auth-types'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
-// Admin accounts get a shorter server-side session lifetime: a leaked admin
-// cookie/token stays exploitable for at most a day, not a month.
-const ADMIN_SESSION_DURATION_DAYS = 1
+/**
+ * Staff sessions (admin, super admin, manager) end 8 hours after sign-in
+ * (Session.createdAt), whatever the activity — sleep, suspended tabs or long
+ * inactivity neither end nor extend them. Manual logout revokes them at once.
+ */
+export const ADMIN_SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000
+
+function adminSessionDeadline(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + ADMIN_SESSION_MAX_AGE_MS)
+}
 
 export type ServerUser = {
   id: string
@@ -90,25 +97,39 @@ export function requiresAdminMfa(subject: { platformRole?: string | null; teamRo
   return getPermissionAccessLevel(subject) !== 'none'
 }
 
-/** Cookie lifetime matching createSession()'s DB expiry for this user. */
-export function sessionCookieMaxAgeSeconds(subject: { platformRole?: string | null; teamRole?: string | null }): number {
-  return (requiresAdminMfa(subject) ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS) * 60 * 60 * 24
+/**
+ * Cookie Max-Age for this user's session. Staff get none: a browser session
+ * cookie. Browsers that restore the previous session ("continue where you left
+ * off") may also restore it after a restart, so it is not a guaranteed sign-out
+ * on browser close; the server-side 8-hour limit is what ends a staff session.
+ */
+export function sessionCookieMaxAgeSeconds(subject: { platformRole?: string | null; teamRole?: string | null }): number | undefined {
+  return requiresAdminMfa(subject) ? undefined : SESSION_DURATION_DAYS * 60 * 60 * 24
 }
 
 /**
  * `mfaVerified` must only be true when the caller has just checked a TOTP or
  * recovery code (or is rotating a session that getServerUser already accepted).
+ * `authenticatedAt` is only for such a rotation: the new staff session keeps the
+ * original sign-in time, so rotating never extends the 8-hour limit.
  */
 export async function createSession(
   userId: string,
-  options: { mfaVerified?: boolean } = {},
+  options: { mfaVerified?: boolean; authenticatedAt?: Date } = {},
   db: Pick<ExtendedTransactionClient, 'user' | 'session'> = prisma,
 ): Promise<string> {
   const token = generateToken()
   const user = await db.user.findUnique({ where: { id: userId }, select: { platformRole: true, teamRole: true } })
-  const durationDays = user && requiresAdminMfa(user) ? ADMIN_SESSION_DURATION_DAYS : SESSION_DURATION_DAYS
-  const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + durationDays)
+  const now = new Date()
+  let createdAt: Date | undefined
+  let expiresAt: Date
+  if (user && requiresAdminMfa(user)) {
+    createdAt = options.authenticatedAt && options.authenticatedAt < now ? options.authenticatedAt : now
+    expiresAt = adminSessionDeadline(createdAt)
+  } else {
+    expiresAt = new Date(now)
+    expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS)
+  }
 
   await db.session.create({
     data: {
@@ -117,6 +138,7 @@ export async function createSession(
       tokenHash: hashToken(token),
       expiresAt,
       mfaVerified: options.mfaVerified === true,
+      ...(createdAt ? { createdAt } : {}),
     },
   })
 
@@ -140,15 +162,25 @@ export async function getServerUser(options: { allowPasswordChangeRequired?: boo
       include: { user: true },
     })
 
-    if (!session || session.expiresAt < new Date()) {
+    const now = new Date()
+    if (!session || session.expiresAt < now) {
       if (session) await prisma.session.delete({ where: { tokenHash } })
       return null
     }
 
-    // Admin access is never granted by a session that skipped the second factor —
-    // whichever route created it. Checked against the live role, so a customer
-    // promoted to staff must also log in again through MFA.
-    if (requiresAdminMfa(session.user) && !session.mfaVerified) return null
+    if (requiresAdminMfa(session.user)) {
+      // Admin access is never granted by a session that skipped the second factor —
+      // whichever route created it. Checked against the live role, so a customer
+      // promoted to staff must also log in again through MFA.
+      if (!session.mfaVerified) return null
+
+      // 8 hours from sign-in, also for sessions issued before this limit existed
+      // (their stored expiry was one day). Revoked on the spot.
+      if (now >= adminSessionDeadline(session.createdAt)) {
+        await prisma.session.deleteMany({ where: { tokenHash } })
+        return null
+      }
+    }
 
     const user = mapDbToServerUser(session.user)
     // A shared/temporary onboarding credential must never create a full account

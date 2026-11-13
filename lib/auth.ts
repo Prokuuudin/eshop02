@@ -71,7 +71,9 @@ export const registerAdminUser = async (
 // Одна карта = один аккаунт; сценария «сотрудник в команду по карте» нет.
 
 export const logout = (): void => {
-    void fetch('/api/auth/logout', { method: 'POST' }).catch(() => {
+    // keepalive: the server-side revocation must complete even when the caller
+    // navigates away right after logout().
+    void fetch('/api/auth/logout', { method: 'POST', keepalive: true }).catch(() => {
         // Best-effort: local state clears regardless, same as before this call existed.
     });
     localStorage.removeItem(CURRENT_KEY);

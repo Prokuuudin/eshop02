@@ -46,6 +46,23 @@ describe('POST /api/auth/logout', () => {
     expect(recordCompanyActivity).not.toHaveBeenCalled()
   })
 
+  it('revokes the server session before answering and expires the cookie immediately', async () => {
+    const order: string[] = []
+    vi.mocked(getServerUser).mockResolvedValue({ id: 'admin-1', email: 'admin@example.com', platformRole: 'admin' } as never)
+    vi.mocked(revokeSessionWithAudit).mockImplementation(async () => {
+      await Promise.resolve()
+      order.push('revoked')
+    })
+
+    const res = await POST(requestWithCookie())
+    order.push('responded')
+    expect(order).toEqual(['revoked', 'responded'])
+    expect(revokeSessionWithAudit).toHaveBeenCalledWith(expect.any(NextRequest), 'token-abc')
+    const setCookie = res.headers.get('set-cookie') ?? ''
+    expect(setCookie).toMatch(/^session=;/)
+    expect(setCookie).toMatch(/Max-Age=0/i)
+  })
+
   it('is a no-op when there is no session cookie', async () => {
     const res = await POST(new NextRequest('https://shop.test/api/auth/logout', { method: 'POST' }))
     expect(res.status).toBe(200)

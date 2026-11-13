@@ -15,7 +15,7 @@ export type TemplateGuide = {
 };
 
 export function guideFor(id: string): TemplateGuide {
-    const language = id.endsWith('-en') ? 'EN' : id.endsWith('-lv') ? 'LV' : id === 'pro-invite' ? 'RU · EN · LV' : 'RU';
+    const language = id.endsWith('-en') ? 'EN' : id.endsWith('-lv') ? 'LV' : id === 'pro-invite' ? 'LV' : 'RU';
     if (id.startsWith('order-confirmation')) return { category: 'orders', language, trigger: ['Сразу после оформления заказа', 'Immediately after checkout', 'Uzreiz pēc pasūtījuma noformēšanas'], audience: ['Покупатель', 'Customer', 'Klients'] };
     if (id.startsWith('order-shipped')) return { category: 'orders', language, trigger: ['При смене статуса на «Отправлен»', 'When status changes to Shipped', 'Kad statuss mainās uz Nosūtīts'], audience: ['Покупатель', 'Customer', 'Klients'] };
     if (id.startsWith('order-delivered')) return { category: 'orders', language, trigger: ['При смене статуса на «Доставлен»', 'When status changes to Delivered', 'Kad statuss mainās uz Piegādāts'], audience: ['Покупатель', 'Customer', 'Klients'] };

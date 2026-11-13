@@ -116,6 +116,11 @@ Never perform destructive Git operations unless explicitly requested.
 
 ## Verification
 
+### Shared test execution policy
+
+Read and follow the repository-root `AGENTS.md` before selecting or running tests. Its risk-based test selection, compact output, retry and release-gate rules apply to Claude Code as well as other coding agents. This `CLAUDE.md` retains the broader project instructions; if verification guidance differs, use the stricter safety/release requirement and never bypass mandatory CI checks.
+
+
 Verification is required, but it should be proportional to the change.
 
 ### Small/local change

@@ -9,6 +9,7 @@ const {
   hashPasswordMock,
   verifyPasswordMock,
   createSessionMock,
+  sessionFindUniqueMock,
 } = vi.hoisted(() => ({
   userFindUniqueMock: vi.fn(),
   userUpdateMock: vi.fn(),
@@ -17,18 +18,23 @@ const {
   hashPasswordMock: vi.fn(),
   verifyPasswordMock: vi.fn(),
   createSessionMock: vi.fn(),
+  sessionFindUniqueMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findUnique: userFindUniqueMock, update: userUpdateMock },
-    session: { deleteMany: sessionDeleteManyMock },
+    session: { deleteMany: sessionDeleteManyMock, findUnique: sessionFindUniqueMock },
   },
 }))
+vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), resetRateLimit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: getServerUserMock,
   requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',
+  sessionCookieMaxAgeSeconds: (u: { platformRole?: string | null; teamRole?: string | null }) =>
+    u.platformRole === 'admin' || u.teamRole === 'manager' ? undefined : 60 * 60 * 24 * 30,
+  hashToken: (token: string) => `hash:${token}`,
   hashPassword: hashPasswordMock,
   verifyPassword: verifyPasswordMock,
   createSession: createSessionMock,
@@ -50,6 +56,7 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
 }
 
 const SESSION_USER = { id: 'u1', email: 'user@test.com' }
+const SIGNED_IN_AT = new Date('2026-11-13T08:00:00.000Z')
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -58,6 +65,7 @@ beforeEach(() => {
   userUpdateMock.mockResolvedValue({ id: 'u1' })
   sessionDeleteManyMock.mockResolvedValue({ count: 1 })
   createSessionMock.mockResolvedValue('new-token')
+  sessionFindUniqueMock.mockResolvedValue({ createdAt: SIGNED_IN_AT })
 })
 
 describe('POST /api/user/password', () => {
@@ -115,8 +123,11 @@ describe('POST /api/user/password', () => {
 
     // A password change must rotate sessions: kill every existing one and issue a fresh cookie.
     expect(sessionDeleteManyMock).toHaveBeenCalledWith({ where: { userId: 'u1' } })
-    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: false })
+    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: false, authenticatedAt: undefined })
     expect(res.cookies.get('eshop_session')?.value).toBe('new-token')
+    // Customers keep the same persistent 30-day cookie as before.
+    expect(res.headers.get('set-cookie')).toMatch(/Max-Age=2592000/i)
+    expect(sessionFindUniqueMock).not.toHaveBeenCalled()
   })
 
   it('keeps an admin MFA-verified when rotating their (already MFA-verified) session', async () => {
@@ -125,7 +136,23 @@ describe('POST /api/user/password', () => {
     verifyPasswordMock.mockResolvedValue(true)
     const res = await POST(makeRequest({ currentPassword: 'old-password', newPassword: 'newpassword1' }))
     expect(res.status).toBe(200)
-    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: true })
+    // The rotated staff session keeps the original sign-in time (8-hour limit not extended)
+    // and gets a browser session cookie.
+    expect(sessionFindUniqueMock).toHaveBeenCalledWith({ where: { tokenHash: 'hash:tok' }, select: { createdAt: true } })
+    expect(createSessionMock).toHaveBeenCalledWith('u1', { mfaVerified: true, authenticatedAt: SIGNED_IN_AT })
+    const setCookie = res.headers.get('set-cookie') ?? ''
+    expect(setCookie).toContain('eshop_session=new-token')
+    expect(setCookie).not.toMatch(/max-age|expires=/i)
+  })
+
+  it('refuses staff whose current session row is gone, before touching the password', async () => {
+    getServerUserMock.mockResolvedValue({ id: 'u1', email: 'admin@x.lv', platformRole: 'admin', mustChangePassword: false })
+    sessionFindUniqueMock.mockResolvedValue(null)
+    const res = await POST(makeRequest({ currentPassword: 'old-password', newPassword: 'newpassword1' }))
+    expect(res.status).toBe(401)
+    expect(userUpdateMock).not.toHaveBeenCalled()
+    expect(sessionDeleteManyMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
   })
 
   it('refuses a not-yet-activated customer, with or without a current password', async () => {

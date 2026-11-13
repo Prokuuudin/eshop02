@@ -90,6 +90,7 @@ IF EXISTS (
         (N'Product', N'MetaDescription'),
         (N'Product', N'MetaTitle'),
         (N'Product', N'Published'),
+        (N'Product', N'isMarkedForProSync'),
         (N'Product', N'CreatedOnUtc'),
         (N'Product', N'UpdatedOnUtc'),
         (N'Product', N'Deleted'),
@@ -157,6 +158,19 @@ IF EXISTS (
 )
     THROW 51000, 'One or more tables or columns required by the exporter are missing.', 1;
 
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.schemas AS s
+    INNER JOIN sys.tables AS t ON t.schema_id = s.schema_id
+    INNER JOIN sys.columns AS c ON c.object_id = t.object_id
+    INNER JOIN sys.types AS ty ON ty.user_type_id = c.user_type_id
+    WHERE s.name = N'dbo'
+      AND t.name = N'Product'
+      AND c.name = N'isMarkedForProSync'
+      AND ty.name = N'bit'
+)
+    THROW 51000, 'Product.isMarkedForProSync must exist and have type bit.', 1;
+
 SELECT N'PASS' AS SmokeStatus,
        DB_NAME() AS DatabaseName,
        SUSER_SNAME() AS LoginName,
@@ -167,6 +181,12 @@ SELECT COUNT_BIG(*) AS ProductsTotal,
        SUM(CASE WHEN p.Published = 0 THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END) AS Unpublished
 FROM dbo.Product AS p
 WHERE p.Deleted = 0;
+
+SELECT COUNT_BIG(*) AS ProSyncEligibleProducts
+FROM dbo.Product AS p
+WHERE p.Deleted = 0
+  AND p.Published = 1
+  AND p.isMarkedForProSync = 1;
 
 SELECT
     (SELECT COUNT_BIG(*) FROM dbo.Language) AS Languages,

@@ -68,6 +68,16 @@ try {
     $config = New-TestConfig -OutputDirectory $outputDirectory
     $data = Read-CatalogFixture -Path $fixturePath
 
+    Assert-HairshopProSyncMarkerMetadata -Rows @([pscustomobject]@{ TypeName = 'bit' })
+    Invoke-ExpectedFailure -MessagePattern 'missing or its metadata cannot be confirmed' -Action {
+        Assert-HairshopProSyncMarkerMetadata -Rows @()
+    }
+    Invoke-ExpectedFailure -MessagePattern 'must have MSSQL type bit' -Action {
+        Assert-HairshopProSyncMarkerMetadata -Rows @([pscustomobject]@{ TypeName = 'int' })
+    }
+    $script:Passed++
+    Write-Host 'PASS: Hairshop Pro marker metadata is fail-closed and accepts only MSSQL bit'
+
     $first = Invoke-CatalogSnapshotExport -Data $data -Config $config
     $manifestPath = Join-Path $outputDirectory 'manifest.json'
     Assert-True (Test-Path -LiteralPath $manifestPath -PathType Leaf) 'manifest.json must be published'

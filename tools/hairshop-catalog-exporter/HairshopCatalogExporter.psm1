@@ -440,9 +440,49 @@ ORDER BY required.TableName
     }
 }
 
+function Assert-HairshopProSyncMarkerMetadata {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Rows)
+
+    $metadata = @($Rows)
+    if ($metadata.Count -ne 1) {
+        throw 'Hairshop Pro sync is blocked: dbo.Product.isMarkedForProSync is missing or its metadata cannot be confirmed.'
+    }
+
+    $typeName = ([string](Get-RowValue $metadata[0] 'TypeName' '')).Trim()
+    if (-not $typeName.Equals('bit', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Hairshop Pro sync is blocked: dbo.Product.isMarkedForProSync must have MSSQL type bit; found '$typeName'."
+    }
+}
+
+function Assert-HairshopProSyncMarkerSchema {
+    param(
+        [Parameter(Mandatory = $true)][System.Data.SqlClient.SqlConnection]$Connection,
+        [Parameter(Mandatory = $true)][System.Data.SqlClient.SqlTransaction]$Transaction,
+        [Parameter(Mandatory = $true)][int]$TimeoutSeconds
+    )
+
+    $metadata = Invoke-SelectTable -Connection $Connection -Transaction $Transaction -TimeoutSeconds $TimeoutSeconds -Sql @'
+SELECT c.name AS ColumnName,
+       t.name AS TypeName,
+       c.is_nullable AS IsNullable
+FROM sys.schemas s
+INNER JOIN sys.tables tab ON tab.schema_id = s.schema_id
+INNER JOIN sys.columns c ON c.object_id = tab.object_id
+INNER JOIN sys.types t ON t.user_type_id = c.user_type_id
+WHERE s.name = 'dbo'
+  AND tab.name = 'Product'
+  AND c.name = 'isMarkedForProSync'
+'@
+    Assert-HairshopProSyncMarkerMetadata -Rows $metadata.Rows
+}
+
 function Get-CatalogDataFromMssql {
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)]$Config)
+    param(
+        [Parameter(Mandatory = $true)]$Config,
+        [switch]$ProSyncOnly
+    )
 
     $connectionString = Resolve-CatalogConnectionString -Config $Config
     $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($connectionString)
@@ -480,7 +520,31 @@ SELECT DB_NAME() AS DatabaseName
 
         Assert-ReadOnlyDatabasePrincipal -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout
 
-        $products = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
+        if ($ProSyncOnly) {
+            Assert-HairshopProSyncMarkerSchema -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout
+            $productSql = @'
+SELECT p.Id AS ProductId,
+       p.SKU AS SKU,
+       p.Gtin AS EAN,
+       p.Name,
+       p.ShortDescription,
+       p.FullDescription,
+       p.MetaKeywords,
+       p.MetaDescription,
+       p.MetaTitle,
+       p.Published,
+       p.isMarkedForProSync AS IsMarkedForProSync,
+       p.CreatedOnUtc,
+       p.UpdatedOnUtc
+FROM dbo.Product p
+WHERE p.Deleted = 0
+  AND p.Published = 1
+  AND p.isMarkedForProSync = 1
+ORDER BY p.Id
+'@
+        }
+        else {
+            $productSql = @'
 SELECT p.Id AS ProductId,
        p.SKU AS SKU,
        p.Gtin AS EAN,
@@ -497,6 +561,8 @@ FROM dbo.Product p
 WHERE p.Deleted = 0
 ORDER BY p.Id
 '@
+        }
+        $products = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql $productSql
 
         $languages = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
 SELECT l.Id AS LanguageId,
@@ -1188,6 +1254,7 @@ function Invoke-CatalogSnapshotExport {
 Export-ModuleMember -Function @(
     'Read-CatalogExporterConfig',
     'Get-CatalogDataFromMssql',
+    'Assert-HairshopProSyncMarkerMetadata',
     'Read-CatalogFixture',
     'Invoke-CatalogSnapshotExport'
 )

@@ -333,7 +333,7 @@ export default function AdminAccountDashboard({ user }: { user: User }): React.R
             {/* Pending requests banner */}
             {pendingRequestCount > 0 && (
                 <Link
-                    href="/admin/client-barcodes"
+                    href="/admin"
                     className="flex items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 shadow-sm transition-colors hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30"
                 >
                     <div className="flex items-center gap-3">

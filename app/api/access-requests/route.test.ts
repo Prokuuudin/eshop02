@@ -227,7 +227,7 @@ describe('POST /api/access-requests', () => {
       expect(html).toContain('5044')
       expect(html).toContain('Anna &lt;b&gt;Bērziņa&lt;/b&gt;')
       expect(html).not.toContain('<b>Bērziņa</b>')
-      expect(html).toContain('https://shop.test/admin/client-barcodes')
+      expect(html).toContain('href="https://shop.test/admin"')
       expect(html).not.toContain('LongPassword1!')
     })
 

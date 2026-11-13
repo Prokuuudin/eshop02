@@ -13,6 +13,7 @@ import { formatOrderAddressLatvian } from '@/lib/order-address';
 import { ArrowRight, ChevronDown, Info, Star } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getAdminDashboardCards, type AdminDashboardCard } from './admin-dashboard-cards';
+import CardRequestsPanel from './CardRequestsPanel';
 import ContactRequestsPanel, { type UnansweredContactMessage } from './ContactRequestsPanel';
 import RevenueBarChart from './RevenueBarChart';
 import { DELIVERY_METHOD_LABEL_KEYS, type CheckoutDeliveryMethod } from '@/lib/delivery';
@@ -228,6 +229,8 @@ export default function AdminPage(): React.ReactElement {
                     )}
                 </div>
             </div>
+
+            <CardRequestsPanel locale={locale} l={l} enabled={hasAdminPermission(currentUser, 'customers.read')} />
 
             {editMode && (
                 <p className="hidden sm:block mb-4 text-sm text-muted-foreground">

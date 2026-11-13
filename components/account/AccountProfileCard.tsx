@@ -9,6 +9,7 @@ import type { User } from '@/lib/auth';
 import { AvatarCropDialog } from '@/components/account/AvatarCropDialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { ProfileDraft } from '@/hooks/useAccountProfile';
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
 const isInternalEmail = (email: string) => email.endsWith('@client.local');
 
@@ -264,7 +265,7 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
                                 <ProfileInput field="companyName" label={t('checkout.companyName')} value={activeDraft.companyName} onChange={onChange} inputClassName={fieldClass()} />
                                 <ProfileInput field="regNumber" label={t('checkout.regNumber')} value={activeDraft.regNumber} onChange={onChange} inputClassName={fieldClass()} />
                                 <ProfileInput field="vatNumber" label={t('checkout.vatNumber')} value={activeDraft.vatNumber} onChange={onChange} inputClassName={fieldClass()} />
-                                <ProfileInput field="legalAddress" label={t('checkout.legalAddress')} value={activeDraft.legalAddress} onChange={onChange} inputClassName={fieldClass()} wide />
+                                <ProfileInput field="legalAddress" label={t('checkout.legalAddress')} value={activeDraft.legalAddress} onChange={onChange} inputClassName={fieldClass()} wide maxLength={LEGAL_ADDRESS_MAX_LENGTH} />
                                 <ProfileInput field="bankName" label={t('checkout.bankName')} value={activeDraft.bankName} onChange={onChange} inputClassName={fieldClass()} />
                                 <ProfileInput field="iban" label={t('checkout.iban')} value={activeDraft.iban} onChange={onChange} inputClassName={fieldClass()} />
                             </>
@@ -299,13 +300,13 @@ const AccountProfileCard: React.FC<AccountProfileCardProps> = ({
     );
 };
 
-function ProfileInput({ field, label, value, onChange, inputClassName, wide = false }: {
-    field: string; label: string; value: string; onChange: (field: string, value: string) => void; inputClassName: string; wide?: boolean;
+function ProfileInput({ field, label, value, onChange, inputClassName, wide = false, maxLength }: {
+    field: string; label: string; value: string; onChange: (field: string, value: string) => void; inputClassName: string; wide?: boolean; maxLength?: number;
 }): React.ReactElement {
     return (
         <div className={wide ? 'sm:col-span-2' : ''}>
             <label htmlFor={`profile-${field}`} className="mb-1 block text-sm font-medium text-foreground">{label}</label>
-            <Input id={`profile-${field}`} className={inputClassName} placeholder={label} value={value} onChange={(event) => onChange(field, event.target.value)} />
+            <Input id={`profile-${field}`} className={inputClassName} placeholder={label} value={value} maxLength={maxLength} onChange={(event) => onChange(field, event.target.value)} />
         </div>
     );
 }

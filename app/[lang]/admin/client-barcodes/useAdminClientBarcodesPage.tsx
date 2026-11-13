@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from '@/lib/use-translation';
+import { useAuthStore } from '@/lib/auth-store';
 import {
+    buildClientDetailsPatch,
     classifyClientSaveFailure,
     createNoCardDraft,
     getCardHolderEdit,
@@ -34,6 +36,8 @@ async function fetchNextCardNumber(): Promise<string> {
 
 function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const { t, language } = useTranslation();
+    // Bank and IBAN are admin-only; the server enforces it, this only avoids a guaranteed 403.
+    const canEditBankDetails = useAuthStore((s) => s.user?.platformRole === 'admin');
     const l = (ru: string, en: string, lv: string) =>
         language === 'ru' ? ru : language === 'lv' ? lv : en;
     const tl = (
@@ -263,20 +267,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 body: JSON.stringify({
                     id: holder.id,
                     expectedUpdatedAt: holder.updatedAt,
-                    name: edit.name.trim() || null,
-                    ...(edit.email.trim() ? { email: edit.email.trim().toLowerCase() } : {}),
-                    phone: edit.phone.trim() || null,
-                    customerType: edit.customerType,
-                    registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
-                    // Company-only checkout fields: for an individual the server keeps the stored
-                    // profile values (unused while individual) and clears the columns.
-                    vatNumber: edit.customerType === 'company' ? edit.vatNumber.trim() || null : null,
-                    legalAddress: edit.customerType === 'company' ? edit.legalAddress.trim() || null : null,
-                    bankName: edit.customerType === 'company' ? edit.bankName.trim() || null : null,
-                    iban: edit.customerType === 'company' ? edit.iban.trim() || null : null,
-                    deliveryAddress: edit.deliveryAddress.trim() || null,
-                    deliveryCity: edit.deliveryCity.trim() || null,
-                    deliveryPostalCode: edit.deliveryPostalCode.trim() || null,
+                    ...buildClientDetailsPatch(edit, { canEditBankDetails }),
                     ...(stepUp ? { currentPassword: stepUp.currentPassword, mfaCode: stepUp.mfaCode.trim(), reason: stepUp.reason.trim() } : {}),
                 }),
             });
@@ -371,7 +362,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp, noCardRequests, setNoCardRequests, loadNoCardRequests, noCardDrafts, setNoCardDrafts, rejectNotes, setRejectNotes, emailBusy, setEmailBusy, getNoCardDraft, regenerateCardNumber, handleApproveNoCardRequest, handleRejectNoCardRequest }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

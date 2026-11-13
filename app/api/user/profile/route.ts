@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser, SESSION_COOKIE } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import type { CheckoutProfile } from '@/lib/auth-types'
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 
 // personalCode and invoicePersonalCode are excluded: invoice identity belongs
 // only to a specific order invoice, never to a reusable customer profile.
@@ -17,7 +18,8 @@ function parseCheckoutProfile(value: unknown): CheckoutProfile | undefined {
   const result = { customerType } as CheckoutProfile
   for (const field of checkoutProfileFields) {
     const fieldValue = source[field]
-    result[field] = typeof fieldValue === 'string' ? fieldValue.trim().slice(0, 300) : ''
+    const maxLength = field === 'legalAddress' ? LEGAL_ADDRESS_MAX_LENGTH : 300
+    result[field] = typeof fieldValue === 'string' ? fieldValue.trim().slice(0, maxLength) : ''
   }
   return result
 }

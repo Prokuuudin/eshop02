@@ -347,8 +347,11 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
     })
   })
 
-  it('keeps bank, IBAN and delivery address out of the User columns and in the checkout profile', async () => {
-    permissionMock.mockResolvedValue(MANAGER)
+  it.each([
+    ['Super Admin', SUPER_ADMIN],
+    ['regular admin', REGULAR_ADMIN],
+  ])('a %s keeps bank, IBAN and delivery address out of the User columns and in the checkout profile', async (_label, caller) => {
+    permissionMock.mockResolvedValue(caller)
     userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
     const tx = txFor(CARD_CUSTOMER)
     const response = await patch({
@@ -359,6 +362,44 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
     const { data } = tx.user.updateMany.mock.calls[0][0]
     for (const field of ['bankName', 'iban', 'deliveryAddress', 'deliveryCity', 'deliveryPostalCode']) expect(data).not.toHaveProperty(field)
     expect(data.checkoutProfile).toMatchObject({ bankName: 'Swedbank', iban: 'LV80HABA0551000000001', address: 'Tērbatas 5', city: 'Rīga', postalCode: 'LV-1011' })
+  })
+
+  it.each([
+    ['bank name', { bankName: 'Swedbank' }],
+    ['IBAN', { iban: 'LV80HABA0551000000001' }],
+    ['bank name cleared', { bankName: null }],
+  ])('a manager cannot change the %s, even inside an otherwise allowed save', async (_label, bankField) => {
+    permissionMock.mockResolvedValue(MANAGER)
+    const response = await patch({ id: 'u1', ...CLIENT_SAVE, vatNumber: 'LV40003000001', ...bankField })
+    expect(response.status).toBe(403)
+    expect(await response.json()).toEqual({ error: 'forbidden' })
+    expect(transactionMock).not.toHaveBeenCalled()
+  })
+
+  it('a manager still saves VAT, legal and delivery details of a card holder without bank fields', async () => {
+    permissionMock.mockResolvedValue(MANAGER)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    const tx = txFor(CARD_CUSTOMER)
+    const response = await patch({
+      id: 'u1', ...CLIENT_SAVE, vatNumber: 'LV40003000001', legalAddress: 'Rīga, Iela 3',
+      deliveryAddress: 'Tērbatas 5', deliveryCity: 'Rīga', deliveryPostalCode: 'LV-1011',
+    })
+    expect(response.status).toBe(200)
+    expect(tx.user.updateMany.mock.calls[0][0].data.checkoutProfile).toMatchObject({
+      vatNumber: 'LV40003000001', legalAddress: 'Rīga, Iela 3', address: 'Tērbatas 5', city: 'Rīga', postalCode: 'LV-1011',
+    })
+  })
+
+  it('accepts a 300-character legal address and rejects 301 characters', async () => {
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET)
+    txFor(CARD_CUSTOMER)
+    expect((await patch({ id: 'u1', ...CLIENT_SAVE, legalAddress: 'a'.repeat(300) })).status).toBe(200)
+    transactionMock.mockClear()
+    const rejected = await patch({ id: 'u1', ...CLIENT_SAVE, legalAddress: 'a'.repeat(301) })
+    expect(rejected.status).toBe(400)
+    expect(await rejected.json()).toMatchObject({ error: 'invalid_request' })
+    expect(transactionMock).not.toHaveBeenCalled()
   })
 
   it('a manager still cannot edit a staff card holder VAT number', async () => {

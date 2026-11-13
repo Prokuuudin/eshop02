@@ -15,6 +15,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
 import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage';
 import { isCompleteClientStepUp } from './client-barcodes-model';
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
     const pathname = usePathname();
@@ -37,6 +38,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         cardHoldersLoading,
         cardHoldersError,
         setClientEdits,
+        canEditBankDetails,
         clientSaveBusy,
         clientRowErrors,
         getClientEdit,
@@ -56,6 +58,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         handleRejectNoCardRequest,
     } = pageState;
     const locale = getLocaleFromLanguage(language);
+    const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
     return (
         <AdminGate>
             <main className="w-full py-4 space-y-6">
@@ -452,6 +455,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     <Input
                                                         className="min-w-48"
                                                         aria-label={l('Юр. адрес', 'Legal address', 'Juridiskā adrese')}
+                                                        maxLength={LEGAL_ADDRESS_MAX_LENGTH}
                                                         disabled={edit.customerType !== 'company'}
                                                         value={edit.customerType === 'company' ? edit.legalAddress : ''}
                                                         onChange={(e) =>
@@ -495,7 +499,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     <div className="flex min-w-52 flex-col gap-1">
                                                         <Input
                                                             aria-label={l('Банк', 'Bank', 'Banka')}
-                                                            disabled={edit.customerType !== 'company'}
+                                                            disabled={edit.customerType !== 'company' || !canEditBankDetails}
+                                                            title={canEditBankDetails ? undefined : bankAdminOnlyHint}
                                                             value={edit.customerType === 'company' ? edit.bankName : ''}
                                                             onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, bankName: e.target.value } }))}
                                                             placeholder={edit.customerType === 'company' ? l('Банк', 'Bank', 'Banka') : '—'}
@@ -503,7 +508,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                         <Input
                                                             className="font-mono text-xs"
                                                             aria-label="IBAN"
-                                                            disabled={edit.customerType !== 'company'}
+                                                            disabled={edit.customerType !== 'company' || !canEditBankDetails}
+                                                            title={canEditBankDetails ? undefined : bankAdminOnlyHint}
                                                             value={edit.customerType === 'company' ? edit.iban : ''}
                                                             onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, iban: e.target.value } }))}
                                                             placeholder={edit.customerType === 'company' ? 'IBAN' : '—'}

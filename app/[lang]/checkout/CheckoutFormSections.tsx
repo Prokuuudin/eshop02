@@ -7,6 +7,7 @@ import PhoneInput from '@/components/ui/phone-input'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { DeliveryMethod } from '@/lib/orders-store'
 import { isCourierDeliveryMethod } from '@/lib/delivery'
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 
 export type CustomerType = 'individual' | 'company'
 
@@ -100,7 +101,7 @@ export function CustomerDetailsSection({ formData, setFormData, errors, onChange
           </div>
           <div className="checkout__field sm:col-span-3">
             <label htmlFor="checkout-legal-address" className="checkout__label mb-1 block text-sm font-medium text-foreground">{t('checkout.legalAddress')} <span className="text-red-600">*</span></label>
-            <Input id="checkout-legal-address" name="legalAddress" value={formData.legalAddress} onChange={onChange} placeholder={t('checkout.legalAddress')} className={fieldClass(!!errors.legalAddress)} aria-required="true" aria-invalid={!!errors.legalAddress} aria-describedby={errors.legalAddress ? 'checkout-legal-address-error' : undefined} />
+            <Input id="checkout-legal-address" name="legalAddress" maxLength={LEGAL_ADDRESS_MAX_LENGTH} value={formData.legalAddress} onChange={onChange} placeholder={t('checkout.legalAddress')} className={fieldClass(!!errors.legalAddress)} aria-required="true" aria-invalid={!!errors.legalAddress} aria-describedby={errors.legalAddress ? 'checkout-legal-address-error' : undefined} />
             <FieldError id="checkout-legal-address-error" message={errors.legalAddress} />
           </div>
           <div className="checkout__field">

@@ -10,6 +10,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
 import { omitProfileOnlyFields, readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -35,7 +36,7 @@ const patchSchema = z.object({
   customerType: customerTypeSchema.optional(),
   registrationNumber: z.string().trim().max(50).nullable().optional(),
   vatNumber: z.string().trim().max(50).nullable().optional(),
-  legalAddress: z.string().trim().max(500).nullable().optional(),
+  legalAddress: z.string().trim().max(LEGAL_ADDRESS_MAX_LENGTH).nullable().optional(),
   // Stored only in the checkout profile (no User columns), see lib/admin-customer-details.ts.
   bankName: z.string().trim().max(200).nullable().optional(),
   iban: z.string().trim().max(50).nullable().optional(),
@@ -176,9 +177,11 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
+    // Fields a staff manager may edit. Bank name and IBAN are deliberately absent: they are
+    // payment details printed on invoices, so only a platform admin (incl. Super Admin) may change them.
     const customerDetailFields = new Set([
       'name', 'email', 'phone', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress',
-      'bankName', 'iban', 'deliveryAddress', 'deliveryCity', 'deliveryPostalCode',
+      'deliveryAddress', 'deliveryCity', 'deliveryPostalCode',
     ])
     const customerDetailsOnly = Object.keys(updates).every((field) => customerDetailFields.has(field))
     if (caller.platformRole !== 'admin' && !customerDetailsOnly) {

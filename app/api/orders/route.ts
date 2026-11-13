@@ -24,6 +24,7 @@ import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
+import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 
 export const runtime = 'nodejs'
 
@@ -175,7 +176,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
       if (
         companyName.length > 200 || regNumber.length > 50 || vatNumber.length > 50
-        || legalAddress.length > 300 || bankName.length > 200 || iban.length > 50
+        || legalAddress.length > LEGAL_ADDRESS_MAX_LENGTH || bankName.length > 200 || iban.length > 50
       ) {
         return NextResponse.json({ error: 'field_too_long' }, { status: 400 })
       }

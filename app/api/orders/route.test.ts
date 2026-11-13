@@ -595,6 +595,16 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(createServerOrder).not.toHaveBeenCalled()
   })
 
+  it('accepts a 300-character legal address and rejects 301 characters', async () => {
+    const accepted = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { ...COMPANY_LEGAL_DETAILS, legalAddress: 'a'.repeat(300) } }))
+    expect(accepted.status).not.toBe(400)
+    vi.mocked(createServerOrder).mockClear()
+    const rejected = await POST(makeRequest({ ...VALID_ORDER, legalDetails: { ...COMPANY_LEGAL_DETAILS, legalAddress: 'a'.repeat(301) } }))
+    expect(rejected.status).toBe(400)
+    expect((await rejected.json()).error).toBe('field_too_long')
+    expect(createServerOrder).not.toHaveBeenCalled()
+  })
+
   it('accepts a company order without bank name and IBAN', async () => {
     const res = await POST(makeRequest({
       ...VALID_ORDER,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildClientDetailsPatch,
   classifyClientSaveFailure,
   createNoCardDraft,
   isCompleteClientStepUp,
@@ -73,5 +74,30 @@ describe('isCompleteClientStepUp', () => {
     expect(isCompleteClientStepUp({ currentPassword: '', mfaCode: '123456', reason: 'typo fix' })).toBe(false)
     expect(isCompleteClientStepUp({ currentPassword: 'pw', mfaCode: '12345', reason: 'typo fix' })).toBe(false)
     expect(isCompleteClientStepUp({ currentPassword: 'pw', mfaCode: '123456', reason: 'fix' })).toBe(false)
+  })
+})
+
+describe('buildClientDetailsPatch', () => {
+  const companyEdit = {
+    name: 'SIA Salons', email: 'Salon@Example.com ', phone: '+371 2000', customerType: 'company' as const,
+    registrationNumber: 'LV-40003000001', vatNumber: ' LV40003000001 ', legalAddress: 'Rīga, Iela 3',
+    bankName: 'Swedbank', iban: 'LV80HABA0551000000001', deliveryAddress: 'Tērbatas 5', deliveryCity: 'Rīga', deliveryPostalCode: 'LV-1011',
+  }
+
+  it('sends bank and IBAN only for an admin', () => {
+    expect(buildClientDetailsPatch(companyEdit, { canEditBankDetails: true })).toMatchObject({ bankName: 'Swedbank', iban: 'LV80HABA0551000000001' })
+    const managerPatch = buildClientDetailsPatch(companyEdit, { canEditBankDetails: false })
+    expect(managerPatch).not.toHaveProperty('bankName')
+    expect(managerPatch).not.toHaveProperty('iban')
+    expect(managerPatch).toMatchObject({
+      email: 'salon@example.com', registrationNumber: '40003000001', vatNumber: 'LV40003000001', legalAddress: 'Rīga, Iela 3',
+      deliveryAddress: 'Tērbatas 5', deliveryCity: 'Rīga', deliveryPostalCode: 'LV-1011',
+    })
+  })
+
+  it('clears company-only fields for an individual but keeps the delivery address', () => {
+    expect(buildClientDetailsPatch({ ...companyEdit, customerType: 'individual' }, { canEditBankDetails: true })).toMatchObject({
+      registrationNumber: null, vatNumber: null, legalAddress: null, bankName: null, iban: null, deliveryAddress: 'Tērbatas 5',
+    })
   })
 })

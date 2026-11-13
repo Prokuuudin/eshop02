@@ -82,6 +82,13 @@ describe('PATCH /api/user/profile', () => {
     })
   })
 
+  it('caps the legal address at the 300 characters an order accepts', async () => {
+    await PATCH(makeRequest({ checkoutProfile: { customerType: 'company', companyName: 'SIA Test', legalAddress: 'a'.repeat(400) } }))
+    const data = userUpdateMock.mock.calls[0][0].data as Record<string, unknown>
+    expect((data.checkoutProfile as Record<string, string>).legalAddress).toHaveLength(300)
+    expect(data.legalAddress).toHaveLength(300)
+  })
+
   it('synchronizes legal details and never changes card verification pkLast3', async () => {
     await PATCH(makeRequest({ checkoutProfile: {
       customerType: 'company', companyName: 'SIA Test', regNumber: 'LV 4010-3351-370',

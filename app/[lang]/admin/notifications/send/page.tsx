@@ -431,7 +431,13 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
             <div className="space-y-3 rounded-lg border border-border p-3">
               <div>
                 <p className="text-sm font-medium">{l('Вложения', 'Attachments', 'Pielikumi')} ({attachments.length}/3)</p>
-                <p className="text-xs text-muted-foreground">PDF или изображения · до 10 MB каждый, до 20 MB суммарно</p>
+                <p className="text-xs text-muted-foreground">
+                  {l(
+                    'PDF или изображения · до 10 MB каждый, до 20 MB суммарно',
+                    'PDF or images · up to 10 MB each, 20 MB total',
+                    'PDF vai attēli · līdz 10 MB katram, kopā līdz 20 MB'
+                  )}
+                </p>
               </div>
               <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp,image/gif,image/avif" disabled={uploading || attachments.length >= 3} onChange={(event) => void handleAttachmentUpload(event.target.files)} className="block w-full text-xs" />
               {attachments.map((file) => <div key={file.path} className="flex items-center justify-between gap-2 rounded bg-muted px-2 py-1 text-xs"><span className="truncate">📎 {file.name}</span><button type="button" onClick={() => setAttachments((items) => items.filter((item) => item.path !== file.path))}>×</button></div>)}

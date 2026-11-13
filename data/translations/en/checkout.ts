@@ -125,6 +125,7 @@ const enCheckout: Record<string, string> = {
   'checkout.errors.phone': 'Phone required',
   'checkout.errors.address': 'Address required',
   'checkout.errors.city': 'City required',
+  'checkout.errors.postalCode': 'Postal code required',
   'checkout.errors.terms': 'You must agree with the terms of service',
   'checkout.errors.pickupStore': 'Please choose a pickup store',
   'checkout.delivery.moreInfo': 'More about delivery',

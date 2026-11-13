@@ -125,6 +125,7 @@ const ruCheckout: Record<string, string> = {
   'checkout.errors.phone': 'Телефон обязателен',
   'checkout.errors.address': 'Адрес обязателен',
   'checkout.errors.city': 'Город обязателен',
+  'checkout.errors.postalCode': 'Почтовый индекс обязателен',
   'checkout.errors.terms': 'Необходимо согласиться с Условиями предоставления услуг',
   'checkout.errors.pickupStore': 'Выберите магазин самовывоза',
   'checkout.delivery.moreInfo': 'Подробнее о доставке',

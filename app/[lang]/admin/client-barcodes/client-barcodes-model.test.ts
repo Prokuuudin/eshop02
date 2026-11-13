@@ -34,7 +34,8 @@ describe('client barcode model', () => {
     } satisfies CardHolder
 
     expect(getCardHolderEdit(holder)).toEqual({
-      name: '', email: '', phone: '', customerType: 'individual', registrationNumber: '',
+      name: '', email: '', phone: '', customerType: 'individual', registrationNumber: '', vatNumber: '', legalAddress: '',
+      bankName: '', iban: '', deliveryAddress: '', deliveryCity: '', deliveryPostalCode: '',
     })
   })
 })

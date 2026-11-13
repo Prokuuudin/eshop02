@@ -328,7 +328,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                         <th className="pb-2 pr-4 font-medium">{l('Рег. номер', 'Reg. number', 'Reģ. numurs')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('НДС', 'VAT', 'PVN')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Юр. адрес', 'Legal address', 'Juridiskā adrese')}</th>
-                                        <th className="pb-2 pr-4 font-medium">{l('Адрес', 'Address', 'Adrese')}</th>
+                                        <th className="pb-2 pr-4 font-medium">{l('Адрес доставки', 'Delivery address', 'Piegādes adrese')}</th>
                                         <th className="pb-2 pr-4 font-medium">{l('Банк / IBAN', 'Bank / IBAN', 'Banka / IBAN')}</th>
                                         {!registeredOnly && <th className="pb-2 pr-4 font-medium">{l('Регистрация', 'Registration', 'Reģistrācija')}</th>}
                                         <th className="pb-2 font-medium">{l('Бонусы', 'Bonuses', 'Bonusi')}</th>
@@ -430,18 +430,85 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                         placeholder={l('11 цифр', '11 digits', '11 cipari')}
                                                     />
                                                 </td>
-                                                <td className="py-2 pr-4 text-xs">{edit.customerType === 'company' ? holder.vatNumber || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
-                                                <td className="min-w-48 py-2 pr-4 text-xs">{edit.customerType === 'company' ? holder.legalAddress || l('Не указан', 'Not specified', 'Nav norādīts') : '—'}</td>
-                                                <td className="min-w-48 py-2 pr-4 text-xs">{holder.address || l('Не указан', 'Not specified', 'Nav norādīts')}</td>
-                                                <td className="min-w-48 py-2 pr-4 text-xs">
-                                                    {holder.bankName || holder.iban ? (
-                                                        <>
-                                                            {holder.bankName || l('Банк не указан', 'Bank not specified', 'Banka nav norādīta')}
-                                                            {holder.iban && <span className="block font-mono">{holder.iban}</span>}
-                                                        </>
-                                                    ) : (
-                                                        l('Не указан', 'Not specified', 'Nav norādīts')
-                                                    )}
+                                                <td className="py-2 pr-4">
+                                                    <Input
+                                                        className="min-w-36 font-mono text-xs"
+                                                        aria-label={l('НДС', 'VAT', 'PVN')}
+                                                        disabled={edit.customerType !== 'company'}
+                                                        value={edit.customerType === 'company' ? edit.vatNumber : ''}
+                                                        onChange={(e) =>
+                                                            setClientEdits((prev) => ({
+                                                                ...prev,
+                                                                [holder.id]: {
+                                                                    ...edit,
+                                                                    vatNumber: e.target.value,
+                                                                },
+                                                            }))
+                                                        }
+                                                        placeholder={edit.customerType === 'company' ? 'LV40003000000' : '—'}
+                                                    />
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    <Input
+                                                        className="min-w-48"
+                                                        aria-label={l('Юр. адрес', 'Legal address', 'Juridiskā adrese')}
+                                                        disabled={edit.customerType !== 'company'}
+                                                        value={edit.customerType === 'company' ? edit.legalAddress : ''}
+                                                        onChange={(e) =>
+                                                            setClientEdits((prev) => ({
+                                                                ...prev,
+                                                                [holder.id]: {
+                                                                    ...edit,
+                                                                    legalAddress: e.target.value,
+                                                                },
+                                                            }))
+                                                        }
+                                                        placeholder={edit.customerType === 'company' ? l('Не указан', 'Not specified', 'Nav norādīts') : '—'}
+                                                    />
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    <div className="flex min-w-56 flex-col gap-1">
+                                                        <Input
+                                                            aria-label={l('Адрес доставки', 'Delivery address', 'Piegādes adrese')}
+                                                            value={edit.deliveryAddress}
+                                                            onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, deliveryAddress: e.target.value } }))}
+                                                            placeholder={l('Улица, дом', 'Street, building', 'Iela, māja')}
+                                                        />
+                                                        <div className="flex gap-1">
+                                                            <Input
+                                                                aria-label={l('Город', 'City', 'Pilsēta')}
+                                                                value={edit.deliveryCity}
+                                                                onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, deliveryCity: e.target.value } }))}
+                                                                placeholder={l('Город', 'City', 'Pilsēta')}
+                                                            />
+                                                            <Input
+                                                                className="w-28"
+                                                                aria-label={l('Индекс', 'Postal code', 'Pasta indekss')}
+                                                                value={edit.deliveryPostalCode}
+                                                                onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, deliveryPostalCode: e.target.value } }))}
+                                                                placeholder="LV-1001"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-2 pr-4">
+                                                    <div className="flex min-w-52 flex-col gap-1">
+                                                        <Input
+                                                            aria-label={l('Банк', 'Bank', 'Banka')}
+                                                            disabled={edit.customerType !== 'company'}
+                                                            value={edit.customerType === 'company' ? edit.bankName : ''}
+                                                            onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, bankName: e.target.value } }))}
+                                                            placeholder={edit.customerType === 'company' ? l('Банк', 'Bank', 'Banka') : '—'}
+                                                        />
+                                                        <Input
+                                                            className="font-mono text-xs"
+                                                            aria-label="IBAN"
+                                                            disabled={edit.customerType !== 'company'}
+                                                            value={edit.customerType === 'company' ? edit.iban : ''}
+                                                            onChange={(e) => setClientEdits((prev) => ({ ...prev, [holder.id]: { ...edit, iban: e.target.value } }))}
+                                                            placeholder={edit.customerType === 'company' ? 'IBAN' : '—'}
+                                                        />
+                                                    </div>
                                                 </td>
                                                 {!registeredOnly && (
                                                     <td className="py-2 pr-4">

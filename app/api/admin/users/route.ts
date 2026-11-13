@@ -9,7 +9,7 @@ import { verifyTotpCode, decryptSecret } from '@/lib/mfa'
 import { appendServerAudit } from '@/lib/server-audit'
 import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/admin-permissions'
 import { parseOffsetPagination } from '@/lib/pagination'
-import { readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
+import { omitProfileOnlyFields, readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -36,6 +36,12 @@ const patchSchema = z.object({
   registrationNumber: z.string().trim().max(50).nullable().optional(),
   vatNumber: z.string().trim().max(50).nullable().optional(),
   legalAddress: z.string().trim().max(500).nullable().optional(),
+  // Stored only in the checkout profile (no User columns), see lib/admin-customer-details.ts.
+  bankName: z.string().trim().max(200).nullable().optional(),
+  iban: z.string().trim().max(50).nullable().optional(),
+  deliveryAddress: z.string().trim().max(300).nullable().optional(),
+  deliveryCity: z.string().trim().max(100).nullable().optional(),
+  deliveryPostalCode: z.string().trim().max(20).nullable().optional(),
 }).strict()
 
 export async function GET(req: NextRequest): Promise<Response> {
@@ -170,7 +176,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
-    const customerDetailFields = new Set(['name', 'email', 'phone', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress'])
+    const customerDetailFields = new Set([
+      'name', 'email', 'phone', 'customerType', 'registrationNumber', 'vatNumber', 'legalAddress',
+      'bankName', 'iban', 'deliveryAddress', 'deliveryCity', 'deliveryPostalCode',
+    ])
     const customerDetailsOnly = Object.keys(updates).every((field) => customerDetailFields.has(field))
     if (caller.platformRole !== 'admin' && !customerDetailsOnly) {
       return NextResponse.json({ error: 'forbidden' }, { status: 403 })
@@ -263,9 +272,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
 
       // Leaving the admin role always drops the Super Admin flag with it.
+      const columnUpdates = omitProfileOnlyFields(updates)
       const roleData = updates.platformRole !== undefined && updates.platformRole !== 'admin'
-        ? { ...updates, superAdmin: false }
-        : updates
+        ? { ...columnUpdates, superAdmin: false }
+        : columnUpdates
       // The admin lists and the customer's checkout read the checkout profile first: keep it in
       // step with the edited columns, or the change is hidden again on the next reload.
       const checkoutProfile = syncCheckoutProfile(before, updates)

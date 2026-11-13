@@ -23,6 +23,9 @@ export type CardHolder = {
   vatNumber: string | null
   legalAddress: string | null
   address: string | null
+  deliveryAddress?: string | null
+  deliveryCity?: string | null
+  deliveryPostalCode?: string | null
   bankName: string | null
   iban: string | null
   registered: boolean
@@ -43,6 +46,13 @@ export type CardHolderEdit = {
   phone: string
   customerType: 'individual' | 'company'
   registrationNumber: string
+  vatNumber: string
+  legalAddress: string
+  bankName: string
+  iban: string
+  deliveryAddress: string
+  deliveryCity: string
+  deliveryPostalCode: string
 }
 
 export const normalizeCardDigits = (value: string): string => value.replace(/\D/g, '')
@@ -65,6 +75,13 @@ export function getCardHolderEdit(holder: CardHolder): CardHolderEdit {
     phone: holder.phone ?? '',
     customerType: holder.customerType === 'company' ? 'company' : 'individual',
     registrationNumber: holder.registrationNumber ?? '',
+    vatNumber: holder.vatNumber ?? '',
+    legalAddress: holder.legalAddress ?? '',
+    bankName: holder.bankName ?? '',
+    iban: holder.iban ?? '',
+    deliveryAddress: holder.deliveryAddress ?? '',
+    deliveryCity: holder.deliveryCity ?? '',
+    deliveryPostalCode: holder.deliveryPostalCode ?? '',
   }
 }
 

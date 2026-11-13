@@ -12,6 +12,7 @@ import {
     normalizeCardDigits,
     normalizeRegistrationNumber,
     type CardHolder,
+    type CardHolderEdit,
     type ClientSaveFailure,
     type ClientStepUp,
     type NoCardDraft,
@@ -56,7 +57,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [cardHoldersTotal, setCardHoldersTotal] = useState(0);
     const [cardHoldersLoading, setCardHoldersLoading] = useState(false);
     const [cardHoldersError, setCardHoldersError] = useState('');
-    const [clientEdits, setClientEdits] = useState<Record<string, { name: string; email: string; phone: string; customerType: 'individual' | 'company'; registrationNumber: string }>>({});
+    const [clientEdits, setClientEdits] = useState<Record<string, CardHolderEdit>>({});
     const [clientSaveBusy, setClientSaveBusy] = useState<string | null>(null);
     // Save errors are shown next to the row: the page-level banner is often scrolled out of view,
     // and the edited value stays in the input, so a failed save looked like a successful one.
@@ -267,6 +268,15 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                     phone: edit.phone.trim() || null,
                     customerType: edit.customerType,
                     registrationNumber: edit.customerType === 'company' ? registrationNumber : null,
+                    // Company-only checkout fields: for an individual the server keeps the stored
+                    // profile values (unused while individual) and clears the columns.
+                    vatNumber: edit.customerType === 'company' ? edit.vatNumber.trim() || null : null,
+                    legalAddress: edit.customerType === 'company' ? edit.legalAddress.trim() || null : null,
+                    bankName: edit.customerType === 'company' ? edit.bankName.trim() || null : null,
+                    iban: edit.customerType === 'company' ? edit.iban.trim() || null : null,
+                    deliveryAddress: edit.deliveryAddress.trim() || null,
+                    deliveryCity: edit.deliveryCity.trim() || null,
+                    deliveryPostalCode: edit.deliveryPostalCode.trim() || null,
                     ...(stepUp ? { currentPassword: stepUp.currentPassword, mfaCode: stepUp.mfaCode.trim(), reason: stepUp.reason.trim() } : {}),
                 }),
             });

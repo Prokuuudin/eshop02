@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const {
@@ -7,7 +7,9 @@ const {
   settingUpsertMock,
   transactionMock,
   hashPasswordMock,
+  sendEmailMock,
 } = vi.hoisted(() => ({
+  sendEmailMock: vi.fn(),
   accessRequestFindFirstMock: vi.fn(),
   accessRequestCreateMock: vi.fn(),
   settingUpsertMock: vi.fn(),
@@ -27,6 +29,9 @@ vi.mock('@/lib/prisma', () => ({
 }))
 vi.mock('@/lib/server-auth', () => ({
   hashPassword: hashPasswordMock,
+}))
+vi.mock('@/lib/mailer', () => ({
+  sendEmail: sendEmailMock,
 }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: vi.fn(),
@@ -60,6 +65,13 @@ beforeEach(() => {
   accessRequestFindFirstMock.mockResolvedValue(null)
   accessRequestCreateMock.mockImplementation(async ({ data }) => ({ ...data }))
   transactionMock.mockImplementation(async (fn) => fn(prisma))
+  sendEmailMock.mockResolvedValue(undefined)
+  vi.stubEnv('CONTACT_TO', 'admin@shop.test')
+  vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://shop.test')
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })
 
 describe('POST /api/access-requests', () => {
@@ -195,5 +207,65 @@ describe('POST /api/access-requests', () => {
     }))
     expect(res.status).toBe(409)
     expect((await res.json()).error).toBe('pending_exists')
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  describe('admin notification', () => {
+    it('emails CONTACT_TO about a card request with escaped details and an admin link', async () => {
+      const res = await POST(makeRequest({
+        email: 'Salon@inbox.lv', password: 'LongPassword1!', requestType: 'card',
+        name: 'Anna <b>Bērziņa</b>', phone: '+37120000000',
+        companyId: '40003000000', companyName: 'Salons SIA', cardNumber: '5044',
+      }))
+      expect(res.status).toBe(201)
+      expect(sendEmailMock).toHaveBeenCalledTimes(1)
+      const [to, subject, html] = sendEmailMock.mock.calls[0] as [string, string, string]
+      expect(to).toBe('admin@shop.test')
+      expect(subject).toContain('с картой клиента')
+      expect(html).toContain('salon@inbox.lv')
+      expect(html).toContain('Salons SIA')
+      expect(html).toContain('5044')
+      expect(html).toContain('Anna &lt;b&gt;Bērziņa&lt;/b&gt;')
+      expect(html).not.toContain('<b>Bērziņa</b>')
+      expect(html).toContain('https://shop.test/admin/client-barcodes')
+      expect(html).not.toContain('LongPassword1!')
+    })
+
+    it('emails CONTACT_TO about a no-card request', async () => {
+      await POST(makeRequest({
+        email: 'master@inbox.lv', password: 'LongPassword1!', requestType: 'no-card',
+        name: 'Māra\r\nBcc: x@evil.test',
+      }))
+      expect(sendEmailMock).toHaveBeenCalledTimes(1)
+      const [, subject] = sendEmailMock.mock.calls[0] as [string, string, string]
+      expect(subject).toContain('без карты клиента')
+      expect(subject).not.toMatch(/[\r\n]/)
+    })
+
+    it('still returns 201 when the mailer fails', async () => {
+      sendEmailMock.mockRejectedValueOnce(new Error('smtp down'))
+      const res = await POST(makeRequest({
+        email: 'master@inbox.lv', password: 'LongPassword1!', requestType: 'no-card',
+      }))
+      expect(res.status).toBe(201)
+      expect(accessRequestCreateMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('skips the email when CONTACT_TO is not configured', async () => {
+      vi.stubEnv('CONTACT_TO', '')
+      const res = await POST(makeRequest({
+        email: 'master@inbox.lv', password: 'LongPassword1!', requestType: 'no-card',
+      }))
+      expect(res.status).toBe(201)
+      expect(sendEmailMock).not.toHaveBeenCalled()
+    })
+
+    it('does not email on a rejected request', async () => {
+      const res = await POST(makeRequest({
+        email: 'master@inbox.lv', password: 'short', requestType: 'no-card',
+      }))
+      expect(res.status).toBe(400)
+      expect(sendEmailMock).not.toHaveBeenCalled()
+    })
   })
 })

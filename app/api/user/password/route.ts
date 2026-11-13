@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser, hashPassword, verifyPassword, createSession, requiresAdminMfa, hashToken, SESSION_COOKIE } from '@/lib/server-auth'
@@ -24,7 +25,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // A staff session keeps its original sign-in time through the rotation below, so
     // changing the password never extends the 8-hour session limit.
     const staff = requiresAdminMfa(session)
-    const currentToken = req.cookies.get(SESSION_COOKIE)?.value
+    // Same cookie source getServerUser() just authenticated.
+    const currentToken = (await cookies()).get(SESSION_COOKIE)?.value
     const currentSession = staff && currentToken
       ? await prisma.session.findUnique({ where: { tokenHash: hashToken(currentToken) }, select: { createdAt: true } })
       : null

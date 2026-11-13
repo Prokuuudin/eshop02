@@ -29,6 +29,9 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), resetRateLimit: vi.fn() }))
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ get: (name: string) => (name === 'eshop_session' ? { value: 'tok' } : undefined) }),
+}))
 vi.mock('@/lib/server-auth', () => ({
   getServerUser: getServerUserMock,
   requiresAdminMfa: (u: { platformRole?: string | null; teamRole?: string | null } | null) => u?.platformRole === 'admin' || u?.teamRole === 'manager',

@@ -15,6 +15,7 @@ $script:SourceTables = @(
     'Product_Picture_Mapping',
     'UrlRecord'
 )
+$script:JsonSourceTables = @($script:SourceTables | Where-Object { $_ -ne 'UrlRecord' })
 
 function Get-OptionalProperty {
     param(
@@ -370,7 +371,8 @@ function Assert-ReadOnlyDatabasePrincipal {
     param(
         [Parameter(Mandatory = $true)][System.Data.SqlClient.SqlConnection]$Connection,
         [Parameter(Mandatory = $true)][System.Data.SqlClient.SqlTransaction]$Transaction,
-        [Parameter(Mandatory = $true)][int]$TimeoutSeconds
+        [Parameter(Mandatory = $true)][int]$TimeoutSeconds,
+        [string[]]$RequiredTables = $script:SourceTables
     )
 
     $principalSql = @'
@@ -409,7 +411,7 @@ SELECT IS_SRVROLEMEMBER('sysadmin') AS IsSysadmin,
         }
     }
 
-    $values = ($script:SourceTables | ForEach-Object { "('dbo', '$($_.Replace("'", "''"))')" }) -join ",`n"
+    $values = ($RequiredTables | ForEach-Object { "('dbo', '$($_.Replace("'", "''"))')" }) -join ",`n"
     $sql = @"
 SELECT required.SchemaName,
        required.TableName,
@@ -442,7 +444,10 @@ ORDER BY required.TableName
 
 function Get-CatalogDataFromMssql {
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)]$Config)
+    param(
+        [Parameter(Mandatory = $true)]$Config,
+        [switch]$PublishedProductsOnly
+    )
 
     $connectionString = Resolve-CatalogConnectionString -Config $Config
     $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder($connectionString)
@@ -478,9 +483,31 @@ SELECT DB_NAME() AS DatabaseName
             throw "Connected database '$actualDatabase' does not match configured DatabaseName."
         }
 
-        Assert-ReadOnlyDatabasePrincipal -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout
+        $requiredTables = if ($PublishedProductsOnly) { $script:JsonSourceTables } else { $script:SourceTables }
+        Assert-ReadOnlyDatabasePrincipal -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -RequiredTables $requiredTables
 
-        $products = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
+        if ($PublishedProductsOnly) {
+            $productSql = @'
+SELECT p.Id AS ProductId,
+       p.SKU AS SKU,
+       p.Gtin AS EAN,
+       p.Name,
+       p.ShortDescription,
+       p.FullDescription,
+       p.MetaKeywords,
+       p.MetaDescription,
+       p.MetaTitle,
+       p.Published,
+       p.CreatedOnUtc,
+       p.UpdatedOnUtc
+FROM dbo.Product p
+WHERE p.Deleted = 0
+  AND p.Published = 1
+ORDER BY p.Id
+'@
+        }
+        else {
+            $productSql = @'
 SELECT p.Id AS ProductId,
        p.SKU AS SKU,
        p.Gtin AS EAN,
@@ -497,6 +524,8 @@ FROM dbo.Product p
 WHERE p.Deleted = 0
 ORDER BY p.Id
 '@
+        }
+        $products = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql $productSql
 
         $languages = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
 SELECT l.Id AS LanguageId,
@@ -590,7 +619,7 @@ INNER JOIN dbo.Picture pic ON pic.Id = ppm.PictureId
 ORDER BY ppm.ProductId, ppm.DisplayOrder, ppm.PictureId
 '@
 
-        $slugs = Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
+        $slugs = if ($PublishedProductsOnly) { @() } else { Invoke-SelectTable -Connection $connection -Transaction $transaction -TimeoutSeconds $timeout -Sql @'
 SELECT ur.EntityId,
        ur.EntityName,
        ur.LanguageId,
@@ -601,6 +630,7 @@ WHERE ur.EntityName IN ('Product', 'Category', 'Manufacturer')
   AND ur.IsActive = 1
 ORDER BY ur.EntityName, ur.EntityId, ur.LanguageId, ur.Id DESC
 '@
+        }
 
         $transaction.Rollback()
         $transaction.Dispose()
@@ -616,7 +646,7 @@ ORDER BY ur.EntityName, ur.EntityId, ur.LanguageId, ur.Id DESC
             Manufacturers = @($manufacturers.Rows)
             ManufacturerMappings = @($manufacturerMappings.Rows)
             Pictures = @($pictures.Rows)
-            Slugs = @($slugs.Rows)
+            Slugs = $(if ($PublishedProductsOnly) { @() } else { @($slugs.Rows) })
         }
     }
     finally {

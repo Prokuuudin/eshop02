@@ -1,153 +1,129 @@
-# Hairshop.lv → Hairshop Pro: автоматическая синхронизация новых товаров
+# Hairshop.lv → Hairshop Pro: новые товары через JSON/HTTPS
 
-## Что делает поток
+## Назначение
 
-Раз в час Windows/Plesk-клиент читает существующим SELECT-only подключением полный каталог nopCommerce 3.90, выбирает только опубликованные товары, которых ещё нет в локальном state, и отправляет их батчами в защищённый Hairshop Pro API.
+Hairshop.lv не меняет nopCommerce code и MSSQL schema. Независимый read-only PowerShell producer рядом с MSSQL публикует один защищённый JSON snapshot. Hairshop Pro скачивает его по HTTPS и выполняет всю бизнес-обработку.
 
-API:
+Подробное обоснование и сравнение с PR #13: [`hairshop-catalog-sync/JSON-HTTPS-DESIGN.md`](hairshop-catalog-sync/JSON-HTTPS-DESIGN.md).
 
-- никогда не обновляет существующие товары;
-- не удаляет и не деактивирует товары;
-- не принимает поля цены и остатка;
-- проверяет legacy ID, SKU, `externalId` и EAN;
-- создаёт только товар без единого identity-совпадения;
-- отправляет неоднозначности и soft-deleted совпадения в отчёт;
-- всегда отправляет SKU `2468BR` и `2368BR` в ручную проверку;
-- сериализует параллельные apply-запросы advisory lock;
-- по умолчанию работает как dry-run.
+## Правило отбора
 
-Схема Neon не меняется, миграция не требуется.
+Marker `dbo.Product.isMarkedForProSync` не используется и не требуется.
 
-## Поля нового товара
+Кандидат должен одновременно:
 
-| Источник nopCommerce | Hairshop Pro |
-|---|---|
-| `Product.Id` | детерминированный `Product.id = nop390-<Id>` |
-| SKU | `sku` и `externalId` |
-| Gtin | `barcode` |
-| RU/default Name | `title` |
-| LV Name | `titleLv` |
-| EN Name | `titleEn` |
-| RU/default description | `description` |
-| LV/EN descriptions | существующие служебные поля `technicalSpecs.__descriptionLv/__descriptionEn`, уже используемые страницей товара |
-| первый Manufacturer | `brand`, `manufacturerName` |
-| Category mappings | консервативное сопоставление с `hair/face/body/nails/equipment`; неизвестное → `uncategorized` + warning |
-| Picture mappings | HTTPS-ссылки на существующие файлы `hairshop.lv/content/images` |
+- иметь `Deleted=0` и `Published=1` в nopCommerce;
+- иметь `CreatedOnUtc` строго позже локального `SourceCreatedAfterUtc` Hairshop Pro;
+- содержать Product ID, SKU, title, created/updated timestamps;
+- не конфликтовать с другим source Product по legacy ID, SKU или EAN;
+- не совпадать в Hairshop Pro по deterministic target ID, SKU/externalId или EAN.
 
-Hairshop Pro не имеет отдельных колонок `descriptionLv`/`descriptionEn`, но уже использует зарезервированные ключи `technicalSpecs.__descriptionLv/__descriptionEn`; синхронизация повторно использует этот механизм без миграции. Бинарные изображения не копируются: сохраняются ссылки на старый разрешённый источник. Это минимально и не создаёт второй image storage.
+`SourceCreatedAfterUtc` — ручная неизменяемая bootstrap-граница. Она обязательна, хранится только на Hairshop Pro, никогда не принимается из source snapshot и после первого apply закрепляется в state schema v2. Изменившийся cutoff блокируется до API.
 
-Новый товар создаётся с:
+## Source producer на Hairshop.lv
+
+Файлы:
 
 ```text
+HairshopCatalogExporter.psm1
+HairshopCatalogJsonSource.psm1
+Export-HairshopCatalogJson.ps1
+```
+
+Producer:
+
+- использует отдельный SELECT-only principal;
+- не выполняет DDL/DML;
+- не читает цены и остатки;
+- экспортирует только опубликованные Product и необходимые content relations;
+- кодирует точный UTF-8 payload в base64 envelope с SHA-256;
+- проверяет JSON и атомарно заменяет стабильный файл;
+- не знает Hairshop Pro API secret.
+
+Protected web directory должна разрешать только HTTPS GET после Basic/Bearer authorization. Запрещены HTTP, anonymous access, directory listing, redirects и upload через web.
+
+## Consumer на Hairshop Pro
+
+`Sync-HairshopNewProducts.ps1` сначала читает config. В scheduled mode при `ScheduleEnabled=false` он завершается до чтения authorization-файла и до сетевого запроса.
+
+При разрешённом запуске consumer проверяет:
+
+- HTTPS URL без credentials/query/fragment;
+- Authorization из отдельного ACL-protected файла;
+- отсутствие redirect;
+- `Content-Type: application/json`;
+- maximum bytes;
+- envelope schema/source/encoding;
+- snapshot timestamp и freshness;
+- expected source database;
+- declared/minimum product count;
+- base64 и точный SHA-256 payload.
+
+После этого выполняются cutoff, content mapping, local state, batching и существующий Hairshop Pro API.
+
+## Безопасность записи
+
+По умолчанию consumer работает как dry-run. Для создания одновременно требуются:
+
+1. параметр `-Apply`;
+2. `AllowApply=true` в закрытом consumer config;
+3. API secret минимум 32 символа;
+4. `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true` на Hairshop Pro.
+
+Для scheduled apply дополнительно требуются `-Scheduled`, `ScheduleEnabled=true` и enabled external task.
+
+API сохраняет advisory lock, Serializable transaction, retry `P2034`, строгую identity-дедупликацию и request limit. Existing products не обновляются и не удаляются.
+
+Новая карточка создаётся:
+
+```text
+isActive = false
 price = 0
 stock = 0
 erpPriceMissing = true
 manualPriceApproved = false
-isActive = true
 ```
 
-Значения `price=0` и `stock=0` являются техническими обязательными значениями схемы, не данными старого магазина. Товар не считается имеющим действующую ERP-цену. Существующий GrinS sync позже обновляет цену и остаток только по точному `externalId=SKU`; код GrinS не изменён.
+GrinS позже обновляет только цену/остаток по exact `externalId`; он не создаёт, не связывает и не активирует карточку.
 
-## Защита записи
+## Consumer config
 
-Для реального создания одновременно требуются:
+Использовать `tools/hairshop-catalog-exporter/catalog-sync.example.json` как шаблон.
 
-1. `mode=apply`, который PowerShell отправляет только с параметром `-Apply`;
-2. `AllowApply=true` в закрытой Plesk-конфигурации;
-3. `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true` в окружении Hairshop Pro;
-4. корректный общий secret длиной минимум 32 символа.
+Ключевые поля:
 
-Без любого из условий запись невозможна. Dry-run читает Product identities, но не открывает transaction записи.
-
-## Файлы Hairshop Pro
-
-```text
-app/api/internal/hairshop-catalog-sync/route.ts
-lib/sync/hairshop-new-product-sync.ts
+```json
+{
+  "SourceSnapshotUrl": "https://hairshop.lv/protected-export/hairshop-pro-catalog.json",
+  "SourceAuthorizationFile": "D:\\PrivateConfig\\hairshop-json-source.authorization",
+  "SourceCreatedAfterUtc": "2026-11-07T00:00:00Z",
+  "ExpectedSourceDatabase": "hairshop_p34s",
+  "MaximumSnapshotAgeMinutes": 180,
+  "MaximumSnapshotBytes": 52428800,
+  "MinimumSnapshotProductCount": 2000,
+  "AllowApply": false,
+  "ScheduleEnabled": false
+}
 ```
 
-Необходимые server environment variables:
+Authorization-файл содержит одну строку вида `Basic <base64>` или `Bearer <token>`. Credentials нельзя помещать в URL, config, report или stdout.
 
-```text
-HAIRSHOP_CATALOG_SYNC_SECRET=<случайный секрет минимум 32 символа>
-HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=false
-```
+Значение cutoff в example является только placeholder. Перед использованием владелец должен утвердить реальную границу.
 
-На первом этапе `WRITE_ENABLED` оставить `false`. Секрет не передавать через URL и не выводить в лог.
+## Идемпотентность и восстановление
 
-## Файлы Windows/Plesk
+- Dry-run не пишет local state.
+- Apply фиксирует state только после успешного завершения всех batches.
+- При позднем сбое failure journal содержит completed/total batches, acknowledged results, `stateCommitted=false` и partial results.
+- Полный retry безопасен: уже созданные строки API возвращает как `already_exists`.
+- Потеря local state также не создаёт дубликат благодаря повторной DB identity-проверке.
+- Повторно скачанный свежий snapshot безопасен; stale или повреждённый snapshot блокируется до API.
 
-К существующему exporter добавить:
+## Запрещённые действия в подготовленном состоянии
 
-```text
-D:\PrivateTools\hairshop-catalog-exporter\HairshopCatalogExporter.psm1
-D:\PrivateTools\hairshop-catalog-exporter\HairshopNewProductSync.psm1
-D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1
-D:\PrivateConfig\hairshop-catalog-exporter.json
-D:\PrivateConfig\hairshop-catalog-sync.json
-D:\PrivateConfig\hairshop-catalog-sync.key
-D:\PrivateState\hairshop-catalog-sync-state.json        # создаётся после apply
-D:\PrivateReports\hairshop-catalog-sync\               # JSON-журналы
-```
-
-Использовать `catalog-sync.example.json` как шаблон. Код получает MSSQL-настройки через уже существующий `hairshop-catalog-exporter.json`, поэтому второй MSSQL exporter не создаётся.
-
-ACL:
-
-- код — `Read & Execute` для task identity;
-- конфигурация и оба secret-файла — `Read` только для task identity, SYSTEM и Administrators;
-- state/reports — `Modify` для task identity;
-- все пути вне webroot;
-- без `IUSR`, `IIS_IUSRS`, `Everyone` и публичной раздачи.
-
-Файл `hairshop-catalog-sync.key` содержит только тот же secret, что `HAIRSHOP_CATALOG_SYNC_SECRET`, без кавычек и дополнительных строк.
-
-## Первый dry-run
-
-До создания Scheduled Task вручную выполнить под будущей task identity:
-
-```text
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json"
-```
-
-Проверить JSON-журнал:
-
-- `created = 0`;
-- `wouldCreate` содержит только действительно отсутствующие товары;
-- `alreadyExists` — однозначные существующие SKU/EAN;
-- `conflicts` и `locallyRejected` разобраны вручную;
-- secrets отсутствуют;
-- `2468BR`/`2368BR` имеют `EXPLICIT_MANUAL_REVIEW_SKU`;
-- категории `uncategorized` и отсутствующие manufacturer/images/translations видны в warnings.
-
-Dry-run не создаёт state, поэтому его можно повторять.
-
-## Первый apply после отдельного разрешения
-
-Только после проверки dry-run:
-
-1. установить `HAIRSHOP_CATALOG_SYNC_WRITE_ENABLED=true` в Hairshop Pro и применить обычным разрешённым deployment-процессом;
-2. установить `AllowApply=true` в закрытом `catalog-sync.json`;
-3. выполнить один ручной запуск с `-Apply`;
-4. проверить созданные товары, JSON-журнал и state;
-5. дождаться штатного GrinS run и проверить, что он заполнил цену/остаток по exact `externalId`, не меняя контент карточки.
-
-Ручная apply-команда:
-
-```text
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Apply
-```
-
-Повторный apply безопасен: обработанные legacy ID пропускаются локально, а потеря state не создаёт дубликаты, поскольку API повторно проверяет target ID/SKU/EAN.
-
-## Plesk Scheduled Task
-
-После успешного ручного apply создать `Run a command` раз в час, например на 17-й минуте:
-
-```text
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "D:\PrivateTools\hairshop-catalog-exporter\Sync-HairshopNewProducts.ps1" -ConfigPath "D:\PrivateConfig\hairshop-catalog-sync.json" -Apply
-```
-
-Эксклюзивный lock рядом со state отклоняет пересекающийся запуск. Plesk должен сохранять exit code и stdout/stderr, но stdout содержит только counts и путь отчёта — не secret и не connection string.
-
-Для остановки отключить Scheduled Task. Уже созданные товары не изменяются и не удаляются.
+- не включать producer/consumer scheduled tasks;
+- не устанавливать `AllowApply=true`;
+- не включать server write gate;
+- не выполнять production dry-run/apply без отдельного разрешения;
+- не менять MSSQL schema;
+- не открывать MSSQL в интернет.

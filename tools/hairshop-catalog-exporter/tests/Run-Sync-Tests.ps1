@@ -4,6 +4,7 @@ param()
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'HairshopCatalogExporter.psm1') -Force
+Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'HairshopCatalogJsonSource.psm1') -Force
 Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'HairshopNewProductSync.psm1') -Force
 
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) ('hairshop-new-product-sync-tests-' + [Guid]::NewGuid().ToString('N'))
@@ -12,23 +13,70 @@ $script:ApiCalls = 0
 
 function Assert-True([bool]$Condition, [string]$Message) { if (-not $Condition) { throw "Assertion failed: $Message" } }
 function Assert-Equal($Expected, $Actual, [string]$Message) { if ($Expected -ne $Actual) { throw "Assertion failed: $Message. Expected '$Expected', got '$Actual'." } }
+function Invoke-ExpectedFailure {
+    param([scriptblock]$Action, [string]$MessagePattern)
+    $failed = $false
+    try { & $Action }
+    catch {
+        $failed = $true
+        if (-not $_.Exception.Message.Contains($MessagePattern)) {
+            throw "Expected failure containing '$MessagePattern', got '$($_.Exception.Message)'."
+        }
+    }
+    if (-not $failed) { throw "Expected failure containing '$MessagePattern', but the action succeeded." }
+}
 
 try {
     [IO.Directory]::CreateDirectory($temporaryRoot) | Out-Null
     $secretPath = Join-Path $temporaryRoot 'api.key'
     [IO.File]::WriteAllText($secretPath, ('x' * 40), (New-Object Text.UTF8Encoding($false, $true)))
+    $sourceAuthPath = Join-Path $temporaryRoot 'source.authorization'
+    [IO.File]::WriteAllText($sourceAuthPath, ('Basic ' + ('A' * 32)), (New-Object Text.UTF8Encoding($false, $true)))
+    $boundary = [DateTime]'2020-01-01T00:00:00Z'
     $config = [pscustomobject]@{
         ApiEndpoint = 'https://hairshoppro.example/api/internal/hairshop-catalog-sync'
+        SourceSnapshotUrl = 'https://hairshop.example/protected/catalog.json'
+        SourceAuthorizationFile = $sourceAuthPath
         ApiKeyFile = $secretPath
         StatePath = Join-Path $temporaryRoot 'state\sync-state.json'
         ReportDirectory = Join-Path $temporaryRoot 'reports'
         BatchSize = 100
         RequestTimeoutSeconds = 30
         AllowApply = $true
+        SourceCreatedAfterUtc = $boundary.ToString('o')
+        MaximumSnapshotBytes = 52428800
+        MaximumSnapshotAgeMinutes = 180
+        MinimumSnapshotProductCount = 1
+        ExpectedSourceDatabase = 'hairshop_fixture'
     }
     $data = Read-CatalogFixture -Path $fixture
-    $converted = ConvertTo-HairshopNewProductCandidates -Data $data
-    Assert-Equal 2 $converted.Candidates.Count 'only published products become candidates'
+    $snapshotNow = [DateTime]'2026-11-07T10:00:00Z'
+    $snapshot = New-HairshopCatalogJsonSnapshot -Data $data -GeneratedAtUtc $snapshotNow
+    $snapshotText = $snapshot | ConvertTo-Json -Depth 5
+    $decoded = Read-HairshopCatalogJsonSnapshot -Content $snapshotText -Config $config -NowUtc $snapshotNow
+    Assert-Equal 2 $decoded.Metadata.productCount 'validated snapshot product count'
+    Assert-Equal 2 @($decoded.Data.Products).Count 'validated snapshot payload product count'
+    $tampered = $snapshotText | ConvertFrom-Json
+    $tampered.payloadSha256 = 'f' * 64
+    Invoke-ExpectedFailure -MessagePattern 'SHA-256 mismatch' -Action {
+        Read-HairshopCatalogJsonSnapshot -Content ($tampered | ConvertTo-Json -Depth 5) -Config $config -NowUtc $snapshotNow | Out-Null
+    }
+    Invoke-ExpectedFailure -MessagePattern 'stale' -Action {
+        Read-HairshopCatalogJsonSnapshot -Content $snapshotText -Config $config -NowUtc $snapshotNow.AddHours(4) | Out-Null
+    }
+    $freshSnapshotText = (New-HairshopCatalogJsonSnapshot -Data $data) | ConvertTo-Json -Depth 5
+    $web = {
+        param($Url, $Authorization, $TimeoutSeconds)
+        Assert-Equal $config.SourceSnapshotUrl $Url 'source URL passed to HTTPS client'
+        Assert-Equal ('Basic ' + ('A' * 32)) $Authorization 'authorization is read from the separate secret file'
+        return [pscustomobject]@{ Headers = @{ 'Content-Type' = 'application/json; charset=utf-8' }; Content = $freshSnapshotText }
+    }
+    $downloaded = Invoke-HairshopCatalogJsonDownload -Config $config -WebInvoker $web
+    Assert-Equal 2 $downloaded.Metadata.productCount 'protected HTTPS download is validated before use'
+    Write-Host 'PASS: protected JSON snapshot contract validates hash, freshness and product count'
+
+    $converted = ConvertTo-HairshopNewProductCandidates -Data $data -CreatedAfterUtc $boundary
+    Assert-Equal 2 $converted.Candidates.Count 'only published products newer than the source boundary become candidates'
     Assert-Equal 0 $converted.Rejected.Count 'valid fixture products are not rejected'
     $first = $converted.Candidates | Where-Object legacyProductId -eq 101
     $expectedRu = ($data.LocalizedValues | Where-Object { $_.EntityName -eq 'Product' -and $_.EntityId -eq 101 -and $_.LanguageId -eq 2 -and $_.LocaleKey -eq 'Name' }).LocaleValue
@@ -39,7 +87,30 @@ try {
     Assert-Equal $data.Categories[0].Name $first.categoryNames[0] 'category mapping'
     Assert-Equal $data.Manufacturers[0].Name $first.manufacturerName 'manufacturer mapping'
     Assert-Equal 'https://hairshop.lv/content/images/thumbs/0000501_onko-sensitive.jpeg' $first.images[0] 'safe image reference mapping'
-    Write-Host 'PASS: published candidate mapping includes translations, category, manufacturer and image references'
+    Write-Host 'PASS: JSON candidate mapping includes translations, category, manufacturer and image references'
+
+    $newOnly = ConvertTo-HairshopNewProductCandidates -Data $data -CreatedAfterUtc ([DateTime]'2025-01-01T00:00:00Z')
+    Assert-Equal 1 $newOnly.Candidates.Count 'source creation boundary excludes the historical catalog'
+    Assert-Equal 102 $newOnly.Candidates[0].legacyProductId 'only a genuinely new source product remains'
+
+    $incompleteData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
+    $incompleteData.Products[0].Name = ''
+    $incomplete = ConvertTo-HairshopNewProductCandidates -Data $incompleteData -CreatedAfterUtc $boundary
+    Assert-Equal 1 $incomplete.Candidates.Count 'incomplete marked product is not sent'
+    Assert-Equal 1 $incomplete.Rejected.Count 'incomplete marked product is reported locally'
+    Assert-Equal 'MISSING_REQUIRED_ID_SKU_OR_TITLE' $incomplete.Rejected[0].reason 'incomplete product rejection reason'
+
+    $missingPublishedData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
+    $missingPublishedData.Products[0].PSObject.Properties.Remove('Published')
+    Invoke-ExpectedFailure -MessagePattern 'does not contain Published' -Action {
+        ConvertTo-HairshopNewProductCandidates -Data $missingPublishedData -CreatedAfterUtc $boundary | Out-Null
+    }
+    $invalidPublishedData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
+    $invalidPublishedData.Products[0].Published = 'true'
+    Invoke-ExpectedFailure -MessagePattern 'confirmed boolean' -Action {
+        ConvertTo-HairshopNewProductCandidates -Data $invalidPublishedData -CreatedAfterUtc $boundary | Out-Null
+    }
+    Write-Host 'PASS: cutoff, unpublished, incomplete and invalid Published products fail closed'
 
     $taxonomyData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
     $taxonomyData.Categories[1].ParentCategoryId = 10
@@ -107,7 +178,7 @@ try {
 
     $duplicateData = Get-Content -LiteralPath $fixture -Raw -Encoding UTF8 | ConvertFrom-Json
     $duplicateData.Products[1].SKU = $duplicateData.Products[0].SKU
-    $duplicates = ConvertTo-HairshopNewProductCandidates -Data $duplicateData
+    $duplicates = ConvertTo-HairshopNewProductCandidates -Data $duplicateData -CreatedAfterUtc $boundary
     Assert-Equal 0 $duplicates.Candidates.Count 'duplicate source SKU candidates are removed before batching'
     Assert-Equal 2 $duplicates.Rejected.Count 'both duplicate source SKU products are reported'
     Write-Host 'PASS: duplicate source identities are rejected before HTTP batching'
@@ -130,12 +201,124 @@ try {
         return [pscustomobject]@{ schemaVersion = 1; runId = $Body.runId; mode = $Body.mode; metrics = [pscustomobject]@{}; results = $results }
     }
 
+    Invoke-ExpectedFailure -MessagePattern 'does not contain results' -Action {
+        Assert-SyncApiBatchResponse -Response ([pscustomobject]@{ runId = 'response-test'; mode = 'dry-run'; results = @() }) -Batch @($converted.Candidates[0]) -RunId 'response-test' -Mode 'dry-run' | Out-Null
+    }
+    Invoke-ExpectedFailure -MessagePattern "invalid status 'created'" -Action {
+        Assert-SyncApiBatchResponse -Response ([pscustomobject]@{
+            runId = 'response-test'
+            mode = 'dry-run'
+            results = @([pscustomobject]@{ legacyProductId = 101; sku = 'ONKO-001'; targetProductId = 'nop390-101'; status = 'created' })
+        }) -Batch @($converted.Candidates[0]) -RunId 'response-test' -Mode 'dry-run' | Out-Null
+    }
+    Write-Host 'PASS: incomplete and mode-inconsistent API responses are rejected'
+
+    $callsBeforeBlockedRun = $script:ApiCalls
+    Invoke-ExpectedFailure -MessagePattern 'does not contain Published' -Action {
+        Invoke-HairshopNewProductSync -Data $missingPublishedData -Config $config -ApiInvoker $api | Out-Null
+    }
+    Assert-Equal $callsBeforeBlockedRun $script:ApiCalls 'invalid source contract blocks every API request'
+    Write-Host 'PASS: fail-closed JSON source validation happens before HTTP batching'
+
     $dryRun = Invoke-HairshopNewProductSync -Data $data -Config $config -ApiInvoker $api
     Assert-Equal 'dry-run' $dryRun.Mode 'default mode'
     Assert-Equal 2 $dryRun.Summary.wouldCreate 'dry-run would-create count'
     Assert-True (-not (Test-Path -LiteralPath $config.StatePath)) 'dry-run must not write state'
     Assert-True (Test-Path -LiteralPath $dryRun.ReportPath) 'dry-run report must be written'
     Write-Host 'PASS: dry-run calls the API, writes a report and leaves state untouched'
+
+    $lockPath = "$($config.StatePath).lock"
+    $lockStream = [IO.File]::Open($lockPath, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+    try {
+        $callsBeforeConcurrentRun = $script:ApiCalls
+        Invoke-ExpectedFailure -MessagePattern 'already running' -Action {
+            Invoke-HairshopNewProductSync -Data $data -Config $config -ApiInvoker $api | Out-Null
+        }
+        Assert-Equal $callsBeforeConcurrentRun $script:ApiCalls 'concurrent run is rejected before HTTP batching'
+    }
+    finally { $lockStream.Dispose() }
+    Write-Host 'PASS: exclusive scheduler lock rejects a parallel run'
+
+    $partialConfig = [pscustomobject]@{
+        ApiEndpoint = $config.ApiEndpoint
+        ApiKeyFile = $config.ApiKeyFile
+        StatePath = Join-Path $temporaryRoot 'partial-state\sync-state.json'
+        ReportDirectory = Join-Path $temporaryRoot 'partial-reports'
+        BatchSize = 1
+        RequestTimeoutSeconds = 30
+        AllowApply = $true
+        SourceCreatedAfterUtc = $config.SourceCreatedAfterUtc
+    }
+    $script:PartialCalls = 0
+    $partialApi = {
+        param($Endpoint, $ApiKey, $Body, $TimeoutSeconds)
+        $script:PartialCalls++
+        if ($script:PartialCalls -eq 2) { throw 'simulated second batch failure' }
+        $product = @($Body.products)[0]
+        return [pscustomobject]@{
+            schemaVersion = 1
+            runId = $Body.runId
+            mode = $Body.mode
+            metrics = [pscustomobject]@{}
+            results = @([pscustomobject]@{ legacyProductId = $product.legacyProductId; sku = $product.sku; ean = $product.ean; targetProductId = "nop390-$($product.legacyProductId)"; status = 'created'; reasons = @('TEST'); matchedProductIds = @(); warnings = @() })
+        }
+    }
+    Invoke-ExpectedFailure -MessagePattern 'simulated second batch failure' -Action {
+        Invoke-HairshopNewProductSync -Data $data -Config $partialConfig -Apply -ApiInvoker $partialApi | Out-Null
+    }
+    Assert-True (-not (Test-Path -LiteralPath $partialConfig.StatePath)) 'partial failure must not commit local state'
+    $partialFailurePath = @(Get-ChildItem -LiteralPath $partialConfig.ReportDirectory -Filter '*.json' -File)[0].FullName
+    $partialFailure = Get-Content -LiteralPath $partialFailurePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 1 $partialFailure.progress.completedBatches 'failure report completed batch count'
+    Assert-Equal 2 $partialFailure.progress.totalBatches 'failure report total batch count'
+    Assert-Equal 1 $partialFailure.progress.acknowledgedResults 'failure report acknowledged result count'
+    Assert-Equal 'created' $partialFailure.partialResults[0].status 'failure report retains committed remote result'
+
+    $recoveryApi = {
+        param($Endpoint, $ApiKey, $Body, $TimeoutSeconds)
+        $product = @($Body.products)[0]
+        $status = if ([int64]$product.legacyProductId -eq 101) { 'already_exists' } else { 'created' }
+        return [pscustomobject]@{
+            schemaVersion = 1
+            runId = $Body.runId
+            mode = $Body.mode
+            metrics = [pscustomobject]@{}
+            results = @([pscustomobject]@{ legacyProductId = $product.legacyProductId; sku = $product.sku; ean = $product.ean; targetProductId = "nop390-$($product.legacyProductId)"; status = $status; reasons = @('TEST'); matchedProductIds = @(); warnings = @() })
+        }
+    }
+    $recovered = Invoke-HairshopNewProductSync -Data $data -Config $partialConfig -Apply -ApiInvoker $recoveryApi
+    Assert-Equal 1 $recovered.Summary.alreadyExists 'recovery recognizes remotely committed first batch'
+    Assert-Equal 1 $recovered.Summary.created 'recovery creates only the previously failed batch'
+    $recoveredState = Get-Content -LiteralPath $partialConfig.StatePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 2 @($recoveredState.processed.PSObject.Properties).Count 'recovery commits both products to local state'
+    Write-Host 'PASS: partial batch failure is journaled and a full retry recovers idempotently'
+
+    $scheduledConfigPath = Join-Path $temporaryRoot 'scheduled-disabled.json'
+    $scheduledConfig = [ordered]@{
+        SourceSnapshotUrl = 'https://hairshop.example/protected/catalog.json'
+        SourceAuthorizationFile = Join-Path $temporaryRoot 'must-not-be-read-source.authorization'
+        SourceCreatedAfterUtc = '2026-11-07T00:00:00Z'
+        ExpectedSourceDatabase = 'hairshop_fixture'
+        MaximumSnapshotAgeMinutes = 180
+        MaximumSnapshotBytes = 52428800
+        MinimumSnapshotProductCount = 1
+        ApiEndpoint = $config.ApiEndpoint
+        ApiKeyFile = Join-Path $temporaryRoot 'must-not-be-read-api.key'
+        StatePath = Join-Path $temporaryRoot 'must-not-be-written-state.json'
+        ReportDirectory = Join-Path $temporaryRoot 'must-not-be-written-reports'
+        BatchSize = 50
+        RequestTimeoutSeconds = 30
+        AllowApply = $false
+        ScheduleEnabled = $false
+    }
+    [IO.File]::WriteAllText($scheduledConfigPath, ($scheduledConfig | ConvertTo-Json -Depth 5), (New-Object Text.UTF8Encoding($false, $true)))
+    $scheduledEntryPoint = Join-Path (Split-Path $PSScriptRoot -Parent) 'Sync-HairshopNewProducts.ps1'
+    $scheduledOutput = & powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File $scheduledEntryPoint -ConfigPath $scheduledConfigPath -Scheduled -Apply 2>&1
+    Assert-Equal 0 $LASTEXITCODE ('disabled scheduled entry point exit code: ' + ($scheduledOutput -join ' '))
+    Assert-True (($scheduledOutput -join ' ').Contains('disabled by configuration')) 'disabled scheduled entry point reports a no-op'
+    Assert-True (-not (Test-Path -LiteralPath $scheduledConfig.StatePath)) 'disabled schedule does not create state'
+    Assert-True (-not (Test-Path -LiteralPath $scheduledConfig.ReportDirectory)) 'disabled schedule does not create reports or access API'
+    Write-Host 'PASS: scheduled mode is a no-op until its independent config gate is enabled'
 
     $apply = Invoke-HairshopNewProductSync -Data $data -Config $config -Apply -ApiInvoker $api
     Assert-Equal 2 $apply.Summary.created 'apply created count'
@@ -151,12 +334,19 @@ try {
     $third = Invoke-HairshopNewProductSync -Data $data -Config $config -Apply -ApiInvoker $api
     Assert-Equal 0 $third.Summary.pending 'third apply remains idempotent after replacing an existing state backup'
     Assert-Equal $callsAfterFirstApply $script:ApiCalls 'third apply still makes no API call'
+    $originalBoundary = $config.SourceCreatedAfterUtc
+    $config.SourceCreatedAfterUtc = ([DateTime]'2019-01-01T00:00:00Z').ToString('o')
+    Invoke-ExpectedFailure -MessagePattern 'differs from the cutoff pinned in sync state' -Action {
+        Invoke-HairshopNewProductSync -Data $data -Config $config -Apply -ApiInvoker $api | Out-Null
+    }
+    $config.SourceCreatedAfterUtc = $originalBoundary
+    Assert-Equal $callsAfterFirstApply $script:ApiCalls 'cutoff drift is blocked before API access'
     Write-Host 'PASS: applied state makes the PowerShell client idempotent on repeat runs'
 
     $reports = @(Get-ChildItem -LiteralPath $config.ReportDirectory -Filter '*.json' -File)
-    Assert-Equal 4 $reports.Count 'one journal report per run'
+    Assert-Equal 6 $reports.Count 'one journal report per started run, including fail-closed validation failures'
     Write-Host 'PASS: every run has a JSON journal and no secret is logged'
-    Write-Host 'ALL SYNC TESTS PASSED: 8'
+    Write-Host 'ALL SYNC TESTS PASSED'
     exit 0
 }
 catch {

@@ -61,6 +61,7 @@ Server login должен иметь возможность подключить
 - `ProductsTotal` около `6629`;
 - `Published` около `2486`;
 - `Unpublished` около `4143`;
+- `JsonExportEligibleProducts` содержит опубликованные строки, а `EarliestCreatedOnUtc`/`LatestCreatedOnUtc` позволяют выбрать безопасную границу на стороне Hairshop Pro;
 - ненулевые количества языков, категорий, переводов и image mappings;
 - пять последних изменённых товаров без цен и остатков;
 - состояние `READ_COMMITTED_SNAPSHOT` для оценки DBA.

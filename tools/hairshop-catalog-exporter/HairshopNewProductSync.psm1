@@ -71,9 +71,34 @@ function Get-PictureUrl {
     return "https://hairshop.lv/content/images/thumbs/$padded$suffix.$extension"
 }
 
+function Get-RequiredPublishedFlag {
+    param([Parameter(Mandatory = $true)]$Product)
+
+    $hasPublished = if ($Product -is [System.Data.DataRow]) {
+        $Product.Table.Columns.Contains('Published')
+    }
+    else {
+        $null -ne $Product.PSObject.Properties['Published']
+    }
+    if (-not $hasPublished) {
+        throw 'Hairshop Pro sync is blocked: JSON source product does not contain Published.'
+    }
+
+    $published = Get-SyncValue $Product 'Published' $null
+    if ($published -isnot [bool]) {
+        throw 'Hairshop Pro sync is blocked: Published must be a confirmed boolean value.'
+    }
+    return [bool]$published
+}
+
 function ConvertTo-HairshopNewProductCandidates {
     [CmdletBinding()]
-    param([Parameter(Mandatory = $true)]$Data)
+    param(
+        [Parameter(Mandatory = $true)]$Data,
+        [Parameter(Mandatory = $true)][DateTime]$CreatedAfterUtc
+    )
+
+    $createdBoundary = $CreatedAfterUtc.ToUniversalTime()
 
     $languageCodes = @{}
     foreach ($language in @($Data.Languages)) {
@@ -113,7 +138,7 @@ function ConvertTo-HairshopNewProductCandidates {
     $candidates = New-Object Collections.ArrayList
     $rejected = New-Object Collections.ArrayList
     foreach ($product in @($Data.Products)) {
-        if (-not (ConvertTo-SyncBoolean (Get-SyncValue $product 'Published' $false))) { continue }
+        if (-not (Get-RequiredPublishedFlag -Product $product)) { continue }
         $id = [int64](Get-SyncValue $product 'ProductId' 0)
         $sku = ([string](Get-SyncValue $product 'SKU' '')).Trim()
         $defaultTitle = ([string](Get-SyncValue $product 'Name' '')).Trim()
@@ -169,6 +194,9 @@ function ConvertTo-HairshopNewProductCandidates {
         $updated = ConvertTo-SyncUtcText (Get-SyncValue $product 'UpdatedOnUtc' $null)
         if (-not $created -or -not $updated) {
             [void]$rejected.Add([pscustomobject]@{ legacyProductId = $id; sku = $sku; reason = 'MISSING_CREATED_OR_UPDATED_DATE' })
+            continue
+        }
+        if ([DateTime]::Parse($created, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime() -le $createdBoundary) {
             continue
         }
 
@@ -487,32 +515,124 @@ function New-HairshopTaxonomySyncRequests {
     return [pscustomobject][ordered]@{ Manifest = $manifest; Batches = @($batches); Requests = @($requests) }
 }
 
+function Get-SyncSha256 {
+    param([byte[]]$Bytes)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($sha.ComputeHash($Bytes))).Replace('-', '').ToLowerInvariant() }
+    finally { $sha.Dispose() }
+}
+
+function Read-HairshopCatalogJsonSnapshot {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Content,
+        [Parameter(Mandatory = $true)]$Config,
+        [DateTime]$NowUtc = [DateTime]::UtcNow
+    )
+    $contentBytes = $script:Utf8NoBom.GetBytes($Content)
+    if ($contentBytes.Length -gt [int64]$Config.MaximumSnapshotBytes) { throw 'Hairshop JSON snapshot exceeds MaximumSnapshotBytes.' }
+    try { $snapshot = $Content | ConvertFrom-Json }
+    catch { throw 'Hairshop JSON snapshot is not valid JSON.' }
+    if ([int](Get-SyncValue $snapshot 'schemaVersion' 0) -ne 1 -or
+        [string](Get-SyncValue $snapshot 'source' '') -ne 'nopCommerce-3.90-MSSQL' -or
+        [string](Get-SyncValue $snapshot 'payloadEncoding' '') -ne 'base64+utf8+json') {
+        throw 'Hairshop JSON snapshot envelope is unsupported.'
+    }
+    $snapshotId = [string](Get-SyncValue $snapshot 'snapshotId' '')
+    if ($snapshotId -notmatch '^[0-9a-f]{32}$') { throw 'Hairshop JSON snapshotId is invalid.' }
+    $expectedSha = ([string](Get-SyncValue $snapshot 'payloadSha256' '')).ToLowerInvariant()
+    if ($expectedSha -notmatch '^[0-9a-f]{64}$') { throw 'Hairshop JSON payload SHA-256 is invalid.' }
+    try { $payloadBytes = [Convert]::FromBase64String([string](Get-SyncValue $snapshot 'payloadBase64' '')) }
+    catch { throw 'Hairshop JSON payload is not valid base64.' }
+    if ($payloadBytes.Length -gt [int64]$Config.MaximumSnapshotBytes) { throw 'Hairshop JSON payload exceeds MaximumSnapshotBytes.' }
+    if ((Get-SyncSha256 $payloadBytes) -ne $expectedSha) { throw 'Hairshop JSON payload SHA-256 mismatch.' }
+    try { $data = $script:Utf8NoBom.GetString($payloadBytes) | ConvertFrom-Json }
+    catch { throw 'Hairshop JSON payload is not valid UTF-8 JSON.' }
+
+    try { $generated = [DateTime]::Parse([string](Get-SyncValue $snapshot 'generatedAtUtc' ''), [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind).ToUniversalTime() }
+    catch { throw 'Hairshop JSON generatedAtUtc is invalid.' }
+    $now = $NowUtc.ToUniversalTime()
+    if ($generated -gt $now.AddMinutes(5)) { throw 'Hairshop JSON snapshot timestamp is in the future.' }
+    if ($generated -lt $now.AddMinutes(-[int]$Config.MaximumSnapshotAgeMinutes)) { throw 'Hairshop JSON snapshot is stale.' }
+    $products = @(Get-SyncValue $data 'Products' @())
+    $declaredCount = [int](Get-SyncValue $snapshot 'productCount' -1)
+    if ($declaredCount -ne $products.Count -or $products.Count -lt [int]$Config.MinimumSnapshotProductCount) {
+        throw 'Hairshop JSON snapshot product count is invalid or below the configured minimum.'
+    }
+    $expectedDatabase = [string](Get-SyncValue $Config 'ExpectedSourceDatabase' '')
+    if ($expectedDatabase -and -not $expectedDatabase.Equals([string](Get-SyncValue $data 'SourceDatabase' ''), [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Hairshop JSON snapshot source database does not match ExpectedSourceDatabase.'
+    }
+    return [pscustomobject]@{
+        Data = $data
+        Metadata = [pscustomobject][ordered]@{ snapshotId = $snapshotId; generatedAtUtc = $generated.ToString('o'); payloadSha256 = $expectedSha; productCount = $products.Count }
+    }
+}
+
+function Invoke-HairshopCatalogJsonRequest {
+    param([string]$Url, [string]$Authorization, [int]$TimeoutSeconds)
+    return Invoke-WebRequest -Uri $Url -Method Get -Headers @{ Authorization = $Authorization; Accept = 'application/json' } -UseBasicParsing -MaximumRedirection 0 -TimeoutSec $TimeoutSeconds
+}
+
+function Invoke-HairshopCatalogJsonDownload {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)]$Config, [scriptblock]$WebInvoker)
+    if (-not (Test-Path -LiteralPath ([string]$Config.SourceAuthorizationFile) -PathType Leaf)) { throw 'Configured source authorization file does not exist.' }
+    $authorization = [IO.File]::ReadAllText([string]$Config.SourceAuthorizationFile, $script:Utf8NoBom).Trim()
+    if ($authorization -notmatch '^(Basic|Bearer) [A-Za-z0-9+/_=.-]{16,}$' -or $authorization -match "[\r\n]") {
+        throw 'Source authorization file must contain one Basic or Bearer Authorization header value.'
+    }
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    if ($null -eq $WebInvoker) { $WebInvoker = ${function:Invoke-HairshopCatalogJsonRequest} }
+    $response = & $WebInvoker ([string]$Config.SourceSnapshotUrl) $authorization ([int]$Config.RequestTimeoutSeconds)
+    $contentType = [string]$response.Headers['Content-Type']
+    if ($contentType -notmatch '^application/json(?:\s*;|$)') { throw 'Hairshop JSON source returned an unexpected Content-Type.' }
+    return Read-HairshopCatalogJsonSnapshot -Content ([string]$response.Content) -Config $Config
+}
+
 function Read-HairshopNewProductSyncConfig {
     [CmdletBinding()]
     param([Parameter(Mandatory = $true)][string]$Path)
     $resolved = (Resolve-Path -LiteralPath $Path).Path
     $config = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8 | ConvertFrom-Json
-    foreach ($name in @('CatalogExporterConfigPath', 'ApiEndpoint', 'ApiKeyFile', 'StatePath', 'ReportDirectory')) {
+    foreach ($name in @('SourceSnapshotUrl', 'SourceAuthorizationFile', 'SourceCreatedAfterUtc', 'ExpectedSourceDatabase', 'MaximumSnapshotAgeMinutes', 'MaximumSnapshotBytes', 'MinimumSnapshotProductCount', 'ApiEndpoint', 'ApiKeyFile', 'StatePath', 'ReportDirectory')) {
         if ([string]::IsNullOrWhiteSpace([string](Get-SyncValue $config $name ''))) { throw "Sync configuration field $name is required." }
     }
-    foreach ($name in @('CatalogExporterConfigPath', 'ApiKeyFile', 'StatePath', 'ReportDirectory')) {
+    foreach ($name in @('SourceAuthorizationFile', 'ApiKeyFile', 'StatePath', 'ReportDirectory')) {
         if (-not [IO.Path]::IsPathRooted([string]$config.$name)) { throw "Sync configuration field $name must be an absolute path outside webroot." }
     }
-    $uri = New-Object Uri([string]$config.ApiEndpoint)
-    if ($uri.Scheme -ne 'https') { throw 'ApiEndpoint must use HTTPS.' }
+    foreach ($field in @('SourceSnapshotUrl','ApiEndpoint')) {
+        $uri = New-Object Uri([string]$config.$field)
+        if ($uri.Scheme -ne 'https' -or -not [string]::IsNullOrEmpty($uri.UserInfo) -or -not [string]::IsNullOrEmpty($uri.Query) -or -not [string]::IsNullOrEmpty($uri.Fragment)) {
+            throw "$field must use HTTPS and must not contain credentials, query or fragment."
+        }
+    }
+    try { $boundary = [DateTime]::Parse([string]$config.SourceCreatedAfterUtc, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind) }
+    catch { throw 'SourceCreatedAfterUtc must be an ISO-8601 timestamp.' }
+    if ($boundary.Kind -eq [DateTimeKind]::Unspecified) { throw 'SourceCreatedAfterUtc must include a UTC offset.' }
+    if ($boundary.ToUniversalTime() -gt [DateTime]::UtcNow.AddMinutes(5)) { throw 'SourceCreatedAfterUtc must not be in the future.' }
+    $config.SourceCreatedAfterUtc = $boundary.ToUniversalTime().ToString('o')
     if ($null -eq $config.PSObject.Properties['BatchSize']) { $config | Add-Member -NotePropertyName BatchSize -NotePropertyValue 50 }
     if ($null -eq $config.PSObject.Properties['RequestTimeoutSeconds']) { $config | Add-Member -NotePropertyName RequestTimeoutSeconds -NotePropertyValue 120 }
     if ($null -eq $config.PSObject.Properties['AllowApply']) { $config | Add-Member -NotePropertyName AllowApply -NotePropertyValue $false }
+    if ($null -eq $config.PSObject.Properties['ScheduleEnabled']) { $config | Add-Member -NotePropertyName ScheduleEnabled -NotePropertyValue $false }
     $config.BatchSize = [Math]::Min(100, [Math]::Max(1, [int]$config.BatchSize))
+    if ([int]$config.MaximumSnapshotAgeMinutes -lt 5 -or [int]$config.MaximumSnapshotAgeMinutes -gt 1440) { throw 'MaximumSnapshotAgeMinutes must be between 5 and 1440.' }
+    if ([int64]$config.MaximumSnapshotBytes -lt 1024 -or [int64]$config.MaximumSnapshotBytes -gt 104857600) { throw 'MaximumSnapshotBytes must be between 1024 and 104857600.' }
+    if ([int]$config.MinimumSnapshotProductCount -lt 1) { throw 'MinimumSnapshotProductCount must be at least 1.' }
     return $config
 }
 
 function Read-SyncState {
-    param([string]$Path)
+    param([string]$Path, [string]$ExpectedCreatedAfterUtc)
     $processed = @{}
     if (Test-Path -LiteralPath $Path -PathType Leaf) {
         $state = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
-        if ([int](Get-SyncValue $state 'schemaVersion' 0) -ne 1) { throw 'Unsupported sync state schemaVersion.' }
+        if ([int](Get-SyncValue $state 'schemaVersion' 0) -ne 2) { throw 'Unsupported sync state schemaVersion; JSON/HTTPS sync requires a cutoff-bound state.' }
+        $storedBoundary = [string](Get-SyncValue $state 'sourceCreatedAfterUtc' '')
+        if (-not $storedBoundary.Equals($ExpectedCreatedAfterUtc, [StringComparison]::Ordinal)) {
+            throw 'SourceCreatedAfterUtc differs from the cutoff pinned in sync state.'
+        }
         $stateProcessed = Get-SyncValue $state 'processed' $null
         if ($null -ne $stateProcessed) {
             foreach ($property in $stateProcessed.PSObject.Properties) { $processed[$property.Name] = $property.Value }
@@ -544,13 +664,57 @@ function Invoke-SyncApiRequest {
     return Invoke-RestMethod -Uri $Endpoint -Method Post -Headers @{ 'x-hairshop-catalog-sync-key' = $ApiKey } -ContentType 'application/json; charset=utf-8' -Body ($Body | ConvertTo-Json -Depth 15 -Compress) -TimeoutSec $TimeoutSeconds
 }
 
+function Assert-SyncApiBatchResponse {
+    param(
+        [Parameter(Mandatory = $true)]$Response,
+        [Parameter(Mandatory = $true)]$Batch,
+        [Parameter(Mandatory = $true)][string]$RunId,
+        [Parameter(Mandatory = $true)][ValidateSet('dry-run', 'apply')][string]$Mode
+    )
+
+    if ([string](Get-SyncValue $Response 'runId' '') -ne $RunId -or
+        [string](Get-SyncValue $Response 'mode' '') -ne $Mode) {
+        throw 'Catalog sync API returned an unexpected runId or mode.'
+    }
+
+    $expected = @{}
+    foreach ($candidate in @($Batch)) {
+        $expected[[string]$candidate.legacyProductId] = $candidate
+    }
+    $resultsValue = Get-SyncValue $Response 'results' $null
+    if ($null -eq $resultsValue) { throw 'Catalog sync API response does not contain results.' }
+    $responseResults = @($resultsValue)
+    if ($responseResults.Count -ne $expected.Count) {
+        throw "Catalog sync API returned $($responseResults.Count) results for a batch of $($expected.Count)."
+    }
+
+    $seen = @{}
+    $allowedStatuses = if ($Mode -eq 'apply') { @('created', 'already_exists', 'conflict') } else { @('would_create', 'already_exists', 'conflict') }
+    foreach ($result in $responseResults) {
+        $id = [string](Get-SyncValue $result 'legacyProductId' '')
+        if (-not $expected.ContainsKey($id)) { throw "Catalog sync API returned an unexpected legacyProductId '$id'." }
+        if ($seen.ContainsKey($id)) { throw "Catalog sync API returned duplicate result for legacyProductId '$id'." }
+        $seen[$id] = $true
+
+        $status = [string](Get-SyncValue $result 'status' '')
+        if ($status -notin $allowedStatuses) { throw "Catalog sync API returned invalid status '$status' for mode '$Mode'." }
+        $targetId = [string](Get-SyncValue $result 'targetProductId' '')
+        if ($targetId -ne "nop390-$id") { throw "Catalog sync API returned an invalid targetProductId for legacyProductId '$id'." }
+        if ([string](Get-SyncValue $result 'sku' '') -ne [string]$expected[$id].sku) {
+            throw "Catalog sync API returned an unexpected SKU for legacyProductId '$id'."
+        }
+    }
+    return $responseResults
+}
+
 function Invoke-HairshopNewProductSync {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]$Data,
         [Parameter(Mandatory = $true)]$Config,
         [switch]$Apply,
-        [scriptblock]$ApiInvoker
+        [scriptblock]$ApiInvoker,
+        $SourceSnapshot
     )
     if ($Apply -and -not (ConvertTo-SyncBoolean (Get-SyncValue $Config 'AllowApply' $false))) { throw 'Apply is disabled in sync configuration.' }
     if (-not (Test-Path -LiteralPath ([string]$Config.ApiKeyFile) -PathType Leaf)) { throw 'Configured API key file does not exist.' }
@@ -568,18 +732,22 @@ function Invoke-HairshopNewProductSync {
     $runId = '{0}-{1}' -f [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ'), ([Guid]::NewGuid().ToString('N').Substring(0, 8))
     $mode = if ($Apply) { 'apply' } else { 'dry-run' }
     $reportPath = Join-Path ([string]$Config.ReportDirectory) "catalog-sync-$runId.json"
+    $results = New-Object Collections.ArrayList
+    $completedBatches = 0
+    $totalBatches = 0
     try {
-        $converted = ConvertTo-HairshopNewProductCandidates -Data $Data
-        $processed = Read-SyncState -Path ([string]$Config.StatePath)
+        $converted = ConvertTo-HairshopNewProductCandidates -Data $Data -CreatedAfterUtc ([DateTime]$Config.SourceCreatedAfterUtc)
+        $processed = Read-SyncState -Path ([string]$Config.StatePath) -ExpectedCreatedAfterUtc ([string]$Config.SourceCreatedAfterUtc)
         $pending = @($converted.Candidates | Where-Object { -not $processed.ContainsKey([string]$_.legacyProductId) })
-        $results = New-Object Collections.ArrayList
+        if ($pending.Count -gt 0) { $totalBatches = [int][Math]::Ceiling($pending.Count / [double][int]$Config.BatchSize) }
         for ($offset = 0; $offset -lt $pending.Count; $offset += [int]$Config.BatchSize) {
             $last = [Math]::Min($offset + [int]$Config.BatchSize - 1, $pending.Count - 1)
             $batch = @($pending[$offset..$last])
             $body = [pscustomobject][ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; products = $batch }
             $response = & $ApiInvoker ([string]$Config.ApiEndpoint) $apiKey $body ([int]$Config.RequestTimeoutSeconds)
-            if ([string](Get-SyncValue $response 'runId' '') -ne $runId -or [string](Get-SyncValue $response 'mode' '') -ne $mode) { throw 'Catalog sync API returned an unexpected runId or mode.' }
-            foreach ($result in @($response.results)) { [void]$results.Add($result) }
+            $validatedResults = @(Assert-SyncApiBatchResponse -Response $response -Batch $batch -RunId $runId -Mode $mode)
+            foreach ($result in $validatedResults) { [void]$results.Add($result) }
+            $completedBatches++
         }
 
         if ($Apply) {
@@ -588,7 +756,7 @@ function Invoke-HairshopNewProductSync {
                     $processed[[string]$result.legacyProductId] = [ordered]@{ status = [string]$result.status; targetProductId = [string]$result.targetProductId; processedAtUtc = [DateTime]::UtcNow.ToString('o') }
                 }
             }
-            $stateObject = [ordered]@{ schemaVersion = 1; updatedAtUtc = [DateTime]::UtcNow.ToString('o'); processed = $processed }
+            $stateObject = [ordered]@{ schemaVersion = 2; sourceCreatedAfterUtc = [string]$Config.SourceCreatedAfterUtc; updatedAtUtc = [DateTime]::UtcNow.ToString('o'); processed = $processed }
             Write-JsonAtomic -Path ([string]$Config.StatePath) -Value $stateObject
         }
 
@@ -601,12 +769,28 @@ function Invoke-HairshopNewProductSync {
             alreadyExists = @($results | Where-Object status -eq 'already_exists').Count
             conflicts = @($results | Where-Object status -eq 'conflict').Count
         }
-        $report = [ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; generatedAtUtc = [DateTime]::UtcNow.ToString('o'); summary = $summary; locallyRejected = @($converted.Rejected); results = @($results) }
+        $report = [ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; generatedAtUtc = [DateTime]::UtcNow.ToString('o'); sourceSnapshot = $SourceSnapshot; sourceCreatedAfterUtc = [string]$Config.SourceCreatedAfterUtc; summary = $summary; locallyRejected = @($converted.Rejected); results = @($results) }
         Write-JsonAtomic -Path $reportPath -Value $report
         return [pscustomobject]@{ RunId = $runId; Mode = $mode; Summary = [pscustomobject]$summary; ReportPath = $reportPath; StatePath = [string]$Config.StatePath }
     }
     catch {
-        $failure = [ordered]@{ schemaVersion = 1; runId = $runId; mode = $mode; generatedAtUtc = [DateTime]::UtcNow.ToString('o'); status = 'failed'; error = $_.Exception.Message.Substring(0, [Math]::Min(500, $_.Exception.Message.Length)) }
+        $failure = [ordered]@{
+            schemaVersion = 1
+            runId = $runId
+            mode = $mode
+            generatedAtUtc = [DateTime]::UtcNow.ToString('o')
+            status = 'failed'
+            error = $_.Exception.Message.Substring(0, [Math]::Min(500, $_.Exception.Message.Length))
+            sourceSnapshot = $SourceSnapshot
+            sourceCreatedAfterUtc = [string]$Config.SourceCreatedAfterUtc
+            progress = [ordered]@{
+                completedBatches = $completedBatches
+                totalBatches = $totalBatches
+                acknowledgedResults = $results.Count
+                stateCommitted = $false
+            }
+            partialResults = @($results)
+        }
         try { Write-JsonAtomic -Path $reportPath -Value $failure } catch { }
         throw
     }
@@ -615,8 +799,11 @@ function Invoke-HairshopNewProductSync {
 
 Export-ModuleMember -Function @(
     'Read-HairshopNewProductSyncConfig',
+    'Read-HairshopCatalogJsonSnapshot',
+    'Invoke-HairshopCatalogJsonDownload',
     'ConvertTo-HairshopNewProductCandidates',
     'ConvertTo-HairshopTaxonomySnapshot',
     'New-HairshopTaxonomySyncRequests',
+    'Assert-SyncApiBatchResponse',
     'Invoke-HairshopNewProductSync'
 )

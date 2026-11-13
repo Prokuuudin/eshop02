@@ -168,6 +168,13 @@ SELECT COUNT_BIG(*) AS ProductsTotal,
 FROM dbo.Product AS p
 WHERE p.Deleted = 0;
 
+SELECT COUNT_BIG(*) AS JsonExportEligibleProducts,
+       MIN(p.CreatedOnUtc) AS EarliestCreatedOnUtc,
+       MAX(p.CreatedOnUtc) AS LatestCreatedOnUtc
+FROM dbo.Product AS p
+WHERE p.Deleted = 0
+  AND p.Published = 1;
+
 SELECT
     (SELECT COUNT_BIG(*) FROM dbo.Language) AS Languages,
     (SELECT COUNT_BIG(*) FROM dbo.LocalizedProperty WHERE LocaleKeyGroup IN (N'Product', N'Category', N'Manufacturer')) AS LocalizedValues,

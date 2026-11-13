@@ -11,7 +11,6 @@ import RouteTransition from '@/components/RouteTransition'
 import { Providers } from './providers'
 import RouteUiEffects from '@/components/RouteUiEffects'
 import AuthHydrator from '@/components/auth/AuthHydrator'
-import AdminSessionPresence from '@/components/auth/AdminSessionPresence'
 import AccountGuard from '@/components/account/AccountGuard'
 import { getMetadataBase, getSiteUrl } from '@/lib/site-url'
 import { LANGUAGES, resolveLanguage } from '@/lib/i18n-routing'
@@ -119,7 +118,6 @@ export default async function RootLayout({ children, params }: LayoutProps): Pro
         <Providers initialLanguage={language} bonusConfig={bonusConfig} localeConfig={localeConfig}>
           <RouteUiEffects />
           <AuthHydrator />
-          <AdminSessionPresence />
           {/* Global gate: any user with mustChangePassword can't use any page
               until they set their own password (blocking modal). */}
           <AccountGuard>

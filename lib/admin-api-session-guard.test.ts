@@ -3,8 +3,8 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 // Every admin API handler must resolve the caller through the DB-backed session
-// (lib/server-auth.ts), which applies the staff session limits — 8 hours from
-// sign-in, browser presence, logout revocation and mandatory MFA. A route that
+// (lib/server-auth.ts), which applies the staff session rules — 8 hours from
+// sign-in, logout revocation and mandatory MFA. A route that
 // read the cookie on its own would stay reachable after the session ended.
 const ADMIN_API_DIR = join(process.cwd(), 'app', 'api', 'admin')
 const GUARDS = /\b(requireAdminPermission|requireAdmin|requireGrinsImportActor|getServerUser)\s*\(/

@@ -12,17 +12,19 @@ import {
   type AdminPermission,
 } from '@/lib/admin-permissions'
 import type { CheckoutProfile } from '@/lib/auth-types'
-import {
-  adminSessionAbsoluteDeadline,
-  adminSessionPresenceDeadline,
-  evaluateAdminSession,
-  shouldRefreshAdminPresence,
-} from '@/lib/admin-session-policy'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
-// Staff sessions follow lib/admin-session-policy.ts instead: 8 hours from sign-in
-// at most, and they end shortly after the browser stops reporting presence.
+/**
+ * Staff sessions (admin, super admin, manager) end 8 hours after sign-in
+ * (Session.createdAt), whatever the activity — sleep, suspended tabs or long
+ * inactivity neither end nor extend them. Manual logout revokes them at once.
+ */
+export const ADMIN_SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000
+
+function adminSessionDeadline(createdAt: Date): Date {
+  return new Date(createdAt.getTime() + ADMIN_SESSION_MAX_AGE_MS)
+}
 
 export type ServerUser = {
   id: string
@@ -97,9 +99,9 @@ export function requiresAdminMfa(subject: { platformRole?: string | null; teamRo
 
 /**
  * Cookie Max-Age for this user's session. Staff get none: a browser session
- * cookie, never written to disk as a persistent cookie. The server-side limits
- * in lib/admin-session-policy.ts are what actually end a staff session, because
- * browsers that restore the previous session also restore session cookies.
+ * cookie. Browsers that restore the previous session ("continue where you left
+ * off") may also restore it after a restart, so it is not a guaranteed sign-out
+ * on browser close; the server-side 8-hour limit is what ends a staff session.
  */
 export function sessionCookieMaxAgeSeconds(subject: { platformRole?: string | null; teamRole?: string | null }): number | undefined {
   return requiresAdminMfa(subject) ? undefined : SESSION_DURATION_DAYS * 60 * 60 * 24
@@ -123,7 +125,7 @@ export async function createSession(
   let expiresAt: Date
   if (user && requiresAdminMfa(user)) {
     createdAt = options.authenticatedAt && options.authenticatedAt < now ? options.authenticatedAt : now
-    expiresAt = adminSessionPresenceDeadline(createdAt, now)
+    expiresAt = adminSessionDeadline(createdAt)
   } else {
     expiresAt = new Date(now)
     expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS)
@@ -143,80 +145,49 @@ export async function createSession(
   return token
 }
 
-type ResolvedSession = { user: ServerUser; staffAbsoluteExpiresAt?: Date }
-
-async function resolveServerSession(options: { allowPasswordChangeRequired?: boolean }): Promise<ResolvedSession | null> {
-  const cookieStore = await cookies()
-  const token = cookieStore.get(SESSION_COOKIE)?.value
-  if (!token) return null
-
-  // 1% chance: clean all expired sessions (amortised, no cron needed)
-  if (Math.random() < 0.01) {
-    cleanExpiredSessions().catch(() => {})
-  }
-
-  const tokenHash = hashToken(token)
-  const session = await prisma.session.findUnique({
-    where: { tokenHash },
-    include: { user: true },
-  })
-
-  const now = new Date()
-  if (!session || session.expiresAt < now) {
-    if (session) await prisma.session.delete({ where: { tokenHash } })
-    return null
-  }
-
-  let staffAbsoluteExpiresAt: Date | undefined
-  if (requiresAdminMfa(session.user)) {
-    // Admin access is never granted by a session that skipped the second factor —
-    // whichever route created it. Checked against the live role, so a customer
-    // promoted to staff must also log in again through MFA.
-    if (!session.mfaVerified) return null
-
-    // 8 hours from sign-in, the browser-presence deadline, and sessions issued
-    // before this policy: anything but 'active' is revoked on the spot.
-    if (evaluateAdminSession(session, now) !== 'active') {
-      await prisma.session.deleteMany({ where: { tokenHash } })
-      return null
-    }
-    if (shouldRefreshAdminPresence(session, now)) {
-      // Conditional on the row still being live: a concurrent logout or expiry wins,
-      // and a deleted/expired session can never be brought back by a late request.
-      const { count } = await prisma.session.updateMany({
-        where: { tokenHash, expiresAt: { gt: now } },
-        data: { expiresAt: adminSessionPresenceDeadline(session.createdAt, now) },
-      })
-      if (count !== 1) return null
-    }
-    staffAbsoluteExpiresAt = adminSessionAbsoluteDeadline(session.createdAt)
-  }
-
-  const user = mapDbToServerUser(session.user)
-  // A shared/temporary onboarding credential must never create a full account
-  // session. Only the password-change and session-introspection endpoints opt
-  // in to seeing this restricted user.
-  if (user.mustChangePassword && !options.allowPasswordChangeRequired) return null
-  return { user, staffAbsoluteExpiresAt }
-}
-
 export async function getServerUser(options: { allowPasswordChangeRequired?: boolean } = {}): Promise<ServerUser | null> {
   try {
-    return (await resolveServerSession(options))?.user ?? null
-  } catch {
-    return null
-  }
-}
+    const cookieStore = await cookies()
+    const token = cookieStore.get(SESSION_COOKIE)?.value
+    if (!token) return null
 
-/**
- * Live staff session behind the request cookie (refreshing its browser presence),
- * or null. Customer sessions return null: the presence policy does not apply to them.
- */
-export async function getStaffSessionStatus(): Promise<{ absoluteExpiresAt: Date } | null> {
-  try {
-    const resolved = await resolveServerSession({ allowPasswordChangeRequired: true })
-    if (!resolved?.staffAbsoluteExpiresAt) return null
-    return { absoluteExpiresAt: resolved.staffAbsoluteExpiresAt }
+    // 1% chance: clean all expired sessions (amortised, no cron needed)
+    if (Math.random() < 0.01) {
+      cleanExpiredSessions().catch(() => {})
+    }
+
+    const tokenHash = hashToken(token)
+    const session = await prisma.session.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    })
+
+    const now = new Date()
+    if (!session || session.expiresAt < now) {
+      if (session) await prisma.session.delete({ where: { tokenHash } })
+      return null
+    }
+
+    if (requiresAdminMfa(session.user)) {
+      // Admin access is never granted by a session that skipped the second factor —
+      // whichever route created it. Checked against the live role, so a customer
+      // promoted to staff must also log in again through MFA.
+      if (!session.mfaVerified) return null
+
+      // 8 hours from sign-in, also for sessions issued before this limit existed
+      // (their stored expiry was one day). Revoked on the spot.
+      if (now >= adminSessionDeadline(session.createdAt)) {
+        await prisma.session.deleteMany({ where: { tokenHash } })
+        return null
+      }
+    }
+
+    const user = mapDbToServerUser(session.user)
+    // A shared/temporary onboarding credential must never create a full account
+    // session. Only the password-change and session-introspection endpoints opt
+    // in to seeing this restricted user.
+    if (user.mustChangePassword && !options.allowPasswordChangeRequired) return null
+    return user
   } catch {
     return null
   }

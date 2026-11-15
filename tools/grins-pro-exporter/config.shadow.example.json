@@ -1,0 +1,25 @@
+{
+  "mode": "shadow",
+  "source": { "dbPath": "C:\\Grins\\Sklad\\DB" },
+  "paths": {
+    "workDir": "C:\\GrinsProExporter\\data\\work",
+    "outputDir": "C:\\GrinsProExporter\\data\\out",
+    "logDir": "C:\\GrinsProExporter\\data\\logs",
+    "stateDir": "C:\\GrinsProExporter\\data\\state"
+  },
+  "snapshot": {
+    "maxAttempts": 3,
+    "pauseBetweenCopiesSeconds": 5,
+    "retryDelaySeconds": 60,
+    "keepRuns": 3
+  },
+  "keepOutputs": 14,
+  "preflight": {
+    "minProducts": 14000,
+    "maxDropRatio": 0.10,
+    "maxGrowthRatio": 0.20,
+    "maxQuantityDropRatio": 0.30,
+    "maxQuantityGrowthFactor": 3
+  },
+  "alerts": { "type": "none" }
+}

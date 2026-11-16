@@ -86,14 +86,20 @@ const idempotencyHeaders = (): Record<string, string> => ({
     'Idempotency-Key': crypto.randomUUID(),
 });
 
+// skipInvited (bulk send): the server leaves clients with a live or accepted
+// invitation alone. A non-JSON answer (proxy timeout page) is a failed request
+// with an unknown outcome, not an exception.
 export async function sendInvitationBatch(
-    userIds: string[]
+    userIds: string[],
+    options: { skipInvited?: boolean } = {}
 ): Promise<{ ok: boolean; data: InvitationsResponse }> {
-    return parseResponse(await fetch('/api/admin/invitations', {
+    const response = await fetch('/api/admin/invitations', {
         method: 'POST',
         headers: idempotencyHeaders(),
-        body: JSON.stringify({ userIds }),
-    }));
+        body: JSON.stringify(options.skipInvited ? { userIds, skipInvited: true } : { userIds }),
+    });
+    const data = await response.json().catch(() => ({})) as InvitationsResponse;
+    return { ok: response.ok && Array.isArray(data.results), data };
 }
 
 export async function sendSmsInvitationBatch(

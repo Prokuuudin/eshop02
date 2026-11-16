@@ -29,6 +29,27 @@ export const isTechEmail = (email: string): boolean => email.toLowerCase().endsW
 export const HOLDER_STATUS_RANK: Record<Holder['status'], number> = { none: 0, sent: 1, accepted: 2, expired: 3, error: 4 }
 export const INVITATIONS_PAGE_SIZE = 50
 export const INVITE_BATCH_SIZE = 20
+// Email chunks stay small: each request holds one DB transaction (~7 round-trips
+// per client to Neon) and then mails every client of the chunk over SMTP.
+export const EMAIL_INVITE_BATCH_SIZE = 5
+
+export type BulkInviteTally = { sent: number; skipped: number; failed: number }
+
+/** Counts one chunk's response. Ids the server did not return (no email, staff) count as skipped. */
+export function tallyInviteChunk(requested: number, results: Array<{ status: string }>): BulkInviteTally {
+  const sent = results.filter((r) => r.status === 'sent').length
+  const failed = results.filter((r) => r.status === 'error').length
+  return { sent, failed, skipped: requested - sent - failed }
+}
+
+export type BulkInviteOutcome = 'done' | 'partial' | 'failed' | 'stopped'
+
+/** 'done' only when nothing failed and every chunk got an answer. */
+export function bulkInviteOutcome(tally: BulkInviteTally, opts: { requestFailed: boolean; stopped: boolean }): BulkInviteOutcome {
+  if (opts.requestFailed || tally.failed > 0) return tally.sent > 0 ? 'partial' : 'failed'
+  if (opts.stopped) return 'stopped'
+  return 'done'
+}
 
 export function nextSort<Key extends string>(
   current: { key: Key; dir: SortDir } | null,

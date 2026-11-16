@@ -6,6 +6,9 @@ import { useAdminLocale } from '@/lib/use-admin-locale';
 import {
     INVITATIONS_PAGE_SIZE as PAGE_SIZE,
     INVITE_BATCH_SIZE as INVITE_BATCH,
+    EMAIL_INVITE_BATCH_SIZE as EMAIL_INVITE_BATCH,
+    bulkInviteOutcome,
+    tallyInviteChunk,
     type CampaignState,
     type EligibleSortKey,
     type EligibleUser,
@@ -27,6 +30,7 @@ import {
     sendInvitationBatch,
     sendSmsInvitationBatch,
     updateCardCampaign,
+    type InvitationsResponse,
 } from './invitations-api';
 
 function useInvitationsPageState() {
@@ -270,38 +274,49 @@ function useInvitationsPageState() {
         bulkStopRequested.current = false;
         setFormError('');
         setMessage('');
-        let sent = 0;
-        let failed = 0;
+        const tally = { sent: 0, skipped: 0, failed: 0 };
+        let requestFailed = false;
         try {
-            for (let i = 0; i < ids.length; i += INVITE_BATCH) {
+            for (let i = 0; i < ids.length; i += EMAIL_INVITE_BATCH) {
                 if (bulkStopRequested.current) break;
-                const chunk = ids.slice(i, i + INVITE_BATCH);
-                const { ok, data: json } = await sendInvitationBatch(chunk);
+                const chunk = ids.slice(i, i + EMAIL_INVITE_BATCH);
+                // skipInvited: a repeat after a partial failure re-mails nobody who already got a live invitation.
+                const { ok, data: json } = await sendInvitationBatch(chunk, { skipInvited: true }).catch(() => ({ ok: false, data: {} as InvitationsResponse }));
                 if (!ok) {
-                    setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
+                    // The chunk stays selected; retrying it is safe thanks to skipInvited.
+                    requestFailed = true;
                     break;
                 }
-                const batchSent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
-                // A pending client is being mailed by another request; count it as handled.
-                const batchPending = (json.results ?? []).filter((r: { status: string }) => r.status === 'pending').length;
-                sent += batchSent + batchPending;
-                failed += (json.results ?? []).length - batchSent - batchPending;
+                const chunkTally = tallyInviteChunk(chunk.length, json.results ?? []);
+                tally.sent += chunkTally.sent;
+                tally.skipped += chunkTally.skipped;
+                tally.failed += chunkTally.failed;
                 setSelectedIds((prev) => {
                     const next = new Set(prev);
                     chunk.forEach((id) => next.delete(id));
                     return next;
                 });
-                setBulkProgress({ processed: sent + failed, total: ids.length });
+                setBulkProgress({ processed: tally.sent + tally.skipped + tally.failed, total: ids.length });
             }
-            setMessage(
-                bulkStopRequested.current
-                    ? l(
-                          `Остановлено. Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''} из ${ids.length}`,
-                          `Stopped. Sent: ${sent}${failed ? `, errors: ${failed}` : ''} of ${ids.length}`,
-                          `Apturēts. Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''} no ${ids.length}`
-                      )
-                    : l(`Готово. Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`, `Done. Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`, `Gatavs. Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`)
+            const unprocessed = ids.length - tally.sent - tally.skipped - tally.failed;
+            const counts = l(
+                `Отправлено: ${tally.sent}, пропущено: ${tally.skipped}, ошибок: ${tally.failed}${unprocessed ? `, не обработано: ${unprocessed}` : ''} (из ${ids.length})`,
+                `Sent: ${tally.sent}, skipped: ${tally.skipped}, errors: ${tally.failed}${unprocessed ? `, not processed: ${unprocessed}` : ''} (of ${ids.length})`,
+                `Nosūtīts: ${tally.sent}, izlaists: ${tally.skipped}, kļūdas: ${tally.failed}${unprocessed ? `, nav apstrādāts: ${unprocessed}` : ''} (no ${ids.length})`
             );
+            const outcome = bulkInviteOutcome(tally, { requestFailed, stopped: bulkStopRequested.current });
+            const retryHint = requestFailed
+                ? l(' Необработанные клиенты остались выбранными — можно повторить: уже приглашённым письмо повторно не уйдёт.', ' Unprocessed clients stay selected — you can retry: clients already invited will not be emailed again.', ' Neapstrādātie klienti palika atlasīti — varat mēģināt vēlreiz: jau uzaicinātajiem e-pasts atkārtoti netiks sūtīts.')
+                : '';
+            if (outcome === 'failed') {
+                setFormError(l('Не удалось отправить приглашения. ', 'Failed to send invitations. ', 'Neizdevās nosūtīt ielūgumus. ') + counts + retryHint);
+            } else if (outcome === 'partial') {
+                setFormError(l('Отправлено с ошибками. ', 'Sent with errors. ', 'Nosūtīts ar kļūdām. ') + counts + retryHint);
+            } else if (outcome === 'stopped') {
+                setMessage(l('Остановлено. ', 'Stopped. ', 'Apturēts. ') + counts);
+            } else {
+                setMessage(l('Готово. ', 'Done. ', 'Gatavs. ') + counts);
+            }
         } finally {
             setBulkBusy(false);
             setBulkProgress(null);

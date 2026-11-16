@@ -3,6 +3,8 @@ import path from 'path'
 import { buildInviteEmail, buildRulesEmail, formatPointsAsEuros, interpolate, pickInviteTemplate } from './invitation-emails'
 
 const bonus = { enabled: true, welcomeBonusPoints: 500, earnRatePercent: 0.5 }
+const INVITE_SUBJECT_LV =
+  'SIA MIKS PLUS aicina: Pievienojieties Hairshop Pro — jaunajam interneta veikalam profesionāļiem!'
 
 describe('interpolate', () => {
   it('заменяет все вхождения переменной', () => {
@@ -63,7 +65,7 @@ describe('buildInviteEmail — латышский дефолт', () => {
       expect(html).toContain('Aktivizēt kontu')
       expect(html).not.toMatch(/[А-Яа-яЁё]/)
       expect(html).not.toContain('Activate account')
-      expect(subject).toBe('Jauns veikals profesionāļiem')
+      expect(subject).toBe(INVITE_SUBJECT_LV)
     }
   })
 
@@ -161,6 +163,13 @@ describe('шаблон pro-invite в data/email-templates.json', () => {
     readFileSync(path.join(__dirname, '..', 'data', 'email-templates.json'), 'utf-8')
   ) as { templates: { id: string; subject: string; body: string; variables: string[] }[] }
   const tpl = data.templates.find((t) => t.id === 'pro-invite')
+
+  it('тема — приглашение SIA MIKS PLUS в Hairshop Pro (латышские символы в NFC)', () => {
+    expect(tpl!.subject).toBe(INVITE_SUBJECT_LV)
+    expect(tpl!.subject).toBe(tpl!.subject.normalize('NFC'))
+    expect(tpl!.subject).not.toMatch(/[\r\n]/)
+    expect(tpl!.subject).not.toMatch(/\{\{/)
+  })
 
   it('существует и ведёт по персональной одноразовой ссылке', () => {
     expect(tpl).toBeDefined()

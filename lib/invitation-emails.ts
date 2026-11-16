@@ -46,7 +46,7 @@ export function pickInviteTemplate<T extends { id: string }>(
 // остальные акценты голубые, блок бонуса оранжевый.
 const INVITE_BRAND_BLUE = '#0088C4'
 const INVITE_LIGHT_BLUE = '#1a9ad6'
-const INVITE_SUBJECT = 'Jauns veikals profesionāļiem'
+const INVITE_SUBJECT = 'SIA MIKS PLUS aicina: Pievienojieties Hairshop Pro — jaunajam interneta veikalam profesionāļiem!'
 
 const INVITE_INTRO =
   '<strong>SIA MIKS PLUS</strong> ir atvērusi jaunu interneta veikalu skaistumkopšanas profesionāļiem — <strong>hairshoppro.lv</strong>. Atgādinām: jums ir SIA MIKS PLUS klienta karte Nr. <strong>{{card_number}}</strong>. Pēc reģistrācijas redzēsiet profesionālās cenas, varēsiet veikt pasūtījumus tiešsaistē, krāt bonusu punktus un izmantot tos nākamajiem pirkumiem. Kā reģistrēties:'

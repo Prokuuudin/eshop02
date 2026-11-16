@@ -8,6 +8,7 @@ import { interpolate } from '@/lib/invitation-emails'
 import { getSiteUrl } from '@/lib/site-url'
 import { logApiError } from '@/lib/observability'
 import { INVITE_BATCH_SIZE, resolveInviteLang } from '@/lib/invitations'
+import { activeCardNumberFilter, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 
@@ -28,11 +29,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     const language = resolveInviteLang(body.language)
     const template = (await getTemplates()).find((item) => item.id === `sms-invite-${language}`)
     if (!template) return NextResponse.json({ error: 'template_not_found' }, { status: 500 })
+    const revokedCardPolicy = await getRevokedCardPolicy()
 
     const users = await prisma.user.findMany({
       where: {
         id: { in: userIds },
-        cardNumber: { not: null },
+        cardNumber: activeCardNumberFilter(revokedCardPolicy),
         phone: { not: null },
         privacyAcknowledgedAt: null,
         NOT: { phone: '' },
@@ -83,6 +85,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     }))
     return NextResponse.json(recorded.replayed ? { simulated: true, results, replayed: true } : { simulated: true, results })
   } catch (error) {
+    if (isRevokedCardPolicyError(error)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError('[admin/invitations/sms POST]', error)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

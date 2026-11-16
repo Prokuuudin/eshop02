@@ -6,6 +6,7 @@ import { hashPassword, requireAdmin } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
+import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     try {
       if (user) {
         await prisma.$transaction(async (tx) => {
+          await assertCardAssignable(cardNumber, tx)
           // Row lock: a retry or a parallel identical request sees the committed
           // card and becomes a no-op instead of a second update and event.
           const [current] = await tx.$queryRaw<Array<{ cardNumber: string | null }>>`
@@ -73,6 +75,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       }
       const passwordHash = await hashPassword(randomBytes(32).toString('hex'))
       const created = await prisma.$transaction(async (tx) => {
+        await assertCardAssignable(cardNumber, tx)
         const row = await tx.user.create({
           data: {
             id: randomUUID(),
@@ -101,6 +104,12 @@ export async function POST(req: NextRequest): Promise<Response> {
       throw e
     }
   } catch (e) {
+    if (isRevokedCardPolicyError(e, 'card_revoked')) {
+      return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[admin/invitations/card POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

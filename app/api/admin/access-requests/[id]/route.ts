@@ -21,6 +21,7 @@ import { getSiteUrl } from '@/lib/site-url'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { z } from 'zod'
 import { hasAdminPermission, isProtectedStaffAccount } from '@/lib/admin-permissions'
+import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 
@@ -124,6 +125,7 @@ export async function PATCH(
       if (!isValidCardNumber(cardNumber)) {
         return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
       }
+      await assertCardAssignable(cardNumber)
 
       const [cardOwner, sameEmail] = [
         await prisma.user.findFirst({
@@ -159,6 +161,7 @@ export async function PATCH(
       let result: { request: Prisma.AccessRequestGetPayload<{ select: typeof REQUEST_SELECT }>; targetUserId: string }
       try {
         result = await prisma.$transaction(async (tx) => {
+          await assertCardAssignable(cardNumber, tx)
           await claimDecision(tx)
           let targetUserId: string
           if (sameEmail) {
@@ -288,6 +291,12 @@ export async function PATCH(
     }
     return NextResponse.json({ request: updated })
   } catch (e) {
+    if (isRevokedCardPolicyError(e, 'card_revoked')) {
+      return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[admin/access-requests/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

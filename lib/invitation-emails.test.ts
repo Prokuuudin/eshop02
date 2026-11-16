@@ -4,7 +4,7 @@ import { buildInviteEmail, buildRulesEmail, formatPointsAsEuros, interpolate, pi
 
 const bonus = { enabled: true, welcomeBonusPoints: 500, earnRatePercent: 0.5 }
 const INVITE_SUBJECT_LV =
-  'SIA MIKS PLUS aicina: Pievienojieties Hairshop Pro — jaunajam interneta veikalam profesionāļiem!'
+  'SIA MIKS PLUS aicina pievienoties Hairshop Pro — jaunajam interneta veikalam profesionāļiem!'
 
 describe('interpolate', () => {
   it('заменяет все вхождения переменной', () => {

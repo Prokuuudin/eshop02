@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import type { EligibleUser, Holder } from './invitation-models';
-import { isEligibleUserSent, nextSort, sortEligibleByStatus, sortHoldersByStatus } from './invitation-models';
+import { bulkInviteOutcome, isEligibleUserSent, nextSort, sortEligibleByStatus, sortHoldersByStatus, tallyInviteChunk } from './invitation-models';
+
+describe('bulk invitation results', () => {
+    it('counts sent, errors and skipped (already invited, pending, or not returned by the server)', () => {
+        const results = [{ status: 'sent' }, { status: 'error' }, { status: 'skipped' }, { status: 'pending' }];
+        expect(tallyInviteChunk(5, results)).toEqual({ sent: 1, failed: 1, skipped: 3 });
+    });
+
+    it('never reports "done" when a request failed or nothing was sent', () => {
+        const none = { sent: 0, skipped: 0, failed: 0 };
+        expect(bulkInviteOutcome(none, { requestFailed: true, stopped: false })).toBe('failed');
+        expect(bulkInviteOutcome({ sent: 0, skipped: 0, failed: 5 }, { requestFailed: false, stopped: false })).toBe('failed');
+        expect(bulkInviteOutcome({ sent: 10, skipped: 0, failed: 0 }, { requestFailed: true, stopped: false })).toBe('partial');
+        expect(bulkInviteOutcome({ sent: 32, skipped: 0, failed: 3 }, { requestFailed: false, stopped: false })).toBe('partial');
+        expect(bulkInviteOutcome({ sent: 5, skipped: 0, failed: 0 }, { requestFailed: false, stopped: true })).toBe('stopped');
+        expect(bulkInviteOutcome({ sent: 30, skipped: 5, failed: 0 }, { requestFailed: false, stopped: false })).toBe('done');
+    });
+});
 
 const holder = (userId: string, status: Holder['status']): Holder => ({
     userId,

@@ -42,6 +42,22 @@ describe('invitations api', () => {
         expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ userIds: ['u1', 'u2'] });
     });
 
+    it('asks the server to skip already invited clients only for bulk sends', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await sendInvitationBatch(['u1', 'u2'], { skipInvited: true });
+        expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ userIds: ['u1', 'u2'], skipInvited: true });
+    });
+
+    it('turns a non-JSON answer (proxy timeout page) into a failed request instead of throwing', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: false,
+            json: async () => { throw new SyntaxError('Unexpected token <'); },
+        }));
+        await expect(sendInvitationBatch(['u1'])).resolves.toEqual({ ok: false, data: {} });
+    });
+
     it('gives every send action its own idempotency key', async () => {
         const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
         vi.stubGlobal('fetch', fetchMock);

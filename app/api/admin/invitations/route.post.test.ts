@@ -19,6 +19,7 @@ const h = vi.hoisted(() => ({
   sendEmail: vi.fn(),
   appendServerAudit: vi.fn(),
   failDeliveryAudit: false,
+  transactionOptions: [] as unknown[],
 }))
 
 function db(s: State) {
@@ -37,6 +38,11 @@ function db(s: State) {
         s.audits.find((a) => a.requestId === where.requestId && a.action === where.action) ?? null,
     },
     invitationToken: {
+      findMany: async ({ where }: { where: { userId: { in: string[] }; OR: Array<{ status: string; expiresAt?: { gt: Date } }> } }) =>
+        s.tokens
+          .filter((t) => where.userId.in.includes(t.userId) && where.OR.some((c) =>
+            t.status === c.status && (!c.expiresAt || new Date(t.expiresAt).getTime() > c.expiresAt.gt.getTime())))
+          .map((t) => ({ userId: t.userId })),
       findFirst: async ({ where }: { where: { userId: string } }) => {
         const rows = s.tokens.filter((t) => t.userId === where.userId).sort((a, b) => b.createdAt - a.createdAt)
         return rows[0] ? { status: rows[0].status, createdAt: new Date(rows[0].createdAt) } : null
@@ -72,7 +78,8 @@ vi.mock('@/lib/prisma', () => {
   const live = new Proxy({}, {
     get(_target, key: string) {
       if (key === '$transaction') {
-        return async (run: (tx: ReturnType<typeof db>) => Promise<unknown>) => {
+        return async (run: (tx: ReturnType<typeof db>) => Promise<unknown>, options?: unknown) => {
+          h.transactionOptions.push(options)
           const previous = h.queue
           let release = (): void => undefined
           h.queue = new Promise<void>((resolve) => { release = resolve })
@@ -112,10 +119,10 @@ const customer = (id: string, extra: Partial<User> = {}): User => ({
   platformRole: 'customer', teamRole: null, superAdmin: false, ...extra,
 })
 
-function post(userIds: unknown, key?: string): Promise<Response> {
+function post(userIds: unknown, key?: string, extra: Record<string, unknown> = {}): Promise<Response> {
   return POST(new NextRequest('http://localhost/api/admin/invitations', {
     method: 'POST',
-    body: JSON.stringify({ userIds }),
+    body: JSON.stringify({ userIds, ...extra }),
     headers: { 'Content-Type': 'application/json', ...(key ? { 'Idempotency-Key': key } : {}) },
   }))
 }
@@ -129,7 +136,8 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-11-09T10:00:00Z'))
   h.queue = Promise.resolve()
   h.failDeliveryAudit = false
-  h.state = { users: [customer('u1'), customer('u2'), customer('u3')], tokens: [], deliveries: [], audits: [] }
+  h.transactionOptions = []
+  h.state ={ users: [customer('u1'), customer('u2'), customer('u3')], tokens: [], deliveries: [], audits: [] }
   h.requireAdmin.mockResolvedValue(ADMIN)
   h.sendEmail.mockResolvedValue(undefined)
   h.appendServerAudit.mockImplementation(async (tx: { _state: State }, _req: NextRequest, actor: { id: string }, input: Omit<Audit, 'actorId'>) => {
@@ -154,12 +162,20 @@ describe('POST /api/admin/invitations — validation and permissions', () => {
   it.each([
     [[], 'no_user_ids'],
     ['u1', 'no_user_ids'],
-    [Array.from({ length: 21 }, (_, i) => `u${i}`), 'too_many'],
+    [Array.from({ length: 6 }, (_, i) => `u${i}`), 'too_many'],
   ])('rejects an invalid batch %#', async (userIds, error) => {
     const res = await post(userIds)
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe(error)
     expect(h.state.tokens).toHaveLength(0)
+  })
+
+  it('accepts exactly the chunk size the admin page sends', async () => {
+    const { EMAIL_INVITE_BATCH_SIZE: server } = await import('@/lib/invitations')
+    const { EMAIL_INVITE_BATCH_SIZE: page } = await import('@/app/[lang]/admin/invitations/invitation-models')
+    expect(page).toBe(server)
+    h.state.users = Array.from({ length: server }, (_, i) => customer(`u${i + 1}`))
+    expect((await post(h.state.users.map((u) => u.id))).status).toBe(200)
   })
 
   it('rejects a malformed idempotency key', async () => {
@@ -324,6 +340,75 @@ describe('POST /api/admin/invitations — repeats and concurrency', () => {
 
     expect((await res.json()).results[0].status).toBe('sent')
     expect(h.sendEmail).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives the token transaction an explicit timeout above the 5 s Prisma default', async () => {
+    await post(['u1'])
+
+    // A 20-client batch is ~160 sequential round-trips to Neon (us-east-1) from
+    // Plesk (EU): the default 5 s interactive timeout rolled the whole batch back.
+    expect(h.transactionOptions[0]).toMatchObject({ timeout: expect.any(Number), maxWait: expect.any(Number) })
+    expect((h.transactionOptions[0] as { timeout: number }).timeout).toBeGreaterThanOrEqual(30_000)
+  })
+
+  it('bulk mode skips clients with a live or accepted invitation, but re-invites expired and failed ones', async () => {
+    const token = (userId: string, status: string, expiresAt: Date): Token => ({
+      tokenHash: `h-${userId}`, userId, status, createdAt: Date.now() - 3_600_000, email: `${userId}@inbox.lv`, cardNumber: '1', language: 'lv', expiresAt,
+    })
+    h.state.users = ['live', 'acc', 'exp', 'err', 'new'].map((id) => customer(id))
+    h.state.tokens = [
+      token('live', 'sent', new Date(Date.now() + 86_400_000)),
+      token('acc', 'accepted', new Date(0)),
+      token('exp', 'sent', new Date(Date.now() - 1_000)),
+      token('err', 'error', new Date(Date.now() + 86_400_000)),
+    ]
+
+    const res = await post(['live', 'acc', 'exp', 'err', 'new'], 'bulk-skip-0001', { skipInvited: true })
+    const body = await res.json()
+
+    expect(body.results.map((r: { userId: string; status: string }) => [r.userId, r.status])).toEqual([
+      ['live', 'skipped'], ['acc', 'skipped'], ['exp', 'sent'], ['err', 'sent'], ['new', 'sent'],
+    ])
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['exp@inbox.lv', 'err@inbox.lv', 'new@inbox.lv'])
+    expect(h.state.tokens.find((t) => t.userId === 'live')?.tokenHash).toBe('h-live')
+    expect(h.state.audits.filter((a) => a.entityId === 'live' || a.entityId === 'acc')).toHaveLength(0)
+    expect(h.state.audits.find((a) => a.action === 'invitation.delivery_recorded')?.after).toMatchObject({ skipped: ['live', 'acc'] })
+  })
+
+  it('35 selected clients in chunks: partial SMTP failure, then a repeat sends only to the failed ones', async () => {
+    const ids = Array.from({ length: 35 }, (_, i) => `c${i + 1}`)
+    h.state.users = [...ids.map((id) => customer(id)), customer('p1', { email: 'p1@client.local' })]
+    const failing = new Set(['c3@inbox.lv', 'c17@inbox.lv', 'c33@inbox.lv'])
+    h.sendEmail.mockImplementation(async (to: string) => { if (failing.has(to)) throw new Error('SMTP 451') })
+    const selection = [...ids, 'p1']
+
+    const run = async (round: string) => {
+      const statuses: string[] = []
+      for (let i = 0; i < selection.length; i += 5) {
+        const chunk = selection.slice(i, i + 5)
+        const body = await (await post(chunk, `${round}-chunk-${i}`, { skipInvited: true })).json()
+        statuses.push(...body.results.map((r: { status: string }) => r.status))
+      }
+      return statuses
+    }
+
+    const first = await run('first')
+    expect(first.filter((s) => s === 'sent')).toHaveLength(32)
+    expect(first.filter((s) => s === 'error')).toHaveLength(3)
+    expect(first).toHaveLength(35) // phone-only p1 is not an email recipient
+    expect(h.sendEmail).toHaveBeenCalledTimes(35)
+
+    failing.clear()
+    h.sendEmail.mockClear()
+    const second = await run('second')
+
+    expect(second.filter((s) => s === 'skipped')).toHaveLength(32)
+    expect(second.filter((s) => s === 'sent')).toHaveLength(3)
+    expect(h.sendEmail.mock.calls.map(([to]) => to).sort()).toEqual(['c17@inbox.lv', 'c33@inbox.lv', 'c3@inbox.lv'])
+    for (const id of ids) {
+      expect(live(id)).toHaveLength(1)
+      expect(h.state.deliveries.filter((d) => d.userId === id && d.status === 'sent')).toHaveLength(1)
+    }
   })
 
   it('treats an unfinished delivery older than the in-flight window as resendable', async () => {

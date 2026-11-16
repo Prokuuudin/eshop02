@@ -20,7 +20,7 @@ import {
   replaceInvitation,
   resolveInviteLang,
   INVITE_TTL_DAYS,
-  INVITE_BATCH_SIZE,
+  EMAIL_INVITE_BATCH_SIZE,
   type NewInvitation,
 } from '@/lib/invitations'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
@@ -33,6 +33,10 @@ export const maxDuration = 60
 
 const inviteUrlFor = (base: string, token: string) => `${base}/auth/invite?token=${token}`
 const INVITATION_ISSUE_ACTIONS = ['invitation.created', 'invitation.replaced'] as const
+// Every client costs ~7 sequential round-trips inside the token transaction
+// (locks, token replace, chained audit). Neon (us-east-1) is ~100 ms away from
+// the EU host, so the Prisma default of 5 s rolled whole batches back.
+const TOKEN_TRANSACTION_OPTIONS = { maxWait: 10_000, timeout: 30_000 }
 
 const HOLDER_SORT_FIELDS = ['name', 'email', 'cardNumber'] as const
 type HolderSortField = (typeof HOLDER_SORT_FIELDS)[number]
@@ -145,7 +149,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 }
 
 // POST: отправить приглашения выбранным держателям карт.
-// Не больше INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
+// Не больше EMAIL_INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
 // порциями. Токены и события аудита сохраняются в одной транзакции ДО отправки
 // писем: обрыв посреди порции не оставит клиентам мёртвых ссылок (худший
 // случай — статус sent без письма, лечится повторной отправкой). Результат
@@ -155,13 +159,16 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (actor instanceof NextResponse) return actor
 
   try {
-    const body = (await req.json()) as { userIds?: string[]; language?: string }
+    const body = (await req.json()) as { userIds?: string[]; language?: string; skipInvited?: boolean }
     const userIds = body.userIds ?? []
+    // Bulk sends pass skipInvited so a repeat never re-mails a client who already
+    // has a live or accepted invitation; the per-row resend keeps replacing it.
+    const skipInvited = body.skipInvited === true
     if (!Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json({ error: 'no_user_ids' }, { status: 400 })
     }
-    if (userIds.length > INVITE_BATCH_SIZE) {
-      return NextResponse.json({ error: 'too_many', max: INVITE_BATCH_SIZE }, { status: 400 })
+    if (userIds.length > EMAIL_INVITE_BATCH_SIZE) {
+      return NextResponse.json({ error: 'too_many', max: EMAIL_INVITE_BATCH_SIZE }, { status: 400 })
     }
     const batchId = invitationBatchId(req, actor.id, 'invitations-email')
     if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
@@ -208,9 +215,24 @@ export async function POST(req: NextRequest): Promise<Response> {
       if (previous.length > 0) return { kind: 'replay' as const, userIds: previous.map((row) => row.entityId) }
 
       await lockInvitationUsers(tx, records.map((r) => r.userId))
+      // Read under the per-user locks, so a concurrent batch cannot slip past it.
+      const alreadyInvited = skipInvited && records.length > 0
+        ? new Set((await tx.invitationToken.findMany({
+            where: {
+              userId: { in: records.map((r) => r.userId) },
+              OR: [{ status: 'accepted' }, { status: 'sent', expiresAt: { gt: now } }],
+            },
+            select: { userId: true },
+          })).map((t) => t.userId))
+        : new Set<string>()
       const issued: NewInvitation[] = []
       const pending: string[] = []
+      const skipped: string[] = []
       for (const record of records) {
+        if (alreadyInvited.has(record.userId)) {
+          skipped.push(record.userId)
+          continue
+        }
         if (await emailDeliveryInFlight(tx, record.userId, now)) {
           pending.push(record.userId)
           continue
@@ -226,8 +248,8 @@ export async function POST(req: NextRequest): Promise<Response> {
         })
         issued.push(record)
       }
-      return { kind: 'issued' as const, issued, pending }
-    })
+      return { kind: 'issued' as const, issued, pending, skipped }
+    }, TOKEN_TRANSACTION_OPTIONS)
 
     if (prepared.kind === 'replay') {
       return NextResponse.json({ results: await replayEmailResults(batchId, prepared.userIds, users), replayed: true })
@@ -259,14 +281,14 @@ export async function POST(req: NextRequest): Promise<Response> {
     // 3. Результат доставки известен: неушедшие письма помечаем error (их токены
     // гасятся — findValid отвергает error), доставку и итог пишем после коммита токенов.
     if (prepared.issued.length > 0) {
-      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending)
+      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending, prepared.skipped)
     }
 
+    const skipped = new Set(prepared.skipped)
     const results = users.map((user) => {
       const delivered = outcome.get(user.id)
-      return delivered
-        ? { userId: user.id, email: user.email, status: delivered.status, inviteUrl: delivered.inviteUrl }
-        : { userId: user.id, email: user.email, status: 'pending' as const }
+      if (delivered) return { userId: user.id, email: user.email, status: delivered.status, inviteUrl: delivered.inviteUrl }
+      return { userId: user.id, email: user.email, status: skipped.has(user.id) ? 'skipped' as const : 'pending' as const }
     })
     return NextResponse.json({ results })
   } catch (e) {
@@ -283,6 +305,7 @@ async function recordEmailDelivery(
   sent: string[],
   failed: NewInvitation[],
   pending: string[],
+  skipped: string[],
 ): Promise<void> {
   const failedUserIds = failed.map((r) => r.userId)
   try {
@@ -304,7 +327,7 @@ async function recordEmailDelivery(
         entityType: 'invitation_batch',
         entityId: batchId,
         requestId: batchId,
-        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending },
+        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending, skipped },
       })
     })
   } catch (error) {

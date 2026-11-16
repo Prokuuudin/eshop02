@@ -9,6 +9,10 @@ export const INVITE_TTL_DAYS = 7
 export const CAMPAIGN_BATCH_SIZE = 50
 export const CAMPAIGN_LOCK_MS = 120_000
 export const INVITE_BATCH_SIZE = 20
+// Email invitations hold one DB transaction per request (~8 round-trips per
+// client to Neon); 20 clients at ~220 ms RTT outgrow its 30 s limit, 5 take ~9 s.
+// Keep in sync with EMAIL_INVITE_BATCH_SIZE in app/[lang]/admin/invitations/invitation-models.ts.
+export const EMAIL_INVITE_BATCH_SIZE = 5
 
 export type InviteLang = 'ru' | 'en' | 'lv'
 

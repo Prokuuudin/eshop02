@@ -162,12 +162,20 @@ describe('POST /api/admin/invitations — validation and permissions', () => {
   it.each([
     [[], 'no_user_ids'],
     ['u1', 'no_user_ids'],
-    [Array.from({ length: 21 }, (_, i) => `u${i}`), 'too_many'],
+    [Array.from({ length: 6 }, (_, i) => `u${i}`), 'too_many'],
   ])('rejects an invalid batch %#', async (userIds, error) => {
     const res = await post(userIds)
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe(error)
     expect(h.state.tokens).toHaveLength(0)
+  })
+
+  it('accepts exactly the chunk size the admin page sends', async () => {
+    const { EMAIL_INVITE_BATCH_SIZE: server } = await import('@/lib/invitations')
+    const { EMAIL_INVITE_BATCH_SIZE: page } = await import('@/app/[lang]/admin/invitations/invitation-models')
+    expect(page).toBe(server)
+    h.state.users = Array.from({ length: server }, (_, i) => customer(`u${i + 1}`))
+    expect((await post(h.state.users.map((u) => u.id))).status).toBe(200)
   })
 
   it('rejects a malformed idempotency key', async () => {

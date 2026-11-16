@@ -20,7 +20,7 @@ import {
   replaceInvitation,
   resolveInviteLang,
   INVITE_TTL_DAYS,
-  INVITE_BATCH_SIZE,
+  EMAIL_INVITE_BATCH_SIZE,
   type NewInvitation,
 } from '@/lib/invitations'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest): Promise<Response> {
 }
 
 // POST: отправить приглашения выбранным держателям карт.
-// Не больше INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
+// Не больше EMAIL_INVITE_BATCH_SIZE за запрос — массовую рассылку админка гонит
 // порциями. Токены и события аудита сохраняются в одной транзакции ДО отправки
 // писем: обрыв посреди порции не оставит клиентам мёртвых ссылок (худший
 // случай — статус sent без письма, лечится повторной отправкой). Результат
@@ -167,8 +167,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json({ error: 'no_user_ids' }, { status: 400 })
     }
-    if (userIds.length > INVITE_BATCH_SIZE) {
-      return NextResponse.json({ error: 'too_many', max: INVITE_BATCH_SIZE }, { status: 400 })
+    if (userIds.length > EMAIL_INVITE_BATCH_SIZE) {
+      return NextResponse.json({ error: 'too_many', max: EMAIL_INVITE_BATCH_SIZE }, { status: 400 })
     }
     const batchId = invitationBatchId(req, actor.id, 'invitations-email')
     if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })

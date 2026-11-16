@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transactionMock, auditMock } = vi.hoisted(() => ({
+const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transactionMock, auditMock, settingMock, userFindManyMock, userCountMock } = vi.hoisted(() => ({
   permissionMock: vi.fn(), userFindMock: vi.fn(), verifyPasswordMock: vi.fn(), verifyTotpMock: vi.fn(), transactionMock: vi.fn(), auditMock: vi.fn(),
+  settingMock: vi.fn(), userFindManyMock: vi.fn(), userCountMock: vi.fn(),
 }))
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: permissionMock, verifyPassword: verifyPasswordMock }))
 vi.mock('@/lib/mfa', () => ({ verifyTotpCode: verifyTotpMock, decryptSecret: (s: string) => s }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
-  user: { findUnique: userFindMock, findMany: vi.fn(), count: vi.fn() }, $transaction: transactionMock,
+  user: { findUnique: userFindMock, findMany: userFindManyMock, count: userCountMock }, $transaction: transactionMock,
+  keyValueSetting: { findUnique: settingMock },
 } }))
-import { PATCH } from './route'
+import { GET, PATCH } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const now = new Date('2026-08-31T07:00:00.000Z').toISOString()
 const patch = (body: unknown, origin = 'https://shop.test') => PATCH(new NextRequest('https://shop.test/api/admin/users', {
@@ -28,6 +33,7 @@ const STEP_UP = { reason: 'approved staff change', currentPassword: 'password', 
 function txFor(before: Record<string, unknown>, superAdminCount = 1) {
   let after = before
   const tx = {
+    keyValueSetting: { findUnique: settingMock },
     user: {
       findUnique: vi.fn().mockImplementation(async () => before),
       findUniqueOrThrow: vi.fn().mockImplementation(async () => after),
@@ -409,5 +415,69 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
     expect(response.status).toBe(403)
     expect(await response.json()).toEqual({ error: 'super_admin_required' })
     expect(transactionMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('revoked client cards', () => {
+  const REVOKED = revokedCardRow(buildRevokedCardValue({ '4001': 'u1' }))
+  const get = (query: string) => GET(new NextRequest(`https://shop.test/api/admin/users${query}`))
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetRevokedCardPolicyCache()
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    settingMock.mockResolvedValue(null)
+    userFindManyMock.mockResolvedValue([])
+    userCountMock.mockResolvedValue(0)
+  })
+
+  it('the card-holder list leaves revoked numbers out of both the page and the total', async () => {
+    settingMock.mockResolvedValue(REVOKED)
+    const response = await get('?hasCard=1&skip=50&take=50')
+    expect(response.status).toBe(200)
+    const { where, skip, take } = userFindManyMock.mock.calls[0][0]
+    expect(where.cardNumber.notIn).toHaveLength(905)
+    expect(where.cardNumber.notIn).toEqual(expect.arrayContaining(['4001', '5555']))
+    expect({ skip, take }).toEqual({ skip: 50, take: 50 })
+    expect(userCountMock).toHaveBeenCalledWith({ where })
+  })
+
+  it('without a registry the card-holder filter is unchanged', async () => {
+    await get('?hasCard=1')
+    expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null } } })
+  })
+
+  it('a staff list does not read the registry, so a broken registry cannot block it', async () => {
+    settingMock.mockResolvedValue(revokedCardRow({ active: true }))
+    expect((await get('?role=admin')).status).toBe(200)
+    expect(settingMock).not.toHaveBeenCalled()
+    expect((await get('?hasCard=1')).status).toBe(503)
+  })
+
+  it('refuses to move or clear a revoked card and to assign a revoked number', async () => {
+    settingMock.mockResolvedValue(REVOKED)
+    userFindMock.mockResolvedValue({ ...CUSTOMER_TARGET, cardNumber: '4001' })
+    const holder = txFor(row({ ...CUSTOMER_TARGET, cardNumber: '4001' }))
+    for (const cardNumber of [null, '4002']) {
+      const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ error: 'card_revoked' })
+    }
+    expect(holder.user.updateMany).not.toHaveBeenCalled()
+
+    userFindMock.mockResolvedValue(CUSTOMER_TARGET)
+    const other = txFor(row({ ...CUSTOMER_TARGET, id: 'u2', cardNumber: null }))
+    const response = await patch({ id: 'u2', expectedUpdatedAt: now, cardNumber: ' 04001 ' })
+    expect(response.status).toBe(409)
+    expect(other.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('a non-revoked number is still assigned in canonical form', async () => {
+    settingMock.mockResolvedValue(REVOKED)
+    userFindMock.mockResolvedValue(CUSTOMER_TARGET)
+    const tx = txFor(row({ ...CUSTOMER_TARGET, cardNumber: null }))
+    const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber: ' 07001 ' })
+    expect(response.status).toBe(200)
+    expect(tx.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ cardNumber: '7001' }) }))
   })
 })

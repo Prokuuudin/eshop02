@@ -67,7 +67,9 @@ export async function GET(req: NextRequest): Promise<Response> {
     const hasCard = searchParams.get('hasCard') === '1'
     const registration = searchParams.get('registration') || ''
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
-    const revokedCardPolicy = await getRevokedCardPolicy()
+    // Only card-holder views depend on the registry; staff/admin lists keep working if it is unreadable.
+    const cardHolderView = hasCard || registration === 'registered' || caller.platformRole !== 'admin'
+    const cardFilter = cardHolderView ? activeCardNumberFilter(await getRevokedCardPolicy()) : { not: null }
 
     const where: Record<string, unknown> = {}
 
@@ -85,14 +87,14 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (teamRoleSchema.safeParse(teamRole).success) where.teamRole = teamRole
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
-    if (hasCard) where.cardNumber = activeCardNumberFilter(revokedCardPolicy)
+    if (hasCard) where.cardNumber = cardFilter
     if (registration === 'registered') {
-      where.cardNumber = activeCardNumberFilter(revokedCardPolicy)
+      where.cardNumber = cardFilter
       where.platformRole = 'customer'
       where.privacyAcknowledgedAt = { not: null }
     }
     if (caller.platformRole !== 'admin') {
-      where.cardNumber = activeCardNumberFilter(revokedCardPolicy)
+      where.cardNumber = cardFilter
       where.platformRole = 'customer'
     }
     if (createdSince) {

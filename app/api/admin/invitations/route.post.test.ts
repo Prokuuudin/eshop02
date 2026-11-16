@@ -20,15 +20,17 @@ const h = vi.hoisted(() => ({
   appendServerAudit: vi.fn(),
   failDeliveryAudit: false,
   transactionOptions: [] as unknown[],
+  revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
 }))
 
 function db(s: State) {
   return {
     _state: s,
     $executeRaw: async () => 0,
+    keyValueSetting: { findUnique: async () => h.revokedCardSetting },
     user: {
-      findMany: async ({ where }: { where: { id: { in: string[] } } }) => s.users.filter((u) =>
-        where.id.in.includes(u.id) && u.cardNumber !== null
+      findMany: async ({ where }: { where: { id: { in: string[] }; cardNumber: { notIn?: string[] } } }) => s.users.filter((u) =>
+        where.id.in.includes(u.id) && u.cardNumber !== null && !where.cardNumber.notIn?.includes(u.cardNumber)
         && !u.email.endsWith('@client.local') && !u.email.endsWith('@deleted.invalid')),
     },
     auditLog: {
@@ -112,6 +114,8 @@ vi.mock('@/lib/invitation-emails', () => ({
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://example.test') }))
 
 import { POST } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const ADMIN = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 const customer = (id: string, extra: Partial<User> = {}): User => ({
@@ -137,6 +141,8 @@ beforeEach(() => {
   h.queue = Promise.resolve()
   h.failDeliveryAudit = false
   h.transactionOptions = []
+  h.revokedCardSetting = null
+  resetRevokedCardPolicyCache()
   h.state ={ users: [customer('u1'), customer('u2'), customer('u3')], tokens: [], deliveries: [], audits: [] }
   h.requireAdmin.mockResolvedValue(ADMIN)
   h.sendEmail.mockResolvedValue(undefined)
@@ -148,6 +154,29 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers()
+})
+
+describe('POST /api/admin/invitations — revoked cards', () => {
+  it('skips a revoked card holder and invites the rest of the batch', async () => {
+    h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '440071': 'u1' }))
+
+    const res = await post(['u1', 'u2'], 'revoked-batch')
+
+    expect(res.status).toBe(200)
+    expect(live('u1')).toHaveLength(0)
+    expect(live('u2')).toHaveLength(1)
+    expect(h.sendEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('fails closed before any token or email when the registry row is malformed', async () => {
+    h.revokedCardSetting = revokedCardRow({ active: true })
+
+    const res = await post(['u1', 'u2'], 'broken-registry')
+
+    expect(res.status).toBe(503)
+    expect(h.state.tokens).toHaveLength(0)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/admin/invitations — validation and permissions', () => {

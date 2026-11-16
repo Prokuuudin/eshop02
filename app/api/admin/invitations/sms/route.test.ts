@@ -16,14 +16,17 @@ const h = vi.hoisted(() => ({
   appendServerAudit: vi.fn(),
   getTemplates: vi.fn(),
   users: [] as Array<{ id: string; name: string | null; phone: string; cardNumber: string }>,
+  revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
 }))
 
 function db(s: State) {
   return {
     _state: s,
     $executeRaw: async () => 0,
+    keyValueSetting: { findUnique: async () => h.revokedCardSetting },
     user: {
-      findMany: async ({ where }: { where: { id: { in: string[] } } }) => h.users.filter((u) => where.id.in.includes(u.id)),
+      findMany: async ({ where }: { where: { id: { in: string[] }; cardNumber: { notIn?: string[] } } }) =>
+        h.users.filter((u) => where.id.in.includes(u.id) && !where.cardNumber.notIn?.includes(u.cardNumber)),
     },
     auditLog: {
       findFirst: async ({ where }: { where: { requestId: string; action: string } }) =>
@@ -67,6 +70,8 @@ vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: h.getTempla
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://example.test') }))
 
 import { POST } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const ADMIN = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -82,6 +87,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.queue = Promise.resolve()
   h.state = { deliveries: [], audits: [] }
+  h.revokedCardSetting = null
+  resetRevokedCardPolicyCache()
   h.users = [
     { id: 'u1', name: 'Anna Liepa', phone: '+37120000001', cardNumber: '1001' },
     { id: 'u2', name: 'Jānis Ozols', phone: '+37120000002', cardNumber: '1002' },
@@ -98,6 +105,15 @@ afterEach(() => {
 })
 
 describe('POST /api/admin/invitations/sms', () => {
+  it('leaves revoked card holders out of the batch', async () => {
+    h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '1001': 'u1' }))
+
+    const res = await post(['u1', 'u2'], 'sms-revoked')
+
+    expect(res.status).toBe(200)
+    expect(h.state.deliveries.map((d) => d.userId)).toEqual(['u2'])
+  })
+
   it('rejects non-admins without writes', async () => {
     h.requireAdmin.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
     expect((await post(['u1'])).status).toBe(403)

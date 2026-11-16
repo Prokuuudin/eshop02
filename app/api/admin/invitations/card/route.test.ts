@@ -15,6 +15,7 @@ const { userFindFirstMock, userUpdateMock, userCreateMock, hashPasswordMock, req
     committed: [] as string[],
     audits: [] as Array<Record<string, unknown>>,
     queue: Promise.resolve() as Promise<unknown>,
+    revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
   },
 }))
 
@@ -34,6 +35,7 @@ vi.mock('@/lib/prisma', () => ({
         const cards: Record<string, string | null> = { ...h.cards }
         const tx = {
           _audits: audits,
+          keyValueSetting: { findUnique: async () => h.revokedCardSetting },
           $queryRaw: async (_strings: TemplateStringsArray, id: string) => (id in cards ? [{ cardNumber: cards[id] }] : []),
           user: {
             update: async (args: { where: { id: string }; data: { cardNumber: string } }) => {
@@ -61,6 +63,7 @@ vi.mock('@/lib/server-auth', () => ({
 }))
 
 import { POST } from './route'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest('http://localhost/api/admin/invitations/card', {
@@ -81,6 +84,7 @@ beforeEach(() => {
   h.committed = []
   h.audits = []
   h.queue = Promise.resolve()
+  h.revokedCardSetting = null
   appendServerAuditMock.mockImplementation(async (tx: { _audits: Array<Record<string, unknown>> }, _req: NextRequest, actor: { id: string }, input: Record<string, unknown>) => {
     tx._audits.push({ actorId: actor.id, ...input })
   })
@@ -120,6 +124,20 @@ describe('POST /api/admin/invitations/card', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).error).toBe('phone_required')
     expect(userCreateMock).not.toHaveBeenCalled()
+  })
+
+  it('refuses a revoked number for existing and new clients without writing', async () => {
+    h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '1001': 'u-revoked' }))
+    userFindFirstMock.mockResolvedValueOnce({ id: 'user-1' })
+
+    const existing = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', phone: '+37120000000' }))
+    const created = await POST(makeRequest({ email: 'new@client.lv', cardNumber: '01001', phone: '+37120000001' }))
+
+    expect(existing.status).toBe(409)
+    expect((await existing.json()).error).toBe('card_revoked')
+    expect(created.status).toBe(409)
+    expect(h.committed).toEqual([])
+    expect(h.audits).toEqual([])
   })
 
   it('rejects an invalid card number', async () => {

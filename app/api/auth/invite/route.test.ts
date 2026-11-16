@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-const { invitationFindMock, userFindMock, rateLimitMock, transactionMock, hashPasswordMock, createSessionMock } = vi.hoisted(() => ({
+const { invitationFindMock, userFindMock, rateLimitMock, transactionMock, hashPasswordMock, createSessionMock, settingMock } = vi.hoisted(() => ({
+  settingMock: vi.fn(),
   invitationFindMock: vi.fn(),
   userFindMock: vi.fn(),
   rateLimitMock: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     invitationToken: { findUnique: invitationFindMock },
     user: { findUnique: userFindMock },
+    keyValueSetting: { findUnique: settingMock },
     $transaction: transactionMock,
   },
 }))
@@ -23,6 +25,8 @@ vi.mock('@/lib/server-auth', () => ({
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: rateLimitMock }))
 
 import { GET, POST } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const future = new Date(Date.now() + 60_000)
 const post = (body: Record<string, unknown>) => POST(new NextRequest('https://shop.test/api/auth/invite', {
@@ -35,6 +39,23 @@ describe('/api/auth/invite validation and abuse protection', () => {
     rateLimitMock.mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
     hashPasswordMock.mockResolvedValue('new-hash')
     createSessionMock.mockResolvedValue('session-token')
+    settingMock.mockResolvedValue(null)
+    resetRevokedCardPolicyCache()
+  })
+
+  it('refuses to show or accept an invitation for a revoked card', async () => {
+    settingMock.mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '1234': 'u1' })))
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: null })
+
+    const shown = await GET(new NextRequest('https://shop.test/api/auth/invite?token=token'))
+    const accepted = await post({ token: 'token', password: 'valid-password' })
+
+    expect(shown.status).toBe(409)
+    expect(await shown.json()).toEqual({ ok: false, error: 'card_revoked' })
+    expect(accepted.status).toBe(409)
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
   })
 
   it('rejects a missing token without querying storage', async () => {
@@ -157,6 +178,7 @@ describe('/api/auth/invite validation and abuse protection', () => {
     userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: 'company-a' })
     transactionMock.mockImplementation(async (fn) => fn({
       invitationToken: { updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
+      keyValueSetting: { findUnique: vi.fn().mockResolvedValue(null) },
     }))
     const response = await post({ token: 'token', password: 'valid-password' })
     expect(response.status).toBe(409)

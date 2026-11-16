@@ -13,7 +13,9 @@ const {
   checkRateLimitMock,
   sendEmailMock,
   afterUnavailable,
+  settingMock,
 } = vi.hoisted(() => ({
+  settingMock: vi.fn(),
   afterUnavailable: { value: false },
   afterCallbacks: [] as Array<() => unknown>,
   userFindFirstMock: vi.fn(),
@@ -39,6 +41,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findFirst: userFindFirstMock },
     invitationToken: { updateMany: tokenUpdateManyMock, findFirst: activeTokenMock },
+    keyValueSetting: { findUnique: settingMock },
     $transaction: transactionMock,
   },
 }))
@@ -53,6 +56,8 @@ vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 
 import { NextRequest } from 'next/server'
 import { POST } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const NOT_LIMITED = { limited: false, remaining: 9, resetAt: Date.now() + 60_000 }
 const LIMITED = { limited: true, remaining: 0, resetAt: Date.now() + 60_000 }
@@ -85,6 +90,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   afterCallbacks.length = 0
   afterUnavailable.value = false
+  settingMock.mockResolvedValue(null)
+  resetRevokedCardPolicyCache()
   checkRateLimitMock.mockResolvedValue(NOT_LIMITED)
   sendEmailMock.mockResolvedValue(undefined)
   tokenDeleteManyMock.mockResolvedValue({ count: 0 })
@@ -94,6 +101,34 @@ beforeEach(() => {
   txActiveTokenMock.mockResolvedValue(null)
   transactionMock.mockImplementation(async (fn: (tx: unknown) => unknown) =>
     fn({ invitationToken: { deleteMany: tokenDeleteManyMock, create: tokenCreateMock, findFirst: txActiveTokenMock } }))
+})
+
+describe('POST /api/auth/register-card — revoked cards', () => {
+  it('answers a revoked card exactly like an unknown one and sends nothing', async () => {
+    settingMock.mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '4321': 'u_dormant' })))
+    userFindFirstMock.mockResolvedValue(DORMANT)
+
+    const res = await POST(makeRequest({ cardNumber: '04321' }))
+    await runAfterResponse()
+
+    expect(res.status).toBe(202)
+    expect(await res.json()).toEqual({ ok: true })
+    expect(userFindFirstMock).not.toHaveBeenCalled()
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+
+  it('does not send a queued link if the card was revoked before the background task ran', async () => {
+    userFindFirstMock.mockResolvedValue(DORMANT)
+    const res = await POST(makeRequest({ cardNumber: '4321' }))
+    expect(res.status).toBe(202)
+
+    settingMock.mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '4321': 'u_dormant' })))
+    await runAfterResponse()
+
+    expect(tokenCreateMock).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
+  })
 })
 
 describe('POST /api/auth/register-card — activation link request', () => {

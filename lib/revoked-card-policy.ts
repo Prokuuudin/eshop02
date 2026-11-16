@@ -35,7 +35,7 @@ export type RevokedCardPolicy = {
   cardNumbers: readonly string[]
 }
 
-type PolicyDb = Pick<ExtendedPrismaClient, 'keyValueSetting' | 'user' | 'company'>
+type PolicyDb = Pick<ExtendedPrismaClient, 'keyValueSetting'>
 
 export class RevokedCardPolicyError extends Error {
   constructor(
@@ -76,7 +76,12 @@ function invalid(message: string): never {
   throw new RevokedCardPolicyError('invalid_configuration', message)
 }
 
-async function validateActiveConfig(config: RevokedCardConfig, db: PolicyDb): Promise<RevokedCardPolicy> {
+/**
+ * Structural validation only. Per-account state (ownership, role, company, activation) is checked
+ * by verifyRevokedCardPolicyAgainstDatabase before activation, not on every request: a later edit
+ * of one mapped account must not turn the whole registry invalid and fail every card login closed.
+ */
+function validateActiveConfig(config: RevokedCardConfig): RevokedCardPolicy {
   const rawEntries = Object.entries(config.cards)
   if (rawEntries.length !== REVOKED_CARD_BATCH_SIZE) {
     invalid(`Expected ${REVOKED_CARD_BATCH_SIZE} revoked cards, received ${rawEntries.length}`)
@@ -101,8 +106,33 @@ async function validateActiveConfig(config: RevokedCardConfig, db: PolicyDb): Pr
     invalid(`preserveLogin must be enabled only for card ${PRESERVED_LOGIN_CARD}`)
   }
 
+  const cardNumbers = Object.freeze(Object.keys(normalizedCards).sort((a, b) => a.localeCompare(b, 'en')))
+  return Object.freeze({
+    active: true,
+    source: config.source,
+    checksum: config.checksum,
+    cards: new Map(Object.entries(normalizedCards)),
+    cardNumbers,
+  })
+}
+
+/**
+ * Pre-activation check (read-only): every mapped user still holds its card, is a plain customer
+ * without a company, no company holds a revoked number, and the preserved-login owner is an
+ * activated individual account. Run it against the exact config before writing active=true.
+ */
+export async function verifyRevokedCardPolicyAgainstDatabase(
+  value: unknown,
+  db: Pick<ExtendedPrismaClient, 'user' | 'company'> = prisma,
+): Promise<RevokedCardPolicy> {
+  const parsed = activeConfigSchema.safeParse(value)
+  if (!parsed.success) invalid('Active setting has an invalid shape')
+  const policy = validateActiveConfig(parsed.data)
+  const normalizedCards = Object.fromEntries(policy.cards)
+  const userIds = [...policy.cards.values()].map((entry) => entry.userId)
+
   const users = await db.user.findMany({
-    where: { id: { in: [...userIds] } },
+    where: { id: { in: userIds } },
     select: {
       id: true,
       cardNumber: true,
@@ -115,7 +145,7 @@ async function validateActiveConfig(config: RevokedCardConfig, db: PolicyDb): Pr
       privacyAcknowledgedAt: true,
     },
   })
-  if (users.length !== rawEntries.length) invalid('One or more mapped users are missing or duplicated')
+  if (users.length !== userIds.length) invalid('One or more mapped users are missing or duplicated')
 
   const companyCards = await db.company.findMany({
     where: { cardNumber: { in: Object.keys(normalizedCards) } },
@@ -140,15 +170,7 @@ async function validateActiveConfig(config: RevokedCardConfig, db: PolicyDb): Pr
       invalid(`Preserved login is not an activated individual account: ${entry.userId}`)
     }
   }
-
-  const cardNumbers = Object.freeze(Object.keys(normalizedCards).sort((a, b) => a.localeCompare(b, 'en')))
-  return Object.freeze({
-    active: true,
-    source: config.source,
-    checksum: config.checksum,
-    cards: new Map(Object.entries(normalizedCards)),
-    cardNumbers,
-  })
+  return policy
 }
 
 /**
@@ -162,7 +184,7 @@ export async function getRevokedCardPolicy(db: PolicyDb = prisma): Promise<Revok
       where: { key: REVOKED_CARD_SETTING_KEY },
       select: { value: true, updatedAt: true },
     })
-  } catch (error) {
+  } catch {
     throw new RevokedCardPolicyError('configuration_unavailable', 'Unable to read revoked-card policy')
   }
   if (!row) return INACTIVE_POLICY
@@ -178,7 +200,7 @@ export async function getRevokedCardPolicy(db: PolicyDb = prisma): Promise<Revok
   const parsed = activeConfigSchema.safeParse(state)
   if (!parsed.success) invalid('Active setting has an invalid shape')
 
-  const policy = await validateActiveConfig(parsed.data, db)
+  const policy = validateActiveConfig(parsed.data)
   if (db === prisma) cache = { updatedAt: row.updatedAt.getTime(), policy }
   return policy
 }

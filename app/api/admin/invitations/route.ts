@@ -27,6 +27,7 @@ import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { parseOffsetPagination } from '@/lib/pagination'
+import { activeCardNumberFilter, assertCardsAssignable, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -57,9 +58,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     const contact = searchParams.get('contact')
     const invitation = searchParams.get('invitation')
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
+    const revokedCardPolicy = await getRevokedCardPolicy()
 
     const where: Record<string, unknown> = {
-      cardNumber: { not: null },
+      cardNumber: activeCardNumberFilter(revokedCardPolicy),
       // Этот же признак используется разделом «Зарегистрированные клиенты».
       privacyAcknowledgedAt: null,
     }
@@ -143,6 +145,9 @@ export async function GET(req: NextRequest): Promise<Response> {
       }),
     })
   } catch (e) {
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[admin/invitations GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
@@ -173,11 +178,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     const batchId = invitationBatchId(req, actor.id, 'invitations-email')
     if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
     const language = resolveInviteLang(body.language)
+    const revokedCardPolicy = await getRevokedCardPolicy()
 
     const users = await prisma.user.findMany({
       where: {
         id: { in: userIds },
-        cardNumber: { not: null },
+        cardNumber: activeCardNumberFilter(revokedCardPolicy),
         AND: [
           { email: { not: { endsWith: '@client.local' } } },
           { email: { not: { endsWith: '@deleted.invalid' } } },
@@ -207,6 +213,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     // каждый пользователь) сериализуют повторы и параллельные отправки; уровень
     // изоляции по умолчанию — appendServerAudit должен видеть свежую голову цепочки.
     const prepared = await prisma.$transaction(async (tx) => {
+      await assertCardsAssignable(records.map((record) => record.cardNumber), tx)
       await lockBatch(tx, batchId)
       const previous = await tx.auditLog.findMany({
         where: { requestId: batchId, action: { in: [...INVITATION_ISSUE_ACTIONS] } },
@@ -292,6 +299,9 @@ export async function POST(req: NextRequest): Promise<Response> {
     })
     return NextResponse.json({ results })
   } catch (e) {
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[admin/invitations POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

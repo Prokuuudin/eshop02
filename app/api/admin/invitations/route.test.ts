@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, requireAdminMock, readInvitationsMock, deriveStatusMock, transactionMock, replaceInvitationMock } = vi.hoisted(() => ({
+const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, requireAdminMock, readInvitationsMock, deriveStatusMock, transactionMock, replaceInvitationMock, keyValueFindUniqueMock } = vi.hoisted(() => ({
   userFindManyMock: vi.fn(),
   userCountMock: vi.fn(),
   invitationDeliveryFindManyMock: vi.fn(),
@@ -10,6 +10,7 @@ const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, require
   deriveStatusMock: vi.fn(),
   transactionMock: vi.fn(),
   replaceInvitationMock: vi.fn(),
+  keyValueFindUniqueMock: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
@@ -18,6 +19,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: { findMany: userFindManyMock, count: userCountMock },
     invitationDelivery: { findMany: invitationDeliveryFindManyMock },
+    keyValueSetting: { findUnique: keyValueFindUniqueMock },
     $transaction: transactionMock,
   },
 }))
@@ -35,6 +37,8 @@ vi.mock('@/lib/invitations', async (importOriginal) => {
 })
 
 import { GET } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -49,6 +53,8 @@ beforeEach(() => {
   userCountMock.mockResolvedValue(0)
   readInvitationsMock.mockResolvedValue([])
   invitationDeliveryFindManyMock.mockResolvedValue([])
+  keyValueFindUniqueMock.mockResolvedValue(null)
+  resetRevokedCardPolicyCache()
 })
 
 describe('GET /api/admin/invitations', () => {
@@ -68,6 +74,26 @@ describe('GET /api/admin/invitations', () => {
         take: 50,
       })
     )
+    expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null }, privacyAcknowledgedAt: null } })
+  })
+
+  it('excludes revoked cards from the page and the total when the registry is active', async () => {
+    keyValueFindUniqueMock.mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '4001': 'u-revoked' })))
+
+    await GET(makeGetRequest())
+
+    const where = userFindManyMock.mock.calls[0][0].where
+    expect(where.cardNumber.not).toBeNull()
+    expect(where.cardNumber.notIn).toHaveLength(905)
+    expect(where.cardNumber.notIn).toEqual(expect.arrayContaining(['4001', '5555']))
+    expect(userCountMock).toHaveBeenCalledWith({ where })
+  })
+
+  it('keeps the plain card filter when the registry is switched off', async () => {
+    keyValueFindUniqueMock.mockResolvedValue(revokedCardRow({ ...buildRevokedCardValue(), active: false }))
+
+    await GET(makeGetRequest())
+
     expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null }, privacyAcknowledgedAt: null } })
   })
 

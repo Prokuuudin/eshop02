@@ -11,6 +11,13 @@ import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/a
 import { parseOffsetPagination } from '@/lib/pagination'
 import { omitProfileOnlyFields, readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
+import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import {
+  activeCardNumberFilter,
+  assertUserCardMutationAllowed,
+  getRevokedCardPolicy,
+  isRevokedCardPolicyError,
+} from '@/lib/revoked-card-policy'
 
 const platformRoleSchema = z.enum(['customer', 'admin'])
 const teamRoleSchema = z.enum(['viewer', 'buyer', 'manager', 'admin'])
@@ -60,6 +67,9 @@ export async function GET(req: NextRequest): Promise<Response> {
     const hasCard = searchParams.get('hasCard') === '1'
     const registration = searchParams.get('registration') || ''
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
+    // Only card-holder views depend on the registry; staff/admin lists keep working if it is unreadable.
+    const cardHolderView = hasCard || registration === 'registered' || caller.platformRole !== 'admin'
+    const cardFilter = cardHolderView ? activeCardNumberFilter(await getRevokedCardPolicy()) : { not: null }
 
     const where: Record<string, unknown> = {}
 
@@ -77,14 +87,14 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (teamRoleSchema.safeParse(teamRole).success) where.teamRole = teamRole
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
-    if (hasCard) where.cardNumber = { not: null }
+    if (hasCard) where.cardNumber = cardFilter
     if (registration === 'registered') {
-      where.cardNumber = { not: null }
+      where.cardNumber = cardFilter
       where.platformRole = 'customer'
       where.privacyAcknowledgedAt = { not: null }
     }
     if (caller.platformRole !== 'admin') {
-      where.cardNumber = { not: null }
+      where.cardNumber = cardFilter
       where.platformRole = 'customer'
     }
     if (createdSince) {
@@ -142,6 +152,9 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({ users: mapped, total })
   } catch (e) {
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[admin/users GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
@@ -175,7 +188,15 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'invalid_request', issues: parsed.error.flatten() }, { status: 400 })
     }
 
-    const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...updates } = parsed.data
+    const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...parsedUpdates } = parsed.data
+    let updates = parsedUpdates
+    if (updates.cardNumber !== undefined && updates.cardNumber !== null) {
+      const normalized = normalizeCardNumber(updates.cardNumber)
+      if (!isValidCardNumber(normalized)) {
+        return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
+      }
+      updates = { ...updates, cardNumber: normalized }
+    }
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
     // Fields a staff manager may edit. Bank name and IBAN are deliberately absent: they are
     // payment details printed on invoices, so only a platform admin (incl. Super Admin) may change them.
@@ -192,7 +213,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     if (isSelf && (updates.platformRole !== undefined || updates.superAdmin !== undefined)) {
       return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
     }
-    const target = await prisma.user.findUnique({ where: { id }, select: { platformRole: true, teamRole: true, superAdmin: true } })
+    const target = await prisma.user.findUnique({ where: { id }, select: { platformRole: true, teamRole: true, superAdmin: true, cardNumber: true } })
     if (!target) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     if (isSelf && changesStaffAccess(target, updates)) {
       return NextResponse.json({ error: 'self_role_change_forbidden' }, { status: 409 })
@@ -264,6 +285,9 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
       if (before.updatedAt.getTime() !== new Date(expectedUpdatedAt).getTime()) {
         throw new Error('optimistic_conflict')
+      }
+      if (updates.cardNumber !== undefined) {
+        await assertUserCardMutationAllowed(id, before.cardNumber, updates.cardNumber, tx)
       }
       // The target may have become staff since the pre-check: re-decide on the locked row.
       if (requiresStaffManage(before, updates, isSelf) && !staffChange) throw new Error('reauthentication_required')
@@ -344,6 +368,12 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
     if (message === 'reauthentication_required') return NextResponse.json({ error: message }, { status: 401 })
     if (message === 'forbidden') return NextResponse.json({ error: message }, { status: 403 })
+    if (isRevokedCardPolicyError(e, 'card_revoked')) {
+      return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
       return NextResponse.json({ error: 'email_taken' }, { status: 409 })
     }

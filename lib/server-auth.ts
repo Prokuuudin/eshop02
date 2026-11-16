@@ -12,6 +12,8 @@ import {
   type AdminPermission,
 } from '@/lib/admin-permissions'
 import type { CheckoutProfile } from '@/lib/auth-types'
+import { assertCardAssignable } from '@/lib/revoked-card-policy'
+import { normalizeCardNumber } from '@/lib/card-number'
 
 export { SESSION_COOKIE } from '@/lib/auth-constants'
 const SESSION_DURATION_DAYS = 30
@@ -265,6 +267,10 @@ export async function upsertUserInDb(params: {
 }): Promise<PrismaUser> {
   const passwordHash = await hashPassword(params.password)
   const normalizedEmail = params.email.trim().toLowerCase()
+  const normalizedCardNumber = params.cardNumber === undefined
+    ? undefined
+    : normalizeCardNumber(params.cardNumber) || null
+  if (normalizedCardNumber) await assertCardAssignable(normalizedCardNumber)
 
   return prisma.user.upsert({
     where: { email: normalizedEmail },
@@ -278,7 +284,7 @@ export async function upsertUserInDb(params: {
       companyName: params.companyName ?? null,
       teamRole: params.teamRole ?? null,
       phone: params.phone ?? null,
-      cardNumber: params.cardNumber?.trim() ?? null,
+      cardNumber: normalizedCardNumber ?? null,
       avatarUrl: params.avatarUrl ?? null,
       bonusPoints: params.bonusPoints ?? 500,
       mustChangePassword: params.mustChangePassword ?? false,
@@ -293,7 +299,8 @@ export async function upsertUserInDb(params: {
       companyName: params.companyName ?? null,
       teamRole: params.teamRole ?? null,
       phone: params.phone ?? null,
-      cardNumber: params.cardNumber?.trim() ?? null,
+      // Omitting cardNumber must not silently release a revoked number held by the account.
+      cardNumber: normalizedCardNumber,
       avatarUrl: params.avatarUrl ?? null,
       bonusPoints: params.bonusPoints ?? undefined,
       mustChangePassword: params.mustChangePassword ?? undefined,

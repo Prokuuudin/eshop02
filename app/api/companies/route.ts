@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { toNum, toNumOrNull } from '@/lib/decimal'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 function mapCompany(c: Awaited<ReturnType<typeof prisma.company.findMany>>[number]) {
   return {
@@ -62,29 +63,37 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (cardNumber && !isValidCardNumber(cardNumber)) {
       return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
-
-    const company = await prisma.company.create({
-      data: {
-        id: body.companyId,
-        companyName: body.companyName,
-        cardNumber,
-        taxId: body.taxId || null,
-        registrationNumber: body.registrationNumber || null,
-        address: body.address || null,
-        city: body.city || null,
-        country: body.country || null,
-        contactPhone: body.contactPhone || null,
-        contactEmail: body.contactEmail || null,
-        accountManagerId: body.accountManagerId || null,
-        paymentTermDays: body.paymentTermDays ?? 0,
-        creditLimit: body.creditLimit ?? null,
-        approvalWorkflowEnabled: body.approvalWorkflowEnabled ?? false,
-      },
-      include: { members: true },
+    const company = await prisma.$transaction(async (tx) => {
+      if (cardNumber) await assertCardAssignable(cardNumber, tx)
+      return tx.company.create({
+        data: {
+          id: body.companyId,
+          companyName: body.companyName,
+          cardNumber,
+          taxId: body.taxId || null,
+          registrationNumber: body.registrationNumber || null,
+          address: body.address || null,
+          city: body.city || null,
+          country: body.country || null,
+          contactPhone: body.contactPhone || null,
+          contactEmail: body.contactEmail || null,
+          accountManagerId: body.accountManagerId || null,
+          paymentTermDays: body.paymentTermDays ?? 0,
+          creditLimit: body.creditLimit ?? null,
+          approvalWorkflowEnabled: body.approvalWorkflowEnabled ?? false,
+        },
+        include: { members: true },
+      })
     })
 
     return NextResponse.json({ company: mapCompany(company) })
   } catch (e) {
+    if (isRevokedCardPolicyError(e, 'card_revoked')) {
+      return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[companies POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

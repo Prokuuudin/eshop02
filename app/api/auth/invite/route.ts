@@ -8,6 +8,7 @@ import { grantWelcomeBonus } from '@/lib/bonus-ledger'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getClientIp } from '@/lib/request-ip'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
+import { assertCardAssignable, isCardRevoked, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 const INVITE_ATTEMPT_LIMIT = { windowMs: 60 * 60 * 1000, maxAttempts: 10 }
@@ -38,6 +39,9 @@ async function findValid(token: string | null) {
   if (!user || user.email.trim().toLowerCase() !== invitation.email.trim().toLowerCase()) {
     return { ok: false as const, res: NextResponse.json({ ok: false, error: 'invalid_token' }, { status: 404 }) }
   }
+  if (await isCardRevoked(invitation.cardNumber)) {
+    return { ok: false as const, res: NextResponse.json({ ok: false, error: 'card_revoked' }, { status: 409 }) }
+  }
   return { ok: true as const, invitation, user }
 }
 
@@ -48,6 +52,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const inv = found.invitation
     return NextResponse.json({ ok: true, email: inv.email, name: found.user.name ?? '', cardNumber: inv.cardNumber })
   } catch (error) {
+    if (isRevokedCardPolicyError(error)) {
+      return NextResponse.json({ ok: false, error: 'temporarily_unavailable' }, { status: 503 })
+    }
     logApiError("[auth/invite GET]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }
@@ -90,6 +97,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     try {
       await prisma.$transaction(async (tx) => {
+        await assertCardAssignable(inv.cardNumber, tx)
         // The conditional update is the single atomic consume operation. Concurrent
         // activation attempts cannot both move the same row out of `sent`.
         const consumed = await tx.invitationToken.updateMany({
@@ -142,6 +150,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return res
   } catch (error) {
+    if (isRevokedCardPolicyError(error, 'card_revoked')) {
+      return NextResponse.json({ ok: false, error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(error)) {
+      return NextResponse.json({ ok: false, error: 'temporarily_unavailable' }, { status: 503 })
+    }
     logApiError("[auth/invite POST]", error)
     return NextResponse.json({ ok: false, error: 'server_error' }, { status: 500 })
   }

@@ -13,6 +13,7 @@ import { checkRateLimit, refundRateLimit, resetRateLimit, gcRateLimitStore } fro
 import { normalizeCardNumber } from '@/lib/card-number'
 import { recordCompanyActivity } from '@/lib/company-activity-log'
 import { recordRejectedStaffLogin } from '@/lib/auth-session-audit'
+import { canAuthenticateWithCard, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 // A structurally valid bcrypt hash that matches no real password - used to pay the
 // same bcrypt.compare cost on the "account not found" path as on a real login attempt.
@@ -63,10 +64,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       : await prisma.user.findFirst({
           where: { cardNumber: { equals: lookupValue, mode: 'insensitive' } },
         })
+    const cardAuthenticationAllowed = isEmail
+      ? true
+      : await canAuthenticateWithCard(lookupValue, user)
     // Email is a staff-only login identifier (platform admins and staff managers, who
     // always continue to the MFA step below). Customer accounts, including B2B company
     // owners, must authenticate with their assigned card number even when they have an email.
-    const eligible = !!user && !!user.passwordHash && !(isEmail && !requiresAdminMfa(user))
+    const eligible = cardAuthenticationAllowed && !!user && !!user.passwordHash && !(isEmail && !requiresAdminMfa(user))
     // Always run a bcrypt compare, even when no matching account exists (against a
     // fixed dummy hash) - otherwise the "account exists" path costs ~50-100ms more
     // than "account not found", letting an attacker enumerate valid card numbers/emails
@@ -114,6 +118,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     setSessionCookie(res, token, user)
     return res
   } catch (e) {
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'temporarily_unavailable' }, { status: 503 })
+    }
     logApiError("[auth/login]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

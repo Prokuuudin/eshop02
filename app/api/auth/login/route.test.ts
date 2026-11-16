@@ -3,7 +3,10 @@ import { NextRequest } from 'next/server'
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn(), deleteMany: vi.fn() } },
+  prisma: {
+    user: { findUnique: vi.fn(), findFirst: vi.fn() }, mfaChallenge: { create: vi.fn(), deleteMany: vi.fn() },
+    keyValueSetting: { findUnique: vi.fn() },
+  },
 }))
 vi.mock('@/lib/server-auth', () => ({
   verifyPassword: vi.fn(), createSession: vi.fn(), mapDbToServerUser: vi.fn((user) => user),
@@ -22,6 +25,8 @@ import { verifyPassword, createSession } from '@/lib/server-auth'
 import { checkRateLimit, refundRateLimit, resetRateLimit } from '@/lib/rate-limit'
 import { recordRejectedStaffLogin } from '@/lib/auth-session-audit'
 import { POST } from './route'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, PRESERVED_OWNER_ID, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 function makeRequest(email = ' User@Test.COM ') {
   return new NextRequest('http://localhost/api/auth/login', {
@@ -35,6 +40,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(checkRateLimit).mockResolvedValue({ limited: false, remaining: 9, resetAt: Date.now() + 60_000 })
   vi.mocked(createSession).mockResolvedValue('token')
+  vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(null)
+  resetRevokedCardPolicyCache()
 })
 
 describe('POST /api/auth/login', () => {
@@ -335,5 +342,64 @@ describe('POST /api/auth/login', () => {
 
       expect(recordRejectedStaffLogin).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('POST /api/auth/login — revoked client cards', () => {
+  const ACTIVATED_INDIVIDUAL = {
+    passwordHash: 'hash', platformRole: 'customer', superAdmin: false, teamRole: null, companyId: null,
+    customerType: 'individual', mustChangePassword: false, privacyAcknowledgedAt: new Date('2026-09-09T00:00:00Z'),
+  }
+
+  beforeEach(() => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '4001': 'u-revoked' })) as never)
+    vi.mocked(verifyPassword).mockResolvedValue(true)
+  })
+
+  it('keeps card 5555 login for its mapped owner', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: PRESERVED_OWNER_ID, email: 'o@example.com', cardNumber: '5555', ...ACTIVATED_INDIVIDUAL } as never)
+
+    const res = await POST(makeRequest('5555'))
+
+    expect(res.status).toBe(200)
+    expect(createSession).toHaveBeenCalledWith(PRESERVED_OWNER_ID)
+  })
+
+  it('refuses card 5555 for anyone else, or once the owner gains company (B2B) rights', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({ id: 'someone-else', email: 'x@example.com', cardNumber: '5555', ...ACTIVATED_INDIVIDUAL } as never)
+    expect((await POST(makeRequest('5555'))).status).toBe(401)
+
+    vi.mocked(prisma.user.findFirst).mockResolvedValueOnce({
+      id: PRESERVED_OWNER_ID, email: 'o@example.com', cardNumber: '5555', ...ACTIVATED_INDIVIDUAL, companyId: 'c1', teamRole: 'admin',
+    } as never)
+    expect((await POST(makeRequest('5555'))).status).toBe(401)
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('answers any other revoked card like a wrong password and still pays the bcrypt cost', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: 'u-revoked', email: 'r@example.com', cardNumber: '4001', ...ACTIVATED_INDIVIDUAL } as never)
+
+    const res = await POST(makeRequest('04001'))
+
+    expect(res.status).toBe(401)
+    expect(await res.json()).toEqual({ error: 'invalid_credentials' })
+    expect(verifyPassword).toHaveBeenCalledTimes(1)
+    expect(verifyPassword).not.toHaveBeenCalledWith('Password123!', 'hash')
+    expect(createSession).not.toHaveBeenCalled()
+  })
+
+  it('leaves ordinary cards unaffected', async () => {
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: 'c1', email: 'c@example.com', cardNumber: '1234', ...ACTIVATED_INDIVIDUAL } as never)
+
+    expect((await POST(makeRequest('1234'))).status).toBe(200)
+  })
+
+  it('fails card login closed on a malformed registry but keeps staff email login', async () => {
+    vi.mocked(prisma.keyValueSetting.findUnique).mockResolvedValue(revokedCardRow({ active: true }) as never)
+    vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: 'c1', email: 'c@example.com', cardNumber: '1234', ...ACTIVATED_INDIVIDUAL } as never)
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ id: 'a1', email: 'user@test.com', passwordHash: 'hash', platformRole: 'admin', mfaEnabled: true } as never)
+
+    expect((await POST(makeRequest('1234'))).status).toBe(503)
+    expect((await POST(makeRequest())).status).toBe(200)
   })
 })

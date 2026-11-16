@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { hashInviteToken } from '@/lib/invitations'
+import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
+import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 // Stateful harness: every $transaction works on a staged copy of the state and
 // publishes it only when the callback resolves, so a thrown error (audit
@@ -27,6 +29,7 @@ const h = vi.hoisted(() => ({
   appendServerAudit: vi.fn(),
   sendEmail: vi.fn(),
   userIds: 0,
+  revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
 }))
 
 function uniqueViolation(field: string): Error {
@@ -78,6 +81,8 @@ function makeDb(s: State) {
       },
     },
     keyValueSetting: {
+      // Revoked-card registry: absent unless a test installs one.
+      findUnique: async () => h.revokedCardSetting,
       deleteMany: async ({ where }: { where: { key: string } }) => {
         const id = where.key.replace(/^access-request-cert-/u, '')
         const existed = id in s.certificates
@@ -206,6 +211,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.queue = Promise.resolve()
   h.userIds = 0
+  h.revokedCardSetting = null
+  resetRevokedCardPolicyCache()
   seed()
   h.getServerUser.mockResolvedValue(ADMIN)
   h.sendEmail.mockResolvedValue(undefined)
@@ -324,6 +331,38 @@ describe('PATCH /api/admin/access-requests/[id] — card-type approve', () => {
 
     expect(res.status).toBe(409)
     expect((await res.json()).error).toBe('card_taken')
+  })
+})
+
+describe('PATCH /api/admin/access-requests/[id] — revoked cards', () => {
+  it('refuses to assign a revoked number and leaves the request and accounts untouched', async () => {
+    h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '77001': 'u-revoked' }))
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('card_revoked')
+    expect(Object.keys(h.state.users)).toHaveLength(0)
+    expect(h.state.requests.req1.status).toBe(NO_CARD_REQUEST.status)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('still assigns a number outside the registry', async () => {
+    h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '77002': 'u-revoked' }))
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(200)
+    expect(usersWithCard('77001')).toHaveLength(1)
+  })
+
+  it('fails closed with 503 when an existing registry row is malformed', async () => {
+    h.revokedCardSetting = revokedCardRow({ active: true, cards: {} })
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(503)
+    expect(Object.keys(h.state.users)).toHaveLength(0)
   })
 })
 

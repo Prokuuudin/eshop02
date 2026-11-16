@@ -9,6 +9,7 @@ import { sendEmail } from '@/lib/mailer'
 import { logApiError } from '@/lib/observability'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getSiteUrl } from '@/lib/site-url'
+import { assertCardAssignable } from '@/lib/revoked-card-policy'
 
 /** A self-requested activation link is short-lived; staff-sent invitations keep INVITE_TTL_DAYS. */
 export const CARD_ACTIVATION_TTL_HOURS = 24
@@ -66,6 +67,8 @@ export async function findCardActivationCandidate(cardNumber: string): Promise<A
  */
 export async function sendCardActivationInvite(user: ActivationCandidate & { cardNumber: string }, language: InviteLang): Promise<void> {
   try {
+    // Re-check after the response: the policy may have been activated while this task was queued.
+    await assertCardAssignable(user.cardNumber)
     // Anyone can submit a card number, so a request must never cancel a link the cardholder may
     // already hold (a staff invitation or an earlier self-service one). While one is usable,
     // nothing is issued or sent and the daily e-mail quota is not spent.

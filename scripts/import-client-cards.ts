@@ -58,6 +58,10 @@ const clean = (v: unknown): string | null => {
 
 async function main() {
   const { prisma } = await import('../lib/prisma')
+  const { assertCardsAssignable, getRevokedCardPolicy } = await import('../lib/revoked-card-policy')
+  // A missing setting is inactive; a corrupt/unreadable active setting throws here before any plan
+  // or --apply write can be executed.
+  const revokedCardPolicy = await getRevokedCardPolicy()
 
   const wb = XLSX.readFile('Klienti 2026.xlsx')
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Klienti 2026'], {
@@ -145,6 +149,10 @@ async function main() {
   const toCreate: Client[] = []
 
   for (const c of clients) {
+    if (revokedCardPolicy.cards.has(c.code)) {
+      skip('отозванная карта заблокирована политикой')
+      continue
+    }
     if (takenCards.has(c.code)) {
       skip('карта уже занята в БД')
       continue
@@ -186,6 +194,13 @@ async function main() {
     console.log('\nDry run. Для записи: npx tsx scripts/import-client-cards.ts --apply')
     return
   }
+
+  // Re-read immediately before the first write and reject the whole planned batch if any number
+  // became revoked after the dry-run plan was built.
+  await assertCardsAssignable([
+    ...toUpdate.map((row) => row.cardNumber),
+    ...toCreate.map((row) => row.code),
+  ])
 
   // ── 4. Запись ───────────────────────────────────────────────────────────
   // Один хэш случайного пароля на всех спящих: пароль никому не известен,

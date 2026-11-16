@@ -3,6 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
+import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
   try {
@@ -19,29 +20,37 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (cardNumber && !isValidCardNumber(cardNumber)) {
       return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
     }
-
-    const company = await prisma.company.update({
-      where: { id },
-      data: {
-        companyName: body.companyName ?? undefined,
-        cardNumber,
-        taxId: body.taxId !== undefined ? (body.taxId || null) : undefined,
-        registrationNumber: body.registrationNumber !== undefined ? (body.registrationNumber || null) : undefined,
-        address: body.address !== undefined ? (body.address || null) : undefined,
-        city: body.city !== undefined ? (body.city || null) : undefined,
-        country: body.country !== undefined ? (body.country || null) : undefined,
-        contactPhone: body.contactPhone !== undefined ? (body.contactPhone || null) : undefined,
-        contactEmail: body.contactEmail !== undefined ? (body.contactEmail || null) : undefined,
-        accountManagerId: body.accountManagerId !== undefined ? (body.accountManagerId || null) : undefined,
-        paymentTermDays: body.paymentTermDays ?? undefined,
-        creditLimit: body.creditLimit !== undefined ? (body.creditLimit ?? null) : undefined,
-        usedCredit: body.usedCredit ?? undefined,
-        approvalWorkflowEnabled: body.approvalWorkflowEnabled ?? undefined,
-      },
+    const company = await prisma.$transaction(async (tx) => {
+      if (cardNumber) await assertCardAssignable(cardNumber, tx)
+      return tx.company.update({
+        where: { id },
+        data: {
+          companyName: body.companyName ?? undefined,
+          cardNumber,
+          taxId: body.taxId !== undefined ? (body.taxId || null) : undefined,
+          registrationNumber: body.registrationNumber !== undefined ? (body.registrationNumber || null) : undefined,
+          address: body.address !== undefined ? (body.address || null) : undefined,
+          city: body.city !== undefined ? (body.city || null) : undefined,
+          country: body.country !== undefined ? (body.country || null) : undefined,
+          contactPhone: body.contactPhone !== undefined ? (body.contactPhone || null) : undefined,
+          contactEmail: body.contactEmail !== undefined ? (body.contactEmail || null) : undefined,
+          accountManagerId: body.accountManagerId !== undefined ? (body.accountManagerId || null) : undefined,
+          paymentTermDays: body.paymentTermDays ?? undefined,
+          creditLimit: body.creditLimit !== undefined ? (body.creditLimit ?? null) : undefined,
+          usedCredit: body.usedCredit ?? undefined,
+          approvalWorkflowEnabled: body.approvalWorkflowEnabled ?? undefined,
+        },
+      })
     })
 
     return NextResponse.json({ company })
   } catch (e) {
+    if (isRevokedCardPolicyError(e, 'card_revoked')) {
+      return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
+    }
     logApiError("[companies/:id PATCH]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

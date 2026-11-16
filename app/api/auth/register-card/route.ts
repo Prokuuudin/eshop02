@@ -5,6 +5,7 @@ import { checkRateLimit, gcRateLimitStore } from '@/lib/rate-limit'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { resolveInviteLang } from '@/lib/invitations'
 import { findCardActivationCandidate, isCardActivationEligible, sendCardActivationInvite } from '@/lib/card-activation'
+import { isCardRevoked, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const cardLimit = await checkRateLimit(`register-card:card:${cardNumber}`, { windowMs: 60 * 60 * 1000, maxAttempts: 5 })
     if (cardLimit.limited) return tooManyAttempts(cardLimit.resetAt)
 
+    // Keep the public response indistinguishable from an unknown or ineligible card.
+    if (await isCardRevoked(cardNumber)) return NextResponse.json(ACCEPTED, { status: 202 })
+
     const candidate = await findCardActivationCandidate(cardNumber)
     if (isCardActivationEligible(candidate)) {
       const language = resolveInviteLang(typeof body.language === 'string' ? body.language : undefined)
@@ -60,6 +64,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
     return NextResponse.json(ACCEPTED, { status: 202 })
   } catch (e) {
+    if (isRevokedCardPolicyError(e)) {
+      return NextResponse.json({ error: 'temporarily_unavailable' }, { status: 503 })
+    }
     logApiError('[auth/register-card]', e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

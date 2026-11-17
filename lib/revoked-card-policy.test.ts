@@ -92,7 +92,7 @@ describe('getRevokedCardPolicy', () => {
 describe('admin revocation writes', () => {
   /** In-memory registry row behind the same calls the writers make. */
   function registryTx(initial: unknown) {
-    const state = { row: initial === undefined ? null : { value: initial }, locks: 0 }
+    const state: { row: { value: unknown } | null; locks: number } = { row: initial === undefined ? null : { value: initial }, locks: 0 }
     const tx = {
       $queryRaw: vi.fn(async () => { state.locks++; return [] }),
       keyValueSetting: {

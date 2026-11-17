@@ -126,6 +126,8 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         switch (failure) {
             case 'email_taken':
                 return emailTakenText(emailHolder);
+            case 'card_taken':
+                return l('Не сохранено: этот номер карты уже у другого клиента.', 'Not saved: this card number already belongs to another customer.', 'Nav saglabāts: šis kartes numurs jau pieder citam klientam.');
             case 'invalid':
                 return l('Не сохранено: проверьте данные (например, формат email).', 'Not saved: check the entered data (e.g. the email format).', 'Nav saglabāts: pārbaudiet ievadītos datus (piem., e-pasta formātu).');
             case 'conflict':

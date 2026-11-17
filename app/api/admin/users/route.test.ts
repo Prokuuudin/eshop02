@@ -447,6 +447,29 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
       expect(await response.json()).toEqual({ error: 'email_taken', emailHolder: { staff: true } })
     })
 
+    it('reports a card number clash as card_taken, not as an email clash', async () => {
+      permissionMock.mockResolvedValue(REGULAR_ADMIN)
+      userFindMock
+        .mockResolvedValueOnce(CUSTOMER_TARGET)
+        // The email is the target's own, so it is not the clash…
+        .mockResolvedValueOnce({ id: 'u1', name: 'Anna Ozola', cardNumber: '5070', createdAt: new Date(now), platformRole: 'customer', teamRole: null, superAdmin: false })
+        // …the card number belongs to someone else.
+        .mockResolvedValueOnce({ id: 'other-7' })
+      uniqueViolation()
+      const response = await patch({ id: 'u1', expectedUpdatedAt: now, email: 'target@test.com', cardNumber: '9999' })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ error: 'card_taken' })
+      expect(userFindMock).toHaveBeenLastCalledWith({ where: { cardNumber: '9999' }, select: { id: true } })
+    })
+
+    it('reports a card-only save clash as card_taken even when the holder cannot be read', async () => {
+      permissionMock.mockResolvedValue(REGULAR_ADMIN)
+      userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET).mockRejectedValueOnce(new Error('db down'))
+      uniqueViolation()
+      const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber: '9999' })
+      expect(await response.json()).toEqual({ error: 'card_taken' })
+    })
+
     it('falls back to a plain email_taken when the holder cannot be read', async () => {
       permissionMock.mockResolvedValue(MANAGER)
       userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET).mockRejectedValueOnce(new Error('db down'))

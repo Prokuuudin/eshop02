@@ -194,12 +194,31 @@ async function describeEmailHolder(email: string, targetId: string) {
   }
 }
 
+type UniqueSave = { targetId: string; email?: string; cardNumber?: string }
+
+/**
+ * User has two unique columns, email and cardNumber, and P2002 does not reliably say which one
+ * collided. Ask the database who holds each value instead of reporting every clash as email.
+ */
+async function uniqueViolationResponse(save: UniqueSave | null): Promise<Response> {
+  if (save?.email) {
+    const emailHolder = await describeEmailHolder(save.email, save.targetId)
+    if (emailHolder) return NextResponse.json({ error: 'email_taken', emailHolder }, { status: 409 })
+  }
+  if (save?.cardNumber) {
+    const cardHolder = await prisma.user.findUnique({ where: { cardNumber: save.cardNumber }, select: { id: true } }).catch(() => null)
+    if (cardHolder && cardHolder.id !== save.targetId) return NextResponse.json({ error: 'card_taken' }, { status: 409 })
+    if (!save.email) return NextResponse.json({ error: 'card_taken' }, { status: 409 })
+  }
+  return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+}
+
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
-  // Kept outside the try so a unique-email violation can say which account holds the address.
-  let emailSave: { email: string; targetId: string } | null = null
+  // Kept outside the try so a unique violation can say which value, and whose account, it hit.
+  let uniqueSave: UniqueSave | null = null
   try {
     const caller = await requireAdminPermission('admin.access')
     if (caller instanceof NextResponse) return caller
@@ -210,7 +229,6 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...parsedUpdates } = parsed.data
-    if (parsedUpdates.email) emailSave = { email: parsedUpdates.email, targetId: id }
     let updates = parsedUpdates
     if (updates.cardNumber !== undefined && updates.cardNumber !== null) {
       const normalized = normalizeCardNumber(updates.cardNumber)
@@ -219,6 +237,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
       updates = { ...updates, cardNumber: normalized }
     }
+    uniqueSave = { targetId: id, email: updates.email, cardNumber: updates.cardNumber ?? undefined }
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
     // Fields a staff manager may edit. Bank name and IBAN are deliberately absent: they are
     // payment details printed on invoices, so only a platform admin (incl. Super Admin) may change them.
@@ -397,8 +416,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
-      const emailHolder = emailSave ? await describeEmailHolder(emailSave.email, emailSave.targetId) : null
-      return NextResponse.json({ error: 'email_taken', ...(emailHolder ? { emailHolder } : {}) }, { status: 409 })
+      return await uniqueViolationResponse(uniqueSave)
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })

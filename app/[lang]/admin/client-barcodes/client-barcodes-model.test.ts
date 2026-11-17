@@ -66,6 +66,7 @@ describe('classifyClientSaveFailure', () => {
     [403, 'forbidden', 'forbidden'],
     [403, 'Origin not allowed', 'origin_rejected'],
     [409, 'email_taken', 'email_taken'],
+    [409, 'card_taken', 'card_taken'],
     [400, 'invalid_request', 'invalid'],
     [409, 'optimistic_conflict', 'conflict'],
     [409, 'concurrent_update', 'conflict'],

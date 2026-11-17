@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { hashInviteToken } from '@/lib/invitations'
 import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
-import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
+import { buildAdminRevocationValue, buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 // Stateful harness: every $transaction works on a staged copy of the state and
 // publishes it only when the callback resolves, so a thrown error (audit
@@ -30,6 +30,7 @@ const h = vi.hoisted(() => ({
   sendEmail: vi.fn(),
   userIds: 0,
   revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
+  adminRevocations: null as { value: unknown } | null,
 }))
 
 function uniqueViolation(field: string): Error {
@@ -82,7 +83,7 @@ function makeDb(s: State) {
     },
     keyValueSetting: {
       // Revoked-card registry: absent unless a test installs one.
-      findUnique: async ({ where }: { where: { key: string } }) => (where.key === 'revoked-client-cards:admin:v1' ? null : h.revokedCardSetting),
+      findUnique: async ({ where }: { where: { key: string } }) => (where.key === 'revoked-client-cards:admin:v1' ? h.adminRevocations : h.revokedCardSetting),
       deleteMany: async ({ where }: { where: { key: string } }) => {
         const id = where.key.replace(/^access-request-cert-/u, '')
         const existed = id in s.certificates
@@ -212,6 +213,7 @@ beforeEach(() => {
   h.queue = Promise.resolve()
   h.userIds = 0
   h.revokedCardSetting = null
+  h.adminRevocations = null
   resetRevokedCardPolicyCache()
   seed()
   h.getServerUser.mockResolvedValue(ADMIN)
@@ -339,6 +341,18 @@ describe('PATCH /api/admin/access-requests/[id] — revoked cards', () => {
     h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '77001': 'u-revoked' }))
 
     const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(409)
+    expect((await res.json()).error).toBe('card_revoked')
+    expect(Object.keys(h.state.users)).toHaveLength(0)
+    expect(h.state.requests.req1.status).toBe(NO_CARD_REQUEST.status)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('refuses a number revoked from the admin panel, which no account holds any more', async () => {
+    h.adminRevocations = { value: buildAdminRevocationValue({ '77001': 'u-former' }) }
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '077001' })
 
     expect(res.status).toBe(409)
     expect((await res.json()).error).toBe('card_revoked')

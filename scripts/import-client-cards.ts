@@ -58,10 +58,12 @@ const clean = (v: unknown): string | null => {
 
 async function main() {
   const { prisma } = await import('../lib/prisma')
-  const { assertCardsAssignable, getRevokedCardPolicy } = await import('../lib/revoked-card-policy')
+  const { assertCardsAssignable, getAdminCardRevocations, getRevokedCardPolicy } = await import('../lib/revoked-card-policy')
   // A missing setting is inactive; a corrupt/unreadable active setting throws here before any plan
   // or --apply write can be executed.
   const revokedCardPolicy = await getRevokedCardPolicy()
+  // Numbers revoked from the admin panel are never issued again either (separate registry row).
+  const adminRevokedCards = await getAdminCardRevocations()
 
   const wb = XLSX.readFile('Klienti 2026.xlsx')
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets['Klienti 2026'], {
@@ -149,7 +151,7 @@ async function main() {
   const toCreate: Client[] = []
 
   for (const c of clients) {
-    if (revokedCardPolicy.cards.has(c.code)) {
+    if (revokedCardPolicy.cards.has(c.code) || adminRevokedCards.has(c.code)) {
       skip('отозванная карта заблокирована политикой')
       continue
     }

@@ -18,6 +18,7 @@ import {
 } from '@/lib/invitations'
 import { buildRulesEmail } from '@/lib/invitation-emails'
 import { parseOffsetPagination } from '@/lib/pagination'
+import { getAdminCardRevocations } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -32,6 +33,19 @@ const ELIGIBLE_WHERE = {
   platformRole: { not: 'admin' },
   email: { contains: '@', not: { endsWith: '@client.local' } },
 } as const
+
+/**
+ * Customers whose card was revoked from the admin panel have no card (the number was taken off
+ * the account), but they must not get this "how to get a card" mail. They are left out of the
+ * counts, the preview list and every batch. An unreadable registry fails the request closed.
+ */
+async function revokedCardHolderIds(): Promise<string[]> {
+  return [...new Set([...(await getAdminCardRevocations()).values()].map((entry) => entry.userId))]
+}
+
+function eligibleWhere(excludedIds: readonly string[]) {
+  return excludedIds.length > 0 ? { ...ELIGIBLE_WHERE, id: { notIn: [...excludedIds] } } : ELIGIBLE_WHERE
+}
 
 const ELIGIBLE_SORT_FIELDS = ['name', 'email'] as const
 type EligibleSortField = (typeof ELIGIBLE_SORT_FIELDS)[number]
@@ -49,15 +63,16 @@ export async function GET(req: NextRequest): Promise<Response> {
     const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc'
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
 
+    const baseWhere = eligibleWhere(await revokedCardHolderIds())
     const where: Record<string, unknown> = search
       ? {
-          ...ELIGIBLE_WHERE,
+          ...baseWhere,
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
           ],
         }
-      : ELIGIBLE_WHERE
+      : baseWhere
 
     // name не уникален и допускает null — без id-тайбрейка Postgres не гарантирует
     // стабильный порядок между OFFSET-страницами (email @unique, id — PK, им тайбрейк не нужен)
@@ -68,8 +83,8 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     const [state, totalEligible, filteredTotal, users] = await Promise.all([
       readCampaign(prisma),
-      prisma.user.count({ where: ELIGIBLE_WHERE }),
-      // Без активного поиска where === ELIGIBLE_WHERE, второй count был бы точным дублем первого
+      prisma.user.count({ where: baseWhere }),
+      // Без активного поиска where === baseWhere, второй count был бы точным дублем первого
       search ? prisma.user.count({ where }) : Promise.resolve(null),
       // sent-статус (isEligibleSent) — чистая проверка id <= cursor по каждой строке, она верна
       // при любом порядке сортировки; id asc (дефолт) лишь даёт то, что "отправленные" идут
@@ -211,10 +226,16 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (claim.kind === 'reset') return NextResponse.json({ state })
     running = true
 
+    const excludedIds = await revokedCardHolderIds()
+    const excluded = new Set(excludedIds)
+    const idFilter = {
+      ...(state.cursor ? { gt: state.cursor } : {}),
+      ...(excludedIds.length > 0 ? { notIn: excludedIds } : {}),
+    }
     const users = await prisma.user.findMany({
       where: {
         ...ELIGIBLE_WHERE,
-        ...(state.cursor ? { id: { gt: state.cursor } } : {}),
+        ...(Object.keys(idFilter).length > 0 ? { id: idFilter } : {}),
       },
       select: { id: true, name: true, email: true, platformRole: true, cardNumber: true },
       orderBy: { id: 'asc' },
@@ -226,7 +247,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://hairshoppro.lv'
 
     for (const u of users) {
-      if (!isEligibleRulesRecipient(u)) {
+      if (!isEligibleRulesRecipient(u) || excluded.has(u.id)) {
         // Неподходящие строки пропускаются навсегда — курсор двигаем и здесь
         state.cursor = u.id
         outcome.skipped++

@@ -14,6 +14,8 @@ const h = vi.hoisted(() => ({
   state: null as unknown as State,
   queue: Promise.resolve() as Promise<unknown>,
   users: [] as User[],
+  // Lets a test bypass the SQL exclusion to prove the in-memory guard as well.
+  ignoreNotIn: false,
   requireAdmin: vi.fn(),
   sendEmail: vi.fn(),
   appendServerAudit: vi.fn(),
@@ -34,9 +36,10 @@ function db(s: State) {
           && (typeof where.action === 'string' ? a.action === where.action : where.action.in.includes(a.action))) ?? null,
     },
     user: {
-      findMany: async ({ where, take }: { where: { id?: { gt: string } }; take: number }) => h.users
+      findMany: async ({ where, take }: { where: { id?: { gt?: string; notIn?: string[] } }; take: number }) => h.users
         .filter((u) => u.cardNumber === null && u.platformRole !== 'admin' && u.email.includes('@') && !u.email.endsWith('@client.local'))
-        .filter((u) => !where.id || u.id > where.id.gt)
+        .filter((u) => !where.id?.gt || u.id > where.id.gt)
+        .filter((u) => h.ignoreNotIn || !where.id?.notIn?.includes(u.id))
         .sort((a, b) => a.id.localeCompare(b.id))
         .slice(0, take),
     },
@@ -104,6 +107,7 @@ beforeEach(() => {
   h.queue = Promise.resolve()
   h.state = { kv: {}, audits: [] }
   h.users = [client(1), client(2), client(3, { cardNumber: '1003' }), client(4)]
+  h.ignoreNotIn = false
   h.requireAdmin.mockResolvedValue(ADMIN)
   h.sendEmail.mockResolvedValue(undefined)
   h.getTemplates.mockResolvedValue([])
@@ -323,5 +327,55 @@ describe('POST /api/admin/card-rules-campaign — reset', () => {
     h.appendServerAudit.mockRejectedValueOnce(new Error('audit unavailable'))
     expect((await post({ reset: true })).status).toBe(500)
     expect(campaign()).toMatchObject({ sentCount: 7, cursor: 'u007' })
+  })
+})
+
+describe('POST /api/admin/card-rules-campaign — revoked cards', () => {
+  const ADMIN_KEY = 'revoked-client-cards:admin:v1'
+  const revoke = (...userIds: string[]) => {
+    h.state.kv[ADMIN_KEY] = {
+      cards: Object.fromEntries(userIds.map((userId, i) => [String(4001 + i), { userId, revokedAt: '2026-11-17T10:00:00.000Z', revokedBy: 'admin-1', reason: 'Card lost' }])),
+    }
+  }
+
+  it('sends to everyone else as before and never to a customer whose card was revoked', async () => {
+    revoke('u002')
+    const res = await post({}, 'revoked-key-0001')
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['klients1@inbox.lv', 'klients4@inbox.lv'])
+    expect(body.state).toMatchObject({ sentCount: 2, errorCount: 0, cursor: 'u004', finished: true })
+  })
+
+  it('also skips them if a row slips past the query (in-memory guard)', async () => {
+    revoke('u002')
+    h.ignoreNotIn = true
+    const body = await (await post()).json()
+
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['klients1@inbox.lv', 'klients4@inbox.lv'])
+    expect(body.state.cursor).toBe('u004')
+    expect(h.state.audits[1].after).toMatchObject({ processed: 2, sent: 2, skipped: 1 })
+  })
+
+  it('stays excluded across batches', async () => {
+    h.users = Array.from({ length: 52 }, (_, i) => client(i + 1))
+    revoke('u010', 'u051')
+    await post()
+    await post()
+    const sentTo = h.sendEmail.mock.calls.map(([to]) => to)
+    expect(sentTo).toHaveLength(50)
+    expect(sentTo).not.toContain('klients10@inbox.lv')
+    expect(sentTo).not.toContain('klients51@inbox.lv')
+    expect(campaign()).toMatchObject({ finished: true, cursor: 'u052', sentCount: 50 })
+  })
+
+  it('sends nothing and releases the run when the registry is unreadable', async () => {
+    h.state.kv[ADMIN_KEY] = { cards: { '4001': { userId: 'u002' } } }
+    const res = await post()
+
+    expect(res.status).toBe(500)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(campaign()).toMatchObject({ sentCount: 0, runningSince: null })
   })
 })

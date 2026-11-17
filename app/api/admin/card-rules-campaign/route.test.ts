@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { userFindManyMock, userCountMock, requireAdminMock, readCampaignMock } = vi.hoisted(() => ({
+const { userFindManyMock, userCountMock, requireAdminMock, readCampaignMock, settingMock } = vi.hoisted(() => ({
+  settingMock: vi.fn(),
   userFindManyMock: vi.fn(),
   userCountMock: vi.fn(),
   requireAdminMock: vi.fn(),
@@ -11,7 +12,7 @@ const { userFindManyMock, userCountMock, requireAdminMock, readCampaignMock } = 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
-  prisma: { user: { findMany: userFindManyMock, count: userCountMock } },
+  prisma: { user: { findMany: userFindManyMock, count: userCountMock }, keyValueSetting: { findUnique: settingMock } },
 }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: requireAdminMock }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
@@ -42,6 +43,7 @@ beforeEach(() => {
   userFindManyMock.mockResolvedValue([])
   userCountMock.mockResolvedValue(0)
   readCampaignMock.mockResolvedValue(DEFAULT_STATE)
+  settingMock.mockResolvedValue(null)
 })
 
 describe('GET /api/admin/card-rules-campaign', () => {
@@ -115,5 +117,36 @@ describe('GET /api/admin/card-rules-campaign', () => {
   it('falls back to id-asc order for an unknown sort key', async () => {
     await GET(makeGetRequest('?sort=bogus'))
     expect(userFindManyMock).toHaveBeenCalledWith(expect.objectContaining({ orderBy: { id: 'asc' } }))
+  })
+})
+
+describe('GET /api/admin/card-rules-campaign — revoked cards', () => {
+  const revocation = (userId: string) => ({ userId, revokedAt: '2026-11-17T10:00:00.000Z', revokedBy: 'admin-1', reason: 'Card lost' })
+
+  it('leaves customers whose card was revoked from the admin panel out of the counts and the list', async () => {
+    settingMock.mockImplementation(async ({ where }: { where: { key: string } }) => (where.key === 'revoked-client-cards:admin:v1'
+      ? { value: { cards: { '4001': revocation('u-anna'), '4002': revocation('u-boris'), '4003': revocation('u-anna') } } }
+      : null))
+    userCountMock.mockResolvedValue(10)
+
+    await GET(makeGetRequest('?search=anna'))
+
+    const excluded = { ...ELIGIBLE_WHERE, id: { notIn: ['u-anna', 'u-boris'] } }
+    expect(userCountMock).toHaveBeenNthCalledWith(1, { where: excluded })
+    expect(userCountMock).toHaveBeenNthCalledWith(2, { where: { ...excluded, OR: expect.any(Array) } })
+    expect(userFindManyMock).toHaveBeenCalledWith(expect.objectContaining({ where: { ...excluded, OR: expect.any(Array) } }))
+  })
+
+  it('keeps the unchanged filter when nothing was revoked from the admin panel', async () => {
+    await GET(makeGetRequest())
+    expect(userCountMock).toHaveBeenCalledWith({ where: ELIGIBLE_WHERE })
+  })
+
+  it('fails closed on an unreadable registry instead of counting revoked customers in', async () => {
+    settingMock.mockResolvedValue({ value: { cards: { '4001': { userId: 'u-anna' } } } })
+    const res = await GET(makeGetRequest())
+    expect(res.status).toBe(500)
+    expect(userCountMock).not.toHaveBeenCalled()
+    expect(userFindManyMock).not.toHaveBeenCalled()
   })
 })

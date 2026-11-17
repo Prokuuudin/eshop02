@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
-const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transactionMock, auditMock, settingMock, userFindManyMock, userCountMock } = vi.hoisted(() => ({
+const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transactionMock, auditMock, settingMock, userFindManyMock, userCountMock, adminRevocations } = vi.hoisted(() => ({
+  adminRevocations: { row: null as unknown },
   permissionMock: vi.fn(), userFindMock: vi.fn(), verifyPasswordMock: vi.fn(), verifyTotpMock: vi.fn(), transactionMock: vi.fn(), auditMock: vi.fn(),
   settingMock: vi.fn(), userFindManyMock: vi.fn(), userCountMock: vi.fn(),
 }))
@@ -11,11 +12,11 @@ vi.mock('@/lib/mfa', () => ({ verifyTotpCode: verifyTotpMock, decryptSecret: (s:
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   user: { findUnique: userFindMock, findMany: userFindManyMock, count: userCountMock }, $transaction: transactionMock,
-  keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(null) : settingMock(args)) },
+  keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(adminRevocations.row) : settingMock(args)) },
 } }))
 import { GET, PATCH } from './route'
 import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
-import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
+import { buildAdminRevocationValue, buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
 
 const now = new Date('2026-08-31T07:00:00.000Z').toISOString()
 const patch = (body: unknown, origin = 'https://shop.test') => PATCH(new NextRequest('https://shop.test/api/admin/users', {
@@ -33,7 +34,7 @@ const STEP_UP = { reason: 'approved staff change', currentPassword: 'password', 
 function txFor(before: Record<string, unknown>, superAdminCount = 1) {
   let after = before
   const tx = {
-    keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(null) : settingMock(args)) },
+    keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(adminRevocations.row) : settingMock(args)) },
     user: {
       findUnique: vi.fn().mockImplementation(async () => before),
       findUniqueOrThrow: vi.fn().mockImplementation(async () => after),
@@ -533,6 +534,21 @@ describe('revoked client cards', () => {
     const response = await patch({ id: 'u2', expectedUpdatedAt: now, cardNumber: ' 04001 ' })
     expect(response.status).toBe(409)
     expect(other.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('refuses to assign a number revoked from the admin panel', async () => {
+    settingMock.mockResolvedValue(null)
+    adminRevocations.row = { value: buildAdminRevocationValue({ '4001': 'u-former' }) }
+    try {
+      userFindMock.mockResolvedValue(CUSTOMER_TARGET)
+      const tx = txFor(row({ ...CUSTOMER_TARGET, cardNumber: null }))
+      const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber: ' 04001 ' })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ error: 'card_revoked' })
+      expect(tx.user.updateMany).not.toHaveBeenCalled()
+    } finally {
+      adminRevocations.row = null
+    }
   })
 
   it('a non-revoked number is still assigned in canonical form', async () => {

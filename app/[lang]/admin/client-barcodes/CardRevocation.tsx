@@ -36,8 +36,8 @@ function revocationErrorText(l: L, code: string | undefined, status: number): st
             return l('Эту карту нельзя отозвать из админки — обратитесь к разработчику.', 'This card cannot be revoked from the admin panel — contact the developer.', 'Šo karti nevar atsaukt no administrēšanas paneļa — sazinieties ar izstrādātāju.');
         case 'not_restorable':
             return l('Эту карту вернуть нельзя: она отозвана не через админку.', 'This card cannot be restored: it was not revoked from the admin panel.', 'Šo karti nevar atjaunot: tā nav atsaukta no administrēšanas paneļa.');
-        case 'registry_inactive':
-            return l('Отзыв карт выключен.', 'Card revocation is switched off.', 'Karšu atsaukšana ir izslēgta.');
+        case 'card_taken':
+            return l('Этот номер уже есть у другого клиента — вернуть карту нельзя.', 'Another client already holds this number — the card cannot be restored.', 'Šis numurs jau ir citam klientam — karti nevar atjaunot.');
         case 'forbidden':
             return l('Только администратор может отзывать и возвращать карты.', 'Only an administrator can revoke and restore cards.', 'Tikai administrators var atsaukt un atjaunot kartes.');
         default:

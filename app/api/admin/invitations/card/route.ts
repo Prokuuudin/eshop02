@@ -6,7 +6,8 @@ import { hashPassword, requireAdmin } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
-import { assertCardAssignable, isCardRevoked, isRevokedCardPolicyError, revokeCardInRegistry } from '@/lib/revoked-card-policy'
+import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
+import { revokeCustomerCard } from '@/lib/admin-card-revocation'
 
 export const runtime = 'nodejs'
 
@@ -65,24 +66,27 @@ export async function POST(req: NextRequest): Promise<Response> {
             SELECT "cardNumber" FROM "User" WHERE id = ${user.id} FOR UPDATE`
           const previous = current?.cardNumber ? normalizeCardNumber(current.cardNumber) : null
           if (previous === cardNumber) return
-          // Replacing a card: the old number is revoked (no login, never reissued) and the
-          // customer's sessions end, but only after the admin confirmed the swap.
-          let oldCardRevoked = false
-          let sessionsRevoked = 0
-          if (previous !== null) {
-            if (body.confirmReplace !== true) throw new ReplaceConfirmationRequired(previous)
-            oldCardRevoked = await isCardRevoked(previous, tx)
-              || await revokeCardInRegistry(tx, {
-                cardNumber: previous, userId: user.id, revokedBy: actor.id, reason: `Replaced by card ${cardNumber}`,
-              })
-            sessionsRevoked = (await tx.session.deleteMany({ where: { userId: user.id } })).count
+          if (previous === null) {
+            await tx.user.update({ where: { id: user.id }, data: { cardNumber } })
+            await appendServerAudit(tx, req, actor, {
+              action: 'invitation.card_assigned', entityType: 'user', entityId: user.id,
+              before: { hasCard: false },
+              after: { hasCard: true, cardChanged: false, accountCreated: false },
+            })
+            return
           }
-          await tx.user.update({ where: { id: user.id }, data: { cardNumber } })
+          // Replacing a card only after the admin confirmed the swap: the old number is revoked
+          // (never issued again), open invitations carrying it are voided and sessions end.
+          if (body.confirmReplace !== true) throw new ReplaceConfirmationRequired(previous)
+          const revocation = await revokeCustomerCard(tx, {
+            userId: user.id, cardNumber: previous, nextCardNumber: cardNumber,
+            revokedBy: actor.id, reason: `Replaced by card ${cardNumber}`,
+          })
           await appendServerAudit(tx, req, actor, {
             action: 'invitation.card_assigned', entityType: 'user', entityId: user.id,
-            before: { hasCard: previous !== null },
-            after: { hasCard: true, cardChanged: previous !== null, accountCreated: false, ...(previous !== null ? { oldCardRevoked } : {}) },
-            ...(previous !== null ? { details: `sessionsRevoked=${sessionsRevoked}` } : {}),
+            before: { hasCard: true },
+            after: { hasCard: true, cardChanged: true, accountCreated: false, oldCardRevoked: true },
+            details: `sessionsRevoked=${revocation.sessionsRevoked}; invitationsRevoked=${revocation.invitationsRevoked}`,
           })
         })
         return NextResponse.json({ ok: true, userId: user.id, created: false })
@@ -129,9 +133,6 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     if (isRevokedCardPolicyError(e, 'card_protected')) {
       return NextResponse.json({ error: 'card_protected' }, { status: 409 })
-    }
-    if (isRevokedCardPolicyError(e, 'registry_inactive')) {
-      return NextResponse.json({ error: 'registry_inactive' }, { status: 409 })
     }
     if (isRevokedCardPolicyError(e, 'card_revoked')) {
       return NextResponse.json({ error: 'card_revoked' }, { status: 409 })

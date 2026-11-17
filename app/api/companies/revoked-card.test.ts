@@ -8,7 +8,7 @@ vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ getServerUser: getServerUserMock }))
 vi.mock('@/lib/prisma', () => {
-  const tx = { keyValueSetting: { findUnique: settingMock }, company: { create: createMock, update: updateMock } }
+  const tx = { keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(null) : settingMock(args)) }, company: { create: createMock, update: updateMock } }
   return { prisma: { ...tx, $transaction: (run: (client: typeof tx) => unknown) => run(tx) } }
 })
 

@@ -27,7 +27,7 @@ function db(s: State) {
   return {
     _state: s,
     $executeRaw: async () => 0,
-    keyValueSetting: { findUnique: async () => h.revokedCardSetting },
+    keyValueSetting: { findUnique: async ({ where }: { where: { key: string } }) => (where.key === 'revoked-client-cards:admin:v1' ? null : h.revokedCardSetting) },
     user: {
       findMany: async ({ where }: { where: { id: { in: string[] }; cardNumber: { notIn?: string[] } } }) => s.users.filter((u) =>
         where.id.in.includes(u.id) && u.cardNumber !== null && !where.cardNumber.notIn?.includes(u.cardNumber)

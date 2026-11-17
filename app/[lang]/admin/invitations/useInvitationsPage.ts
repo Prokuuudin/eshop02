@@ -374,8 +374,6 @@ function useInvitationsPageState() {
                         ? l('Этот номер карты отозван — выдать его нельзя', 'This card number is revoked and cannot be issued', 'Šis kartes numurs ir atsaukts — to izsniegt nevar')
                         : err === 'card_protected'
                         ? l('Текущую карту клиента нельзя отозвать автоматически — обратитесь к разработчику', 'The current client card cannot be revoked automatically — contact the developer', 'Klienta pašreizējo karti nevar atsaukt automātiski — sazinieties ar izstrādātāju')
-                        : err === 'registry_inactive'
-                        ? l('Отзыв карт выключен — заменить карту сейчас нельзя', 'Card revocation is switched off — the card cannot be replaced now', 'Karšu atsaukšana ir izslēgta — karti šobrīd nevar nomainīt')
                         : err === 'invalid_card'
                         ? l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari')
                         : err === 'invalid_email'

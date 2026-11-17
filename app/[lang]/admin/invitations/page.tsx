@@ -192,7 +192,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             <h3 className="text-base font-semibold">{l('Клиенты без карты', 'Clients without a card', 'Klienti bez kartes')}</h3>
                             <ol className="mt-2 list-decimal space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
                                 <li>{l('Проверьте текст письма по ссылке «Проверить шаблон правил» и при необходимости сохраните изменения.', 'Review the email using “Review card-rules template” and save any required changes.', 'Pārbaudiet e-pasta tekstu saitē “Pārbaudīt noteikumu veidni” un, ja nepieciešams, saglabājiet izmaiņas.')}</li>
-                                <li>{l('Нажмите «Начать рассылку». Письма получат все клиенты без карты, у которых указан реальный email. Отправка выполняется порциями по 50 писем.', 'Click “Start mailing”. Emails are sent to all clients without a card who have a real email address, in batches of 50.', 'Nospiediet “Sākt sūtīšanu”. E-pastus saņems visi klienti bez kartes, kuriem ir norādīta īsta e-pasta adrese. Sūtīšana notiek 50 e-pastu partijās.')}</li>
+                                <li>{l('Нажмите «Начать рассылку». Письма получат все клиенты без карты, у которых указан реальный email, кроме клиентов с отозванной картой. Отправка выполняется порциями по 50 писем.', 'Click “Start mailing”. Emails are sent to all clients without a card who have a real email address, except clients whose card was revoked, in batches of 50.', 'Nospiediet “Sākt sūtīšanu”. E-pastus saņems visi klienti bez kartes, kuriem ir norādīta īsta e-pasta adrese, izņemot klientus ar atsauktu karti. Sūtīšana notiek 50 e-pastu partijās.')}</li>
                                 <li>{l('Поиск используется только для просмотра списка и не меняет состав получателей рассылки.', 'Search is only used to view the list and does not change the campaign recipients.', 'Meklēšana paredzēta tikai saraksta apskatei un nemaina izsūtnes saņēmējus.')}</li>
                                 <li>{l('Следите за количеством отправленных писем и ошибок. Кнопка «Остановить» завершит текущую порцию и приостановит рассылку; затем её можно продолжить.', 'Monitor the sent and error counts. “Stop” finishes the current batch and pauses the campaign; it can then be continued.', 'Sekojiet nosūtīto e-pastu un kļūdu skaitam. Poga “Apturēt” pabeigs pašreizējo partiju un apturēs izsūtni; pēc tam to var turpināt.')}</li>
                                 <li>{l('Кнопка «Сбросить» начинает новую рассылку с самого начала. Используйте её только если письма нужно повторно отправить всем получателям.', '“Reset” starts a new campaign from the beginning. Use it only when every recipient must receive the email again.', 'Poga “Atiestatīt” sāk jaunu izsūtni no sākuma. Izmantojiet to tikai tad, ja e-pasts atkārtoti jānosūta visiem saņēmējiem.')}</li>
@@ -202,6 +202,69 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             </Link>
                         </section>
                     </div>
+
+                    <section className="mt-6 space-y-4 border-t border-blue-200 pt-4 dark:border-blue-900">
+                        <div>
+                            <h3 className="text-base font-semibold">{l('Отзыв и замена карты', 'Revoking and replacing a card', 'Kartes atsaukšana un nomaiņa')}</h3>
+                            <p className="mt-1 text-blue-900/80 dark:text-blue-100/80">
+                                {l(
+                                    'Отзывать, возвращать и заменять карты может только администратор. Карты сотрудников отозвать нельзя.',
+                                    'Only an administrator can revoke, restore and replace cards. Staff cards cannot be revoked.',
+                                    'Kartes atsaukt, atjaunot un nomainīt var tikai administrators. Darbinieku kartes atsaukt nevar.'
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="grid gap-6 lg:grid-cols-3">
+                            <div>
+                                <h4 className="font-medium">{l('Как отозвать карту', 'How to revoke a card', 'Kā atsaukt karti')}</h4>
+                                <ol className="mt-2 list-decimal space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
+                                    <li>{l('Откройте «База клиентов», найдите клиента и нажмите «Отозвать карту».', 'Open “Customer database”, find the client and click “Revoke card”.', 'Atveriet “Klientu datubāze”, atrodiet klientu un nospiediet “Atsaukt karti”.')}</li>
+                                    <li>{l('Укажите причину (не короче 3 символов) и подтвердите. Причина, дата и администратор сохраняются; действие попадает в журнал действий.', 'Enter a reason (at least 3 characters) and confirm. The reason, date and administrator are stored, and the action is recorded in the activity log.', 'Norādiet iemeslu (vismaz 3 rakstzīmes) un apstipriniet. Iemesls, datums un administrators tiek saglabāti, un darbība tiek ierakstīta darbību žurnālā.')}</li>
+                                </ol>
+                                <Link href="/admin/client-database" className="mt-2 inline-block text-xs font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100">
+                                    {l('Перейти в «База клиентов»', 'Go to “Customer database”', 'Atvērt “Klientu datubāze”')}
+                                </Link>
+                            </div>
+
+                            <div>
+                                <h4 className="font-medium">{l('Что происходит после отзыва', 'What happens after revoking', 'Kas notiek pēc atsaukšanas')}</h4>
+                                <ul className="mt-2 list-disc space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
+                                    <li>{l('Номер снимается с клиента: по нему нельзя войти на сайт.', 'The number is taken off the client: it can no longer be used to sign in.', 'Numurs tiek noņemts klientam: ar to vairs nevar pieteikties vietnē.')}</li>
+                                    <li>{l('Номер больше никому не выдаётся — ни вручную, ни через подбор свободного номера, заявку, приглашение или импорт.', 'The number is never issued again — neither manually nor through the free-number suggestion, an application, an invitation or an import.', 'Numurs vairs netiek izsniegts nevienam — ne manuāli, ne ar brīvā numura piedāvājumu, pieteikumu, ielūgumu vai importu.')}</li>
+                                    <li>{l('Клиент выходит со всех устройств, его неиспользованные приглашения аннулируются.', 'The client is signed out on all devices and their unused invitations are cancelled.', 'Klients tiek izrakstīts no visām ierīcēm, un viņa neizmantotie ielūgumi tiek anulēti.')}</li>
+                                    <li>{l('Аккаунт, заказы и бонусы сохраняются. Клиент пропадает из списка держателей карт и не получает рассылку «Клиенты без карты».', 'The account, orders and bonus points are kept. The client leaves the card holder list and does not receive the “Clients without a card” mailing.', 'Konts, pasūtījumi un bonusi saglabājas. Klients pazūd no karšu īpašnieku saraksta un nesaņem izsūtni “Klienti bez kartes”.')}</li>
+                                    <li>{l('Клиенту можно выдать новую карту кнопкой «Добавить клиента» — по ней он снова сможет войти.', 'A new card can be issued to the client with “Add client” — they can sign in with it again.', 'Klientam var izsniegt jaunu karti ar pogu “Pievienot klientu” — ar to viņš atkal varēs pieteikties.')}</li>
+                                </ul>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="font-medium">{l('Как вернуть карту', 'How to restore a card', 'Kā atjaunot karti')}</h4>
+                                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
+                                        <li>{l('В «База клиентов» откройте «Отозванные карты» → «Показать».', 'In “Customer database”, open “Revoked cards” → “Show”.', 'Sadaļā “Klientu datubāze” atveriet “Atsauktās kartes” → “Rādīt”.')}</li>
+                                        <li>{l('Нажмите «Вернуть карту», укажите причину и подтвердите. Карта вернётся прежнему владельцу.', 'Click “Restore card”, enter a reason and confirm. The card goes back to its former holder.', 'Nospiediet “Atjaunot karti”, norādiet iemeslu un apstipriniet. Karte atgriezīsies iepriekšējam īpašniekam.')}</li>
+                                    </ol>
+                                    <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                                        {l(
+                                            'Вернуть можно, только пока клиенту не выдана другая карта. 905 карт массового отзыва 16.11.2026 из админки не возвращаются — только через разработчика.',
+                                            'A card can be restored only while the client has not been given another card. The 905 cards revoked in bulk on 16.11.2026 cannot be restored from the admin panel — only by the developer.',
+                                            'Karti var atjaunot tikai tik ilgi, kamēr klientam nav izsniegta cita karte. 905 kartes, kas masveidā atsauktas 16.11.2026, no administrēšanas paneļa neatjauno — tikai ar izstrādātāja palīdzību.'
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <h4 className="font-medium">{l('Как заменить карту', 'How to replace a card', 'Kā nomainīt karti')}</h4>
+                                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
+                                        <li>{l('Нажмите «Добавить клиента», укажите email клиента и новый номер карты.', 'Click “Add client” and enter the client’s email and the new card number.', 'Nospiediet “Pievienot klientu”, norādiet klienta e-pastu un jauno kartes numuru.')}</li>
+                                        <li>{l('Если у клиента уже есть карта, появится предупреждение и кнопка «Заменить карту». Подтвердите замену.', 'If the client already has a card, a warning and a “Replace card” button appear. Confirm the replacement.', 'Ja klientam jau ir karte, parādīsies brīdinājums un poga “Nomainīt karti”. Apstipriniet nomaiņu.')}</li>
+                                        <li>{l('Старая карта отзывается так же, как при отзыве, клиент выходит со всех устройств и получает новую карту.', 'The old card is revoked as described above, the client is signed out on all devices and receives the new card.', 'Vecā karte tiek atsaukta kā aprakstīts iepriekš, klients tiek izrakstīts no visām ierīcēm un saņem jauno karti.')}</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                     </div>
                     </details>
                 </aside>

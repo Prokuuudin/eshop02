@@ -51,6 +51,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
         setCardDialogOpen,
         cardEmail,
         setCardEmail,
+        cardReplacePending,
+        cancelCardReplace,
         cardNumber,
         setCardNumber,
         cardName,
@@ -273,9 +275,29 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 <Input value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="Anna" />
                             </label>
                             {formAlert && <div className="sm:col-span-2">{formAlert}</div>}
-                            <Button type="submit" disabled={cardBusy} className="sm:col-span-2 sm:w-auto sm:justify-self-start">
-                                {cardBusy ? l('Сохраняем…', 'Saving…', 'Saglabā…') : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
-                            </Button>
+                            {cardReplacePending && (
+                                <div role="alert" className="sm:col-span-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+                                    {l(
+                                        `У этого клиента уже есть карта ${cardReplacePending}. Заменить её на ${cardNumber.trim()}? Старая карта ${cardReplacePending} будет отозвана: по ней нельзя будет войти, её нельзя будет выдать другому, а клиент выйдет со всех устройств.`,
+                                        `This client already has card ${cardReplacePending}. Replace it with ${cardNumber.trim()}? Old card ${cardReplacePending} will be revoked: it can no longer be used to sign in or be issued to anyone else, and the client is signed out on all devices.`,
+                                        `Šim klientam jau ir karte ${cardReplacePending}. Nomainīt to pret ${cardNumber.trim()}? Vecā karte ${cardReplacePending} tiks atsaukta: ar to vairs nevarēs pieteikties, to nevarēs izsniegt citam, un klients tiks izrakstīts no visām ierīcēm.`
+                                    )}
+                                </div>
+                            )}
+                            <div className="sm:col-span-2 flex flex-wrap gap-2">
+                                <Button type="submit" disabled={cardBusy} variant={cardReplacePending ? 'destructive' : 'default'}>
+                                    {cardBusy
+                                        ? l('Сохраняем…', 'Saving…', 'Saglabā…')
+                                        : cardReplacePending
+                                            ? l(`Заменить карту ${cardReplacePending} → ${cardNumber.trim()}`, `Replace card ${cardReplacePending} → ${cardNumber.trim()}`, `Nomainīt karti ${cardReplacePending} → ${cardNumber.trim()}`)
+                                            : l('Сохранить и активировать карту', 'Save and activate card', 'Saglabāt un aktivizēt karti')}
+                                </Button>
+                                {cardReplacePending && (
+                                    <Button type="button" variant="outline" disabled={cardBusy} onClick={cancelCardReplace}>
+                                        {l('Отмена', 'Cancel', 'Atcelt')}
+                                    </Button>
+                                )}
+                            </div>
                         </form>
                     </DialogContent>
                 </Dialog>

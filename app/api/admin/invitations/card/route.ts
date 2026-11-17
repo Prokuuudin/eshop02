@@ -6,9 +6,16 @@ import { hashPassword, requireAdmin } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
-import { assertCardAssignable, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
+import { assertCardAssignable, isCardRevoked, isRevokedCardPolicyError, revokeCardInRegistry } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
+
+/** The customer already holds another card: the admin must confirm the swap first. */
+class ReplaceConfirmationRequired extends Error {
+  constructor(public readonly currentCardNumber: string) {
+    super('card_replace_confirmation_required')
+  }
+}
 
 // POST: вручную назначить номер карты клиенту (замена ERP-импорта).
 // Если клиент с таким email уже есть — просто проставляем ему карту (как раньше).
@@ -19,7 +26,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (actor instanceof NextResponse) return actor
 
   try {
-    const body = (await req.json()) as { email?: string; cardNumber?: string; name?: string; phone?: string }
+    const body = (await req.json()) as { email?: string; cardNumber?: string; name?: string; phone?: string; confirmReplace?: boolean }
     const email = body.email?.trim()
     const cardNumber = normalizeCardNumber(body.cardNumber ?? '')
     const name = body.name?.trim() || null
@@ -58,11 +65,24 @@ export async function POST(req: NextRequest): Promise<Response> {
             SELECT "cardNumber" FROM "User" WHERE id = ${user.id} FOR UPDATE`
           const previous = current?.cardNumber ? normalizeCardNumber(current.cardNumber) : null
           if (previous === cardNumber) return
+          // Replacing a card: the old number is revoked (no login, never reissued) and the
+          // customer's sessions end, but only after the admin confirmed the swap.
+          let oldCardRevoked = false
+          let sessionsRevoked = 0
+          if (previous !== null) {
+            if (body.confirmReplace !== true) throw new ReplaceConfirmationRequired(previous)
+            oldCardRevoked = await isCardRevoked(previous, tx)
+              || await revokeCardInRegistry(tx, {
+                cardNumber: previous, userId: user.id, revokedBy: actor.id, reason: `Replaced by card ${cardNumber}`,
+              })
+            sessionsRevoked = (await tx.session.deleteMany({ where: { userId: user.id } })).count
+          }
           await tx.user.update({ where: { id: user.id }, data: { cardNumber } })
           await appendServerAudit(tx, req, actor, {
             action: 'invitation.card_assigned', entityType: 'user', entityId: user.id,
             before: { hasCard: previous !== null },
-            after: { hasCard: true, cardChanged: previous !== null, accountCreated: false },
+            after: { hasCard: true, cardChanged: previous !== null, accountCreated: false, ...(previous !== null ? { oldCardRevoked } : {}) },
+            ...(previous !== null ? { details: `sessionsRevoked=${sessionsRevoked}` } : {}),
           })
         })
         return NextResponse.json({ ok: true, userId: user.id, created: false })
@@ -104,6 +124,15 @@ export async function POST(req: NextRequest): Promise<Response> {
       throw e
     }
   } catch (e) {
+    if (e instanceof ReplaceConfirmationRequired) {
+      return NextResponse.json({ error: 'card_replace_confirmation_required', currentCardNumber: e.currentCardNumber }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e, 'card_protected')) {
+      return NextResponse.json({ error: 'card_protected' }, { status: 409 })
+    }
+    if (isRevokedCardPolicyError(e, 'registry_inactive')) {
+      return NextResponse.json({ error: 'registry_inactive' }, { status: 409 })
+    }
     if (isRevokedCardPolicyError(e, 'card_revoked')) {
       return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
     }

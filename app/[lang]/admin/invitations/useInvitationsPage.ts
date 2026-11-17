@@ -65,6 +65,9 @@ function useInvitationsPageState() {
     const [cardDialogOpen, setCardDialogOpen] = useState(false);
     const [cardEmail, setCardEmail] = useState('');
     const [cardNumber, setCardNumber] = useState('');
+    // Set when the server reports that the client already holds another card; the next submit
+    // for the same email and number confirms the swap (the old card is revoked).
+    const [cardReplace, setCardReplace] = useState<{ email: string; number: string; currentCardNumber: string } | null>(null);
     const [cardName, setCardName] = useState('');
     const [cardPhone, setCardPhone] = useState('');
     const [cardBusy, setCardBusy] = useState(false);
@@ -351,9 +354,15 @@ function useInvitationsPageState() {
         }
         setCardBusy(true);
         try {
-            const { data: json } = await assignInvitationCard(email, number, cardName.trim(), phone);
+            const confirmReplace = cardReplace !== null && cardReplace.email === email && cardReplace.number === number;
+            const { data: json } = await assignInvitationCard(email, number, cardName.trim(), phone, confirmReplace);
             if ('error' in json) {
                 const err = json.error;
+                if (err === 'card_replace_confirmation_required' && json.currentCardNumber) {
+                    setCardReplace({ email, number, currentCardNumber: json.currentCardNumber });
+                    return;
+                }
+                setCardReplace(null);
                 const msg =
                     err === 'phone_required'
                         ? l('Для нового клиента укажите телефон — это данные активации карты', 'Enter a phone number for a new client — it is the card-activation contact', 'Jaunam klientam norādiet tālruni — tie ir kartes aktivizācijas dati')
@@ -361,6 +370,12 @@ function useInvitationsPageState() {
                         ? l('Этот номер карты уже занят', 'This card number is already taken', 'Šis kartes numurs jau ir aizņemts')
                         : err === 'staff_account'
                         ? l('Это учётная запись сотрудника — карту назначить нельзя', 'This is a staff account — a card cannot be assigned', 'Šis ir darbinieka konts — karti piešķirt nevar')
+                        : err === 'card_revoked'
+                        ? l('Этот номер карты отозван — выдать его нельзя', 'This card number is revoked and cannot be issued', 'Šis kartes numurs ir atsaukts — to izsniegt nevar')
+                        : err === 'card_protected'
+                        ? l('Текущую карту клиента нельзя отозвать автоматически — обратитесь к разработчику', 'The current client card cannot be revoked automatically — contact the developer', 'Klienta pašreizējo karti nevar atsaukt automātiski — sazinieties ar izstrādātāju')
+                        : err === 'registry_inactive'
+                        ? l('Отзыв карт выключен — заменить карту сейчас нельзя', 'Card revocation is switched off — the card cannot be replaced now', 'Karšu atsaukšana ir izslēgta — karti šobrīd nevar nomainīt')
                         : err === 'invalid_card'
                         ? l('Номер карты: 1–6 цифр', 'Card number: 1–6 digits', 'Kartes numurs: 1–6 cipari')
                         : err === 'invalid_email'
@@ -386,6 +401,10 @@ function useInvitationsPageState() {
                         : l('приглашение не отправлено — отправьте вручную из таблицы', 'invitation not sent — send it manually from the table', 'ielūgums nav nosūtīts — nosūtiet to no tabulas')
                 );
             }
+            if (confirmReplace && cardReplace) {
+                parts.push(l(`старая карта ${cardReplace.currentCardNumber} отозвана`, `old card ${cardReplace.currentCardNumber} revoked`, `vecā karte ${cardReplace.currentCardNumber} atsaukta`));
+            }
+            setCardReplace(null);
             setMessage(parts.join(', '));
             setCardDialogOpen(false);
             setCardEmail('');
@@ -537,6 +556,8 @@ function useInvitationsPageState() {
         cardDialogOpen,
         setCardDialogOpen,
         cardEmail,
+        cardReplacePending: cardReplace && cardReplace.email === cardEmail.trim() && cardReplace.number === cardNumber.trim() ? cardReplace.currentCardNumber : null,
+        cancelCardReplace: () => setCardReplace(null),
         setCardEmail,
         cardNumber,
         setCardNumber,

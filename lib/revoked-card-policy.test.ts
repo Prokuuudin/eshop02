@@ -12,6 +12,8 @@ import {
   getRevokedCardPolicy,
   isRevokedCardPolicyError,
   resetRevokedCardPolicyCache,
+  restoreCardInRegistry,
+  revokeCardInRegistry,
   verifyRevokedCardPolicyAgainstDatabase,
   type RevokedCardEntry,
 } from '@/lib/revoked-card-policy'
@@ -66,15 +68,87 @@ describe('getRevokedCardPolicy', () => {
     ['a non-object value', () => 'nope'],
     ['a missing checksum', () => ({ ...buildRevokedCardValue(), checksum: undefined })],
     ['a checksum mismatch', () => ({ ...buildRevokedCardValue(), checksum: 'a'.repeat(64) })],
-    ['the wrong number of cards', () => withCards(buildRevokedCardValue(), (cards) => { delete cards['900001'] })],
     ['protected card 111', () => withCards(buildRevokedCardValue(), (cards) => { delete cards['900001']; cards['111'] = { userId: 'x', preserveLogin: false } })],
     ['protected card 5044', () => withCards(buildRevokedCardValue(), (cards) => { delete cards['900001']; cards['5044'] = { userId: 'x', preserveLogin: false } })],
     ['a non-canonical number', () => withCards(buildRevokedCardValue(), (cards) => { delete cards['900001']; cards['04001'] = { userId: 'x', preserveLogin: false } })],
-    ['one user on two cards', () => withCards(buildRevokedCardValue(), (cards) => { cards['900001'] = { userId: 'u-synthetic-900002', preserveLogin: false } })],
     ['preserveLogin on another card', () => withCards(buildRevokedCardValue(), (cards) => { cards['900001'] = { userId: 'u-synthetic-900001', preserveLogin: true } })],
-    ['preserveLogin removed from 5555', () => withCards(buildRevokedCardValue(), (cards) => { cards['5555'] = { userId: PRESERVED_OWNER_ID, preserveLogin: false } })],
+    ['preserveLogin on an admin revocation of 5555', () => withCards(buildRevokedCardValue(), (cards) => { cards['5555'] = { ...cards['5555'], origin: 'admin' } })],
   ])('rejects %s as invalid_configuration (fail closed)', async (_label, value) => {
     expect(await errorCode(getRevokedCardPolicy(dbWith(revokedCardRow(value()))))).toBe('invalid_configuration')
+  })
+
+  it.each([
+    ['more cards than the 2026-11-16 batch', () => withCards(buildRevokedCardValue(), (cards) => { cards['4001'] = { userId: 'u1', preserveLogin: false } })],
+    ['fewer cards than the batch', () => withCards(buildRevokedCardValue(), (cards) => { delete cards['900001'] })],
+    ['one customer with two revoked cards', () => withCards(buildRevokedCardValue(), (cards) => { cards['900001'] = { userId: 'u-synthetic-900002', preserveLogin: false } })],
+    ['an admin revocation with its metadata', () => withCards(buildRevokedCardValue(), (cards) => {
+      cards['4001'] = { userId: 'u1', preserveLogin: false, origin: 'admin', revokedAt: '2026-11-17T10:00:00.000Z', revokedBy: 'admin-1', reason: 'Lost' }
+    })],
+  ])('accepts %s', async (_label, value) => {
+    expect((await getRevokedCardPolicy(dbWith(revokedCardRow(value())))).active).toBe(true)
+  })
+})
+
+describe('admin revocation writes', () => {
+  /** In-memory registry row behind the same calls the writers make. */
+  function registryTx(initial: unknown) {
+    const state = { row: initial === undefined ? null : { value: initial }, locks: 0 }
+    const tx = {
+      $queryRaw: vi.fn(async () => { state.locks++; return [] }),
+      keyValueSetting: {
+        findUnique: vi.fn(async () => state.row),
+        upsert: vi.fn(async ({ update }: { update: { value: unknown } }) => { state.row = { value: update.value } }),
+      },
+    }
+    const cards = () => (state.row?.value as { cards: Record<string, RevokedCardEntry> }).cards
+    return { tx: tx as never, state, cards }
+  }
+  const NOW = new Date('2026-11-17T12:00:00.000Z')
+
+  it('adds a card with its metadata under a row lock and keeps the batch and its source', async () => {
+    const { tx, state, cards } = registryTx(buildRevokedCardValue())
+    expect(await revokeCardInRegistry(tx, { cardNumber: '04001', userId: 'u1', revokedBy: 'admin-1', reason: ' Lost card ', now: NOW })).toBe(true)
+
+    expect(state.locks).toBe(1)
+    expect(cards()['4001']).toEqual({ userId: 'u1', preserveLogin: false, origin: 'admin', revokedAt: NOW.toISOString(), revokedBy: 'admin-1', reason: 'Lost card' })
+    expect(Object.keys(cards())).toHaveLength(906)
+    expect((state.row?.value as { source: string }).source).toBe('test-fixture')
+    // The written value is a valid registry that every reader accepts.
+    expect((await getRevokedCardPolicy(dbWith(revokedCardRow(state.row?.value, NOW)))).cards.has('4001')).toBe(true)
+  })
+
+  it('leaves an already revoked number untouched', async () => {
+    const { tx, cards } = registryTx(buildRevokedCardValue({ '4001': 'u1' }))
+    expect(await revokeCardInRegistry(tx, { cardNumber: '4001', userId: 'u2', revokedBy: 'admin-1', reason: 'x' })).toBe(false)
+    expect(cards()['4001']).toEqual({ userId: 'u1', preserveLogin: false })
+  })
+
+  it('starts an empty registry when none exists yet', async () => {
+    const { tx, cards } = registryTx(undefined)
+    expect(await revokeCardInRegistry(tx, { cardNumber: '4001', userId: 'u1', revokedBy: 'admin-1', reason: 'Lost', now: NOW })).toBe(true)
+    expect(Object.keys(cards())).toEqual(['4001'])
+  })
+
+  it.each([
+    ['protected card 111', '111', buildRevokedCardValue(), 'card_protected'],
+    ['a switched-off registry', '4001', { ...buildRevokedCardValue(), active: false }, 'registry_inactive'],
+    ['a corrupt registry', '4001', { ...buildRevokedCardValue(), checksum: 'a'.repeat(64) }, 'invalid_configuration'],
+  ])('refuses %s without writing', async (_label, cardNumber, value, code) => {
+    const { tx, state } = registryTx(value)
+    const before = JSON.stringify(state.row)
+    expect(await errorCode(revokeCardInRegistry(tx, { cardNumber, userId: 'u1', revokedBy: 'admin-1', reason: 'x' }))).toBe(code)
+    expect(JSON.stringify(state.row)).toBe(before)
+  })
+
+  it('restores only admin revocations', async () => {
+    const { tx, cards } = registryTx(buildRevokedCardValue({ '4002': 'u2' }))
+    await revokeCardInRegistry(tx, { cardNumber: '4001', userId: 'u1', revokedBy: 'admin-1', reason: 'Lost', now: NOW })
+
+    expect((await restoreCardInRegistry(tx, '4001')).userId).toBe('u1')
+    expect(cards()['4001']).toBeUndefined()
+    expect(await errorCode(restoreCardInRegistry(tx, '4002'))).toBe('not_restorable')
+    expect(await errorCode(restoreCardInRegistry(tx, '7777'))).toBe('not_restorable')
+    expect(cards()['4002']).toBeDefined()
   })
 })
 

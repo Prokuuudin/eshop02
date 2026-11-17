@@ -5,9 +5,12 @@ import { z } from 'zod'
 
 import { normalizeCardNumber } from '@/lib/card-number'
 import { prisma, type ExtendedPrismaClient } from '@/lib/prisma'
+import type { Prisma } from '@/generated/prisma/client'
 
 export const REVOKED_CARD_SETTING_KEY = 'revoked-client-cards:v1'
+/** Size of the 2026-11-16 batch. The registry may grow past it through admin revocations. */
 export const REVOKED_CARD_BATCH_SIZE = 905
+export const REVOKE_REASON_MAX_LENGTH = 500
 
 const FORBIDDEN_CARDS = new Set(['111', '5044'])
 const PRESERVED_LOGIN_CARD = '5555'
@@ -15,6 +18,12 @@ const PRESERVED_LOGIN_CARD = '5555'
 const entrySchema = z.object({
   userId: z.string().trim().min(1).max(200),
   preserveLogin: z.boolean(),
+  // Set only on cards revoked from the admin panel; the 2026-11-16 batch entries have none.
+  // Metadata stays outside the checksum, which covers the card-to-user mapping only.
+  origin: z.literal('admin').optional(),
+  revokedAt: z.iso.datetime().optional(),
+  revokedBy: z.string().trim().min(1).max(200).optional(),
+  reason: z.string().trim().min(1).max(REVOKE_REASON_MAX_LENGTH).optional(),
 }).strict()
 
 const activeConfigSchema = z.object({
@@ -39,7 +48,13 @@ type PolicyDb = Pick<ExtendedPrismaClient, 'keyValueSetting'>
 
 export class RevokedCardPolicyError extends Error {
   constructor(
-    public readonly code: 'configuration_unavailable' | 'invalid_configuration' | 'card_revoked',
+    public readonly code:
+      | 'configuration_unavailable'
+      | 'invalid_configuration'
+      | 'card_revoked'
+      | 'registry_inactive'
+      | 'card_protected'
+      | 'not_restorable',
     message: string,
   ) {
     super(message)
@@ -82,28 +97,22 @@ function invalid(message: string): never {
  * of one mapped account must not turn the whole registry invalid and fail every card login closed.
  */
 function validateActiveConfig(config: RevokedCardConfig): RevokedCardPolicy {
-  const rawEntries = Object.entries(config.cards)
-  if (rawEntries.length !== REVOKED_CARD_BATCH_SIZE) {
-    invalid(`Expected ${REVOKED_CARD_BATCH_SIZE} revoked cards, received ${rawEntries.length}`)
-  }
-
+  // No fixed size: admin revocations add cards, and one customer may collect several revoked
+  // cards over time (revoked, reissued, revoked again). The checksum guards the mapping.
   const normalizedCards: Record<string, RevokedCardEntry> = {}
-  const userIds = new Set<string>()
-  for (const [rawCardNumber, entry] of rawEntries) {
+  for (const [rawCardNumber, entry] of Object.entries(config.cards)) {
     const cardNumber = normalizeCardNumber(rawCardNumber)
     if (!cardNumber || cardNumber !== rawCardNumber) invalid(`Card number is not canonical: ${rawCardNumber}`)
     if (FORBIDDEN_CARDS.has(cardNumber)) invalid(`Protected card is present: ${cardNumber}`)
     if (normalizedCards[cardNumber]) invalid(`Duplicate normalized card: ${cardNumber}`)
-    if (userIds.has(entry.userId)) invalid(`User is mapped to more than one card: ${entry.userId}`)
     normalizedCards[cardNumber] = entry
-    userIds.add(entry.userId)
   }
 
   if (computeRevokedCardChecksum(normalizedCards) !== config.checksum) invalid('Checksum mismatch')
 
   const preserved = Object.entries(normalizedCards).filter(([, entry]) => entry.preserveLogin)
-  if (preserved.length !== 1 || preserved[0][0] !== PRESERVED_LOGIN_CARD) {
-    invalid(`preserveLogin must be enabled only for card ${PRESERVED_LOGIN_CARD}`)
+  if (preserved.some(([cardNumber, entry]) => cardNumber !== PRESERVED_LOGIN_CARD || entry.origin === 'admin')) {
+    invalid(`preserveLogin may be enabled only for batch card ${PRESERVED_LOGIN_CARD}`)
   }
 
   const cardNumbers = Object.freeze(Object.keys(normalizedCards).sort((a, b) => a.localeCompare(b, 'en')))
@@ -129,7 +138,7 @@ export async function verifyRevokedCardPolicyAgainstDatabase(
   if (!parsed.success) invalid('Active setting has an invalid shape')
   const policy = validateActiveConfig(parsed.data)
   const normalizedCards = Object.fromEntries(policy.cards)
-  const userIds = [...policy.cards.values()].map((entry) => entry.userId)
+  const userIds = [...new Set([...policy.cards.values()].map((entry) => entry.userId))]
 
   const users = await db.user.findMany({
     where: { id: { in: userIds } },
@@ -155,6 +164,8 @@ export async function verifyRevokedCardPolicyAgainstDatabase(
 
   const usersById = new Map(users.map((user) => [user.id, user]))
   for (const [cardNumber, entry] of Object.entries(normalizedCards)) {
+    // Admin revocations are checked when they are written (see revokeCardInRegistry).
+    if (entry.origin === 'admin') continue
     const user = usersById.get(entry.userId)
     if (!user || normalizeCardNumber(user.cardNumber ?? '') !== cardNumber) {
       invalid(`Card-to-user ownership mismatch for card ${cardNumber}`)
@@ -281,6 +292,82 @@ export async function canAuthenticateWithCard(
     && user.customerType === 'individual'
     && !user.mustChangePassword
     && user.privacyAcknowledgedAt !== null)
+}
+
+type RegistryTx = Pick<ExtendedPrismaClient, 'keyValueSetting' | '$queryRaw'>
+
+/**
+ * Locks the registry row for the rest of the transaction and returns its validated state, so
+ * concurrent admin revocations serialise instead of overwriting each other's JSON. No row yet
+ * starts an empty active registry; a rolled-back (active=false) registry is never re-enabled
+ * from the admin panel.
+ */
+type LockedRegistry = { cards: Record<string, RevokedCardEntry>; source: string }
+
+async function lockRegistryForWrite(tx: RegistryTx): Promise<LockedRegistry> {
+  await tx.$queryRaw`SELECT "key" FROM "KeyValueSetting" WHERE "key" = ${REVOKED_CARD_SETTING_KEY} FOR UPDATE`
+  const row = await tx.keyValueSetting.findUnique({ where: { key: REVOKED_CARD_SETTING_KEY }, select: { value: true } })
+  if (!row) return { cards: {}, source: 'admin-panel' }
+  const state = row.value as Record<string, unknown> | null
+  if (state && typeof state === 'object' && state.active === false) {
+    throw new RevokedCardPolicyError('registry_inactive', 'Revoked-card registry is switched off')
+  }
+  const parsed = activeConfigSchema.safeParse(state)
+  if (!parsed.success) invalid('Active setting has an invalid shape')
+  return { cards: Object.fromEntries(validateActiveConfig(parsed.data).cards), source: parsed.data.source }
+}
+
+async function writeRegistry(tx: RegistryTx, { cards, source }: LockedRegistry): Promise<void> {
+  const config: RevokedCardConfig = { active: true, source, checksum: computeRevokedCardChecksum(cards), cards }
+  validateActiveConfig(config)
+  const value = config as unknown as Prisma.InputJsonObject
+  await tx.keyValueSetting.upsert({
+    where: { key: REVOKED_CARD_SETTING_KEY },
+    create: { key: REVOKED_CARD_SETTING_KEY, value },
+    update: { value },
+  })
+}
+
+/**
+ * Adds one card to the registry as revoked by an admin. The caller has locked the customer row
+ * and checked that `userId` holds (or held, for a replacement) this card. Returns false when the
+ * number is already revoked, which changes nothing.
+ */
+export async function revokeCardInRegistry(
+  tx: RegistryTx,
+  input: { cardNumber: string; userId: string; revokedBy: string; reason: string; now?: Date },
+): Promise<boolean> {
+  const cardNumber = normalizeCardNumber(input.cardNumber)
+  if (!cardNumber) invalid('Card number is empty')
+  if (FORBIDDEN_CARDS.has(cardNumber)) {
+    throw new RevokedCardPolicyError('card_protected', 'This card number is handled outside the registry')
+  }
+  const registry = await lockRegistryForWrite(tx)
+  const { cards } = registry
+  if (cards[cardNumber]) return false
+  cards[cardNumber] = {
+    userId: input.userId,
+    preserveLogin: false,
+    origin: 'admin',
+    revokedAt: (input.now ?? new Date()).toISOString(),
+    revokedBy: input.revokedBy,
+    reason: input.reason.trim().slice(0, REVOKE_REASON_MAX_LENGTH),
+  }
+  await writeRegistry(tx, registry)
+  return true
+}
+
+/** Removes an admin revocation. Batch (2026-11-16) entries stay: they roll back only as a whole. */
+export async function restoreCardInRegistry(tx: RegistryTx, cardNumberInput: string): Promise<RevokedCardEntry> {
+  const cardNumber = normalizeCardNumber(cardNumberInput)
+  const registry = await lockRegistryForWrite(tx)
+  const entry = registry.cards[cardNumber]
+  if (!entry || entry.origin !== 'admin') {
+    throw new RevokedCardPolicyError('not_restorable', 'Only cards revoked from the admin panel can be restored')
+  }
+  delete registry.cards[cardNumber]
+  await writeRegistry(tx, registry)
+  return entry
 }
 
 export function isRevokedCardPolicyError(error: unknown, code?: RevokedCardPolicyError['code']): error is RevokedCardPolicyError {

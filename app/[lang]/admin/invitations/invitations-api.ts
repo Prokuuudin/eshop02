@@ -113,18 +113,19 @@ export async function sendSmsInvitationBatch(
     }));
 }
 
-export type AssignCardResult = { ok: true; userId: string; created: boolean } | { error: string };
+export type AssignCardResult = { ok: true; userId: string; created: boolean } | { error: string; currentCardNumber?: string };
 
 export async function assignInvitationCard(
     email: string,
     cardNumber: string,
     name?: string,
-    phone?: string
+    phone?: string,
+    confirmReplace = false
 ): Promise<{ ok: boolean; data: AssignCardResult }> {
     return parseResponse(await fetch('/api/admin/invitations/card', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, cardNumber, name, phone }),
+        body: JSON.stringify({ email, cardNumber, name, phone, ...(confirmReplace ? { confirmReplace: true } : {}) }),
     }));
 }
 

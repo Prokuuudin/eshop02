@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from '@/components/LocalizedLink';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,8 @@ import CardRequestsPanel from '../CardRequestsPanel';
 import { pointsToEuros } from '@/lib/bonus-program';
 import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
-import { useAdminClientBarcodesPage } from './useAdminClientBarcodesPage';
+import { useAdminClientBarcodesPage, type CardHolder } from './useAdminClientBarcodesPage';
+import { RevokeCardDialog, RevokedCardsPanel } from './CardRevocation';
 import { isCompleteClientStepUp } from './client-barcodes-model';
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
@@ -50,6 +51,12 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         submitClientStepUp,
     } = pageState;
     const locale = getLocaleFromLanguage(language);
+    // Card revocation is admin-only (the server enforces users.manage) and lives on the full
+    // customer database, where every card holder is listed.
+    const canRevokeCards = canEditBankDetails && !registeredOnly;
+    const [revokeHolder, setRevokeHolder] = useState<CardHolder | null>(null);
+    const [revokeNotice, setRevokeNotice] = useState('');
+    const [revokedRefresh, setRevokedRefresh] = useState(0);
     const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
     return (
         <AdminGate>
@@ -72,10 +79,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     </div>
                 </div>
 
-                {(formError || message) && (
+                {(formError || message || revokeNotice) && (
                     <div className="rounded-lg border px-4 py-3 text-sm">
                         {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
                         {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
+                        {revokeNotice && <p className="text-emerald-600 dark:text-emerald-400">{revokeNotice}</p>}
                     </div>
                 )}
 
@@ -348,6 +356,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                     <Button size="sm" variant="outline" disabled={clientSaveBusy === holder.id} onClick={() => void handleSaveClientDetails(holder)}>
                                                         {clientSaveBusy === holder.id ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Сохранить', 'Save', 'Saglabāt')}
                                                     </Button>
+                                                    {canRevokeCards && holder.cardNumber && (
+                                                        <Button size="sm" variant="ghost" className="ml-1 text-destructive hover:text-destructive" onClick={() => { setRevokeNotice(''); setRevokeHolder(holder); }}>
+                                                            {l('Отозвать карту', 'Revoke card', 'Atsaukt karti')}
+                                                        </Button>
+                                                    )}
                                                     {clientRowErrors[holder.id] && (
                                                         <p role="alert" className="mt-1 w-48 whitespace-normal text-xs text-red-600 dark:text-red-400">
                                                             {clientRowErrors[holder.id]}
@@ -375,6 +388,30 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         </div>
                     )}
                 </section>
+                {canRevokeCards && (
+                    <RevokedCardsPanel
+                        l={l}
+                        locale={locale}
+                        refreshKey={revokedRefresh}
+                        onChanged={() => { void loadCardHolders(); }}
+                    />
+                )}
+                <RevokeCardDialog
+                    key={revokeHolder?.id ?? 'none'}
+                    holder={revokeHolder}
+                    l={l}
+                    onClose={() => setRevokeHolder(null)}
+                    onRevoked={(holder) => {
+                        setRevokeHolder(null);
+                        setRevokeNotice(l(
+                            `Карта ${holder.cardNumber} отозвана. Клиент убран из списка держателей карт; отменить можно в разделе «Отозванные карты» ниже.`,
+                            `Card ${holder.cardNumber} revoked. The client was removed from the card holder list; you can undo it under "Revoked cards" below.`,
+                            `Karte ${holder.cardNumber} atsaukta. Klients izņemts no karšu īpašnieku saraksta; atcelt var sadaļā “Atsauktās kartes” zemāk.`,
+                        ));
+                        setRevokedRefresh((value) => value + 1);
+                        void loadCardHolders();
+                    }}
+                />
                 <Dialog open={clientStepUp !== null} onOpenChange={(open) => { if (!open) closeClientStepUp(); }}>
                     <DialogContent>
                         <DialogHeader>

@@ -11,7 +11,7 @@ vi.mock('@/lib/mfa', () => ({ verifyTotpCode: verifyTotpMock, decryptSecret: (s:
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: {
   user: { findUnique: userFindMock, findMany: userFindManyMock, count: userCountMock }, $transaction: transactionMock,
-  keyValueSetting: { findUnique: settingMock },
+  keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(null) : settingMock(args)) },
 } }))
 import { GET, PATCH } from './route'
 import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
@@ -33,7 +33,7 @@ const STEP_UP = { reason: 'approved staff change', currentPassword: 'password', 
 function txFor(before: Record<string, unknown>, superAdminCount = 1) {
   let after = before
   const tx = {
-    keyValueSetting: { findUnique: settingMock },
+    keyValueSetting: { findUnique: (args: { where: { key: string } }) => (args.where.key === 'revoked-client-cards:admin:v1' ? Promise.resolve(null) : settingMock(args)) },
     user: {
       findUnique: vi.fn().mockImplementation(async () => before),
       findUniqueOrThrow: vi.fn().mockImplementation(async () => after),

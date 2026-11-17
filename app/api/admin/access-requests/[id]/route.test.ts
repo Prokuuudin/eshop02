@@ -82,7 +82,7 @@ function makeDb(s: State) {
     },
     keyValueSetting: {
       // Revoked-card registry: absent unless a test installs one.
-      findUnique: async () => h.revokedCardSetting,
+      findUnique: async ({ where }: { where: { key: string } }) => (where.key === 'revoked-client-cards:admin:v1' ? null : h.revokedCardSetting),
       deleteMany: async ({ where }: { where: { key: string } }) => {
         const id = where.key.replace(/^access-request-cert-/u, '')
         const existed = id in s.certificates

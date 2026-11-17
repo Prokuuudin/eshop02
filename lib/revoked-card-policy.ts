@@ -5,9 +5,17 @@ import { z } from 'zod'
 
 import { normalizeCardNumber } from '@/lib/card-number'
 import { prisma, type ExtendedPrismaClient } from '@/lib/prisma'
+import type { Prisma } from '@/generated/prisma/client'
 
 export const REVOKED_CARD_SETTING_KEY = 'revoked-client-cards:v1'
 export const REVOKED_CARD_BATCH_SIZE = 905
+/**
+ * Cards revoked one by one from the admin panel live in their own row, never in the
+ * 2026-11-16 batch row above: older releases accept that row only as exactly the 905-card
+ * batch, so writing to it would fail every card path closed after a rollback.
+ */
+export const ADMIN_REVOKED_CARD_SETTING_KEY = 'revoked-client-cards:admin:v1'
+export const REVOKE_REASON_MAX_LENGTH = 500
 
 const FORBIDDEN_CARDS = new Set(['111', '5044'])
 const PRESERVED_LOGIN_CARD = '5555'
@@ -39,7 +47,12 @@ type PolicyDb = Pick<ExtendedPrismaClient, 'keyValueSetting'>
 
 export class RevokedCardPolicyError extends Error {
   constructor(
-    public readonly code: 'configuration_unavailable' | 'invalid_configuration' | 'card_revoked',
+    public readonly code:
+      | 'configuration_unavailable'
+      | 'invalid_configuration'
+      | 'card_revoked'
+      | 'card_protected'
+      | 'not_restorable',
     message: string,
   ) {
     super(message)
@@ -223,11 +236,16 @@ export async function assertCardsAssignable(cardNumbers: readonly string[], db: 
   if (cardNumbers.some((cardNumber) => policy.cards.has(normalizeCardNumber(cardNumber)))) {
     throw new RevokedCardPolicyError('card_revoked', 'Revoked card cannot be assigned')
   }
+  const adminRevoked = await getAdminCardRevocations(db)
+  if (cardNumbers.some((cardNumber) => adminRevoked.has(normalizeCardNumber(cardNumber)))) {
+    throw new RevokedCardPolicyError('card_revoked', 'Revoked card cannot be assigned')
+  }
 }
 
 export async function isCardRevoked(cardNumber: string, db: PolicyDb = prisma): Promise<boolean> {
   const policy = await getRevokedCardPolicy(db)
-  return policy.cards.has(normalizeCardNumber(cardNumber))
+  const normalized = normalizeCardNumber(cardNumber)
+  return policy.cards.has(normalized) || (await getAdminCardRevocations(db)).has(normalized)
 }
 
 /** Revoked ownership is immutable until the policy itself is rolled back. */
@@ -244,7 +262,7 @@ export async function assertUserCardMutationAllowed(
   if (currentEntry?.userId === userId && current !== next) {
     throw new RevokedCardPolicyError('card_revoked', 'Revoked card ownership cannot be changed')
   }
-  if (next && next !== current && policy.cards.has(next)) {
+  if (next && next !== current && (policy.cards.has(next) || (await getAdminCardRevocations(db)).has(next))) {
     throw new RevokedCardPolicyError('card_revoked', 'Revoked card cannot be assigned')
   }
 }
@@ -281,6 +299,102 @@ export async function canAuthenticateWithCard(
     && user.customerType === 'individual'
     && !user.mustChangePassword
     && user.privacyAcknowledgedAt !== null)
+}
+
+// -- Admin-panel revocations -------------------------------------------------------------------
+//
+// Revoking detaches the number from the customer (User.cardNumber := null) and records it here.
+// Card login, card activation and invitations all find the customer through User.cardNumber, so
+// the number stops working in this and in older releases alike; this row only keeps the number
+// from being issued again. The account, orders and bonus points are untouched.
+
+const adminEntrySchema = z.object({
+  userId: z.string().trim().min(1).max(200),
+  revokedAt: z.iso.datetime(),
+  revokedBy: z.string().trim().min(1).max(200),
+  reason: z.string().trim().min(1).max(REVOKE_REASON_MAX_LENGTH),
+}).strict()
+
+const adminRegistrySchema = z.object({ cards: z.record(z.string(), adminEntrySchema) }).strict()
+
+export type AdminCardRevocation = z.infer<typeof adminEntrySchema>
+
+function parseAdminRegistry(value: unknown): Map<string, AdminCardRevocation> {
+  const parsed = adminRegistrySchema.safeParse(value)
+  if (!parsed.success) invalid('Admin revocation setting has an invalid shape')
+  const cards = new Map<string, AdminCardRevocation>()
+  for (const [cardNumber, entry] of Object.entries(parsed.data.cards)) {
+    if (!cardNumber || normalizeCardNumber(cardNumber) !== cardNumber) invalid(`Card number is not canonical: ${cardNumber}`)
+    cards.set(cardNumber, entry)
+  }
+  return cards
+}
+
+/** No row means nothing was revoked from the admin panel. Unreadable or malformed fails closed. */
+export async function getAdminCardRevocations(db: PolicyDb = prisma): Promise<ReadonlyMap<string, AdminCardRevocation>> {
+  let row: { value: unknown } | null
+  try {
+    row = await db.keyValueSetting.findUnique({ where: { key: ADMIN_REVOKED_CARD_SETTING_KEY }, select: { value: true } })
+  } catch {
+    throw new RevokedCardPolicyError('configuration_unavailable', 'Unable to read admin card revocations')
+  }
+  return row ? parseAdminRegistry(row.value) : new Map()
+}
+
+type AdminRegistryTx = Pick<ExtendedPrismaClient, 'keyValueSetting' | '$executeRaw'>
+
+/** Serialises admin revocation writes; the row may not exist yet, so lock the key, not the row. */
+async function lockAdminRegistry(tx: AdminRegistryTx): Promise<Map<string, AdminCardRevocation>> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${ADMIN_REVOKED_CARD_SETTING_KEY}))`
+  const row = await tx.keyValueSetting.findUnique({ where: { key: ADMIN_REVOKED_CARD_SETTING_KEY }, select: { value: true } })
+  return row ? parseAdminRegistry(row.value) : new Map()
+}
+
+async function writeAdminRegistry(tx: AdminRegistryTx, cards: Map<string, AdminCardRevocation>): Promise<void> {
+  const value = { cards: Object.fromEntries(cards) } as unknown as Prisma.InputJsonObject
+  parseAdminRegistry(value)
+  await tx.keyValueSetting.upsert({
+    where: { key: ADMIN_REVOKED_CARD_SETTING_KEY },
+    create: { key: ADMIN_REVOKED_CARD_SETTING_KEY, value },
+    update: { value },
+  })
+}
+
+/**
+ * Records an admin revocation. The caller has locked the customer row and detaches the number
+ * from it in the same transaction. Returns false when the number is already revoked (batch or
+ * admin), which changes nothing. The batch row is only read, never written.
+ */
+export async function recordAdminCardRevocation(
+  tx: AdminRegistryTx,
+  input: { cardNumber: string; userId: string; revokedBy: string; reason: string; now?: Date },
+): Promise<boolean> {
+  const cardNumber = normalizeCardNumber(input.cardNumber)
+  if (!cardNumber) invalid('Card number is empty')
+  if (FORBIDDEN_CARDS.has(cardNumber)) {
+    throw new RevokedCardPolicyError('card_protected', 'This card number is handled outside the registry')
+  }
+  const cards = await lockAdminRegistry(tx)
+  if (cards.has(cardNumber) || (await getRevokedCardPolicy(tx)).cards.has(cardNumber)) return false
+  cards.set(cardNumber, {
+    userId: input.userId,
+    revokedAt: (input.now ?? new Date()).toISOString(),
+    revokedBy: input.revokedBy,
+    reason: input.reason.trim().slice(0, REVOKE_REASON_MAX_LENGTH),
+  })
+  await writeAdminRegistry(tx, cards)
+  return true
+}
+
+/** Removes an admin revocation. Batch (2026-11-16) cards are not in this row and roll back only as a whole. */
+export async function removeAdminCardRevocation(tx: AdminRegistryTx, cardNumberInput: string): Promise<AdminCardRevocation> {
+  const cardNumber = normalizeCardNumber(cardNumberInput)
+  const cards = await lockAdminRegistry(tx)
+  const entry = cards.get(cardNumber)
+  if (!entry) throw new RevokedCardPolicyError('not_restorable', 'Only cards revoked from the admin panel can be restored')
+  cards.delete(cardNumber)
+  await writeAdminRegistry(tx, cards)
+  return entry
 }
 
 export function isRevokedCardPolicyError(error: unknown, code?: RevokedCardPolicyError['code']): error is RevokedCardPolicyError {

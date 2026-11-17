@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
-import { getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
+import { getAdminCardRevocations, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
 
@@ -14,16 +14,18 @@ export async function GET(): Promise<NextResponse> {
   if (gate instanceof NextResponse) return gate
 
   try {
-    const [rows, policy] = await Promise.all([
+    const [rows, policy, adminRevoked] = await Promise.all([
       prisma.user.findMany({
         where: { cardNumber: { gte: '1000', lte: '9999' } },
         select: { cardNumber: true },
       }),
       getRevokedCardPolicy(),
+      getAdminCardRevocations(),
     ])
     const taken = new Set([
       ...rows.map((r) => r.cardNumber).filter((c): c is string => c !== null),
       ...policy.cardNumbers,
+      ...adminRevoked.keys(),
     ])
 
     let candidate = 1000

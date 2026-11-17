@@ -16,6 +16,7 @@ const { userFindFirstMock, userUpdateMock, userCreateMock, hashPasswordMock, req
     audits: [] as Array<Record<string, unknown>>,
     queue: Promise.resolve() as Promise<unknown>,
     revokedCardSetting: null as { value: unknown; updatedAt: Date } | null,
+    adminRevocations: null as { value: unknown } | null,
   },
 }))
 
@@ -33,9 +34,25 @@ vi.mock('@/lib/prisma', () => ({
         const writes: string[] = []
         const audits: Array<Record<string, unknown>> = []
         const cards: Record<string, string | null> = { ...h.cards }
+        let adminRevocations = h.adminRevocations
         const tx = {
           _audits: audits,
-          keyValueSetting: { findUnique: async () => h.revokedCardSetting },
+          keyValueSetting: {
+            findUnique: async ({ where }: { where: { key: string } }) =>
+              (where.key === 'revoked-client-cards:admin:v1' ? adminRevocations : h.revokedCardSetting),
+            upsert: async (args: { where: { key: string }; update: { value: unknown } }) => {
+              // Only the admin revocation row may ever be written; the batch row never.
+              writes.push(args.where.key === 'revoked-client-cards:admin:v1' ? 'admin-registry' : `WRITE ${args.where.key}`)
+              adminRevocations = { value: args.update.value }
+            },
+          },
+          $executeRaw: async () => 1,
+          invitationToken: {
+            deleteMany: async (args: { where: { OR: Array<{ userId?: string; cardNumber?: string }> } }) => {
+              writes.push(`invitations:${args.where.OR.map((c) => c.userId ?? c.cardNumber).join('|')}`); return { count: 1 }
+            },
+          },
+          session: { deleteMany: async (args: { where: { userId: string } }) => { writes.push(`sessions:${args.where.userId}`); return { count: 2 } } },
           $queryRaw: async (_strings: TemplateStringsArray, id: string) => (id in cards ? [{ cardNumber: cards[id] }] : []),
           user: {
             update: async (args: { where: { id: string }; data: { cardNumber: string } }) => {
@@ -48,6 +65,7 @@ vi.mock('@/lib/prisma', () => ({
         }
         const result = await run(tx)
         h.cards = cards
+        h.adminRevocations = adminRevocations
         h.committed.push(...writes)
         h.audits.push(...audits)
         return result
@@ -85,6 +103,7 @@ beforeEach(() => {
   h.audits = []
   h.queue = Promise.resolve()
   h.revokedCardSetting = null
+  h.adminRevocations = null
   appendServerAuditMock.mockImplementation(async (tx: { _audits: Array<Record<string, unknown>> }, _req: NextRequest, actor: { id: string }, input: Record<string, unknown>) => {
     tx._audits.push({ actorId: actor.id, ...input })
   })
@@ -211,13 +230,74 @@ describe('POST /api/admin/invitations/card', () => {
     expect(h.audits).toHaveLength(0)
   })
 
-  it('records a card change on an existing client', async () => {
-    userFindFirstMock.mockResolvedValue({ id: 'user-1' })
-    h.cards['user-1'] = '1000'
+  describe('replacing a card the client already holds', () => {
+    beforeEach(() => {
+      userFindFirstMock.mockResolvedValue({ id: 'user-1' })
+      h.cards['user-1'] = '1000'
+      h.revokedCardSetting = revokedCardRow(buildRevokedCardValue())
+    })
+    const revoked = () => (h.adminRevocations?.value as { cards: Record<string, Record<string, unknown>> } | undefined)?.cards ?? {}
 
-    await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' }))
+    it('asks for confirmation first and changes nothing', async () => {
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001' }))
 
-    expect(h.audits[0]).toMatchObject({ before: { hasCard: true }, after: { cardChanged: true } })
+      expect(res.status).toBe(409)
+      expect(await res.json()).toEqual({ error: 'card_replace_confirmation_required', currentCardNumber: '1000' })
+      expect(h.committed).toEqual([])
+      expect(h.cards['user-1']).toBe('1000')
+    })
+
+    it('on confirmation revokes the old card, voids its invitations, ends sessions and assigns the new one', async () => {
+      const batchBefore = JSON.stringify(h.revokedCardSetting)
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', confirmReplace: true }))
+
+      expect(res.status).toBe(200)
+      expect(h.cards['user-1']).toBe('1001')
+      expect(revoked()['1000']).toEqual({ userId: 'user-1', revokedAt: expect.any(String), revokedBy: 'admin-1', reason: 'Replaced by card 1001' })
+      expect(h.committed).toEqual(['admin-registry', 'update', 'invitations:user-1|1000', 'sessions:user-1'])
+      expect(JSON.stringify(h.revokedCardSetting)).toBe(batchBefore)
+      expect(h.audits[0]).toMatchObject({
+        before: { hasCard: true }, after: { cardChanged: true, oldCardRevoked: true }, details: 'sessionsRevoked=2; invitationsRevoked=1',
+      })
+    })
+
+    it('does not record an old card already revoked in the batch, and leaves the batch alone', async () => {
+      h.revokedCardSetting = revokedCardRow(buildRevokedCardValue({ '1000': 'user-1' }))
+      const batchBefore = JSON.stringify(h.revokedCardSetting)
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', confirmReplace: true }))
+
+      expect(res.status).toBe(200)
+      expect(h.committed).toEqual(['update', 'invitations:user-1|1000', 'sessions:user-1'])
+      expect(revoked()).toEqual({})
+      expect(JSON.stringify(h.revokedCardSetting)).toBe(batchBefore)
+    })
+
+    it('refuses a new number revoked from the admin panel', async () => {
+      h.adminRevocations = { value: { cards: { '1001': { userId: 'old-owner', revokedAt: '2026-11-17T10:00:00.000Z', revokedBy: 'admin-1', reason: 'Lost' } } } }
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', confirmReplace: true }))
+
+      expect(res.status).toBe(409)
+      expect(await res.json()).toEqual({ error: 'card_revoked' })
+      expect(h.cards['user-1']).toBe('1000')
+    })
+
+    it('refuses to replace a protected old card without writing', async () => {
+      h.cards['user-1'] = '111'
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', confirmReplace: true }))
+
+      expect(res.status).toBe(409)
+      expect(await res.json()).toEqual({ error: 'card_protected' })
+      expect(h.committed).toEqual([])
+    })
+
+    it('still works while the batch registry is switched off', async () => {
+      h.revokedCardSetting = revokedCardRow({ ...buildRevokedCardValue(), active: false })
+      const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', confirmReplace: true }))
+
+      expect(res.status).toBe(200)
+      expect(h.cards['user-1']).toBe('1001')
+      expect(Object.keys(revoked())).toEqual(['1000'])
+    })
   })
 
   it('applies two concurrent identical assignments once', async () => {

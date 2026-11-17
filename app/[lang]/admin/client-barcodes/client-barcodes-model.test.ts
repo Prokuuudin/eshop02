@@ -8,8 +8,23 @@ import {
   isValidCardNumber,
   isValidCompanyDraft,
   normalizeCardDigits,
+  readEmailHolder,
   type CardHolder,
 } from './client-barcodes-model'
+
+describe('readEmailHolder', () => {
+  it('reads a customer holder and a staff holder', () => {
+    expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: false, name: ' Anna ', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
+      .toEqual({ staff: false, name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' })
+    expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: true, name: 'leak' } })).toEqual({ staff: true })
+  })
+
+  it('ignores a missing or malformed holder', () => {
+    expect(readEmailHolder({ error: 'email_taken' })).toBeNull()
+    expect(readEmailHolder(null)).toBeNull()
+    expect(readEmailHolder({ emailHolder: { staff: false } })).toBeNull()
+  })
+})
 
 describe('client barcode model', () => {
   it('normalizes and validates the supported card number range', () => {
@@ -51,6 +66,7 @@ describe('classifyClientSaveFailure', () => {
     [403, 'forbidden', 'forbidden'],
     [403, 'Origin not allowed', 'origin_rejected'],
     [409, 'email_taken', 'email_taken'],
+    [409, 'card_taken', 'card_taken'],
     [400, 'invalid_request', 'invalid'],
     [409, 'optimistic_conflict', 'conflict'],
     [409, 'concurrent_update', 'conflict'],

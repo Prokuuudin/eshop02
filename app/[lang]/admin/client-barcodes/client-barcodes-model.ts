@@ -122,6 +122,7 @@ export type ClientSaveFailure =
   | 'forbidden'
   | 'origin_rejected'
   | 'email_taken'
+  | 'card_taken'
   | 'invalid'
   | 'conflict'
   | 'not_found'
@@ -136,6 +137,7 @@ export function classifyClientSaveFailure(status: number, code: string | undefin
   if (status === 403 && code === 'forbidden') return 'forbidden'
   if (status === 403 && code === 'Origin not allowed') return 'origin_rejected'
   if (code === 'email_taken') return 'email_taken'
+  if (code === 'card_taken') return 'card_taken'
   if (code === 'invalid_request') return 'invalid'
   if (code === 'optimistic_conflict' || code === 'concurrent_update') return 'conflict'
   if (status === 404) return 'not_found'
@@ -143,7 +145,27 @@ export function classifyClientSaveFailure(status: number, code: string | undefin
   return 'unknown'
 }
 
-export type ClientStepUp = { currentPassword: string; mfaCode: string; reason: string }
+/** The account that already holds an email, as the server reports it with email_taken. */
+export type EmailHolder =
+  | { staff: true }
+  | { staff: false; name: string | null; cardNumber: string | null; createdAt: string }
+
+export function readEmailHolder(payload: unknown): EmailHolder | null {
+  if (typeof payload !== 'object' || payload === null || !('emailHolder' in payload)) return null
+  const holder = (payload as { emailHolder: unknown }).emailHolder
+  if (typeof holder !== 'object' || holder === null) return null
+  const h = holder as Record<string, unknown>
+  if (h.staff === true) return { staff: true }
+  if (h.staff !== false || typeof h.createdAt !== 'string') return null
+  return {
+    staff: false,
+    name: typeof h.name === 'string' && h.name.trim() ? h.name.trim() : null,
+    cardNumber: typeof h.cardNumber === 'string' && h.cardNumber ? h.cardNumber : null,
+    createdAt: h.createdAt,
+  }
+}
+
+export type ClientStepUp ={ currentPassword: string; mfaCode: string; reason: string }
 
 export const isCompleteClientStepUp = (stepUp: ClientStepUp): boolean =>
   stepUp.currentPassword.length > 0 && /^\d{6}$/u.test(stepUp.mfaCode.trim()) && stepUp.reason.trim().length >= 5

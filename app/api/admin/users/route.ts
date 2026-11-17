@@ -175,10 +175,50 @@ const changesStaffAccess = (target: StaffTarget, updates: PatchUpdates): boolean
 const requiresStaffManage = (target: StaffTarget, updates: PatchUpdates, isSelf: boolean): boolean =>
   changesStaffAccess(target, updates) || (!isSelf && isStaffSubject(target))
 
+/**
+ * Who already holds the email a save collided with, so the admin can find that account. Often
+ * it is a legacy (pre-card) account that the card-holder list never shows. A staff holder is
+ * reported only as staff. Best effort: without an answer the plain email_taken still stands.
+ */
+async function describeEmailHolder(email: string, targetId: string) {
+  try {
+    const holder = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, name: true, cardNumber: true, createdAt: true, platformRole: true, teamRole: true, superAdmin: true },
+    })
+    if (!holder || holder.id === targetId) return null
+    if (isStaffSubject(holder)) return { staff: true as const }
+    return { staff: false as const, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
+  } catch {
+    return null
+  }
+}
+
+type UniqueSave = { targetId: string; email?: string; cardNumber?: string }
+
+/**
+ * User has two unique columns, email and cardNumber, and P2002 does not reliably say which one
+ * collided. Ask the database who holds each value instead of reporting every clash as email.
+ */
+async function uniqueViolationResponse(save: UniqueSave | null): Promise<Response> {
+  if (save?.email) {
+    const emailHolder = await describeEmailHolder(save.email, save.targetId)
+    if (emailHolder) return NextResponse.json({ error: 'email_taken', emailHolder }, { status: 409 })
+  }
+  if (save?.cardNumber) {
+    const cardHolder = await prisma.user.findUnique({ where: { cardNumber: save.cardNumber }, select: { id: true } }).catch(() => null)
+    if (cardHolder && cardHolder.id !== save.targetId) return NextResponse.json({ error: 'card_taken' }, { status: 409 })
+    if (!save.email) return NextResponse.json({ error: 'card_taken' }, { status: 409 })
+  }
+  return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+}
+
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
+  // Kept outside the try so a unique violation can say which value, and whose account, it hit.
+  let uniqueSave: UniqueSave | null = null
   try {
     const caller = await requireAdminPermission('admin.access')
     if (caller instanceof NextResponse) return caller
@@ -197,6 +237,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
       updates = { ...updates, cardNumber: normalized }
     }
+    uniqueSave = { targetId: id, email: updates.email, cardNumber: updates.cardNumber ?? undefined }
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
     // Fields a staff manager may edit. Bank name and IBAN are deliberately absent: they are
     // payment details printed on invoices, so only a platform admin (incl. Super Admin) may change them.
@@ -375,7 +416,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
-      return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+      return await uniqueViolationResponse(uniqueSave)
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })

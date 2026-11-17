@@ -9,9 +9,11 @@ import {
     getCardHolderEdit,
     isCompleteClientStepUp,
     normalizeRegistrationNumber,
+    readEmailHolder,
     type CardHolder,
     type CardHolderEdit,
     type ClientSaveFailure,
+    type EmailHolder,
     type ClientStepUp,
 } from './client-barcodes-model';
 
@@ -97,10 +99,33 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             return next;
         });
 
-    const clientSaveErrorText = (failure: ClientSaveFailure, status: number) => {
+    const emailTakenText = (holder: EmailHolder | null) => {
+        if (!holder) {
+            return l('Не сохранено: этот email уже занят другим аккаунтом.', 'Not saved: this email is already used by another account.', 'Nav saglabāts: šo e-pastu jau izmanto cits konts.');
+        }
+        if (holder.staff) {
+            return l('Не сохранено: этот email занят аккаунтом сотрудника.', 'Not saved: this email belongs to a staff account.', 'Nav saglabāts: šis e-pasts pieder darbinieka kontam.');
+        }
+        const name = holder.name ?? l('без имени', 'no name', 'bez vārda');
+        const created = new Date(holder.createdAt).toLocaleDateString('lv-LV');
+        if (holder.cardNumber) {
+            return l(
+                `Не сохранено: этот email уже у клиента «${name}» (карта ${holder.cardNumber}). Найдите его поиском по номеру карты.`,
+                `Not saved: this email already belongs to customer “${name}” (card ${holder.cardNumber}). Search by the card number to find them.`,
+                `Nav saglabāts: šis e-pasts jau pieder klientam “${name}” (karte ${holder.cardNumber}). Atrodiet to, meklējot pēc kartes numura.`,
+            );
+        }
+        return l(
+            `Не сохранено: этот email у старого аккаунта «${name}» без карты (создан ${created}). В списке держателей карт его нет — аккаунты нужно объединить, обратитесь к администратору.`,
+            `Not saved: this email belongs to an older account “${name}” without a card (created ${created}). It is not in the card holder list — the accounts need to be merged; contact an administrator.`,
+            `Nav saglabāts: šis e-pasts pieder vecam kontam “${name}” bez kartes (izveidots ${created}). Karšu turētāju sarakstā tā nav — konti jāapvieno, sazinieties ar administratoru.`,
+        );
+    };
+
+    const clientSaveErrorText = (failure: ClientSaveFailure, status: number, emailHolder: EmailHolder | null = null) => {
         switch (failure) {
             case 'email_taken':
-                return l('Не сохранено: этот email уже есть у другого клиента. Найдите его поиском по email.', 'Not saved: this email already belongs to another customer. Search by email to find them.', 'Nav saglabāts: šis e-pasts jau pieder citam klientam. Atrodiet to, meklējot pēc e-pasta.');
+                return emailTakenText(emailHolder);
             case 'invalid':
                 return l('Не сохранено: проверьте данные (например, формат email).', 'Not saved: check the entered data (e.g. the email format).', 'Nav saglabāts: pārbaudiet ievadītos datus (piem., e-pasta formātu).');
             case 'conflict':
@@ -155,7 +180,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             const payload = await response.json().catch(() => null);
             if (!response.ok) {
                 const failure = classifyClientSaveFailure(response.status, typeof payload?.error === 'string' ? payload.error : undefined);
-                const error = clientSaveErrorText(failure, response.status);
+                const error = clientSaveErrorText(failure, response.status, readEmailHolder(payload));
                 if (failure === 'step_up_required' || failure === 'step_up_failed') {
                     // Keep the draft and ask (again) for the confirmation instead of a dead-end error.
                     setClientStepUp((prev) => ({

@@ -175,10 +175,31 @@ const changesStaffAccess = (target: StaffTarget, updates: PatchUpdates): boolean
 const requiresStaffManage = (target: StaffTarget, updates: PatchUpdates, isSelf: boolean): boolean =>
   changesStaffAccess(target, updates) || (!isSelf && isStaffSubject(target))
 
+/**
+ * Who already holds the email a save collided with, so the admin can find that account. Often
+ * it is a legacy (pre-card) account that the card-holder list never shows. A staff holder is
+ * reported only as staff. Best effort: without an answer the plain email_taken still stands.
+ */
+async function describeEmailHolder(email: string, targetId: string) {
+  try {
+    const holder = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, name: true, cardNumber: true, createdAt: true, platformRole: true, teamRole: true, superAdmin: true },
+    })
+    if (!holder || holder.id === targetId) return null
+    if (isStaffSubject(holder)) return { staff: true as const }
+    return { staff: false as const, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
+  } catch {
+    return null
+  }
+}
+
 export async function PATCH(req: NextRequest): Promise<Response> {
   const blocked = guardOrigin(req)
   if (blocked) return blocked
 
+  // Kept outside the try so a unique-email violation can say which account holds the address.
+  let emailSave: { email: string; targetId: string } | null = null
   try {
     const caller = await requireAdminPermission('admin.access')
     if (caller instanceof NextResponse) return caller
@@ -189,6 +210,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
 
     const { id, expectedUpdatedAt, currentPassword, mfaCode, reason, ...parsedUpdates } = parsed.data
+    if (parsedUpdates.email) emailSave = { email: parsedUpdates.email, targetId: id }
     let updates = parsedUpdates
     if (updates.cardNumber !== undefined && updates.cardNumber !== null) {
       const normalized = normalizeCardNumber(updates.cardNumber)
@@ -375,7 +397,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2002') {
-      return NextResponse.json({ error: 'email_taken' }, { status: 409 })
+      const emailHolder = emailSave ? await describeEmailHolder(emailSave.email, emailSave.targetId) : null
+      return NextResponse.json({ error: 'email_taken', ...(emailHolder ? { emailHolder } : {}) }, { status: 409 })
     }
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'P2034') {
       return NextResponse.json({ error: 'concurrent_update' }, { status: 409 })

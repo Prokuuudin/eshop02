@@ -143,7 +143,27 @@ export function classifyClientSaveFailure(status: number, code: string | undefin
   return 'unknown'
 }
 
-export type ClientStepUp = { currentPassword: string; mfaCode: string; reason: string }
+/** The account that already holds an email, as the server reports it with email_taken. */
+export type EmailHolder =
+  | { staff: true }
+  | { staff: false; name: string | null; cardNumber: string | null; createdAt: string }
+
+export function readEmailHolder(payload: unknown): EmailHolder | null {
+  if (typeof payload !== 'object' || payload === null || !('emailHolder' in payload)) return null
+  const holder = (payload as { emailHolder: unknown }).emailHolder
+  if (typeof holder !== 'object' || holder === null) return null
+  const h = holder as Record<string, unknown>
+  if (h.staff === true) return { staff: true }
+  if (h.staff !== false || typeof h.createdAt !== 'string') return null
+  return {
+    staff: false,
+    name: typeof h.name === 'string' && h.name.trim() ? h.name.trim() : null,
+    cardNumber: typeof h.cardNumber === 'string' && h.cardNumber ? h.cardNumber : null,
+    createdAt: h.createdAt,
+  }
+}
+
+export type ClientStepUp ={ currentPassword: string; mfaCode: string; reason: string }
 
 export const isCompleteClientStepUp = (stepUp: ClientStepUp): boolean =>
   stepUp.currentPassword.length > 0 && /^\d{6}$/u.test(stepUp.mfaCode.trim()) && stepUp.reason.trim().length >= 5

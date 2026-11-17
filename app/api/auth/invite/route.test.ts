@@ -26,7 +26,7 @@ vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: rateLimitMock }))
 
 import { GET, POST } from './route'
 import { resetRevokedCardPolicyCache } from '@/lib/revoked-card-policy'
-import { buildRevokedCardValue, revokedCardRow } from '@/lib/revoked-card-policy-fixture'
+import { buildAdminRevocationValue, buildRevokedCardValue, revokedCardRow, revokedCardRows } from '@/lib/revoked-card-policy-fixture'
 
 const future = new Date(Date.now() + 60_000)
 const post = (body: Record<string, unknown>) => POST(new NextRequest('https://shop.test/api/auth/invite', {
@@ -45,6 +45,21 @@ describe('/api/auth/invite validation and abuse protection', () => {
 
   it('refuses to show or accept an invitation for a revoked card', async () => {
     settingMock.mockResolvedValue(revokedCardRow(buildRevokedCardValue({ '1234': 'u1' })))
+    invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234' })
+    userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: null })
+
+    const shown = await GET(new NextRequest('https://shop.test/api/auth/invite?token=token'))
+    const accepted = await post({ token: 'token', password: 'valid-password' })
+
+    expect(shown.status).toBe(409)
+    expect(await shown.json()).toEqual({ ok: false, error: 'card_revoked' })
+    expect(accepted.status).toBe(409)
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(createSessionMock).not.toHaveBeenCalled()
+  })
+
+  it('refuses an invitation carrying a number revoked from the admin panel', async () => {
+    settingMock.mockImplementation(revokedCardRows(null, { value: buildAdminRevocationValue({ '1234': 'u-former' }) }))
     invitationFindMock.mockResolvedValue({ status: 'sent', expiresAt: future, userId: 'u1', email: 'buyer@test.com', cardNumber: '1234' })
     userFindMock.mockResolvedValue({ id: 'u1', email: 'buyer@test.com', name: 'Buyer', companyId: null })
 

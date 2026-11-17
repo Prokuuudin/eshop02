@@ -159,6 +159,21 @@ describe('POST /api/admin/invitations/card', () => {
     expect(h.audits).toEqual([])
   })
 
+  it('refuses a number revoked from the admin panel for existing and new clients without writing', async () => {
+    h.adminRevocations = { value: { cards: { '1001': { userId: 'u-former', revokedAt: '2026-11-17T10:00:00.000Z', revokedBy: 'admin-1', reason: 'Lost' } } } }
+    userFindFirstMock.mockResolvedValueOnce({ id: 'user-1' })
+
+    const existing = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: '1001', phone: '+37120000000' }))
+    const created = await POST(makeRequest({ email: 'new@client.lv', cardNumber: '01001', phone: '+37120000001' }))
+
+    for (const res of [existing, created]) {
+      expect(res.status).toBe(409)
+      expect((await res.json()).error).toBe('card_revoked')
+    }
+    expect(h.committed).toEqual([])
+    expect(h.audits).toEqual([])
+  })
+
   it('rejects an invalid card number', async () => {
     const res = await POST(makeRequest({ email: 'client@inbox.lv', cardNumber: 'abc123456789', phone: '+37120000000' }))
 

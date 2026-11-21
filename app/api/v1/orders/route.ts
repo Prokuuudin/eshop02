@@ -10,6 +10,7 @@ import { ProductUnavailableError, recomputeOrderPricing } from '@/lib/server-pri
 import { createServerOrder, ExistingCheckoutOrderError, InsufficientStockError, type ServerOrder } from '@/lib/orders-data-store'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
 import { withPromotionDiscount } from '@/lib/orders-data-mapping'
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 
 export const runtime = 'nodejs'
 
@@ -212,6 +213,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         total: pricing.total,
       }
     }, { notificationSource: 'api_v1', notificationCorrelationId: correlationId })
+    scheduleImmediateAdminOrderNotification(created.id, correlationId)
 
     return successResponse(
       {

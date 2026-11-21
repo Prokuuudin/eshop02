@@ -35,6 +35,8 @@ vi.mock('@/lib/prisma', () => ({ prisma: {
   product: { findMany: productFindMock }, order: { findMany: orderFindMock, count: orderCountMock },
 } }))
 
+vi.mock('@/lib/order-admin-notification-dispatch', () => ({ scheduleImmediateAdminOrderNotification: vi.fn() }))
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { GET, POST } from './route'
 import { ExistingCheckoutOrderError, InsufficientStockError } from '@/lib/orders-data-store'
 
@@ -144,6 +146,8 @@ describe('/api/v1/orders', () => {
       expect.any(Function),
       expect.objectContaining({ notificationSource: 'api_v1' }),
     )
+    expect(scheduleImmediateAdminOrderNotification).toHaveBeenCalledOnce()
+    expect(vi.mocked(scheduleImmediateAdminOrderNotification).mock.calls[0][0]).toBe('1001')
   })
 
   it('persists legacy API notes as the customer comment, not an internal admin note', async () => {
@@ -171,6 +175,7 @@ describe('/api/v1/orders', () => {
     expect(response.status).toBe(409)
     expect(await response.json()).toEqual({ error: 'Insufficient stock for: p1' })
     expect(persistMock).toHaveBeenCalledOnce()
+    expect(scheduleImmediateAdminOrderNotification).not.toHaveBeenCalled()
   })
 
   it('rejects products that are not for sale (no ERP B2B price / inactive) with 409', async () => {

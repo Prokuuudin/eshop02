@@ -37,6 +37,7 @@ vi.mock('@/lib/paysera', () => ({ createPayseraPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/order-admin-notification-outbox', () => ({
   setAdminOrderNotificationPaymentStatusOverride: vi.fn().mockResolvedValue(undefined),
 }))
+vi.mock('@/lib/order-admin-notification-dispatch', () => ({ scheduleImmediateAdminOrderNotification: vi.fn() }))
 vi.mock('@/lib/paypal', () => ({ createPaypalPaymentForOrder: vi.fn() }))
 vi.mock('@/lib/rate-limit', () => ({ checkRateLimit: vi.fn(), gcRateLimitStore: vi.fn() }))
 vi.mock('@/lib/email-templates-server-store', () => ({ getTemplates: vi.fn() }))
@@ -56,6 +57,7 @@ import { createServerOrder, ExistingCheckoutOrderError, updateServerOrderPayment
 import { releaseExpiredStockReservations } from '@/lib/orders-data-store'
 import { createPayseraPaymentForOrder } from '@/lib/paysera'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { createPaypalPaymentForOrder } from '@/lib/paypal'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getTemplates } from '@/lib/email-templates-server-store'
@@ -415,6 +417,9 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
 
     expect(res.status).toBe(200)
     expect(createServerOrder).toHaveBeenCalledOnce()
+    // The admin e-mail is dispatched after the response; the outbox row is the guarantee.
+    expect(scheduleImmediateAdminOrderNotification).toHaveBeenCalledOnce()
+    expect(vi.mocked(scheduleImmediateAdminOrderNotification).mock.calls[0][0]).toBe('1001')
   })
 
   it('rejects PayPal while it is unavailable to customers', async () => {
@@ -424,6 +429,7 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(await res.json()).toEqual({ error: 'payment_method_unavailable' })
     expect(createServerOrder).not.toHaveBeenCalled()
     expect(createPaypalPaymentForOrder).not.toHaveBeenCalled()
+    expect(scheduleImmediateAdminOrderNotification).not.toHaveBeenCalled()
   })
 
   it('rejects online card payment — card is office-only, never an online checkout method', async () => {
@@ -789,6 +795,8 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(res.status).toBe(502)
     expect(updateServerOrderPayment).toHaveBeenCalledWith('1001', { paymentStatus: 'failed' })
     expect(setAdminOrderNotificationPaymentStatusOverride).toHaveBeenCalledWith('1001', 'failed')
+    // The order row exists: its admin e-mail still goes out once this error response is done.
+    expect(vi.mocked(scheduleImmediateAdminOrderNotification).mock.calls[0][0]).toBe('1001')
   })
 
   it('keeps the outbox notification pending when Paysera paid evidence needs reconciliation', async () => {

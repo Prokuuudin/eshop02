@@ -118,6 +118,57 @@ export async function claimAdminOrderNotifications(
   `)
 }
 
+/**
+ * Claims only the first, never-attempted delivery of one order. It deliberately ignores
+ * the initial delay: it runs from `after()`, i.e. once the creating request (including the
+ * Paysera step and payment-status hints) has finished, which is what the delay protects in
+ * the scheduled path. Retries and stale leases stay with the scheduled worker, so its
+ * backoff and recovery rules remain the single source of truth. FOR UPDATE SKIP LOCKED and
+ * the pending -> processing transition make this safe next to a concurrent scheduled run.
+ */
+export async function claimAdminOrderNotificationForOrder(
+  orderId: string,
+  now: Date,
+): Promise<ClaimedAdminOrderNotification[]> {
+  const lockToken = randomUUID()
+
+  return prisma.$queryRaw<ClaimedAdminOrderNotification[]>(Prisma.sql`
+    WITH candidates AS (
+      SELECT
+        "id",
+        "status" AS "previousStatus"
+      FROM "OrderNotificationOutbox"
+      WHERE "orderId" = ${orderId}
+        AND "notificationType" = ${ADMIN_ORDER_NOTIFICATION_TYPE}
+        AND "status" = 'pending'
+        AND "attempts" = 0
+      FOR UPDATE SKIP LOCKED
+      LIMIT 1
+    ), claimed AS (
+      UPDATE "OrderNotificationOutbox" AS outbox
+      SET
+        "status" = 'processing',
+        "attempts" = outbox."attempts" + 1,
+        "lockedAt" = ${now},
+        "lockToken" = ${lockToken},
+        "lastErrorCode" = NULL,
+        "updatedAt" = ${now}
+      FROM candidates
+      WHERE outbox."id" = candidates."id"
+      RETURNING
+        outbox."id",
+        outbox."orderId",
+        outbox."source",
+        outbox."correlationId",
+        outbox."paymentStatusOverride",
+        outbox."attempts",
+        outbox."lockToken",
+        candidates."previousStatus"
+    )
+    SELECT * FROM claimed
+  `)
+}
+
 export async function loadAdminOrderNotificationOrder(orderId: string): Promise<ServerOrder | null> {
   const row = await prisma.order.findUnique({ where: { id: orderId } })
   return row ? mapDbToServerOrder(row) : null
@@ -272,4 +323,14 @@ export async function processAdminOrderNotificationOutbox(
   await Promise.all(workers)
 
   return result
+}
+
+/** Same delivery, retry and lease rules as the scheduled worker, scoped to one new order. */
+export async function processAdminOrderNotificationForOrder(
+  orderId: string,
+): Promise<AdminOrderNotificationWorkerResult> {
+  return processAdminOrderNotificationOutbox({ batchSize: 1 }, {
+    ...DEFAULT_DEPS,
+    claim: (_batchSize, now) => claimAdminOrderNotificationForOrder(orderId, now),
+  })
 }

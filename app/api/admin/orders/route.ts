@@ -20,6 +20,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/order-item-title-repair'
 import { z } from 'zod'
 import { stockLedgerFlags } from '@/lib/stock-ledger-config'
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -192,6 +193,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       notificationSource: 'admin',
       notificationCorrelationId: correlationId,
     })
+    // Runs after this response, i.e. after the status/note/audit write below.
+    scheduleImmediateAdminOrderNotification(created.id, correlationId)
 
     // Staff already processed this sale, so it starts confirmed (not pending)
     // and, unlike a status transition on an existing order, this can't fail

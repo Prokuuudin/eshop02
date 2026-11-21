@@ -23,6 +23,7 @@ import { isSelectedVariantsInput, resolveSelectedVariants } from '@/lib/product-
 import { buildLineKey } from '@/lib/cart-store'
 import type { SelectedVariant } from '@/data/products'
 import { setAdminOrderNotificationPaymentStatusOverride } from '@/lib/order-admin-notification-outbox'
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { parseOrderCustomerComment } from '@/lib/order-customer-comment'
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 
@@ -372,6 +373,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         promoCode: pricing.promoApplied ? promoCode : undefined,
       }
     }, { notificationSource: 'checkout', notificationCorrelationId: correlationId })
+    // Runs after this response (incl. the Paysera step and payment-status hints below).
+    scheduleImmediateAdminOrderNotification(created.id, correlationId)
 
     logOperationalEvent({
       event: 'order_created',

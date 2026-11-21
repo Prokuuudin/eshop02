@@ -19,6 +19,7 @@ vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: vi
 }) }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
+vi.mock('@/lib/order-admin-notification-dispatch', () => ({ scheduleImmediateAdminOrderNotification: vi.fn() }))
 vi.mock('@/lib/orders-data-store', () => ({
   updateServerOrderByAdmin: vi.fn(),
   AdminOrderUpdateError: class AdminOrderUpdateError extends Error {
@@ -55,6 +56,7 @@ vi.mock('@/lib/prisma', () => ({
 import { requireAdminPermission } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'
 import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-store'
+import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { DELETE, GET, POST } from './route'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
@@ -346,6 +348,8 @@ describe('POST /api/admin/orders', () => {
       undefined,
       expect.objectContaining({ notificationSource: 'admin' }),
     )
+    expect(scheduleImmediateAdminOrderNotification).toHaveBeenCalledOnce()
+    expect(vi.mocked(scheduleImmediateAdminOrderNotification).mock.calls[0][0]).toBe('1045')
   })
 })
 

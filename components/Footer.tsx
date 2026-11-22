@@ -28,11 +28,11 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
 
   return (
     <footer className="footer bg-gray-200 dark:bg-gray-800 border-t border-border text-gray-800 dark:text-gray-300">
-      <div className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:py-10">
-        <div className="footer__grid flex flex-col gap-6 sm:flex-row sm:flex-wrap sm:gap-8 lg:gap-10 lg:justify-between">
+      <div className="mx-auto w-full max-w-[1440px] px-4 py-5 sm:py-6">
+        <div className="footer__grid flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-8 lg:gap-10 lg:justify-between">
           <div className="footer__section footer__nav min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
-            <h2 className="footer__title font-semibold mb-3 text-foreground">{t('footer.about')}</h2>
-            <ul className="footer__list space-y-2">
+            <h2 className="footer__title font-semibold mb-2 text-foreground">{t('footer.about')}</h2>
+            <ul className="footer__list space-y-1.5">
               <li className="footer__item"><Link href="/catalog" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.catalog')}</Link></li>
               <li className="footer__item"><Link href="/#brands" className="hover:underline text-gray-800 dark:text-gray-300">{t('nav.brands')}</Link></li>
               {promo && (
@@ -46,7 +46,7 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
           </div>
 
           <div className="footer__section footer__contacts min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
-            <h2 className="footer__title font-semibold mb-3 text-foreground">{t('footer.contact')}</h2>
+            <h2 className="footer__title font-semibold mb-2 text-foreground">{t('footer.contact')}</h2>
             <address className="not-italic text-sm text-gray-800 dark:text-gray-300 space-y-1">
             {COMPANY_CONTACT_LINES.map(({ labelKey, contentKey, value }) => (
                 <div key={labelKey} className="footer__contact-item">{t(labelKey)}: {t(contentKey, value)}</div>
@@ -55,8 +55,8 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
           </div>
 
           <div className="footer__section footer__policy min-w-[150px] flex-1 flex-shrink flex-basis-0 break-words">
-            <h2 className="footer__title font-semibold mb-3 text-foreground">{t('footer.privacy')}</h2>
-            <ul className="footer__policy-list space-y-2 text-sm">
+            <h2 className="footer__title font-semibold mb-2 text-foreground">{t('footer.privacy')}</h2>
+            <ul className="footer__policy-list space-y-1.5 text-sm">
               <li className="footer__policy-item"><Link href="/privacy" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.privacy')}</Link></li>
               <li className="footer__policy-item"><Link href="/terms" className="hover:underline text-gray-800 dark:text-gray-300">{t('footer.terms')}</Link></li>
               <li className="footer__policy-item"><Link href="/cookies" className="hover:underline text-gray-800 dark:text-gray-300">{cookieLabel}</Link></li>
@@ -73,7 +73,7 @@ export default function Footer({ initialPromo = null }: { initialPromo?: FooterP
           </div>
         </div>
 
-        <div className="footer__bottom mt-6 flex flex-col items-start gap-2 border-t border-border pt-4 text-sm text-gray-700 dark:text-gray-300 sm:mt-8 sm:gap-3">
+        <div className="footer__bottom mt-4 flex flex-col items-start gap-1 border-t border-border pt-3 text-sm text-gray-700 dark:text-gray-300 sm:mt-5 sm:gap-2">
           <div className="footer__copyright min-w-0 text-left">© {new Date().getFullYear()} Hairshop-Pro. {t('footer.allRightsReserved')}</div>
           <TooltipProvider>
             <div className="footer__socials flex shrink-0 items-center gap-1">

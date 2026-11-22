@@ -63,14 +63,18 @@ export default defineConfig([
   },
   globalIgnores([
     '.next/**',
+    '.backups/**',
     '.agents/**',
     '.claude/**',
     '.superpowers/**',
     '.vercel/**',
     '.vscode/**',
+    '.worktrees/**',
     'coverage/**',
     'generated/**',
+    'output/**',
     'playwright-report/**',
+    'scratch-crop-preview/**',
     'test-results/**',
   ]),
 ])

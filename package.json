@@ -19,6 +19,7 @@
     "diagnose:path": "node scripts/diagnose-path.mjs",
     "check:admin-i18n": "node scripts/check-admin-i18n.mjs",
     "check:admin-i18n:strict": "node scripts/check-admin-i18n.mjs --strict",
+    "check:i18n": "node scripts/check-i18n-usage.mjs && node scripts/check-admin-i18n.mjs --strict",
     "check:prisma": "prisma validate",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",

@@ -77,18 +77,24 @@ export function isInsideBox(point: Point, box: Box): boolean {
 /**
  * Размер и сдвиг увеличенной картинки внутри панели: масштаб всегда ровно
  * zoomFactor (без растяжения по осям), сдвиг — чтобы область под линзой
- * оказалась в левом верхнем углу панели.
+ * оказалась в панели. Если увеличенная картинка уже панели по одной из осей,
+ * по этой оси она центрируется, а не прижимается к левому/верхнему краю.
  */
 export function paneImageLayout(
     lensTopLeft: Point,
     imageBox: Box,
+    pane: Size,
     zoomFactor: number,
 ): { width: number; height: number; x: number; y: number } {
     const zoom = Math.max(zoomFactor, 1);
+    const width = imageBox.width * zoom;
+    const height = imageBox.height * zoom;
+    const centerOffsetX = Math.max((pane.width - width) / 2, 0);
+    const centerOffsetY = Math.max((pane.height - height) / 2, 0);
     return {
-        width: imageBox.width * zoom,
-        height: imageBox.height * zoom,
-        x: -(lensTopLeft.x - imageBox.left) * zoom,
-        y: -(lensTopLeft.y - imageBox.top) * zoom,
+        width,
+        height,
+        x: centerOffsetX - (lensTopLeft.x - imageBox.left) * zoom,
+        y: centerOffsetY - (lensTopLeft.y - imageBox.top) * zoom,
     };
 }

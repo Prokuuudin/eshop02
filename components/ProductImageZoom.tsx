@@ -33,8 +33,9 @@ export const ProductZoomLens: React.FC<ZoomLensProps> = ({ lensRef, visible }) =
 );
 
 /**
- * Панель увеличенного фрагмента. В режиме 'side' — квадрат того же размера
- * справа от превью, в 'inline' — поверх превью. Сдвиг/масштаб картинки внутри
+ * Панель увеличенного фрагмента. В режиме 'side' — чуть увеличенный квадрат
+ * справа от превью, выровненный с ним по центральной линии; в 'inline' — поверх превью.
+ * Сдвиг/масштаб картинки внутри
  * задаёт useImageZoom, режимы отличаются только позиционированием панели.
  */
 export const ProductZoomPane: React.FC<ZoomPaneProps> = ({
@@ -49,7 +50,9 @@ export const ProductZoomPane: React.FC<ZoomPaneProps> = ({
         ref={paneRef}
         aria-hidden="true"
         className={`product-detail__zoom-pane product-image-surface pointer-events-none absolute z-30 overflow-hidden rounded-lg border border-border shadow-lg transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
-            effectivePaneMode === 'side' ? 'left-full top-0 ml-4 h-full w-full' : 'inset-0'
+            effectivePaneMode === 'side'
+                ? 'left-full top-[-6%] ml-4 h-[112%] w-[112%]'
+                : 'inset-0'
         } ${visible ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
     >
         {/* обычный <img>: размеры и сдвиг в px задаёт хук, srcset от next/image здесь только мешал бы */}

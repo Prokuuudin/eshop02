@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import type { BlogPost } from '@/data/blog';
 import type { Product } from '@/data/products';
+import { hasPageRoute } from '@/lib/breadcrumb-routes';
 import { useBrandsConfig } from '@/lib/use-brands-config';
 import { useCategoriesConfig } from '@/lib/use-categories-config';
 import { localizePath } from '@/lib/i18n-routing';
@@ -219,8 +220,7 @@ export default function AppBreadcrumbs(): React.ReactElement {
         if (!pathname || pathname === '/') return [];
 
         const segments = pathname.split('/').filter(Boolean);
-        // Marketing has child routes but no index page to link to.
-        const pathCrumbs = segments.map((segment, index) => {
+        const segmentCrumbs = segments.map((segment, index) => {
             const href = `/${segments.slice(0, index + 1).join('/')}`;
             const key = segmentLabelKeys[segment];
             const isCategoryIdSegment = segments[index - 1] === 'category';
@@ -249,11 +249,17 @@ export default function AppBreadcrumbs(): React.ReactElement {
                 (key ? t(key, normalizeSegment(segment)) : normalizeSegment(segment));
 
             return { href, label };
-        }).filter(crumb => crumb.href !== '/admin/marketing');
+        });
 
         if (segments[0] === 'category') {
-            pathCrumbs[0] = { href: '/catalog', label: t('nav.catalog', 'Catalog') };
+            segmentCrumbs[0] = { href: '/catalog', label: t('nav.catalog', 'Catalog') };
         }
+
+        // Grouping segments without their own page (/admin/system, /auth, /product…)
+        // would link to a 404. The last crumb is the current page and is never a link.
+        const pathCrumbs = segmentCrumbs.filter(
+            (crumb, index) => index === segmentCrumbs.length - 1 || hasPageRoute(crumb.href)
+        );
 
         if (pathname !== '/catalog') return pathCrumbs;
 

@@ -13,6 +13,18 @@
 - [ ] Accessibility Chromium checks pass; WebKit checkout job is green.
 - [ ] Production environment has `DATABASE_URL`, SMTP, Turnstile, MFA and unsubscribe secrets; no private value uses a `NEXT_PUBLIC_` name.
 
+## Production accounts and initial administration
+
+- [ ] Remove the runtime demo-account seeding from the shared application providers (`SeedAccounts` / `seedTestAccounts`). Test fixtures inside `*.test.ts` may remain.
+- [ ] Confirm that no known demo credentials such as `admin@test.com` / `admin123` or `user@test.com` / `user123` can authenticate against the production API.
+- [ ] Audit the production `User` table and delete or disable test/demo users before accepting real traffic. Preserve records that are legally or operationally required by related test orders instead of deleting them blindly.
+- [ ] Configure a strong, unique `ADMIN_SETUP_TOKEN` as a server-only production secret. Never expose it through a `NEXT_PUBLIC_` variable, repository file, screenshot or client log.
+- [ ] Open `/auth/admin-setup` on the production domain and create the first real administrator with an individual company email and a unique password stored in the approved password manager.
+- [ ] Verify that the administrator receives a secure server session, can open `/admin`, and that a second call to `/api/auth/admin-setup` is rejected with `admin_already_exists`.
+- [ ] Enable and verify MFA for the real administrator, save recovery codes securely, and create a separately named emergency administrator if the access policy requires one.
+- [ ] Remove or rotate `ADMIN_SETUP_TOKEN` after bootstrap. All later administrator access must be granted through the normal authenticated access-management flow.
+- [ ] In a clean browser profile, confirm that local storage contains no pre-seeded admin/customer and that ordinary registration cannot grant the `admin` role.
+
 ## Database and recovery
 
 - [ ] Take or confirm a recent backup before migrations.

@@ -94,7 +94,13 @@ export function useImageZoom({
         const inside = isInsideBox(cursor, box);
         setVisible(inside);
         if (!inside) return;
-        const lens = lensSizeFor(box, rect, zoomFactor);
+        // Боковая панель может быть крупнее превью, поэтому линза должна
+        // соответствовать её фактическому размеру, а не размеру контейнера.
+        const paneEl = paneRef.current;
+        const paneSize: Size = paneEl
+            ? { width: paneEl.clientWidth, height: paneEl.clientHeight }
+            : rect;
+        const lens = lensSizeFor(box, paneSize, zoomFactor);
         const lensPos = clampLensTopLeft(cursor, lens, box);
         const lensEl = lensRef.current;
         if (lensEl) {
@@ -104,7 +110,7 @@ export function useImageZoom({
         }
         const imgEl = paneImgRef.current;
         if (imgEl) {
-            const layout = paneImageLayout(lensPos, box, zoomFactor);
+            const layout = paneImageLayout(lensPos, box, paneSize, zoomFactor);
             imgEl.style.width = `${layout.width}px`;
             imgEl.style.height = `${layout.height}px`;
             imgEl.style.transform = `translate3d(${layout.x}px, ${layout.y}px, 0)`;

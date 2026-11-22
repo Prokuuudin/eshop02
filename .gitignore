@@ -10,6 +10,9 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/.worktrees/
+/output/
+/debug.log
 .claude/worktrees/
 .claude/settings.local.json
 .isolated/

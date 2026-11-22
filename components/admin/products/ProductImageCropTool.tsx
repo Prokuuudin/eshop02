@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { Crop } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { AddProductFormValues } from './productFormSchema'
 import { useAdminLocale } from '@/lib/use-admin-locale'
@@ -63,16 +64,13 @@ export default function ProductImageCropTool({ productId }: { productId: string 
 
   return (
     // Sits beside the main image thumbnail; the before/after comparison needs the full row.
-    <div className={`min-w-[10rem] flex-1 rounded-lg border border-border bg-muted/30 p-3 ${preview ? 'basis-full' : ''}`}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium">{l('Исправление размера изображения', 'Image size correction', 'Attēla izmēra labošana')}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{l('Удаляет лишние белые или прозрачные поля. Сначала обязательно проверьте превью.', 'Removes excess white or transparent margins. Always check the preview first.', 'Noņem liekās baltās vai caurspīdīgās malas. Vispirms noteikti pārbaudiet priekšskatījumu.')}</p>
-        </div>
-        <Button type="button" variant="outline" size="sm" disabled={busy !== null} onClick={() => void request('preview')}>
-          {busy === 'preview' ? l('Анализирую…', 'Analyzing…', 'Analizē…') : l('Создать превью', 'Create preview', 'Izveidot priekšskatījumu')}
-        </Button>
-      </div>
+    <div className={`flex min-w-[10rem] flex-1 flex-col rounded-lg border border-border bg-muted/30 p-3 ${preview ? 'basis-full' : ''}`}>
+      <p className="text-sm font-medium leading-5">{l('Исправление размера изображения', 'Image size correction', 'Attēla izmēra labošana')}</p>
+      <p className="mt-1 text-xs leading-4 text-muted-foreground">{l('Удаляет лишние белые или прозрачные поля. Сначала обязательно проверьте превью.', 'Removes excess white or transparent margins. Always check the preview first.', 'Noņem liekās baltās vai caurspīdīgās malas. Vispirms noteikti pārbaudiet priekšskatījumu.')}</p>
+      <Button type="button" variant="outline" size="sm" className="mt-3 self-start bg-background" disabled={busy !== null} onClick={() => void request('preview')}>
+        <Crop />
+        {busy === 'preview' ? l('Анализирую…', 'Analyzing…', 'Analizē…') : l('Создать превью', 'Create preview', 'Izveidot priekšskatījumu')}
+      </Button>
       {preview && (
         <div className="mt-4 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">

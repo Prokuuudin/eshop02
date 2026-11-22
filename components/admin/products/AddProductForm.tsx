@@ -349,7 +349,7 @@ const AddProductForm: React.FC<AddProductFormProps> = ({
                                 <ProductInventoryFields />
                             </ProductFormAccordionSection>
                             <ProductFormAccordionSection id="product-form-images-section" title={l('Изображения', 'Images', 'Attēli')}>
-                                <fieldset disabled={isSubmitting || isRestoring}>
+                                <fieldset className="min-w-0" disabled={isSubmitting || isRestoring}>
                                     <ProductGalleryFields productId={isEdit ? productId : undefined} onUploadStateChange={setImageUploadState} />
                                 </fieldset>
                             </ProductFormAccordionSection>

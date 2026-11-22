@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useController, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { ImageIcon, Plus, Upload, X } from 'lucide-react';
 import { AddProductFormValues } from './productFormSchema';
 import ProductImageCropTool from './ProductImageCropTool';
 import { useAdminLocale } from '@/lib/use-admin-locale';
@@ -82,77 +83,100 @@ const ProductGalleryFields: React.FC<{ productId?: string; onUploadStateChange?:
         }
     };
 
+    // File inputs are wrapped in a label styled as a shadcn Button so every action in the
+    // block shares one size; focus-within keeps the keyboard focus ring visible.
+    const uploadButtonClass = (busy: boolean) =>
+        `cursor-pointer focus-within:ring-1 focus-within:ring-ring ${busy ? 'pointer-events-none opacity-50' : ''}`;
+
     return (
         <div className="add-product__section add-product__section--gallery">
             <h2 className="add-product__section-title">{l('Изображения', 'Images', 'Attēli')}</h2>
             <div className="add-product__fields-grid add-product__gallery-grid">
-                <div>
-                    <label className="mb-1 block text-sm font-medium" htmlFor="add-product-image">
+                <div className="add-product__gallery-column">
+                    <label className="add-product__gallery-label" htmlFor="add-product-image">
                         {l('Главное изображение (URL)', 'Main image (URL)', 'Galvenais attēls (URL)')}
                     </label>
                     <Input id="add-product-image" placeholder="https://example.com/image.jpg" {...register('image')} />
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <label className="inline-flex cursor-pointer items-center">
-                            <input type="file" accept={ACCEPTED_IMAGE_TYPES} className="sr-only" disabled={uploadingMain} onChange={(event) => void handleMainUpload(event)} />
-                            <span className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground">
+                    {errors.image?.message && <p className="text-xs text-destructive">{errors.image.message}</p>}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <Button asChild type="button" variant="outline" size="sm" className={uploadButtonClass(uploadingMain)}>
+                            <label>
+                                <input type="file" accept={ACCEPTED_IMAGE_TYPES} className="sr-only" disabled={uploadingMain} onChange={(event) => void handleMainUpload(event)} />
+                                <Upload />
                                 {uploadingMain ? l('Загрузка…', 'Uploading…', 'Augšupielāde…') : l('Выбрать с компьютера', 'Choose from computer', 'Izvēlēties no datora')}
-                            </span>
-                        </label>
+                            </label>
+                        </Button>
                         <span className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF, AVIF · {l('до 10 МБ', 'up to 10 MB', 'līdz 10 MB')}</span>
                     </div>
-                    {errors.image?.message && <div className="mt-1 text-xs text-red-500">{errors.image.message}</div>}
                     {(image || productId) && (
-                        <div className="mt-3 flex flex-wrap items-start gap-3">
-                            {image && (
-                                <div className="product-image-surface flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border">
-                                    <Image unoptimized src={image} alt={l('Главное изображение товара', 'Main product image', 'Preces galvenais attēls')} width={112} height={112} className="h-full w-full object-contain p-2" />
-                                </div>
-                            )}
+                        <div className="mt-1 flex flex-wrap items-stretch gap-3">
+                            <div className="product-image-surface flex min-h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border">
+                                {image ? (
+                                    <Image unoptimized src={image} alt={l('Главное изображение товара', 'Main product image', 'Preces galvenais attēls')} width={112} height={112} className="h-full max-h-36 w-full object-contain p-2" />
+                                ) : (
+                                    <ImageIcon className="h-6 w-6 text-muted-foreground" aria-hidden />
+                                )}
+                            </div>
                             {productId && <ProductImageCropTool productId={productId} />}
                         </div>
                     )}
                 </div>
 
-                <div>
-                    <p className="mb-2 block text-sm font-medium">{l('Галерея', 'Gallery', 'Galerija')}</p>
-                    <div className="flex flex-col gap-2">
-                        {images.map((url, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                                {images[index] && (
-                                    <div className="product-image-surface flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border">
-                                        <Image unoptimized src={images[index]} alt="" width={48} height={48} className="h-full w-full object-contain p-1" />
-                                    </div>
+                <div className="add-product__gallery-column">
+                    <p className="add-product__gallery-label">{l('Галерея', 'Gallery', 'Galerija')}</p>
+                    {images.length === 0 && (
+                        <p className="text-xs text-muted-foreground">{l('Дополнительных изображений нет', 'No additional images', 'Nav papildu attēlu')}</p>
+                    )}
+                    {images.map((url, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <div className="product-image-surface flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border">
+                                {url ? (
+                                    <Image unoptimized src={url} alt="" width={40} height={40} className="h-full w-full object-contain p-1" />
+                                ) : (
+                                    <ImageIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
                                 )}
-                                <Input placeholder={l(`Изображение ${index + 1} (URL)`, `Image ${index + 1} (URL)`, `Attēls ${index + 1} (URL)`)} value={url} onBlur={gallery.onBlur} onChange={(event) => gallery.onChange(images.map((value, i) => i === index ? event.target.value : value))} />
-                                <Button type="button" variant="destructive" size="sm" onClick={() => gallery.onChange(images.filter((_, i) => i !== index))}>×</Button>
                             </div>
-                        ))}
-                        <div className="mt-1 flex flex-wrap gap-2">
-                            <Button type="button" variant="outline" size="sm" onClick={() => gallery.onChange([...images, ''])}>
-                                + {l('Добавить URL', 'Add URL', 'Pievienot URL')}
+                            <Input className="min-w-0 flex-1" placeholder={l(`Изображение ${index + 1} (URL)`, `Image ${index + 1} (URL)`, `Attēls ${index + 1} (URL)`)} value={url} onBlur={gallery.onBlur} onChange={(event) => gallery.onChange(images.map((value, i) => i === index ? event.target.value : value))} />
+                            <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 text-muted-foreground hover:border-destructive/50 hover:text-destructive" aria-label={l(`Удалить изображение ${index + 1}`, `Remove image ${index + 1}`, `Noņemt attēlu ${index + 1}`)} onClick={() => gallery.onChange(images.filter((_, i) => i !== index))}>
+                                <X />
                             </Button>
-                            <label className="inline-flex cursor-pointer">
-                                <input type="file" accept={ACCEPTED_IMAGE_TYPES} multiple className="sr-only" disabled={uploadingGallery} onChange={(event) => void handleGalleryUpload(event)} />
-                                <span className="inline-flex h-9 items-center rounded-md border border-input bg-background px-3 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground">
-                                    {uploadingGallery ? l('Загрузка…', 'Uploading…', 'Augšupielāde…') : l('Загрузить с компьютера', 'Upload from computer', 'Augšupielādēt no datora')}
-                                </span>
-                            </label>
                         </div>
+                    ))}
+                    <div className="flex flex-col items-start gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => gallery.onChange([...images, ''])}>
+                            <Plus />
+                            {l('Добавить URL', 'Add URL', 'Pievienot URL')}
+                        </Button>
+                        <Button asChild type="button" variant="outline" size="sm" className={uploadButtonClass(uploadingGallery)}>
+                            <label>
+                                <input type="file" accept={ACCEPTED_IMAGE_TYPES} multiple className="sr-only" disabled={uploadingGallery} onChange={(event) => void handleGalleryUpload(event)} />
+                                <Upload />
+                                {uploadingGallery ? l('Загрузка…', 'Uploading…', 'Augšupielāde…') : l('Загрузить с компьютера', 'Upload from computer', 'Augšupielādēt no datora')}
+                            </label>
+                        </Button>
                     </div>
                 </div>
 
-                <div>
-                    <p className="mb-2 block text-sm font-medium">{l('Демо-видео', 'Demo videos', 'Demonstrācijas video')}</p>
-                    <div className="flex flex-col gap-2">
-                        {videos.fields.map((field, index) => (
-                            <div key={field.id} className="flex gap-2">
+                <div className="add-product__gallery-column">
+                    <p className="add-product__gallery-label">{l('Демо-видео', 'Demo videos', 'Demonstrācijas video')}</p>
+                    {videos.fields.length === 0 && (
+                        <p className="text-xs text-muted-foreground">{l('Видео не добавлены', 'No videos added', 'Video nav pievienoti')}</p>
+                    )}
+                    {videos.fields.map((field, index) => (
+                        <div key={field.id} className="flex items-start gap-2">
+                            <div className="flex min-w-0 flex-1 flex-col gap-2">
                                 <Input placeholder={l('URL видео (src)', 'Video URL (src)', 'Video URL (src)')} {...register(`demoVideo.${index}.src` as const)} />
                                 <Input placeholder={l('URL постера (необязательно)', 'Poster URL (optional)', 'Plakāta URL (neobligāti)')} {...register(`demoVideo.${index}.poster` as const)} />
-                                <Button type="button" variant="destructive" size="sm" onClick={() => videos.remove(index)}>×</Button>
                             </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="mt-1 self-start" onClick={() => videos.append({ src: '', poster: '' })}>
-                            + {l('Добавить видео', 'Add video', 'Pievienot video')}
+                            <Button type="button" variant="outline" size="icon" className="h-10 w-10 shrink-0 text-muted-foreground hover:border-destructive/50 hover:text-destructive" aria-label={l(`Удалить видео ${index + 1}`, `Remove video ${index + 1}`, `Noņemt video ${index + 1}`)} onClick={() => videos.remove(index)}>
+                                <X />
+                            </Button>
+                        </div>
+                    ))}
+                    <div>
+                        <Button type="button" variant="outline" size="sm" onClick={() => videos.append({ src: '', poster: '' })}>
+                            <Plus />
+                            {l('Добавить видео', 'Add video', 'Pievienot video')}
                         </Button>
                     </div>
                 </div>

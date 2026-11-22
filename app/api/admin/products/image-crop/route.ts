@@ -50,7 +50,9 @@ export async function POST(request: NextRequest): Promise<Response> {
       })
     }
     if (result.skipped) return errorResponse(result.reason ?? 'Image does not need correction', 409)
-    const name = `crop-${productId}-0.png`
+    // Unique name per apply: /api/media is cached (browser, next/image optimizer, CDN) by URL,
+    // so reusing one name made a re-crop invisible until the cache expired.
+    const name = `crop-${productId}-${Date.now()}.png`
     const url = `/api/media/${name}`
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(203948721)`

@@ -100,13 +100,17 @@ const ProductGalleryFields: React.FC<{ productId?: string; onUploadStateChange?:
                         </label>
                         <span className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF, AVIF · {l('до 10 МБ', 'up to 10 MB', 'līdz 10 MB')}</span>
                     </div>
-                    {image && (
-                        <div className="product-image-surface mt-3 flex h-36 w-36 items-center justify-center overflow-hidden rounded-md border border-border">
-                            <Image unoptimized src={image} alt={l('Главное изображение товара', 'Main product image', 'Preces galvenais attēls')} width={144} height={144} className="h-full w-full object-contain p-2" />
+                    {errors.image?.message && <div className="mt-1 text-xs text-red-500">{errors.image.message}</div>}
+                    {(image || productId) && (
+                        <div className="mt-3 flex flex-wrap items-start gap-3">
+                            {image && (
+                                <div className="product-image-surface flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border">
+                                    <Image unoptimized src={image} alt={l('Главное изображение товара', 'Main product image', 'Preces galvenais attēls')} width={112} height={112} className="h-full w-full object-contain p-2" />
+                                </div>
+                            )}
+                            {productId && <ProductImageCropTool productId={productId} />}
                         </div>
                     )}
-                    {errors.image?.message && <div className="mt-1 text-xs text-red-500">{errors.image.message}</div>}
-                    {productId && <ProductImageCropTool productId={productId} />}
                 </div>
 
                 <div>

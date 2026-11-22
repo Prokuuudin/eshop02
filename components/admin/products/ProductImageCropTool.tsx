@@ -62,7 +62,8 @@ export default function ProductImageCropTool({ productId }: { productId: string 
   }
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+    // Sits beside the main image thumbnail; the before/after comparison needs the full row.
+    <div className={`min-w-[10rem] flex-1 rounded-lg border border-border bg-muted/30 p-3 ${preview ? 'basis-full' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">{l('Исправление размера изображения', 'Image size correction', 'Attēla izmēra labošana')}</p>

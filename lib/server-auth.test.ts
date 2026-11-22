@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 import { NextResponse } from 'next/server'
 
 vi.mock('server-only', () => ({}))
@@ -75,9 +75,18 @@ function makeSession(platformRole: string, mfaVerified = true) {
   }
 }
 
+// getServerUser() sweeps expired sessions on a 1% random roll. Pin the roll above
+// the threshold so tests asserting "no session writes" are deterministic.
+let randomSpy: MockInstance<() => number>
+
 beforeEach(() => {
+  randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
   sessionUpdateManyMock.mockResolvedValue({ count: 1 })
   sessionDeleteManyMock.mockResolvedValue({ count: 1 })
+})
+
+afterEach(() => {
+  randomSpy.mockRestore()
 })
 
 describe('requireAdmin', () => {
@@ -454,6 +463,14 @@ describe('staff session: 8 hours from sign-in', () => {
     expect(await getServerUser()).toMatchObject({ id: 'u1', platformRole: 'customer' })
     expect(sessionUpdateManyMock).not.toHaveBeenCalled()
     expect(sessionDeleteManyMock).not.toHaveBeenCalled()
+  })
+
+  it('sweeps expired sessions when the 1% cleanup roll hits', async () => {
+    randomSpy.mockReturnValue(0.001)
+    sessionFindUniqueMock.mockResolvedValue(staffSession(HOUR))
+    await getServerUser()
+    expect(sessionDeleteManyMock).toHaveBeenCalledTimes(1)
+    expect(sessionDeleteManyMock).toHaveBeenCalledWith({ where: { expiresAt: { lt: expect.any(Date) } } })
   })
 })
 

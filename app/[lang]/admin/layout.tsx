@@ -8,6 +8,7 @@ import AdminOperationalDataSync from '@/components/admin/AdminOperationalDataSyn
 import AdminErrorCenter from '@/components/admin/AdminErrorCenter'
 import AdminConfirmProvider from '@/components/admin/AdminConfirmProvider'
 import AdminPageNavigation from '@/components/admin/AdminPageNavigation'
+import AdminDisclosureAutoScroll from '@/components/admin/AdminDisclosureAutoScroll'
 import { getAdminAccessLevel, getServerUser, hasAdminUsersInDb } from '@/lib/server-auth'
 import { resolveLanguage } from '@/lib/i18n-routing'
 
@@ -39,9 +40,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <AdminConfirmProvider><AdminPermissionGate>
         <AdminOperationalDataSync />
         <AdminErrorCenter />
+        <AdminDisclosureAutoScroll />
         <div className="mx-auto w-full max-w-[1440px] px-4 py-4">
           <AdminPageNavigation />
-          <section>{children}</section>
+          <section data-admin-disclosure-root="">{children}</section>
         </div>
       </AdminPermissionGate></AdminConfirmProvider>
     </AdminGate>

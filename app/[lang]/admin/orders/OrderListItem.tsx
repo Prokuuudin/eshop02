@@ -102,6 +102,8 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                     type="button"
                                     onClick={() => toggleExpanded(order.id)}
                                     aria-expanded={isExpanded}
+                                    // Scrolls the whole order card itself (effect above).
+                                    data-disclosure-autoscroll="off"
                                     className="flex flex-1 flex-wrap items-center gap-3 text-left"
                                 >
                                     <div className="min-w-0 flex-1 space-y-1">

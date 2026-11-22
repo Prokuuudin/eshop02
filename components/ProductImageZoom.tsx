@@ -25,7 +25,7 @@ export const ProductZoomLens: React.FC<ZoomLensProps> = ({ lensRef, visible }) =
         className="product-detail__zoom-lens pointer-events-none absolute left-0 top-0 z-10"
     >
         <div
-            className={`h-full w-full rounded-sm border border-primary/40 bg-primary/10 transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
+            className={`h-full w-full rounded-sm border border-black/40 bg-black/10 transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none ${
                 visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
             }`}
         />

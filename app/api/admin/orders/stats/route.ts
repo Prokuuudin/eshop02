@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
+import { newShopOrderSql } from '@/lib/order-origin-sql'
 
 const ALLOWED_CHART_DAYS = [7, 30, 90] as const
 const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
@@ -45,11 +46,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           COALESCE(SUM(o.total) FILTER (WHERE o."createdAt" >= now() - interval '7 days'), 0)::float8 AS "last7DaysRevenue"
         FROM "Order" o
         LEFT JOIN "OrderStatusRecord" osr ON osr."orderId" = o.id
+        WHERE ${newShopOrderSql}
       `,
       prisma.$queryRaw<StatusRow[]>`
         SELECT COALESCE(osr.status, 'pending') AS status, COUNT(*)::int AS count
         FROM "Order" o
         LEFT JOIN "OrderStatusRecord" osr ON osr."orderId" = o.id
+        WHERE ${newShopOrderSql}
         GROUP BY COALESCE(osr.status, 'pending')
       `,
       prisma.$queryRaw<ChartRow[]>`
@@ -61,6 +64,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         LEFT JOIN "OrderStatusRecord" osr ON osr."orderId" = o.id
         WHERE o."createdAt" >= ${cutoff}
           AND COALESCE(osr.status, 'pending') <> 'cancelled'
+          AND ${newShopOrderSql}
         GROUP BY day
         ORDER BY day
       `,

@@ -3,6 +3,7 @@ import { Prisma } from '@/generated/prisma/client'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { requireAdminPermission } from '@/lib/server-auth'
+import { newShopOrderSql } from '@/lib/order-origin-sql'
 
 const PERIOD_DAYS: Record<string, number | null> = {
   '7d': 7,
@@ -30,8 +31,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const days = periodParam in PERIOD_DAYS ? PERIOD_DAYS[periodParam] : 30
     const cutoff = days != null ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : null
 
-    const dateWhere = cutoff ? Prisma.sql`WHERE o."createdAt" >= ${cutoff}` : Prisma.empty
-    const dateAnd = cutoff ? Prisma.sql`AND o."createdAt" >= ${cutoff}` : Prisma.empty
+    // Sales of the new shop only: imported nopCommerce history is not a new sale.
+    const dateWhere = cutoff ? Prisma.sql`WHERE ${newShopOrderSql} AND o."createdAt" >= ${cutoff}` : Prisma.sql`WHERE ${newShopOrderSql}`
+    const dateAnd = cutoff ? Prisma.sql`AND ${newShopOrderSql} AND o."createdAt" >= ${cutoff}` : Prisma.sql`AND ${newShopOrderSql}`
 
     const [totalsRows, chartRows, productRows, categoryRows] = await Promise.all([
       prisma.$queryRaw<TotalsRow[]>`

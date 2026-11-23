@@ -107,3 +107,22 @@ describe('GET /api/admin/orders/stats', () => {
     expect(queryRawMock).toHaveBeenCalledTimes(3)
   })
 })
+
+
+describe('GET /api/admin/orders/stats: imported nopCommerce history', () => {
+  it.each(["","?days=90"])('filters every aggregate query to new-shop orders (%s)', async (qs) => {
+    const { Prisma } = await import('@/generated/prisma/client')
+    requireAdminPermissionMock.mockResolvedValue({ id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' })
+    queryRawMock.mockReset()
+    queryRawMock.mockResolvedValue([])
+
+    const res = await GET(new NextRequest(`http://localhost/api/admin/orders/stats${qs}`))
+
+    expect(res.status).toBe(200)
+    expect(queryRawMock.mock.calls.length).toBeGreaterThan(0)
+    for (const [strings, ...values] of queryRawMock.mock.calls) {
+      const sql = Prisma.sql(strings as TemplateStringsArray, ...(values as never[])).sql.replace(/s+/g, ' ')
+      expect(sql).toContain('NOT (o."paymentProvider" IS NULL AND (o."paymentMethod" LIKE')
+    }
+  })
+})

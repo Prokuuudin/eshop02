@@ -22,7 +22,7 @@ import type { OrderStatus } from '@/lib/admin-store';
 import { OrderQuickActions } from './OrderQuickActions';
 import { useToast } from '@/lib/toast-context';
 import { StockAcknowledgment } from './StockAcknowledgment';
-import { MessageSquareText } from 'lucide-react';
+import { Check, Copy, MessageSquareText } from 'lucide-react';
 
 type OrdersState = ReturnType<typeof useAdminOrdersPage>;
 type Order = OrdersState['pageItems'][number];
@@ -67,6 +67,25 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                     const destination = getOrderDeliveryDestination(order);
                     const customerComment = order.customerComment?.trim();
                     const rowRef = React.useRef<HTMLDivElement>(null);
+                    const [emailCopied, setEmailCopied] = React.useState(false);
+                    const emailCopiedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+                    React.useEffect(() => () => {
+                        if (emailCopiedTimer.current) clearTimeout(emailCopiedTimer.current);
+                    }, []);
+
+                    const handleCopyEmail = () => {
+                        if (!navigator.clipboard) {
+                            showToast(l('Копирование недоступно в этом окружении', 'Copying unavailable in this environment', 'Kopēšana nav pieejama šajā vidē'), 'error');
+                            return;
+                        }
+                        navigator.clipboard.writeText(order.email)
+                            .then(() => {
+                                setEmailCopied(true);
+                                if (emailCopiedTimer.current) clearTimeout(emailCopiedTimer.current);
+                                emailCopiedTimer.current = setTimeout(() => setEmailCopied(false), 1500);
+                            })
+                            .catch(() => showToast(l('Не удалось скопировать email', 'Failed to copy email', 'Neizdevās nokopēt e-pastu'), 'error'));
+                    };
 
                     React.useEffect(() => {
                         if (!isExpanded || !rowRef.current) return;
@@ -184,12 +203,29 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                             <p className="text-sm font-medium text-foreground">
                                                 {order.firstName} {order.lastName}
                                             </p>
-                                            <a
-                                                href={`mailto:${order.email}`}
-                                                className="block text-sm text-primary hover:underline truncate"
-                                            >
-                                                {order.email}
-                                            </a>
+                                            <div className="flex min-w-0 items-center gap-1">
+                                                <a
+                                                    href={`mailto:${order.email}`}
+                                                    className="min-w-0 truncate text-sm text-primary hover:underline"
+                                                >
+                                                    {order.email}
+                                                </a>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-foreground"
+                                                    aria-label={l('Скопировать email', 'Copy email', 'Kopēt e-pastu')}
+                                                    title={l('Скопировать email', 'Copy email', 'Kopēt e-pastu')}
+                                                    onClick={handleCopyEmail}
+                                                >
+                                                    {emailCopied
+                                                        ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" aria-hidden="true" />
+                                                        : <Copy className="h-4 w-4" aria-hidden="true" />}
+                                                </Button>
+                                                <span aria-live="polite" className="shrink-0 text-xs font-medium text-green-600 dark:text-green-400">
+                                                    {emailCopied ? l('Скопировано', 'Copied', 'Nokopēts') : ''}
+                                                </span>
+                                            </div>
                                             <a
                                                 href={`tel:${order.phone}`}
                                                 className="block text-sm text-foreground hover:underline"
@@ -290,6 +326,11 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                         {item.variantLabel && (
                                                             <p className="text-xs text-muted-foreground truncate">
                                                                 {localizeVariantLabel(item.variantLabel, language)}
+                                                            </p>
+                                                        )}
+                                                        {item.sku?.trim() && (
+                                                            <p className="text-xs text-muted-foreground truncate">
+                                                                {l('Артикул', 'SKU', 'Artikuls')}: <span className="font-mono select-all">{item.sku.trim()}</span>
                                                             </p>
                                                         )}
                                                     </div>

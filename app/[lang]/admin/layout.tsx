@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { getShopChannel } from '@/lib/shop-channel'
 import { translations } from '@/data/translations'
 import AdminGate from '@/components/admin/AdminGate'
 import AdminPermissionGate from '@/components/admin/AdminPermissionGate'
@@ -24,6 +25,10 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }): Promise<ReactNode> {
+  // The admin panel exists only in the B2B deployment. proxy.ts already answers 404 there;
+  // this covers paths its matcher skips (e.g. a dynamic segment containing a dot).
+  if (getShopChannel() !== 'b2b') notFound()
+
   // Real authorization boundary — the DB-backed session, not the client's
   // localStorage copy. AdminGate below stays only as a client-side UX layer
   // (instant redirect/feedback on client navigations); it must never be the

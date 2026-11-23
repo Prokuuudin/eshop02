@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { notFound } from 'next/navigation'
 import { resolveLanguage } from '@/lib/i18n-routing'
+import { getShopChannel } from '@/lib/shop-channel'
 import { buildPublicPageMetadata } from '@/lib/page-metadata'
 
 type LayoutProps = {
@@ -32,5 +34,7 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
 }
 
 export default function RequestQuoteLayout({ children }: LayoutProps): ReactNode {
+  // RFQ is B2B-only; proxy.ts blocks it in a B2C deployment, this is the server-side backstop.
+  if (getShopChannel() !== 'b2b') notFound()
   return children
 }

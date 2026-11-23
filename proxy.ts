@@ -7,6 +7,8 @@ import {
   isLanguage,
   negotiateLanguage,
 } from '@/lib/i18n-routing'
+import { getShopChannel } from '@/lib/shop-channel'
+import { guardShopChannelRoute } from '@/lib/shop-channel-routes'
 
 const correlationId = (request: NextRequest): string => {
   const supplied = request.headers.get('x-correlation-id')?.trim()
@@ -31,6 +33,11 @@ function unprefixedLanguage(request: NextRequest) {
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl
+
+  // B2C deployment: B2B-only routes (admin, v1, RFQ, internal sync) do not exist there.
+  // The channel comes from the server environment only; a B2B deployment gets null.
+  const channelBlocked = guardShopChannelRoute(request, getShopChannel())
+  if (channelBlocked) return channelBlocked
 
   if (pathname.startsWith('/api/')) {
     const requestId = correlationId(request)

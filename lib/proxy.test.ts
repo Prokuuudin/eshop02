@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 
 const { guard } = vi.hoisted(() => ({ guard: vi.fn<() => NextResponse | null>() }))
 vi.mock('@/lib/api-guard', () => ({ guardCookieAuthenticatedApiMutation: guard }))
 
 import { proxy } from '../proxy'
+import { ShopChannelConfigError } from '@/lib/shop-channel'
 
 const request = (path: string, init?: ConstructorParameters<typeof NextRequest>[1]) =>
   new NextRequest(`https://hairshoppro.lv${path}`, init)
@@ -79,5 +80,71 @@ describe('proxy', () => {
     const response = proxy(request('/api/orders', { method: 'POST' }))
     expect(response.status).toBe(403)
     expect(response.headers.get('x-correlation-id')).toMatch(/^[0-9a-f-]{36}$/u)
+  })
+})
+
+describe('proxy shop channel', () => {
+  beforeEach(() => guard.mockReset().mockReturnValue(null))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const spoofB2b = {
+    headers: {
+      'x-shop-channel': 'b2b',
+      'x-forwarded-host': 'hairshoppro.lv',
+      host: 'hairshoppro.lv',
+      cookie: 'shop_channel=b2b; SHOP_CHANNEL=b2b',
+    },
+  }
+  const spoofB2c = {
+    headers: { 'x-shop-channel': 'b2c', 'x-forwarded-host': 'hairshop.lv', cookie: 'shop_channel=b2c; SHOP_CHANNEL=b2c' },
+  }
+
+  it.each([undefined, '', 'b2b'])('SHOP_CHANNEL=%j keeps the B2B routes served exactly as before', (value) => {
+    if (value !== undefined) vi.stubEnv('SHOP_CHANNEL', value)
+    expect(proxy(request('/admin/orders')).headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru/admin/orders')
+    expect(proxy(request('/lv/admin')).status).toBe(200)
+    expect(proxy(request('/ru/admin')).status).toBe(308)
+    const api = proxy(request('/api/admin/orders', { headers: { 'x-correlation-id': 'request-1234' } }))
+    expect(api.status).toBe(200)
+    expect(api.headers.get('x-correlation-id')).toBe('request-1234')
+    expect(guard).toHaveBeenCalledOnce()
+  })
+
+  it('a request cannot switch a B2B deployment to B2C', () => {
+    vi.stubEnv('SHOP_CHANNEL', 'b2b')
+    expect(proxy(request('/api/v1/orders?channel=b2c&SHOP_CHANNEL=b2c', spoofB2c)).status).toBe(200)
+    expect(proxy(new NextRequest('https://hairshop.lv/lv/admin', spoofB2c)).status).toBe(200)
+  })
+
+  it.each([
+    '/admin', '/lv/admin', '/en/admin/orders', '/ru/admin', '/request-quote', '/lv/request-quote',
+    '/auth/admin-setup', '/api/admin/orders', '/api/v1/products', '/api/rfq', '/api/internal/hairshop-catalog-sync',
+    '/api/auth/admin-setup',
+  ])('B2C deployment answers 404 for %s before any other handling', (path) => {
+    vi.stubEnv('SHOP_CHANNEL', 'b2c')
+    const response = proxy(request(path, { method: path.startsWith('/api/') ? 'POST' : 'GET' }))
+    expect(response.status).toBe(404)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('x-middleware-rewrite')).toBeNull()
+    expect(guard).not.toHaveBeenCalled()
+  })
+
+  it('a request cannot switch a B2C deployment back to B2B (headers, cookies, query, host)', () => {
+    vi.stubEnv('SHOP_CHANNEL', 'b2c')
+    expect(proxy(request('/api/admin/orders?channel=b2b&SHOP_CHANNEL=b2b', spoofB2b)).status).toBe(404)
+    expect(proxy(new NextRequest('https://hairshoppro.lv/lv/admin?channel=b2b', spoofB2b)).status).toBe(404)
+    expect(proxy(request('/api/v1/orders', { ...spoofB2b, headers: { ...spoofB2b.headers, 'x-api-key': 'key' } })).status).toBe(404)
+  })
+
+  it('B2C deployment still serves the storefront', () => {
+    vi.stubEnv('SHOP_CHANNEL', 'b2c')
+    expect(proxy(request('/catalog')).headers.get('x-middleware-rewrite')).toBe('https://hairshoppro.lv/ru/catalog')
+    expect(proxy(request('/api/products')).status).toBe(200)
+  })
+
+  it('an unknown SHOP_CHANNEL fails every request with a configuration error', () => {
+    vi.stubEnv('SHOP_CHANNEL', 'retail')
+    expect(() => proxy(request('/catalog'))).toThrow(ShopChannelConfigError)
+    expect(() => proxy(request('/api/products'))).toThrow(/Invalid SHOP_CHANNEL/)
   })
 })

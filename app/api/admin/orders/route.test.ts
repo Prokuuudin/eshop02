@@ -21,6 +21,7 @@ vi.mock('@/lib/shipping-settings-server', async () => ({ getShippingSettings: vi
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: vi.fn() }))
 vi.mock('@/lib/order-admin-notification-dispatch', () => ({ scheduleImmediateAdminOrderNotification: vi.fn() }))
+vi.mock('@/lib/invoice-customer-number', () => ({ getInvoiceCustomerNumbers: vi.fn(async () => ({})) }))
 vi.mock('@/lib/orders-data-store', () => ({
   updateServerOrderByAdmin: vi.fn(),
   AdminOrderUpdateError: class AdminOrderUpdateError extends Error {
@@ -59,6 +60,7 @@ import { prisma } from '@/lib/prisma'
 import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-store'
 import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { DELETE, GET, POST } from './route'
+import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -126,6 +128,21 @@ describe('GET /api/admin/orders', () => {
     expect(body.orders[0].operationalExceptions).toEqual([expect.objectContaining({
       code: 'late_payment_stock_unavailable', productIds: ['p1'], occurrences: 1,
     })])
+  })
+
+  it('adds the database-backed payer card number to the admin invoice order', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([{
+      id: 'order-1', items: [], createdAt: new Date('2026-08-01T10:00:00Z'), userId: 'user-1',
+    }] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(1)
+    vi.mocked(getInvoiceCustomerNumbers).mockResolvedValue({ 'order-1': 'HS-100' })
+
+    const response = await GET(new NextRequest('http://localhost/api/admin/orders?take=50'))
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(body.orders[0].customerCardNumber).toBe('HS-100')
   })
 
   it('resolves a status filter to an id set before querying orders', async () => {

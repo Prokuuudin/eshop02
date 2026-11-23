@@ -8,6 +8,7 @@ import { getInvoiceProductTitlesByIds } from '@/lib/product-overrides-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
+import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
 
 export const runtime = 'nodejs'
 
@@ -59,7 +60,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Названия товаров на языке инвойса; для EN фолбэк — латышское название
     const orderItemIds = [...new Set(order.items.map((i) => i.id))]
-    const products = await getInvoiceProductTitlesByIds(orderItemIds)
+    const [products, customerNumbers] = await Promise.all([
+      getInvoiceProductTitlesByIds(orderItemIds),
+      getInvoiceCustomerNumbers([order]),
+    ])
     const titles: Record<string, string> = {}
     for (const p of products) {
       const title = lang === 'en' ? p.titleEn || p.titleLv : p.titleLv
@@ -67,7 +71,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const subject = lang === 'en' ? `Invoice for order #${order.id}` : `Rēķins pasūtījumam #${order.id}`
-    const html = buildInvoiceHtml(order as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang, getSiteUrl())
+    const invoiceOrder = {
+      ...order,
+      ...(customerNumbers[order.id] ? { customerCardNumber: customerNumbers[order.id] } : {}),
+    }
+    const html = buildInvoiceHtml(invoiceOrder as unknown as Parameters<typeof buildInvoiceHtml>[0], titles, lang, getSiteUrl())
 
     await sendEmail(email, subject, html)
 

@@ -66,6 +66,8 @@ export interface Order {
   language?: string
   /** Владелец заказа на момент оформления; см. /api/orders/my (userId OR email). */
   userId?: string
+  /** Current Hairshop Pro card number of the invoice payer; populated only for admin invoice rendering. */
+  customerCardNumber?: string
   /** Физ./юр. лицо, выбранное на чекауте; см. app/[lang]/checkout/CheckoutFormSections.tsx. */
   legalDetails?: OrderLegalDetails
 }

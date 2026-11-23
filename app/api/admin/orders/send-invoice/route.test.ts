@@ -11,6 +11,7 @@ vi.mock('@/lib/invoice-template', () => ({ buildInvoiceHtml: vi.fn(() => '<html>
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://hairshoppro.lv') }))
 vi.mock('@/lib/orders-data-store', () => ({ getServerOrderById: vi.fn() }))
 vi.mock('@/lib/product-overrides-store', () => ({ getInvoiceProductTitlesByIds: vi.fn(async () => []) }))
+vi.mock('@/lib/invoice-customer-number', () => ({ getInvoiceCustomerNumbers: vi.fn(async () => ({})) }))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: txMock } }))
 
 import { requireAdminPermission } from '@/lib/server-auth'
@@ -19,6 +20,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { getServerOrderById } from '@/lib/orders-data-store'
 import { buildInvoiceHtml } from '@/lib/invoice-template'
 import { POST } from './route'
+import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 const ORDER = { id: '1042', firstName: 'Ivan', lastName: 'Petrov', items: [] }
@@ -110,6 +112,19 @@ describe('POST /api/admin/orders/send-invoice', () => {
     const res = await POST(makeRequest({ orderId: '1042', email: 'customer@example.com' }))
     expect(res.status).toBe(200)
     expect(buildInvoiceHtml).toHaveBeenCalledWith(invoiceOrder, {}, 'lv', 'https://hairshoppro.lv')
+  })
+
+  it('adds the payer customer number loaded from the database', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(getServerOrderById).mockResolvedValue(ORDER as never)
+    vi.mocked(getInvoiceCustomerNumbers).mockResolvedValue({ '1042': 'HS-100' })
+
+    const res = await POST(makeRequest({ orderId: '1042', email: 'customer@example.com' }))
+
+    expect(res.status).toBe(200)
+    expect(buildInvoiceHtml).toHaveBeenCalledWith(
+      { ...ORDER, customerCardNumber: 'HS-100' }, {}, 'lv', 'https://hairshoppro.lv'
+    )
   })
 
   it('returns a controlled 500 (not an unhandled exception) if a step after order-lookup throws', async () => {

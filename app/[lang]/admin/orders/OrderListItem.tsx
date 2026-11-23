@@ -57,7 +57,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
     const {
       getOrderStatus, setOrderStatus, getOrderNote, setOrderNote, noteDrafts, setNoteDrafts,
       locale, expandedOrders, toggleExpanded, selectedIds, toggleSelect,
-      paymentSavingIds, markOrderPaid, statusSavingIds,
+      paymentSavingIds, markOrderPaid, statusSavingIds, recordFullRefund, retryBonusShortfall,
     } = state;
 
                     const status = getOrderStatus(order.id);
@@ -68,6 +68,11 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                     const customerComment = order.customerComment?.trim();
                     const rowRef = React.useRef<HTMLDivElement>(null);
                     const [emailCopied, setEmailCopied] = React.useState(false);
+                    const [refundFormOpen, setRefundFormOpen] = React.useState(false);
+                    const [refundConfirmed, setRefundConfirmed] = React.useState(false);
+                    const [refundReason, setRefundReason] = React.useState('');
+                    const bonusShortfall = order.bonusShortfall?.shortfallPoints ? order.bonusShortfall : null;
+                    const closeRefundForm = () => { setRefundFormOpen(false); setRefundConfirmed(false); setRefundReason(''); };
                     const emailCopiedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
                     React.useEffect(() => () => {
                         if (emailCopiedTimer.current) clearTimeout(emailCopiedTimer.current);
@@ -285,7 +290,7 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                     </p>
                                                 </div>
                                             )}
-                                            {payStatus !== 'paid' && (
+                                            {payStatus !== 'paid' && payStatus !== 'refunded' && (
                                                 <Button
                                                     size="sm"
                                                     className="w-full"
@@ -294,6 +299,78 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 >
                                                     {paymentSavingIds.has(order.id) ? l('Сохранение…', 'Saving…', 'Saglabā…') : l('Отметить оплаченным', 'Mark as paid', 'Atzīmēt kā apmaksātu')}
                                                 </Button>
+                                            )}
+                                            {bonusShortfall && (
+                                                <div role="alert" className="mt-1 space-y-1.5 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                                                    <p>
+                                                        {l(
+                                                            `Не удалось удержать ${bonusShortfall.shortfallPoints} бонусных баллов: на балансе клиента ${bonusShortfall.availablePoints}. Частичного списания не было.`,
+                                                            `${bonusShortfall.shortfallPoints} bonus points could not be taken back: the customer has ${bonusShortfall.availablePoints}. Nothing was taken partially.`,
+                                                            `Neizdevās noņemt ${bonusShortfall.shortfallPoints} bonusa punktus: klientam ir ${bonusShortfall.availablePoints}. Daļēja norakstīšana netika veikta.`
+                                                        )}
+                                                    </p>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        disabled={paymentSavingIds.has(order.id)}
+                                                        onClick={() => void retryBonusShortfall(order.id)}
+                                                    >
+                                                        {l('Повторить удержание', 'Retry deduction', 'Atkārtot norakstīšanu')}
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            {payStatus === 'paid' && !refundFormOpen && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => setRefundFormOpen(true)}
+                                                >
+                                                    {l('Зафиксировать полный возврат', 'Record full refund', 'Reģistrēt pilnu atmaksu')}
+                                                </Button>
+                                            )}
+                                            {payStatus === 'paid' && refundFormOpen && (
+                                                <div className="mt-1 space-y-2 rounded-md border border-border p-2">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {l(
+                                                            'Действие не переводит деньги. Сначала верните всю сумму в Paysera или банке. Начисленные за заказ баллы будут отозваны, списанные — возвращены.',
+                                                            'This action does not move money. Return the full amount in Paysera or the bank first. Points earned for the order are revoked and spent points are returned.',
+                                                            'Šī darbība nepārskaita naudu. Vispirms atmaksājiet visu summu Paysera vai bankā. Par pasūtījumu piešķirtie punkti tiks atsaukti, izmantotie — atgriezti.'
+                                                        )}
+                                                    </p>
+                                                    <label className="flex items-start gap-2 text-xs text-foreground">
+                                                        <Checkbox
+                                                            checked={refundConfirmed}
+                                                            onCheckedChange={(checked) => setRefundConfirmed(checked === true)}
+                                                        />
+                                                        <span>{l('Подтверждаю: вся сумма уже возвращена клиенту', 'I confirm the full amount has already been returned to the customer', 'Apstiprinu: visa summa klientam jau ir atmaksāta')}</span>
+                                                    </label>
+                                                    <Textarea
+                                                        value={refundReason}
+                                                        onChange={(event) => setRefundReason(event.target.value)}
+                                                        rows={2}
+                                                        maxLength={1000}
+                                                        placeholder={l('Как и когда возвращены деньги (мин. 10 символов)', 'How and when the money was returned (min. 10 characters)', 'Kā un kad nauda atmaksāta (min. 10 rakstzīmes)')}
+                                                        aria-label={l('Основание возврата', 'Refund reason', 'Atmaksas pamatojums')}
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="destructive"
+                                                            className="flex-1"
+                                                            disabled={!refundConfirmed || refundReason.trim().length < 10 || paymentSavingIds.has(order.id)}
+                                                            onClick={async () => {
+                                                                if (await recordFullRefund(order.id, refundReason.trim())) closeRefundForm();
+                                                            }}
+                                                        >
+                                                            {l('Зафиксировать возврат', 'Record refund', 'Reģistrēt atmaksu')}
+                                                        </Button>
+                                                        <Button size="sm" variant="outline" onClick={closeRefundForm}>
+                                                            {l('Отмена', 'Cancel', 'Atcelt')}
+                                                        </Button>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -538,7 +615,11 @@ export function OrderListItem({ order, state }: { order: Order; state: OrdersSta
                                                 </div>
                                                 {(order.bonusEarned ?? 0) > 0 && (
                                                     <div className="flex justify-between gap-6 text-xs text-amber-600 dark:text-amber-400">
-                                                        <span>{l('Бонусов начислено', 'Bonuses earned', 'Piešķirtie bonusi')}</span>
+                                                        <span>{payStatus === 'paid'
+                                                            ? l('Бонусов начислено', 'Bonuses earned', 'Piešķirtie bonusi')
+                                                            : payStatus === 'refunded'
+                                                                ? l('Начисление отозвано (возврат)', 'Earning revoked (refund)', 'Piešķīrums atsaukts (atmaksa)')
+                                                                : l('Бонусы после оплаты (прогноз)', 'Bonuses after payment (forecast)', 'Bonusi pēc apmaksas (prognoze)')}</span>
                                                         <span>
                                                             +{order.bonusEarned}
                                                             {' '}({formatEuro(pointsToEuros(order.bonusEarned ?? 0), locale)})

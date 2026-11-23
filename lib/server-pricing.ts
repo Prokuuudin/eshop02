@@ -5,7 +5,7 @@ import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { calculatePrice } from '@/lib/customer-segmentation'
 import { calculateDiscount } from '@/lib/promo-codes'
 import { extractVat } from '@/lib/tax'
-import { calcOrderBonus, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
+import { calcEarnedPointsForPayment, pointsToEuros, eurosToPoints } from '@/lib/bonus-program'
 import { calcDeliveryFee } from '@/lib/delivery'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { toNum } from '@/lib/decimal'
@@ -293,19 +293,16 @@ export async function recomputeOrderPricing(input: RecomputeInput, db: PricingDb
 
   const total = Math.max(0, Math.round((grandTotal - pointsToEuros(bonusSpent)) * 100) / 100)
 
-  // Points earned: catalog bonusRate per unit when set, otherwise the admin-configured rate
-  // percent of the item subtotal, capped per order, gated by the minimum order amount. Scaled
-  // down proportionally when the customer pays part of the order with points.
-  let bonusEarned = 0
-  if (bonusConfig.enabled && grandTotal >= bonusConfig.minOrderForEarn) {
-    const bonusEarnedBase = calcOrderBonus(items, bonusConfig.earnRatePercent)
-    const scaledEarned =
-      bonusSpent > 0 && grandTotal > 0
-        ? Math.max(0, Math.round((bonusEarnedBase * total) / grandTotal))
-        : bonusEarnedBase
-    bonusEarned =
-      bonusConfig.maxEarnPerOrder > 0 ? Math.min(scaledEarned, bonusConfig.maxEarnPerOrder) : scaledEarned
-  }
+  // Forecast only: points are credited when the payment is confirmed (lib/order-bonus.ts),
+  // recomputed there with this same formula from the order's final amounts. Base = goods
+  // actually paid after all discounts and spent bonuses; delivery never earns.
+  const bonusEarned = calcEarnedPointsForPayment({
+    items,
+    goodsSubtotal: subtotal,
+    total,
+    delivery,
+    config: bonusConfig,
+  })
 
   return {
     items,

@@ -55,7 +55,11 @@ export const useAdminStore = create<AdminStore>()(
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId, status }),
         })
-        if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? 'status_update_failed')
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null)
+          // Keep the response details (e.g. requiredPoints/availablePoints) for the UI message.
+          throw Object.assign(new Error(payload?.error ?? 'status_update_failed'), { details: payload })
+        }
         set((state) => ({ orderStatuses: { ...state.orderStatuses, [orderId]: status } }))
       },
 

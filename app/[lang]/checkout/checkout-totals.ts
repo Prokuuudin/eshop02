@@ -1,5 +1,5 @@
 import type { DeliveryMethod } from '@/lib/orders-store';
-import { eurosToPoints, pointsToEuros } from '@/lib/bonus-program';
+import { calcEarnedPointsForPayment, eurosToPoints, pointsToEuros, type BonusLineItem, type PaymentEarnConfig } from '@/lib/bonus-program';
 import { calcDeliveryFee } from '@/lib/delivery';
 import { extractVat } from '@/lib/tax';
 
@@ -17,6 +17,9 @@ type CheckoutTotalsInput = {
     bonusBalance: number;
     maxBonusSpendPercent: number;
     bonusToEarn: number;
+    /** Lines and program settings for the forecast; points are credited only after payment. */
+    earnItems: BonusLineItem[];
+    earnConfig: PaymentEarnConfig;
 };
 
 export function calculateCheckoutTotals(input: CheckoutTotalsInput): {
@@ -49,9 +52,15 @@ export function calculateCheckoutTotals(input: CheckoutTotalsInput): {
     const bonusSpentPoints = input.bonusApplied ? maxBonusSpendPoints : 0;
     const bonusDiscount = pointsToEuros(bonusSpentPoints);
     const finalGrandTotal = grandTotal - bonusDiscount;
-    const adjustedBonusToEarn = grandTotal > 0 && input.bonusApplied
-        ? Math.round((input.bonusToEarn * finalGrandTotal) / grandTotal)
-        : input.bonusToEarn;
+    // Same formula the server uses when the payment is confirmed: goods actually paid
+    // after promo/campaign discount and spent bonuses, delivery excluded, floored.
+    const adjustedBonusToEarn = calcEarnedPointsForPayment({
+        items: input.earnItems,
+        goodsSubtotal: input.subtotal,
+        total: finalGrandTotal,
+        delivery: deliveryFee,
+        config: input.earnConfig,
+    });
 
     return {
         discount,

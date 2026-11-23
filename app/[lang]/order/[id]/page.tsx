@@ -341,10 +341,11 @@ return (
                                 </div>
                             )}
 
-                            {(order.bonusEarned ?? 0) > 0 && (
+                            {(order.bonusEarned ?? 0) > 0 && order.paymentStatus !== 'refunded' && (
                                 <div className="mb-4 flex items-center justify-between gap-3 p-3 bg-primary/5 dark:bg-primary/15 border border-primary/30 dark:border-primary/40 rounded text-sm">
                                     <span className="font-medium text-primary dark:text-primary/60">
-                                        {t('order.bonusEarned')}
+                                        {/* Points are credited only once the payment is confirmed. */}
+                                        {t(order.paymentStatus === 'paid' ? 'order.bonusEarned' : 'order.bonusEarnedAfterPayment')}
                                     </span>
                                     <span className="shrink-0 text-primary">
                                         +{order.bonusEarned ?? 0}

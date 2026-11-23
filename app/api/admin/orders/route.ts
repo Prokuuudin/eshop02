@@ -21,6 +21,7 @@ import { productIdsForDamagedOrderItems, repairOrderItemTitles } from '@/lib/ord
 import { z } from 'zod'
 import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
+import { ORDER_BONUS_SHORTFALL, readOrderBonusShortfalls } from '@/lib/order-bonus'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -93,6 +94,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       return groups
     }, {})
 
+    const shortfallOrderIds = operationalExceptions.filter((row) => row.code === ORDER_BONUS_SHORTFALL).map((row) => row.orderId)
+    const bonusShortfalls = await readOrderBonusShortfalls(prisma, shortfallOrderIds)
     const damagedProductIds = productIdsForDamagedOrderItems(orders.map((row) => row.items))
     const titleRows = damagedProductIds.length > 0
       ? await prisma.product.findMany({
@@ -110,6 +113,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         ...exception,
         firstSeenAt: exception.firstSeenAt.toISOString(),
       })),
+      bonusShortfall: bonusShortfalls.get(row.id) ?? null,
     }))
 
     return NextResponse.json({ orders: mapped, total, statuses, notes })

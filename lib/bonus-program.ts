@@ -64,3 +64,42 @@ export function calcOrderBonus(
   }, 0)
   return Math.max(0, Math.round(base))
 }
+
+export type PaymentEarnConfig = Pick<BonusProgramConfig, 'enabled' | 'earnRatePercent' | 'minOrderForEarn' | 'maxEarnPerOrder'>
+
+const toCents = (euros: number): number => Math.round((Number.isFinite(euros) ? euros : 0) * 100)
+
+/**
+ * Баллы за оплаченный заказ: база — фактически оплаченная стоимость товаров после всех
+ * скидок и списанных бонусов (итог заказа минус доставка), доставка не участвует.
+ * Явная ставка товара (`bonusRate`) и процентная ставка уменьшаются пропорционально доле
+ * оплаченной стоимости товаров. Округление вниз до целого балла — никогда не больше ставки.
+ * Та же функция считает прогноз в чекауте и окончательное начисление при подтверждении оплаты.
+ */
+export function calcEarnedPointsForPayment(input: {
+  items: BonusLineItem[]
+  /** Сумма товаров до скидок (Σ цена × количество), евро. */
+  goodsSubtotal: number
+  /** Итог заказа, фактически оплачиваемый клиентом (после скидок и бонусов, с доставкой), евро. */
+  total: number
+  /** Доставка, входящая в итог, евро. */
+  delivery: number
+  config: PaymentEarnConfig
+}): number {
+  const { config } = input
+  if (!config.enabled) return 0
+  const subtotalCents = toCents(input.goodsSubtotal)
+  const goodsPaidCents = Math.max(0, toCents(input.total) - toCents(input.delivery))
+  if (subtotalCents <= 0 || goodsPaidCents <= 0) return 0
+  if (goodsPaidCents < toCents(config.minOrderForEarn)) return 0
+  const share = Math.min(1, goodsPaidCents / subtotalCents)
+  const raw = input.items.reduce((sum, item) => {
+    const quantity = Math.max(0, item.quantity)
+    const rate = item.bonusRate ?? 0
+    if (rate > 0) return sum + rate * quantity * share
+    // 1 балл = 1 цент, поэтому баллы = оплаченные центы × ставка %.
+    return sum + (toCents(Math.max(0, item.price) * quantity) * share * config.earnRatePercent) / 100
+  }, 0)
+  const points = Math.max(0, Math.floor(raw + 1e-9))
+  return config.maxEarnPerOrder > 0 ? Math.min(points, config.maxEarnPerOrder) : points
+}

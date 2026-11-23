@@ -11,7 +11,8 @@ import { toNum } from '@/lib/decimal'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import { extractVat, isOrderTaxIncluded } from '@/lib/tax'
 import { appendServerAudit } from '@/lib/server-audit'
-import { bonusExpiryDate, consumeBonusLots, expireBonusPoints, getBonusExpiryDays } from '@/lib/bonus-ledger'
+import { consumeBonusLots, expireBonusPoints } from '@/lib/bonus-ledger'
+import { lockOrderBonusUser, reconcileOrderBonus } from '@/lib/order-bonus'
 import { pointsToEuros } from '@/lib/bonus-program'
 import type { AdminOrderUpdateInput, PrepareOrder, ServerOrder, ServerOrderItem, ServerPaymentStatus } from '@/lib/orders-data-types'
 import { AdminOrderUpdateError, ExistingCheckoutOrderError, InsufficientBonusPointsError, InsufficientStockError, PromoCodeUsageLimitError } from '@/lib/orders-data-types'
@@ -156,27 +157,8 @@ const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerO
       } })
     }
 
-    // Credit earned points separately after the guarded debit.
-    const earned = Math.max(0, Math.round(order.bonusEarned ?? 0))
-    if (order.userId && earned > 0) {
-      const expiryDays = await getBonusExpiryDays(tx)
-      await tx.user.updateMany({
-        where: { id: order.userId },
-        data: { bonusPoints: { increment: earned } },
-      })
-      await tx.bonusTransaction.create({
-        data: {
-          userId: order.userId,
-          orderId: created.id,
-          type: 'order_earn',
-          points: earned,
-          balanceAfter: (currentUser?.bonusPoints ?? 0) - spent + earned,
-          remainingPoints: earned,
-          expiresAt: bonusExpiryDate(expiryDays),
-          reason: `Order ${created.id}`,
-        },
-      })
-    }
+    // Points are not earned here: `bonusEarned` is only a forecast. They are credited when
+    // the payment is confirmed (reconcileOrderBonus in updateServerOrderPayment).
 
     await enqueueAdminOrderNotification(tx, {
       orderId: created.id,
@@ -347,9 +329,12 @@ export const updateServerOrderPayment = async (
     }
     // `paid` is terminal: a duplicate verified callback is idempotent and a delayed
     // cancel/failure/expiry must never downgrade it or release its committed stock.
-    if (existing.paymentStatus === 'paid') {
+    // `refunded` (a confirmed full refund) is terminal as well: no gateway event may reopen it.
+    if (existing.paymentStatus === 'paid' || existing.paymentStatus === 'refunded') {
       return { row: existing, latePaymentStockUnavailable: false, productIds: [] as string[] }
     }
+    // Customer row before any Product lock (same order as checkout) for the bonus ledger.
+    await lockOrderBonusUser(tx, existing.userId)
     // A verified payment that arrives after the reservation expired is still recorded
     // as paid (approved Stock Ledger semantics). applyOrderReservationPaymentState
     // re-holds the stock or reports late_payment_stock_unavailable for staff.
@@ -369,6 +354,12 @@ export const updateServerOrderPayment = async (
       (updates.paymentStatus !== undefined && updates.paymentStatus !== existing.paymentStatus)
       || (updates.paymentProvider !== undefined && updates.paymentProvider !== existing.paymentProvider)
     )
+    if (updates.paymentStatus !== undefined && updates.paymentStatus !== existing.paymentStatus) {
+      await reconcileOrderBonus(tx, orderId, {
+        trigger: updates.paymentStatus === 'paid' ? 'payment_confirmed' : 'payment_status_changed',
+        actorUserId: audit?.actor.id,
+      })
+    }
     if (audit && paymentChanged) {
       await appendServerAudit(tx, audit.request, audit.actor, {
         action: 'order.payment_status_updated',

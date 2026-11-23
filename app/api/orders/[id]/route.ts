@@ -48,6 +48,11 @@ export async function PATCH(req: NextRequest, context: Context): Promise<NextRes
       paymentSessionId?: string
     }
 
+    // `refunded` is only set by the explicit full-refund action (/api/admin/orders/full-refund).
+    if (body.paymentStatus !== undefined && !['unpaid', 'pending', 'paid', 'failed'].includes(body.paymentStatus)) {
+      return NextResponse.json({ error: 'Unsupported payment status' }, { status: 400 })
+    }
+
     if (body.paymentProvider !== undefined && body.paymentProvider !== 'manual') {
       return NextResponse.json({ error: 'Unsupported payment provider' }, { status: 400 })
     }

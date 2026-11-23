@@ -1,6 +1,6 @@
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 
-export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed'
+export type ServerPaymentStatus = 'unpaid' | 'pending' | 'paid' | 'failed' | 'refunded'
 
 export type ServerOrderItem = {
   id: string

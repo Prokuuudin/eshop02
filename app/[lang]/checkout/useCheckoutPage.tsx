@@ -464,13 +464,12 @@ function useCheckoutPageState() {
 
     const wholesaleGuard = getWholesaleOrderGuard(subtotal);
     const userBonusBalance = currentUser?.bonusPoints ?? 0;
-    const bonusToEarn = calcOrderBonus(
-        checkoutItems.map((item) => ({
-            price: calculatePrice(item, item.quantity),
-            quantity: item.quantity,
-            bonusRate: item.bonusRate,
-        }))
-    );
+    const earnItems = checkoutItems.map((item) => ({
+        price: calculatePrice(item, item.quantity),
+        quantity: item.quantity,
+        bonusRate: item.bonusRate,
+    }));
+    const bonusToEarn = calcOrderBonus(earnItems, bonusProgram.earnRatePercent);
     const bonusApplicable = bonusProgram.enabled && !!currentUser && userBonusBalance > 0;
     const {
         discount,
@@ -498,6 +497,8 @@ function useCheckoutPageState() {
         bonusBalance: userBonusBalance,
         maxBonusSpendPercent: bonusProgram.maxSpendPercent,
         bonusToEarn,
+        earnItems,
+        earnConfig: bonusProgram,
     });
 
     return {

@@ -140,6 +140,10 @@ describe('planOrderBonus', () => {
       expect(planOrderBonus(state, ledger, null).spendRefund).toBe(500)
     }
   })
+  it('a confirmed payment wins over a cancellation: spent points stay held', () => {
+    expect(planOrderBonus({ paymentStatus: 'paid', orderStatus: 'cancelled' }, ledger, null)).toMatchObject({ spendRefund: 0, spendRedebit: 0 })
+    expect(planOrderBonus({ paymentStatus: 'paid', orderStatus: 'cancelled' }, { ...ledger, heldSpent: 0 }, null).spendRedebit).toBe(500)
+  })
   it('never earns twice and never earns without a decided amount', () => {
     expect(planOrderBonus({ paymentStatus: 'paid', orderStatus: 'pending' }, { ...ledger, hasEarnRow: true }, 11).earn).toBe(0)
     expect(planOrderBonus({ paymentStatus: 'paid', orderStatus: 'pending' }, ledger, null).earn).toBe(0)
@@ -262,6 +266,56 @@ describe('reconcileOrderBonus', () => {
     expect(ledgerFor(db, 'order_spend_redebit')).toHaveLength(1)
     expect(ledgerFor(db, 'order_earn')).toHaveLength(1)
     expect(balance(db)).toBe(150)
+  })
+
+  it('cancelled → late paid: takes the returned points again once and earns once', async () => {
+    checkout(db)
+    db.state.statuses.set('1094', 'cancelled')
+    await run(db, 'order_cancelled', { orderStatus: 'cancelled' })
+    expect(balance(db)).toBe(600)
+
+    const paid = await pay(db) // late Paysera webhook on the cancelled order
+    expect(paid.applied).toMatchObject({ spendRedebit: 500, earn: 11 })
+    expect(paid.shortfallPoints).toBe(0)
+    expect(balance(db)).toBe(111)
+    // Duplicate webhooks / retries: no second earn, refund or re-debit.
+    await run(db, 'payment_confirmed')
+    await run(db, 'payment_confirmed')
+    await run(db, 'order_cancelled', { orderStatus: 'cancelled' })
+    expect(ledgerFor(db, 'order_spend_refund')).toHaveLength(1)
+    expect(ledgerFor(db, 'order_spend_redebit')).toEqual([expect.objectContaining({ points: -500 })])
+    expect(ledgerFor(db, 'order_earn')).toHaveLength(1)
+    expect(balance(db)).toBe(111)
+    expect(db.state.exceptions).toHaveLength(0)
+  })
+
+  it('cancelled → late paid with too few points: payment stands, one exception with the exact amount, no partial debit', async () => {
+    checkout(db)
+    db.state.statuses.set('1094', 'cancelled')
+    await run(db, 'order_cancelled', { orderStatus: 'cancelled' }) // 600
+    db.state.users.get('u1')!.bonusPoints = 150 // returned points partly spent elsewhere
+
+    const paid = await pay(db)
+    expect(paid.applied).toMatchObject({ spendRedebit: 0, earn: 11 })
+    expect(paid.shortfallPoints).toBe(500)
+    expect(balance(db)).toBe(161)
+    expect(db.state.orders.get('1094')!.paymentStatus).toBe('paid')
+    expect(db.state.exceptions).toEqual([expect.objectContaining({ code: ORDER_BONUS_SHORTFALL, status: 'open' })])
+    expect((await readOrderBonusShortfalls(db.tx, ['1094'])).get('1094')).toEqual({ shortfallPoints: 500, availablePoints: 161 })
+
+    // Repeated notifications: still exactly one exception row, nothing credited or taken.
+    await run(db, 'payment_confirmed')
+    await run(db, 'payment_confirmed')
+    expect(db.state.exceptions).toHaveLength(1)
+    expect(ledgerFor(db, 'order_earn')).toHaveLength(1)
+    expect(ledgerFor(db, 'order_spend_redebit')).toHaveLength(0)
+    expect(ledgerFor(db, 'order_spend_refund')).toHaveLength(1)
+    expect(balance(db)).toBe(161)
+
+    db.state.users.get('u1')!.bonusPoints = 520
+    await run(db, 'shortfall_retry')
+    expect(ledgerFor(db, 'order_spend_redebit')).toEqual([expect.objectContaining({ points: -500, balanceAfter: 20 })])
+    expect(db.state.exceptions[0].status).toBe('resolved')
   })
 
   it('full refund: returns spent and revokes earned in one step', async () => {

@@ -17,6 +17,7 @@ suite('order bonus ledger on isolated PostgreSQL', () => {
   let bonus: typeof import('@/lib/order-bonus')
   const userIds: string[] = []
   const orderIds: string[] = []
+  const productIds: string[] = []
 
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required')
@@ -32,8 +33,11 @@ suite('order bonus ledger on isolated PostgreSQL', () => {
     await prisma.bonusTransaction.deleteMany({ where: { userId: { in: userIds } } })
     await prisma.order.deleteMany({ where: { id: { in: orderIds } } })
     await prisma.user.deleteMany({ where: { id: { in: userIds } } })
+    await prisma.stockAllocation.deleteMany({ where: { productId: { in: productIds } } })
+    await prisma.product.deleteMany({ where: { id: { in: productIds } } })
     userIds.length = 0
     orderIds.length = 0
+    productIds.length = 0
   })
 
   afterAll(async () => {
@@ -146,6 +150,64 @@ suite('order bonus ledger on isolated PostgreSQL', () => {
     expect(await rows(orderId, 'order_earn_revoke')).toEqual([expect.objectContaining({ points: -13 })])
     expect(await balanceOf(userId)).toBe(11)
     expect(await prisma.orderOperationalException.findUniqueOrThrow({ where: { orderId_code: { orderId, code: bonus.ORDER_BONUS_SHORTFALL } } })).toMatchObject({ status: 'resolved' })
+    await ledgerMatchesBalance(userId, startBalance)
+  })
+
+  it('cancelled → late paid (duplicate webhooks): returned points taken again once, earned once', async () => {
+    const { userId, orderId, startBalance } = await checkoutOrder({ balance: 100, spent: 500, total: 24.95, subtotal: 33.6, delivery: 2 })
+    await cancel(orderId)
+    expect(await balanceOf(userId)).toBe(600)
+    await Promise.all(Array.from({ length: 6 }, () => store.updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'manual' })))
+    expect(await rows(orderId, 'order_spend_redebit')).toEqual([expect.objectContaining({ points: -500 })])
+    expect(await rows(orderId, 'order_earn')).toEqual([expect.objectContaining({ points: 11 })])
+    expect(await rows(orderId, 'order_spend_refund')).toHaveLength(1)
+    expect(await balanceOf(userId)).toBe(111)
+    expect(await prisma.orderOperationalException.count({ where: { orderId } })).toBe(0)
+    await ledgerMatchesBalance(userId, startBalance)
+  })
+
+  it('cancelled → late paid with too few points: payment recorded, one exception, no partial debit, retries idempotent', async () => {
+    const { userId, orderId, startBalance } = await checkoutOrder({ balance: 100, spent: 500, total: 24.95, subtotal: 33.6, delivery: 2 })
+    await cancel(orderId)
+    await prisma.user.update({ where: { id: userId }, data: { bonusPoints: { decrement: 450 } } })
+    await prisma.bonusTransaction.create({ data: { userId, type: 'admin_adjustment', points: -450, balanceAfter: 150, reason: 'synthetic spend' } })
+
+    await Promise.all(Array.from({ length: 5 }, () => store.updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'manual' })))
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).paymentStatus).toBe('paid')
+    expect(await rows(orderId, 'order_spend_redebit')).toHaveLength(0)
+    expect(await rows(orderId, 'order_earn')).toHaveLength(1)
+    expect(await balanceOf(userId)).toBe(161)
+    expect(await prisma.orderOperationalException.findMany({ where: { orderId } })).toEqual([
+      expect.objectContaining({ code: bonus.ORDER_BONUS_SHORTFALL, status: 'open', occurrences: 1 }),
+    ])
+    expect((await bonus.readOrderBonusShortfalls(prisma, [orderId])).get(orderId)).toEqual({ shortfallPoints: 500, availablePoints: 161 })
+
+    await prisma.user.update({ where: { id: userId }, data: { bonusPoints: { increment: 400 } } })
+    await prisma.bonusTransaction.create({ data: { userId, type: 'admin_adjustment', points: 400, balanceAfter: 561, reason: 'synthetic top-up' } })
+    await Promise.all(Array.from({ length: 3 }, () => prisma.$transaction((tx) => bonus.reconcileOrderBonus(tx, orderId, { trigger: 'shortfall_retry' }))))
+    expect(await rows(orderId, 'order_spend_redebit')).toEqual([expect.objectContaining({ points: -500, balanceAfter: 61 })])
+    expect(await prisma.orderOperationalException.findUniqueOrThrow({ where: { orderId_code: { orderId, code: bonus.ORDER_BONUS_SHORTFALL } } })).toMatchObject({ status: 'resolved' })
+    await ledgerMatchesBalance(userId, startBalance)
+  })
+
+  it('late payment of a cancelled order keeps the stock exception and the bonus re-debit side by side', async () => {
+    const { userId, orderId, startBalance } = await checkoutOrder({ balance: 100, spent: 500, total: 24.95, subtotal: 33.6, delivery: 2 })
+    const productId = `bonus-it-p-${randomUUID()}`
+    productIds.push(productId)
+    await prisma.product.create({ data: { id: productId, title: 'Sold out', brand: 'Pro', price: 33.6, category: 'hair', stock: 0, isActive: true, isDeleted: false, updatedAt: new Date() } })
+    await prisma.order.update({ where: { id: orderId }, data: {
+      items: [{ id: productId, title: 'Sold out', price: 33.6, quantity: 1 }],
+      stockReservationStatus: 'released', stockReleasedAt: new Date(),
+    } })
+    await cancel(orderId)
+
+    await store.updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'manual' })
+    await store.updateServerOrderPayment(orderId, { paymentStatus: 'paid', paymentProvider: 'manual' })
+    const exceptions = await prisma.orderOperationalException.findMany({ where: { orderId }, orderBy: { code: 'asc' } })
+    expect(exceptions.map((row) => [row.code, row.status])).toEqual([['late_payment_stock_unavailable', 'open']])
+    expect((await prisma.order.findUniqueOrThrow({ where: { id: orderId } })).stockReservationStatus).toBe('released')
+    expect(await rows(orderId, 'order_spend_redebit')).toHaveLength(1)
+    expect(await rows(orderId, 'order_earn')).toHaveLength(1)
     await ledgerMatchesBalance(userId, startBalance)
   })
 

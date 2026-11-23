@@ -16,9 +16,10 @@ import type { ExtendedTransactionClient } from '@/lib/prisma'
  *
  * Rules:
  * - Spending happens at checkout (`order_spend`) and is never touched here, except:
- *   cancelled / `failed` / `refunded` orders get their spent points back once
- *   (`order_spend_refund`); leaving those states takes them again (`order_spend_redebit`).
- *   Stock-reservation expiry alone changes nothing.
+ *   unpaid cancelled / `failed` / `refunded` orders get their spent points back once
+ *   (`order_spend_refund`); leaving those states — including a late confirmed payment of a
+ *   cancelled order — takes them again (`order_spend_redebit`). Stock-reservation expiry
+ *   alone changes nothing.
  * - Earning happens only on the first payment confirmation (`order_earn`), for orders
  *   created by this shop's checkout (non-null `Order.bonusEarned` forecast) that have no
  *   `order_earn` row yet. Historical rows are never re-credited and never revoked, except
@@ -86,8 +87,14 @@ export class OrderBonusInsufficientError extends Error {
   }
 }
 
+/**
+ * Spent points are held while money for the order is (or may still be) received.
+ * A confirmed payment wins over a cancellation: a late gateway payment for a cancelled
+ * order takes the previously returned points again (or opens a bonus_shortfall).
+ */
 export function releasesSpentPoints(state: { paymentStatus: string; orderStatus: string }): boolean {
-  return state.orderStatus === 'cancelled' || state.paymentStatus === 'failed' || state.paymentStatus === 'refunded'
+  if (state.paymentStatus === 'failed' || state.paymentStatus === 'refunded') return true
+  return state.orderStatus === 'cancelled' && state.paymentStatus !== 'paid'
 }
 
 /** Pure: what has to change so the ledger matches the order state. */

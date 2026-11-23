@@ -22,6 +22,7 @@ import { z } from 'zod'
 import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { ORDER_BONUS_SHORTFALL, readOrderBonusShortfalls } from '@/lib/order-bonus'
+import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -104,9 +105,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         })
       : []
     const catalogTitles = new Map(titleRows.map((product) => [product.id, product.title]))
+    const customerNumbers = await getInvoiceCustomerNumbers(orders)
 
     const mapped = orders.map((row) => ({
       ...row,
+      ...(customerNumbers[row.id] ? { customerCardNumber: customerNumbers[row.id] } : {}),
       items: repairOrderItemTitles(row.items, catalogTitles),
       createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
       operationalExceptions: (exceptionsByOrder[row.id] ?? []).map((exception) => ({

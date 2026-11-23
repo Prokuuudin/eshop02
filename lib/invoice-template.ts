@@ -41,11 +41,12 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     payer: 'Maksātājs', recipient: 'Saņēmējs', name: 'Vārds, uzvārds', email: 'E-pasts',
     paymentMethod: 'Maksāšanas veids', deliveryMethod: 'Piegādes veids', products: 'Preces',
     amountWords: 'Summa vārdiem', paymentReference: 'Apmaksājot, lūdzu, norādiet rēķina numuru',
-    electronic: 'Rēķins sagatavots elektroniskā veidā un ir autorizēts', notes: 'Piezīmes',
+    notes: 'Piezīmes',
     created: 'Izveidota', note: 'Piezīme', paymentWarning: 'Ja rēķins netiks apmaksāts 3 darba dienu laikā, mēs būsim spiesti anulēt Jūsu pasūtījumu. Ja Jums rodas jautājumi, lūdzam sazināties ar mums pa e-pastu info@hairshop.lv.',
     bank: 'Banka',
     personalCode: 'Personas kods', regNumber: 'Reģistrācijas numurs', vatNumber: 'PVN numurs',
     contactPerson: 'Kontaktpersona', company: 'Uzņēmums',
+    customerNumber: 'Klienta numurs',
   },
   en: {
     invoice: 'INVOICE',
@@ -70,11 +71,12 @@ const LABELS: Record<InvoiceLang, Record<string, string>> = {
     payer: 'Payer', recipient: 'Recipient', name: 'Name', email: 'Email',
     paymentMethod: 'Payment method', deliveryMethod: 'Delivery method', products: 'Products',
     amountWords: 'Amount in words', paymentReference: 'When paying, please specify the invoice number',
-    electronic: 'This invoice was prepared electronically and is authorised', notes: 'Notes',
+    notes: 'Notes',
     created: 'Created', note: 'Note', paymentWarning: 'If the invoice is not paid within 3 business days, we will have to cancel your order. If you have any questions, please contact us at info@hairshop.lv.',
     bank: 'Bank',
     personalCode: 'Personal code', regNumber: 'Registration number', vatNumber: 'VAT number',
     contactPerson: 'Contact person', company: 'Company',
+    customerNumber: 'Customer number',
   },
 }
 
@@ -232,9 +234,11 @@ export function buildInvoiceHtml(
   // block below stays the delivery contact regardless of legal entity type.
   const legalDetails = order.legalDetails
   const invoiceCode = legalDetails?.customerType === 'individual' ? legalDetails.invoicePersonalCode || personalCode : personalCode
+  const customerNumber = order.customerCardNumber?.trim()
+  const customerNumberLine = customerNumber ? `${L.customerNumber}: ${esc(customerNumber)}<br/>` : ''
   const payerDetails = legalDetails?.customerType === 'company'
-    ? `${L.company}: <strong>${esc(legalDetails.companyName)}</strong><br/>${L.regNumber}: ${esc(legalDetails.regNumber)}<br/>${legalDetails.vatNumber ? `${L.vatNumber}: ${esc(legalDetails.vatNumber)}<br/>` : ''}${L.address}: ${esc(legalDetails.legalAddress)}<br/>${L.bank}: ${esc(legalDetails.bankName)}<br/>IBAN: ${esc(formatIban(legalDetails.iban))}<br/>${L.contactPerson}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}`
-    : `${L.name}: ${customer}<br/>${invoiceCode ? `${L.personalCode}: ${esc(invoiceCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
+    ? `${L.company}: <strong>${esc(legalDetails.companyName)}</strong><br/>${customerNumberLine}${L.regNumber}: ${esc(legalDetails.regNumber)}<br/>${legalDetails.vatNumber ? `${L.vatNumber}: ${esc(legalDetails.vatNumber)}<br/>` : ''}${L.address}: ${esc(legalDetails.legalAddress)}<br/>${L.bank}: ${esc(legalDetails.bankName)}<br/>IBAN: ${esc(formatIban(legalDetails.iban))}<br/>${L.contactPerson}: ${customer}<br/>${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}`
+    : `${L.name}: ${customer}<br/>${customerNumberLine}${invoiceCode ? `${L.personalCode}: ${esc(invoiceCode)}<br/>` : ''}${L.email}: ${esc(order.email)}<br/>${L.phone}: ${esc(order.phone)}<br/>${L.address}: ${customerAddress}`
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -275,7 +279,7 @@ export function buildInvoiceHtml(
   <tr><td>${L.tax}:</td><td>${eur(taxAmount)}</td></tr><tr><td>${L.delivery}:</td><td>${eur(order.delivery)}</td></tr><tr class="total-row"><td>${lang === 'lv' ? 'Pasūtījuma summa' : L.total}:</td><td>${eur(order.total)}</td></tr>
 </table>
 <div class="words">${L.amountWords}: ${esc(words)}</div>
-<div class="payment-info"><strong class="payment-reference">${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.electronic} 100000001<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>
+<div class="payment-info"><strong class="payment-reference">${L.paymentReference}: ${invoiceNumber}</strong><br/><br/>${L.orderDate}: ${date}<br/><br/>${L.paymentWarning}<div class="section-title notes-title">${L.notes}</div></div>
 <table class="notes"><thead><tr><th style="width:30%">${L.created}</th><th>${L.note}</th></tr></thead><tbody><tr><td>${created}</td><td></td></tr></tbody></table>
 </body>
 </html>`

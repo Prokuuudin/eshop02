@@ -59,7 +59,8 @@ describe('buildInvoiceHtml', () => {
     expect(html).toContain('Saņēmējs:</div>')
     expect(html).toContain('Adrese: Brīvības iela 1, Rīga, LV-1010')
     expect(html).toContain('Apmaksājot, lūdzu, norādiet rēķina numuru: 1001')
-    expect(html).toContain('Rēķins sagatavots elektroniskā veidā un ir autorizēts 100000001')
+    expect(html).not.toContain('100000001')
+    expect(html).not.toContain('Rēķins sagatavots elektroniskā veidā un ir autorizēts')
     expect(html).toContain('Summa vārdiem: Piecdesmit pieci eiro un 00 centi')
     expect(html).toContain('Nodokļu maksātāja kods: LV 40103351370')
     expect(html).toContain('Konts: LV 66 HABA 0551 0366 0410 7')
@@ -164,6 +165,26 @@ describe('buildInvoiceHtml', () => {
 })
 
 describe('buildInvoiceHtml payer block', () => {
+  it('shows the customer number only in the payer block', () => {
+    const html = buildInvoiceHtml({ ...order, customerCardNumber: 'HS-12345' } as Order)
+
+    expect(html).toContain('Klienta numurs: HS-12345')
+    expect(html.match(/Klienta numurs:/g)).toHaveLength(1)
+    expect(html.indexOf('Klienta numurs: HS-12345')).toBeLessThan(html.indexOf('Saņēmējs:</div>'))
+  })
+
+  it('omits the customer number line when the payer has no card number', () => {
+    expect(buildInvoiceHtml(order)).not.toContain('Klienta numurs:')
+    expect(buildInvoiceHtml({ ...order, customerCardNumber: '   ' } as Order)).not.toContain('Klienta numurs:')
+  })
+
+  it('escapes the customer number', () => {
+    const html = buildInvoiceHtml({ ...order, customerCardNumber: '<script>alert(1)</script>' } as Order)
+
+    expect(html).toContain('Klienta numurs: &lt;script&gt;alert(1)&lt;/script&gt;')
+    expect(html).not.toContain('<script>alert(1)</script>')
+  })
+
   it('automatically uses the code supplied at checkout in both invoice languages', () => {
     const invoiceOrder = { ...order, legalDetails: { customerType: 'individual', invoicePersonalCode: '010101-12345' } } as Order
     for (const lang of ['lv', 'en'] as const) {

@@ -61,6 +61,7 @@ import { createServerOrder, InsufficientStockError, PromoCodeUsageLimitError } f
 import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { DELETE, GET, POST } from './route'
 import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
+import { NEW_SHOP_ORDER_WHERE } from '@/lib/order-origin'
 
 const ADMIN_USER = { id: 'admin-1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -168,6 +169,34 @@ describe('GET /api/admin/orders', () => {
     expect(prisma.$queryRaw).not.toHaveBeenCalled()
     const findManyArg = vi.mocked(prisma.order.findMany).mock.calls[0][0]
     expect(findManyArg?.where?.id).toBeUndefined()
+  })
+
+  it('lists only new-shop orders: list, count, search, status filter and pagination share the nopCommerce filter', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: '1094' }] as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(0)
+
+    await GET(new NextRequest('http://localhost/api/admin/orders?search=anna&status=shipped&skip=50&take=50'))
+
+    const findManyArg = vi.mocked(prisma.order.findMany).mock.calls[0][0]
+    expect(findManyArg?.where?.AND).toEqual([NEW_SHOP_ORDER_WHERE])
+    expect(findManyArg?.where?.OR).toBeDefined()
+    expect(findManyArg?.where?.id).toEqual({ in: ['1094'] })
+    expect(findManyArg?.skip).toBe(50)
+    expect(vi.mocked(prisma.order.count).mock.calls[0][0]).toEqual({ where: findManyArg?.where })
+  })
+
+  it('includes imported nopCommerce history only when asked with history=all (admin customer profile)', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.order.findMany).mockResolvedValue([] as never)
+    vi.mocked(prisma.order.count).mockResolvedValue(0)
+
+    await GET(new NextRequest('http://localhost/api/admin/orders?search=anna%40example.com&take=200&history=all'))
+    await GET(new NextRequest('http://localhost/api/admin/orders?history=yes'))
+
+    expect(vi.mocked(prisma.order.findMany).mock.calls[0][0]?.where?.AND).toBeUndefined()
+    expect(vi.mocked(prisma.order.findMany).mock.calls[1][0]?.where?.AND).toEqual([NEW_SHOP_ORDER_WHERE])
   })
 
   it('sorts by total when requested instead of the default date sort', async () => {

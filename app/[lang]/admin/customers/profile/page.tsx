@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import AdminGate from '@/components/admin/AdminGate'
 import type { Order } from '@/lib/orders-store'
+import { isLegacyImportedOrder } from '@/lib/order-origin'
 import type { ReturnRequest } from '@/lib/returns-store'
 import { formatDate, formatEuro } from '@/lib/utils'
 import { fetchCustomerReturns } from './fetchCustomerReturns'
@@ -85,7 +86,8 @@ export default function CustomerProfilePage(): React.ReactElement {
   useEffect(() => {
     if (!email) return
     const controller = new AbortController()
-    fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&take=200`, { signal: controller.signal, cache: 'no-store' })
+    // history=all: the customer's purchase history includes imported nopCommerce orders.
+    fetch(`/api/admin/orders?search=${encodeURIComponent(email)}&take=200&history=all`, { signal: controller.signal, cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`status_${res.status}`))))
       .then((data: { orders?: (Omit<Order, 'createdAt'> & { createdAt: string })[]; statuses?: Record<string, string>; notes?: Record<string, string> }) => {
         const rows = (data.orders ?? [])
@@ -270,12 +272,17 @@ export default function CustomerProfilePage(): React.ReactElement {
                     <div className="text-right shrink-0">
                       <p className="text-lg font-bold text-foreground">{formatEuro(order.total, locale)}</p>
                       <p className="text-xs text-muted-foreground">{order.paymentMethod}</p>
-                      <Link
-                        href={`/admin/orders?q=${encodeURIComponent(order.id)}`}
-                        className="text-xs text-primary hover:underline mt-1 inline-block"
-                      >
-                        {l('Открыть', 'Open', 'Atvērt')} →
-                      </Link>
+                      {/* Imported nopCommerce orders are not in the admin order list. */}
+                      {isLegacyImportedOrder(order) ? (
+                        <p className="text-xs text-muted-foreground mt-1">nopCommerce</p>
+                      ) : (
+                        <Link
+                          href={`/admin/orders?q=${encodeURIComponent(order.id)}`}
+                          className="text-xs text-primary hover:underline mt-1 inline-block"
+                        >
+                          {l('Открыть', 'Open', 'Atvērt')} →
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>

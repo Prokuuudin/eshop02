@@ -23,6 +23,7 @@ import { stockLedgerFlags } from '@/lib/stock-ledger-config'
 import { scheduleImmediateAdminOrderNotification } from '@/lib/order-admin-notification-dispatch'
 import { ORDER_BONUS_SHORTFALL, readOrderBonusShortfalls } from '@/lib/order-bonus'
 import { getInvoiceCustomerNumbers } from '@/lib/invoice-customer-number'
+import { NEW_SHOP_ORDER_WHERE } from '@/lib/order-origin'
 
 const ORDER_STATUS_VALUES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const
 
@@ -41,7 +42,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const sortDir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 200 })
 
-    const where: Record<string, unknown> = {}
+    // Imported nopCommerce history is not listed (search, filters, count, pagination and the
+    // CSV export all go through this `where`); it stays in "My orders" of the customers and in
+    // the admin customer profile, which asks for it explicitly with history=all.
+    const includeHistory = searchParams.get('history') === 'all'
+    const where: Record<string, unknown> = includeHistory ? {} : { AND: [NEW_SHOP_ORDER_WHERE] }
 
     if (search) {
       where.OR = [

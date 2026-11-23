@@ -82,6 +82,54 @@ function useAdminOrdersPageState() {
             });
         }
     };
+    const postOrderAction = async (path: string, body: object): Promise<Record<string, unknown>> => {
+        const res = await fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+        const payload = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(payload?.error ?? 'order_action_failed');
+        return payload ?? {};
+    };
+    const recordFullRefund = async (orderId: string, reason: string): Promise<boolean> => {
+        setMutationError('');
+        setPaymentSavingIds((prev) => new Set(prev).add(orderId));
+        try {
+            await postOrderAction('/api/admin/orders/full-refund', { orderId, confirmMoneyReturned: true, reason });
+            setStatsRefreshTick((t) => t + 1);
+            setPageRefreshTick((t) => t + 1);
+            return true;
+        } catch (error) {
+            const code = error instanceof Error ? error.message : '';
+            setMutationError(code === 'order_not_paid' || code === 'already_refunded'
+                ? l('Полный возврат можно зафиксировать только для оплаченного заказа.', 'A full refund can only be recorded for a paid order.', 'Pilnu atmaksu var reģistrēt tikai apmaksātam pasūtījumam.')
+                : l('Не удалось зафиксировать возврат.', 'Failed to record the refund.', 'Neizdevās reģistrēt atmaksu.'));
+            return false;
+        } finally {
+            setPaymentSavingIds((prev) => { const next = new Set(prev); next.delete(orderId); return next; });
+        }
+    };
+    const retryBonusShortfall = async (orderId: string): Promise<void> => {
+        setMutationError('');
+        setPaymentSavingIds((prev) => new Set(prev).add(orderId));
+        try {
+            const result = await postOrderAction('/api/admin/orders/bonus-shortfall', { orderId });
+            const missing = Number(result.shortfallPoints) || 0;
+            if (missing > 0) {
+                setMutationError(l(
+                    `Баллов на балансе клиента всё ещё недостаточно: не хватает ${missing}. Ничего не списано.`,
+                    `The customer still does not have enough points: ${missing} missing. Nothing was taken.`,
+                    `Klientam joprojām nepietiek punktu: trūkst ${missing}. Nekas netika norakstīts.`
+                ));
+            }
+            setPageRefreshTick((t) => t + 1);
+        } catch {
+            setMutationError(l('Не удалось повторить удержание баллов.', 'Failed to retry the points deduction.', 'Neizdevās atkārtot punktu norakstīšanu.'));
+        } finally {
+            setPaymentSavingIds((prev) => { const next = new Set(prev); next.delete(orderId); return next; });
+        }
+    };
     const statusErrorMessage = (error: unknown): string => {
         const code = error instanceof Error ? error.message : '';
         if (code === 'paid_order_requires_refund') {
@@ -96,6 +144,16 @@ function useAdminOrdersPageState() {
                 'Из текущего статуса этот переход недоступен. Обновите список заказов.',
                 'This transition is not available from the current status. Refresh the order list.',
                 'Šī pāreja no pašreizējā statusa nav pieejama. Atsvaidziniet pasūtījumu sarakstu.'
+            );
+        }
+        if (code === 'bonus_redebit_insufficient') {
+            const details = (error as { details?: { requiredPoints?: number; availablePoints?: number } }).details;
+            const required = details?.requiredPoints ?? 0;
+            const available = details?.availablePoints ?? 0;
+            return l(
+                `Заказ нельзя восстановить: нужно повторно списать ${required} бонусных баллов, на балансе клиента ${available}.`,
+                `The order cannot be restored: ${required} bonus points must be taken again, the customer has ${available}.`,
+                `Pasūtījumu nevar atjaunot: atkārtoti jānoraksta ${required} bonusa punkti, klientam ir ${available}.`
             );
         }
         if (code === 'insufficient_stock') {
@@ -524,6 +582,8 @@ function useAdminOrdersPageState() {
         deleteOrder,
         paymentSavingIds,
         markOrderPaid,
+        recordFullRefund,
+        retryBonusShortfall,
         language,
         locale,
         search,

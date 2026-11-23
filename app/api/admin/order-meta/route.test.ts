@@ -5,6 +5,7 @@ const { permissionMock, transactionMock, auditMock } = vi.hoisted(() => ({
   permissionMock: vi.fn(), transactionMock: vi.fn(), auditMock: vi.fn(),
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: permissionMock }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: transactionMock } }))

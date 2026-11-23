@@ -117,4 +117,13 @@ describe('PATCH /api/orders/[id] — manual payment confirmation', () => {
 
     expect(res.status).toBe(404)
   })
+
+  it('cannot set refunded: a full refund needs the dedicated, confirmed admin action', async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(ADMIN_USER as never)
+
+    const res = await PATCH(makePatchRequest({ paymentStatus: 'refunded' }), context)
+
+    expect(res.status).toBe(400)
+    expect(updateServerOrderPayment).not.toHaveBeenCalled()
+  })
 })

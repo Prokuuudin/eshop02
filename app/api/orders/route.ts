@@ -368,7 +368,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         tax: pricing.tax,
         delivery: pricing.delivery,
         bonusSpent: pricing.bonusSpent || undefined,
-        bonusEarned: pricing.bonusEarned || undefined,
+        // Forecast only (kept even when 0): a non-null value marks an order created by this
+        // checkout, the only orders that earn points once their payment is confirmed.
+        bonusEarned: pricing.bonusEarned,
         total: pricing.total,
         promoCode: pricing.promoApplied ? promoCode : undefined,
       }

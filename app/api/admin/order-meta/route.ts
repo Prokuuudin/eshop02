@@ -15,6 +15,7 @@ import {
   LATE_PAYMENT_STOCK_UNAVAILABLE,
   ORDER_STOCK_NOT_COMMITTED,
 } from '@/lib/order-operational-exceptions'
+import { lockOrderBonusUser, OrderBonusInsufficientError, reconcileOrderBonus } from '@/lib/order-bonus'
 
 const orderStatusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type OrderStatus = z.infer<typeof orderStatusSchema>
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${orderId} FOR UPDATE`
         const order = await tx.order.findUnique({
           where: { id: orderId },
-          select: { id: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true, stockReleasedAt: true },
+          select: { id: true, userId: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true, stockReleasedAt: true },
         })
         if (!order) return { error: 'order_not_found' as const }
         const currentRow = await tx.orderStatusRecord.findUnique({ where: { orderId } })
@@ -157,6 +158,9 @@ export async function POST(req: NextRequest): Promise<Response> {
           return { error: 'invalid_status_transition' as const, current }
         }
         if (current === status) return { current }
+        const isRestore = current === 'cancelled' && status === 'pending'
+        // Bonus ledger: customer row before any Product lock (same order as checkout).
+        if (status === 'cancelled' || isRestore) await lockOrderBonusUser(tx, order.userId)
         // Checked under the Order lock above. Only committed stock is safe to ship: expiry
         // cleanup, payment callbacks and cancellation never release a committed order,
         // while a reserved hold can still expire and a released order holds nothing.
@@ -208,6 +212,16 @@ export async function POST(req: NextRequest): Promise<Response> {
           create: { orderId, status },
           update: { status },
         })
+        if (status === 'cancelled' || isRestore) {
+          // Cancel returns spent points once; restore takes them again and is blocked
+          // (whole transaction rolled back) when the balance no longer covers them.
+          await reconcileOrderBonus(tx, orderId, {
+            trigger: isRestore ? 'order_restored' : 'order_cancelled',
+            actorUserId: user.id,
+            orderStatus: status,
+            requireFullDebit: isRestore,
+          })
+        }
         await appendServerAudit(tx, req, user, {
             action: 'order.status_changed', entityType: 'order', entityId: orderId,
             entityTitle: `${order.firstName} ${order.lastName}`.trim(),
@@ -250,6 +264,13 @@ export async function POST(req: NextRequest): Promise<Response> {
   } catch (e) {
     if (e instanceof RestoreInsufficientStockError) {
       return NextResponse.json({ error: e.reason }, { status: 409 })
+    }
+    if (e instanceof OrderBonusInsufficientError) {
+      return NextResponse.json({
+        error: 'bonus_redebit_insufficient',
+        requiredPoints: e.requiredPoints,
+        availablePoints: e.availablePoints,
+      }, { status: 409 })
     }
     logApiError("[admin/order-meta POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })

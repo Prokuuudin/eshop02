@@ -708,7 +708,8 @@ it('rejects a released idempotent checkout instead of clearing the customer cart
     expect(persisted.userId).toBe('u1')
     expect(persisted.companyId).toBeUndefined()
     expect(persisted.checkoutKey).toBeUndefined()
-    expect(persisted.bonusEarned).toBeUndefined()
+    // Server-computed forecast (0 in this pricing mock); the forged value is ignored.
+    expect(persisted.bonusEarned).toBe(0)
     expect(persisted.stockReservationStatus).toBe('committed')
     expect(persisted.stockReleasedAt).toBeUndefined()
     expect(persisted).not.toHaveProperty('status')

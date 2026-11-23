@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 const { permissionMock, transactionMock, auditMock } = vi.hoisted(() => ({
   permissionMock: vi.fn(), transactionMock: vi.fn(), auditMock: vi.fn(),
 }))
+vi.mock('server-only', () => ({}))
+const bonusMocks = vi.hoisted(() => ({ reconcile: vi.fn(), lockUser: vi.fn() }))
+// Bonus ledger behaviour is covered by lib/order-bonus tests; here only the wiring matters.
+vi.mock('@/lib/order-bonus', () => ({ reconcileOrderBonus: bonusMocks.reconcile, lockOrderBonusUser: bonusMocks.lockUser }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: permissionMock }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: auditMock }))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: transactionMock } }))
@@ -64,6 +68,8 @@ describe('POST /api/admin/order-meta/bulk', () => {
     expect(tx.order.update).toHaveBeenCalledOnce()
     expect(auditMock).toHaveBeenCalledOnce()
     expect(await response.json()).toMatchObject({ ok: true, updated: 1 })
+    expect(bonusMocks.reconcile).toHaveBeenCalledOnce()
+    expect(bonusMocks.reconcile).toHaveBeenCalledWith(tx, 'o1', { trigger: 'order_cancelled', actorUserId: 'admin', orderStatus: 'cancelled' })
   })
 })
 

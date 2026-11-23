@@ -99,7 +99,8 @@ export default function AccountPage(): React.ReactElement {
         (sum, order) => sum + (order.status === 'cancelled' ? 0 : order.total),
         0
     );
-    const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.bonusEarned ?? 0), 0);
+    // Points are credited on payment confirmation; unpaid orders only carry a forecast.
+    const totalBonusEarned = userOrders.reduce((sum, o) => sum + (o.paymentStatus === 'paid' ? o.bonusEarned ?? 0 : 0), 0);
     const totalBonusSpent = userOrders.reduce((sum, o) => sum + (o.bonusSpent ?? 0), 0);
     const isAdmin = user?.platformRole === 'admin';
     const savedAddresses = user?.email ? getByEmail(user.email) : [];

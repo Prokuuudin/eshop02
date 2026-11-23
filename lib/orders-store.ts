@@ -61,6 +61,8 @@ export interface Order {
     firstSeenAt: string
     occurrences: number
   }>
+  /** Admin list only: open bonus_shortfall exception — points still missing and current balance. */
+  bonusShortfall?: { shortfallPoints: number; availablePoints: number } | null
   language?: string
   /** Владелец заказа на момент оформления; см. /api/orders/my (userId OR email). */
   userId?: string

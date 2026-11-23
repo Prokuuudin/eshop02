@@ -12,7 +12,9 @@ const base = {
     bonusApplied: false,
     bonusBalance: 0,
     maxBonusSpendPercent: 20,
-    bonusToEarn: 100,
+    bonusToEarn: 50,
+    earnItems: [{ price: 100, quantity: 1 }],
+    earnConfig: { enabled: true, earnRatePercent: 0.5, minOrderForEarn: 0, maxEarnPerOrder: 0 },
 };
 
 describe('calculateCheckoutTotals', () => {
@@ -55,6 +57,24 @@ describe('calculateCheckoutTotals', () => {
         expect(totals.bonusSpentPoints).toBe(500);
         expect(totals.bonusDiscount).toBe(5);
         expect(totals.finalGrandTotal).toBe(95);
-        expect(totals.adjustedBonusToEarn).toBe(95);
+        // 95.00 paid for goods → 0.5% → 47.5 → floored to 47.
+        expect(totals.adjustedBonusToEarn).toBe(47);
+    });
+
+    it('forecast excludes delivery and promo discount, matching the server payment formula', () => {
+        const totals = calculateCheckoutTotals({
+            ...base,
+            subtotal: 33.6,
+            earnItems: [{ price: 33.6, quantity: 1 }],
+            appliedPromo: 'X',
+            appliedPromoDiscountPct: 5.65,
+            freeShipping: false,
+            deliveryMethod: 'unisend',
+            bonusApplicable: true,
+            bonusApplied: true,
+            bonusBalance: 500,
+            maxBonusSpendPercent: 100,
+        });
+        expect(totals.adjustedBonusToEarn).toBe(Math.floor((Math.round((totals.finalGrandTotal - totals.deliveryFee) * 100)) * 0.5 / 100));
     });
 });

@@ -5,6 +5,7 @@ const { txMock } = vi.hoisted(() => ({
   txMock: vi.fn(),
 }))
 
+vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({
   getCorrelationId: vi.fn(() => 'admin-correlation-id'),
   logApiError: vi.fn(),

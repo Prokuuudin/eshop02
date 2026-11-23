@@ -11,6 +11,7 @@ import {
   LATE_PAYMENT_STOCK_UNAVAILABLE,
   ORDER_STOCK_NOT_COMMITTED,
 } from '@/lib/order-operational-exceptions'
+import { lockOrderBonusUser, reconcileOrderBonus } from '@/lib/order-bonus'
 
 const statusSchema = z.enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
 type Status = z.infer<typeof statusSchema>
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       const [orders, statusRows] = await Promise.all([
         tx.order.findMany({
           where: { id: { in: orderIds } },
-          select: { id: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true },
+          select: { id: true, userId: true, firstName: true, lastName: true, items: true, paymentStatus: true, stockReservationStatus: true },
         }),
         tx.orderStatusRecord.findMany({ where: { orderId: { in: orderIds } } }),
       ])
@@ -75,6 +76,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       // Acquire all affected Product locks before applying any batch mutations or
       // taking the audit lock, using the same SKU order as reserve/edit/release.
       if (parsed.data.status === 'cancelled') {
+        // Bonus ledger: customer rows (sorted) before any Product lock, as checkout does.
+        for (const userId of [...new Set(orders.flatMap((order) => order.userId ? [order.userId] : []))].sort()) {
+          await lockOrderBonusUser(tx, userId)
+        }
         const productIds = [...new Set(orders.filter(order => order.stockReservationStatus !== 'released')
           .flatMap(order => (order.items as Array<{ id?: string }>).flatMap(item => item.id ? [item.id] : [])))].sort()
         for (const productId of productIds) {
@@ -100,6 +105,9 @@ export async function POST(req: NextRequest): Promise<Response> {
           create: { orderId: order.id, status: parsed.data.status },
           update: { status: parsed.data.status },
         })
+        if (parsed.data.status === 'cancelled') {
+          await reconcileOrderBonus(tx, order.id, { trigger: 'order_cancelled', actorUserId: admin.id, orderStatus: 'cancelled' })
+        }
         await appendServerAudit(tx, req, admin, {
             action: 'order.status_changed', entityType: 'order', entityId: order.id,
             entityTitle: `${order.firstName} ${order.lastName}`.trim(),

@@ -4,11 +4,14 @@ import { NextRequest } from 'next/server'
 const mocks = vi.hoisted(() => ({
   transaction: vi.fn(),
   audit: vi.fn(),
+  reconcileBonus: vi.fn(),
 }))
 
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: mocks.transaction } }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: mocks.audit }))
+// The bonus ledger has its own tests (lib/order-bonus.test.ts); here only the call matters.
+vi.mock('@/lib/order-bonus', () => ({ lockOrderBonusUser: vi.fn(), reconcileOrderBonus: mocks.reconcileBonus }))
 
 import { updateServerOrderPayment } from './orders-data-store'
 
@@ -70,11 +73,14 @@ describe('manual order payment persistent audit', () => {
       before: { paymentStatus: 'unpaid', paymentProvider: null },
       after: { paymentStatus: 'paid', paymentProvider: 'manual' },
     })
+    // Manual confirmation earns bonus points in the same transaction, attributed to the admin.
+    expect(mocks.reconcileBonus).toHaveBeenCalledWith(expect.anything(), '1001', { trigger: 'payment_confirmed', actorUserId: 'admin-1' })
   })
 
   it('does not duplicate the event on a repeated paid request', async () => {
     await updateServerOrderPayment('1001', { paymentStatus: 'paid', paymentProvider: 'manual' }, undefined, { actor, request })
     await updateServerOrderPayment('1001', { paymentStatus: 'paid', paymentProvider: 'manual' }, undefined, { actor, request })
+    expect(mocks.reconcileBonus).toHaveBeenCalledTimes(1)
 
     expect(mocks.audit).toHaveBeenCalledTimes(1)
   })
@@ -95,6 +101,16 @@ describe('manual order payment persistent audit', () => {
     await updateServerOrderPayment('1001', { paymentStatus: 'paid', paymentProvider: 'paypal' })
 
     expect(committed).toMatchObject({ paymentStatus: 'paid', paymentProvider: 'paypal' })
+    expect(mocks.audit).not.toHaveBeenCalled()
+  })
+
+  it('treats a confirmed full refund as terminal: a late paid/canceled event changes nothing', async () => {
+    committed.paymentStatus = 'refunded'
+    const paid = await updateServerOrderPayment('1001', { paymentStatus: 'paid', paymentProvider: 'manual' }, undefined, { actor, request })
+    const failed = await updateServerOrderPayment('1001', { paymentStatus: 'failed' })
+    expect(paid?.paymentStatus).toBe('refunded')
+    expect(failed?.paymentStatus).toBe('refunded')
+    expect(mocks.reconcileBonus).not.toHaveBeenCalled()
     expect(mocks.audit).not.toHaveBeenCalled()
   })
 })

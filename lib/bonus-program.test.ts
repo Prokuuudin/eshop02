@@ -5,6 +5,7 @@ import {
   eurosToPoints,
   BONUS_POINT_VALUE_EUR,
   DEFAULT_BONUS_PROGRAM_CONFIG,
+  calcEarnedPointsForPayment,
 } from './bonus-program'
 
 describe('DEFAULT_BONUS_PROGRAM_CONFIG', () => {
@@ -91,5 +92,46 @@ describe('calcOrderBonus', () => {
   it('accepts a custom rate percent', () => {
     // 5% of €100 = €5 = 500 points
     expect(calcOrderBonus([{ price: 100, quantity: 1 }], 5)).toBe(500)
+  })
+})
+
+describe('calcEarnedPointsForPayment', () => {
+  const config = { enabled: true, earnRatePercent: 0.5, minOrderForEarn: 0, maxEarnPerOrder: 0 }
+  const line = (price: number, quantity = 1, bonusRate: number | null = null) => ({ price, quantity, bonusRate })
+
+  it('order 1094: base is goods actually paid (24.95 total − 2.00 delivery), floored → 11', () => {
+    // 33.60 goods − 5.65 promo − 5.00 bonus = 22.95 → 11.475 → 11 (old formula gave 14)
+    expect(calcEarnedPointsForPayment({ items: [line(33.6)], goodsSubtotal: 33.6, total: 24.95, delivery: 2, config })).toBe(11)
+  })
+
+  it('order 1089: promo discount reduces the base → 1 (old formula gave 2)', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(3)], goodsSubtotal: 3, total: 2.4, delivery: 0, config })).toBe(1)
+  })
+
+  it('delivery never earns points', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(10)], goodsSubtotal: 10, total: 15, delivery: 5, config })).toBe(5)
+  })
+
+  it('floors instead of rounding half up', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(1.99)], goodsSubtotal: 1.99, total: 1.99, delivery: 0, config })).toBe(0)
+    expect(calcEarnedPointsForPayment({ items: [line(399.99)], goodsSubtotal: 399.99, total: 399.99, delivery: 0, config })).toBe(199)
+  })
+
+  it('returns 0 when bonuses cover all goods and part of delivery', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(5)], goodsSubtotal: 5, total: 1, delivery: 3, config })).toBe(0)
+  })
+
+  it('scales explicit per-unit rates by the paid share', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(10, 2, 7)], goodsSubtotal: 20, total: 10, delivery: 0, config })).toBe(7)
+  })
+
+  it('applies cap, minimum paid goods amount and disabled program', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(1000)], goodsSubtotal: 1000, total: 1000, delivery: 0, config: { ...config, maxEarnPerOrder: 100 } })).toBe(100)
+    expect(calcEarnedPointsForPayment({ items: [line(50)], goodsSubtotal: 50, total: 49, delivery: 0, config: { ...config, minOrderForEarn: 50 } })).toBe(0)
+    expect(calcEarnedPointsForPayment({ items: [line(50)], goodsSubtotal: 50, total: 50, delivery: 0, config: { ...config, enabled: false } })).toBe(0)
+  })
+
+  it('never exceeds the rate on the subtotal even if total is inconsistent', () => {
+    expect(calcEarnedPointsForPayment({ items: [line(10)], goodsSubtotal: 10, total: 50, delivery: 0, config })).toBe(5)
   })
 })

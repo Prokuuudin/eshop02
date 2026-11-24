@@ -1,9 +1,15 @@
 import crypto from 'node:crypto'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import {
+  addMarketingSuppression,
+  getMarketingSuppressions,
+  isMarketingSuppressed,
+  normalizeMarketingEmail,
+  type MarketingSuppressionSource,
+} from '@/lib/marketing-suppression'
 
 const keyFor = (email: string) => `newsletter:subscriber:${email.toLowerCase()}`
-const optOutKeyFor = (email: string) => `marketing:optout:${email.toLowerCase()}`
 const developmentUnsubSecret = crypto.randomBytes(32).toString('hex')
 
 export async function subscribeToNewsletter(email: string): Promise<void> {
@@ -18,33 +24,26 @@ export async function subscribeToNewsletter(email: string): Promise<void> {
 /**
  * Records a marketing opt-out (GDPR Art. 7(3) / ePrivacy — withdrawal must be as
  * easy as consent). Removes any active newsletter subscription and adds the email
- * to the suppression list that outbound marketing (broadcast) must honour.
+ * to the central suppression list (lib/marketing-suppression.ts) that every
+ * marketing email and invitation honours. An existing entry (e.g. set by an
+ * administrator with a reason) is kept unchanged.
  */
-export async function unsubscribeFromMarketing(email: string): Promise<void> {
-  const lower = email.toLowerCase()
+export async function unsubscribeFromMarketing(
+  email: string,
+  source: Extract<MarketingSuppressionSource, 'self_service' | 'erasure'> = 'self_service',
+): Promise<void> {
+  const lower = normalizeMarketingEmail(email)
   await prisma.keyValueSetting.deleteMany({ where: { key: keyFor(lower) } })
-  const value = { email: lower, optedOutAt: new Date().toISOString() }
-  await prisma.keyValueSetting.upsert({
-    where: { key: optOutKeyFor(lower) },
-    create: { key: optOutKeyFor(lower), value: value as unknown as Prisma.InputJsonValue },
-    update: { value: value as unknown as Prisma.InputJsonValue },
-  })
+  await addMarketingSuppression(prisma, { email: lower, source })
 }
 
 export async function isMarketingOptedOut(email: string): Promise<boolean> {
-  const row = await prisma.keyValueSetting.findUnique({ where: { key: optOutKeyFor(email) } })
-  return row !== null
+  return isMarketingSuppressed(email)
 }
 
 /** Batched form of {@link isMarketingOptedOut} — one query for many emails instead of one per email. */
 export async function getMarketingOptedOutSet(emails: string[]): Promise<Set<string>> {
-  const lowered = emails.map((e) => e.toLowerCase())
-  const rows = await prisma.keyValueSetting.findMany({
-    where: { key: { in: lowered.map(optOutKeyFor) } },
-    select: { key: true },
-  })
-  const prefix = 'marketing:optout:'
-  return new Set(rows.map((r) => r.key.slice(prefix.length)))
+  return new Set((await getMarketingSuppressions(emails)).keys())
 }
 
 // Forging this token only lets an attacker unsubscribe someone else (a fail-safe

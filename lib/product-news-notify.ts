@@ -1,6 +1,6 @@
 import 'server-only'
 import { escapeHtml } from '@/lib/escape-html'
-import { sendEmail } from '@/lib/mailer'
+import { sendMarketingEmail } from '@/lib/marketing-suppression'
 import { logOperationalEvent } from '@/lib/observability'
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 
@@ -87,7 +87,9 @@ export async function sendProductNewsEmails(
   let failed = 0
   await Promise.all(plan.emailTargets.map(async (target) => {
     try {
-      await sendEmail(target.email, news.title, buildEmailHtml(news))
+      // Automatic product mailings honour «Рассылки запрещены»; the in-app notification still arrives.
+      const outcome = await sendMarketingEmail(target.email, news.title, buildEmailHtml(news), { category: 'product_news', userId: target.userId })
+      if (outcome === 'suppressed') return
       delivered.add(target.userId)
     } catch (error) {
       failed++

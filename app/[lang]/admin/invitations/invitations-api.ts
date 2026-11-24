@@ -1,4 +1,4 @@
-import type { CampaignState, EligibleUser, Holder, HolderContactFilter, HolderInvitationFilter, SortDir } from './invitation-models';
+import type { CampaignState, EligibleUser, Holder, HolderContactFilter, HolderInvitationFilter, HolderMailingFilter, SortDir } from './invitation-models';
 
 type PageQuery = {
     take: number;
@@ -8,6 +8,7 @@ type PageQuery = {
     dir?: SortDir;
     contact?: HolderContactFilter;
     invitation?: HolderInvitationFilter;
+    mailing?: HolderMailingFilter;
 };
 
 export type InvitationResult = {
@@ -19,6 +20,8 @@ export type InvitationsResponse = {
     holders?: Holder[];
     total?: number;
     results?: InvitationResult[];
+    /** Recipients left out because of «Рассылки запрещены». */
+    suppressed?: number;
     error?: string;
 };
 
@@ -29,6 +32,8 @@ export type CampaignResponse = {
 export type CampaignPageResponse = {
     state: CampaignState;
     totalEligible?: number;
+    /** Clients of the segment with «Рассылки запрещены»; every batch skips them. */
+    suppressedCount?: number;
     total?: number;
     users?: EligibleUser[];
 };
@@ -48,6 +53,7 @@ function buildPageQuery(query: PageQuery): URLSearchParams {
     }
     if (query.contact && query.contact !== 'all') params.set('contact', query.contact);
     if (query.invitation && query.invitation !== 'all') params.set('invitation', query.invitation);
+    if (query.mailing && query.mailing !== 'all') params.set('mailing', query.mailing);
     return params;
 }
 
@@ -105,7 +111,7 @@ export async function sendInvitationBatch(
 export async function sendSmsInvitationBatch(
     userIds: string[],
     language: 'ru' | 'en' | 'lv'
-): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; error?: string } }> {
+): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; suppressed?: number; error?: string } }> {
     return parseResponse(await fetch('/api/admin/invitations/sms', {
         method: 'POST',
         headers: idempotencyHeaders(),

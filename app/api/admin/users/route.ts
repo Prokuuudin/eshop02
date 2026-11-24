@@ -11,6 +11,7 @@ import { hasAdminPermission, isStaffSubject, isSuperAdminSubject } from '@/lib/a
 import { parseOffsetPagination } from '@/lib/pagination'
 import { omitProfileOnlyFields, readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
+import { carryMarketingSuppression, getMarketingSuppressions, suppressedUserIds } from '@/lib/marketing-suppression'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import {
   activeCardNumberFilter,
@@ -101,6 +102,10 @@ export async function GET(req: NextRequest): Promise<Response> {
       const date = new Date(createdSince)
       if (!Number.isNaN(date.getTime())) where.createdAt = { gte: date }
     }
+    // «Рассылки запрещены» filter: matched on the normalized email, see lib/marketing-suppression.
+    const mailing = searchParams.get('mailing')
+    if (mailing === 'suppressed') where.id = { in: await suppressedUserIds() }
+    if (mailing === 'allowed') where.id = { notIn: await suppressedUserIds() }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -139,10 +144,15 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.user.count({ where }),
     ])
 
+    const suppressions = await getMarketingSuppressions(users.map((u) => u.email))
     const mapped = users.map(({ checkoutProfile, ...u }) => {
+      const suppression = suppressions.get(u.email.trim().toLowerCase())
       return {
         ...u,
         ...readCustomerDetails(u, checkoutProfile),
+        marketingSuppression: suppression
+          ? { since: suppression.optedOutAt, source: suppression.source, setByName: suppression.setByName, reason: suppression.reason }
+          : null,
         registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
         registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,
         createdAt: u.createdAt instanceof Date ? u.createdAt.toISOString() : String(u.createdAt),
@@ -375,6 +385,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       if (emailChanged) {
         await tx.invitationToken.deleteMany({ where: { userId: id, status: { not: 'accepted' } } })
         await tx.passwordResetToken.deleteMany({ where: { userId: id } })
+        // «Рассылки запрещены» belongs to the person: the new address inherits the block.
+        await carryMarketingSuppression(tx, before.email, after.email)
       }
       await appendServerAudit(tx, req, caller, {
           action: privilegesChanged ? 'user.privileges_changed' : 'user.updated', entityType: 'user', entityId: id, entityTitle: before.email,

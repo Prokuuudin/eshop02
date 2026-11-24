@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 
 const findManyMock = vi.hoisted(() => vi.fn())
@@ -90,5 +91,19 @@ describe('product-news channel delivery', () => {
     await notifyPriceChange('p1', 'Shampoo', 10, 8)
     expect(createManyMock).not.toHaveBeenCalled()
     expect(sendEmailMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('product-news — «Рассылки запрещены»', () => {
+  it('sends no email to a blocked subscriber; the in-app notification still arrives, flagged as not emailed', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.sendMarketingEmail).mockResolvedValueOnce('suppressed')
+    findManyMock.mockResolvedValue([subscriber('both')])
+
+    await notifyPromo('p1', 'Shampoo', 'Sale')
+
+    expect(sendEmailMock).not.toHaveBeenCalled()
+    expect(suppression.sendMarketingEmail).toHaveBeenCalledWith('user@example.com', expect.any(String), expect.any(String), { category: 'product_news', userId: 'user-both' })
+    expect(createManyMock).toHaveBeenCalledWith({ data: [expect.objectContaining({ userId: 'user-both', emailSent: false })] })
   })
 })

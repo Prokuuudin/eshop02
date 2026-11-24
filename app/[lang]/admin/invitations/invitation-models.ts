@@ -7,6 +7,8 @@ export type Holder = {
   status: 'none' | 'sent' | 'accepted' | 'expired' | 'error'
   sentAt: string | null
   inviteUrl: string | null
+  /** «Рассылки запрещены»: no email or phone invitation may be sent (the server enforces it). */
+  marketingSuppressed?: boolean
 }
 
 export type CampaignState = {
@@ -18,12 +20,13 @@ export type CampaignState = {
   runningSince: string | null
 }
 
-export type EligibleUser = { id: string; name: string | null; email: string }
+export type EligibleUser = { id: string; name: string | null; email: string; marketingSuppressed?: boolean }
 export type HolderSortKey = 'name' | 'email' | 'cardNumber' | 'status'
 export type EligibleSortKey = 'name' | 'email' | 'status'
 export type SortDir = 'asc' | 'desc'
 export type HolderContactFilter = 'all' | 'emailOnly' | 'phoneOnly' | 'complete' | 'none'
 export type HolderInvitationFilter = 'all' | 'invited' | 'notInvited'
+export type HolderMailingFilter = 'all' | 'suppressed' | 'allowed'
 
 export const isTechEmail = (email: string): boolean => email.toLowerCase().endsWith('@client.local')
 export const HOLDER_STATUS_RANK: Record<Holder['status'], number> = { none: 0, sent: 1, accepted: 2, expired: 3, error: 4 }
@@ -33,19 +36,23 @@ export const INVITE_BATCH_SIZE = 20
 // per client to Neon) and then mails every client of the chunk over SMTP.
 export const EMAIL_INVITE_BATCH_SIZE = 5
 
-export type BulkInviteTally = { sent: number; skipped: number; failed: number }
+export type BulkInviteTally = { sent: number; skipped: number; failed: number; suppressed: number }
 
-/** Counts one chunk's response. Ids the server did not return (no email, staff) count as skipped. */
+/**
+ * Counts one chunk's response. `suppressed` = left out because of «Рассылки запрещены».
+ * Ids the server did not return (no email, staff) count as skipped.
+ */
 export function tallyInviteChunk(requested: number, results: Array<{ status: string }>): BulkInviteTally {
   const sent = results.filter((r) => r.status === 'sent').length
   const failed = results.filter((r) => r.status === 'error').length
-  return { sent, failed, skipped: requested - sent - failed }
+  const suppressed = results.filter((r) => r.status === 'suppressed').length
+  return { sent, failed, suppressed, skipped: requested - sent - failed - suppressed }
 }
 
 export type BulkInviteOutcome = 'done' | 'partial' | 'failed' | 'stopped'
 
 /** 'done' only when nothing failed and every chunk got an answer. */
-export function bulkInviteOutcome(tally: BulkInviteTally, opts: { requestFailed: boolean; stopped: boolean }): BulkInviteOutcome {
+export function bulkInviteOutcome(tally: Omit<BulkInviteTally, 'suppressed'> & { suppressed?: number }, opts: { requestFailed: boolean; stopped: boolean }): BulkInviteOutcome {
   if (opts.requestFailed || tally.failed > 0) return tally.sent > 0 ? 'partial' : 'failed'
   if (opts.stopped) return 'stopped'
   return 'done'

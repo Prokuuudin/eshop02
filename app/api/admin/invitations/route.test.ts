@@ -13,6 +13,7 @@ const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, require
   keyValueFindUniqueMock: vi.fn(),
 }))
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
@@ -152,7 +153,7 @@ describe('GET /api/admin/invitations', () => {
     expect(readInvitationsMock).toHaveBeenCalledWith(expect.anything(), ['maija@example.lv'])
     expect(json.total).toBe(1)
     expect(json.holders).toEqual([
-      { userId: 'u1', name: 'Maija', email: 'Maija@Example.LV', phone: null, cardNumber: '1001', status: 'none', sentAt: null, inviteUrl: null },
+      { userId: 'u1', name: 'Maija', email: 'Maija@Example.LV', phone: null, cardNumber: '1001', status: 'none', sentAt: null, inviteUrl: null, marketingSuppressed: false },
     ])
   })
 

@@ -10,7 +10,7 @@ import {
   lockInvitationUsers,
 } from '@/lib/invitation-dispatch'
 import { isProtectedStaffAccount } from '@/lib/admin-permissions'
-import { sendEmail } from '@/lib/mailer'
+import { getMarketingSuppressions, sendMarketingEmail, suppressedUserIds } from '@/lib/marketing-suppression'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
   readInvitations,
@@ -57,6 +57,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     const sortDir = searchParams.get('dir') === 'desc' ? 'desc' : 'asc'
     const contact = searchParams.get('contact')
     const invitation = searchParams.get('invitation')
+    const mailing = searchParams.get('mailing')
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
     const revokedCardPolicy = await getRevokedCardPolicy()
 
@@ -100,6 +101,9 @@ export async function GET(req: NextRequest): Promise<Response> {
         ],
       })
     }
+    // «Рассылки запрещены»: список запретов по нормализованному email (lib/marketing-suppression).
+    if (mailing === 'suppressed') and.push({ id: { in: await suppressedUserIds() } })
+    if (mailing === 'allowed') and.push({ id: { notIn: await suppressedUserIds() } })
     if (and.length > 0) where.AND = and
 
     const orderBy =
@@ -119,7 +123,10 @@ export async function GET(req: NextRequest): Promise<Response> {
     ])
 
     const emails = rows.map((u) => u.email.toLowerCase())
-    const invitations = await readInvitations(prisma, emails)
+    const [invitations, suppressions] = await Promise.all([
+      readInvitations(prisma, emails),
+      getMarketingSuppressions(rows.map((u) => u.email)),
+    ])
     const byEmail = new Map<string, (typeof invitations)[number]>()
     // readInvitations is newest-first; keep the current invitation on resends.
     for (const invitation of invitations) {
@@ -139,6 +146,7 @@ export async function GET(req: NextRequest): Promise<Response> {
           cardNumber: u.cardNumber,
           status,
           sentAt: inv?.sentAt ?? null,
+          marketingSuppressed: suppressions.has(u.email.trim().toLowerCase()),
           // Ссылку показываем только пока инвайт живой — админ может скопировать вручную
           inviteUrl: null,
         }
@@ -191,6 +199,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       },
       select: { id: true, name: true, email: true, cardNumber: true, platformRole: true, teamRole: true, superAdmin: true },
     }).then((rows) => rows.filter((u) => !isProtectedStaffAccount(u)))
+    // Клиенты с запретом рассылок не получают ни новых, ни повторных приглашений:
+    // токен им не выпускается. Перед самой отправкой sendMarketingEmail проверяет ещё раз.
+    const suppressed = new Set(await suppressedUserIds(prisma, users.map((u) => u.id)))
+    const invitable = users.filter((u) => !suppressed.has(u.id))
 
     const templates = await getTemplates()
     // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override
@@ -200,7 +212,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const now = new Date()
     const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-    const records: NewInvitation[] = users.map((u) => ({
+    const records: NewInvitation[] = invitable.map((u) => ({
       userId: u.id,
       email: u.email.toLowerCase(),
       cardNumber: u.cardNumber!,
@@ -265,6 +277,8 @@ export async function POST(req: NextRequest): Promise<Response> {
     // 2. Отправка писем
     const sent: string[] = []
     const failed: NewInvitation[] = []
+    // A block set while this batch was being prepared: the token is retired like a failed send.
+    const blockedAtSend: NewInvitation[] = []
     const outcome = new Map<string, { status: 'sent' | 'error'; inviteUrl: string }>()
     for (const r of prepared.issued) {
       const user = users.find((u) => u.id === r.userId)!
@@ -275,7 +289,11 @@ export async function POST(req: NextRequest): Promise<Response> {
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
       try {
-        await sendEmail(user.email, subject, html)
+        if (await sendMarketingEmail(user.email, subject, html, { category: 'invitation', userId: r.userId }) === 'suppressed') {
+          blockedAtSend.push(r)
+          suppressed.add(r.userId)
+          continue
+        }
         sent.push(r.userId)
         outcome.set(r.userId, { status: 'sent', inviteUrl })
       } catch (err) {
@@ -287,17 +305,18 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     // 3. Результат доставки известен: неушедшие письма помечаем error (их токены
     // гасятся — findValid отвергает error), доставку и итог пишем после коммита токенов.
-    if (prepared.issued.length > 0) {
-      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending, prepared.skipped)
+    if (prepared.issued.length > 0 || suppressed.size > 0) {
+      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending, prepared.skipped, [...suppressed], blockedAtSend)
     }
 
     const skipped = new Set(prepared.skipped)
     const results = users.map((user) => {
       const delivered = outcome.get(user.id)
       if (delivered) return { userId: user.id, email: user.email, status: delivered.status, inviteUrl: delivered.inviteUrl }
+      if (suppressed.has(user.id)) return { userId: user.id, email: user.email, status: 'suppressed' as const }
       return { userId: user.id, email: user.email, status: skipped.has(user.id) ? 'skipped' as const : 'pending' as const }
     })
-    return NextResponse.json({ results })
+    return NextResponse.json({ results, suppressed: suppressed.size })
   } catch (e) {
     if (isRevokedCardPolicyError(e)) {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
@@ -316,13 +335,17 @@ async function recordEmailDelivery(
   failed: NewInvitation[],
   pending: string[],
   skipped: string[],
+  suppressed: string[] = [],
+  blockedAtSend: NewInvitation[] = [],
 ): Promise<void> {
   const failedUserIds = failed.map((r) => r.userId)
+  // Undelivered tokens (SMTP failure or a block found at send time) must not stay usable.
+  const retired = [...failed, ...blockedAtSend]
   try {
     await prisma.$transaction(async (tx) => {
-      if (failed.length > 0) {
+      if (retired.length > 0) {
         await tx.invitationToken.updateMany({
-          where: { tokenHash: { in: failed.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
+          where: { tokenHash: { in: retired.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
           data: { status: 'error' },
         })
       }
@@ -337,16 +360,16 @@ async function recordEmailDelivery(
         entityType: 'invitation_batch',
         entityId: batchId,
         requestId: batchId,
-        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending, skipped },
+        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending, skipped, suppressed },
       })
     })
   } catch (error) {
     // The emails already left (or failed); keep the response truthful and at
     // least retire the tokens of undelivered emails.
     logApiError('admin_invitations_delivery_record_failed', error)
-    if (failed.length > 0) {
+    if (retired.length > 0) {
       await prisma.invitationToken.updateMany({
-        where: { tokenHash: { in: failed.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
+        where: { tokenHash: { in: retired.map((r) => hashInviteToken(r.token)) }, status: 'sent' },
         data: { status: 'error' },
       }).catch((retireError: unknown) => logApiError('admin_invitations_token_retire_failed', retireError))
     }
@@ -358,18 +381,20 @@ async function replayEmailResults(
   batchId: string,
   issuedUserIds: string[],
   users: Array<{ id: string; email: string }>,
-): Promise<Array<{ userId: string; email: string; status: 'sent' | 'error' | 'pending' }>> {
+): Promise<Array<{ userId: string; email: string; status: 'sent' | 'error' | 'pending' | 'suppressed' }>> {
   const delivery = await prisma.auditLog.findFirst({
     where: { requestId: batchId, action: 'invitation.delivery_recorded' },
     select: { after: true },
   })
-  const recorded = (delivery?.after ?? {}) as { sent?: string[]; failed?: string[] }
+  const recorded = (delivery?.after ?? {}) as { sent?: string[]; failed?: string[]; suppressed?: string[] }
   const issued = new Set(issuedUserIds)
   return users
     .filter((user) => issued.has(user.id))
     .map((user) => ({
       userId: user.id,
       email: user.email,
-      status: recorded.sent?.includes(user.id) ? 'sent' : recorded.failed?.includes(user.id) ? 'error' : 'pending',
+      status: recorded.sent?.includes(user.id) ? 'sent'
+        : recorded.suppressed?.includes(user.id) ? 'suppressed'
+        : recorded.failed?.includes(user.id) ? 'error' : 'pending',
     }))
 }

@@ -9,6 +9,7 @@ const { userFindManyMock, userCountMock, requireAdminMock, readCampaignMock, set
   readCampaignMock: vi.fn(),
 }))
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
@@ -109,9 +110,10 @@ describe('GET /api/admin/card-rules-campaign', () => {
     expect(json.totalEligible).toBe(38135)
     expect(json.total).toBe(2)
     expect(json.users).toEqual([
-      { id: 'u1', name: 'Anna', email: 'anna@example.lv' },
-      { id: 'u2', name: null, email: 'anna2@example.lv' },
+      { id: 'u1', name: 'Anna', email: 'anna@example.lv', marketingSuppressed: false },
+      { id: 'u2', name: null, email: 'anna2@example.lv', marketingSuppressed: false },
     ])
+    expect(json.suppressedCount).toBe(0)
   })
 
   it('falls back to id-asc order for an unknown sort key', async () => {

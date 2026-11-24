@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { hasDeliverableEmail } from '@/lib/card-activation'
 import { escapeHtml } from '@/lib/escape-html'
+import { carryMarketingSuppression } from '@/lib/marketing-suppression'
 import { prisma } from '@/lib/prisma'
 import { appendServerAudit } from '@/lib/server-audit'
 import { mapDbToServerUser } from '@/lib/server-auth'
@@ -118,6 +119,8 @@ export async function confirmEmailChange(
       await tx.user.update({ where: { id: userId }, data: { email: pending.newEmail } })
       await tx.companyMember.updateMany({ where: { userId }, data: { email: pending.newEmail } })
       await tx.savedAddress.updateMany({ where: { userId }, data: { email: pending.newEmail } })
+      // A blocked person stays blocked under the new address («Рассылки запрещены»).
+      await carryMarketingSuppression(tx, user.email, pending.newEmail)
       // Anything already issued for the old mailbox or an older sign-in stops working.
       await tx.passwordResetToken.deleteMany({ where: { userId } })
       await tx.mfaChallenge.deleteMany({ where: { userId } })

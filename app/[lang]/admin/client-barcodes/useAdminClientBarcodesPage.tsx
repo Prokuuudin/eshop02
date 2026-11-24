@@ -15,6 +15,7 @@ import {
     type ClientSaveFailure,
     type EmailHolder,
     type ClientStepUp,
+    type MailingFilter,
 } from './client-barcodes-model';
 
 export type { CardHolder } from './client-barcodes-model';
@@ -38,6 +39,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [customerType, setCustomerType] = useState('all');
+    const [mailingFilter, setMailingFilter] = useState<MailingFilter>('all');
     const [cardHoldersPage, setCardHoldersPage] = useState(0);
 
     // Список держателей карт — из Neon по /api/admin/users, фильтр по email/
@@ -65,6 +67,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             params.set('skip', String(cardHoldersPage * 50));
             if (debouncedSearch) params.set('search', debouncedSearch);
             if (customerType !== 'all') params.set('customerType', customerType);
+            if (mailingFilter !== 'all') params.set('mailing', mailingFilter);
             const res = await fetch(`/api/admin/users?${params}`, { cache: 'no-store' });
             const data = await res.json().catch(() => null);
             if (res.status === 401) {
@@ -83,7 +86,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         } finally {
             setCardHoldersLoading(false);
         }
-    }, [debouncedSearch, customerType, cardHoldersPage, language, registeredOnly]);
+    }, [debouncedSearch, customerType, mailingFilter, cardHoldersPage, language, registeredOnly]);
 
     useEffect(() => {
         queueMicrotask(() => void loadCardHolders());
@@ -232,7 +235,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         await handleSaveClientDetails(holder, clientStepUp);
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, cardHoldersPage, setCardHoldersPage, cardHolders, loadCardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, mailingFilter, setMailingFilter, cardHoldersPage, setCardHoldersPage, cardHolders, loadCardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

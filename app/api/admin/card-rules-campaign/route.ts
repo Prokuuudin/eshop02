@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin, type ServerUser } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { invitationBatchId, lockBatch } from '@/lib/invitation-dispatch'
-import { sendEmail } from '@/lib/mailer'
+import { sendMarketingEmail, suppressedUserIds } from '@/lib/marketing-suppression'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
   readCampaign,
@@ -81,9 +81,14 @@ export async function GET(req: NextRequest): Promise<Response> {
       : sortField === 'email' ? { email: sortDir }
       : { id: 'asc' }
 
-    const [state, totalEligible, filteredTotal, users] = await Promise.all([
+    const suppressedIds = await suppressedUserIds()
+    const [state, totalEligible, suppressedCount, filteredTotal, rows] = await Promise.all([
       readCampaign(prisma),
       prisma.user.count({ where: baseWhere }),
+      // Clients with «Рассылки запрещены» stay in the segment but every batch skips them.
+      suppressedIds.length > 0
+        ? prisma.user.count({ where: { AND: [baseWhere, { id: { in: suppressedIds } }] } })
+        : Promise.resolve(0),
       // Без активного поиска where === baseWhere, второй count был бы точным дублем первого
       search ? prisma.user.count({ where }) : Promise.resolve(null),
       // sent-статус (isEligibleSent) — чистая проверка id <= cursor по каждой строке, она верна
@@ -98,7 +103,9 @@ export async function GET(req: NextRequest): Promise<Response> {
       }),
     ])
     const total = search ? (filteredTotal as number) : totalEligible
-    return NextResponse.json({ state, totalEligible, total, users })
+    const suppressed = new Set(suppressedIds)
+    const users = rows.map((user) => ({ ...user, marketingSuppressed: suppressed.has(user.id) }))
+    return NextResponse.json({ state, totalEligible, suppressedCount, total, users })
   } catch (e) {
     logApiError("[card-rules-campaign GET]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
@@ -110,7 +117,7 @@ const RESET = 'card_rules_campaign.reset'
 const STARTED = 'card_rules_campaign.batch_started'
 const COMPLETED = 'card_rules_campaign.batch_completed'
 
-type BatchOutcome = { processed: number; sent: number; failed: number; skipped: number; failedUserIds: string[] }
+type BatchOutcome = { processed: number; sent: number; failed: number; skipped: number; suppressed: number; failedUserIds: string[] }
 
 // Internal IDs and counters only — no addresses or names.
 function auditState(s: CampaignState) {
@@ -159,7 +166,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   let state: CampaignState | undefined
   let running = false
   let batchId = ''
-  const outcome: BatchOutcome = { processed: 0, sent: 0, failed: 0, skipped: 0, failedUserIds: [] }
+  const outcome: BatchOutcome = { processed: 0, sent: 0, failed: 0, skipped: 0, suppressed: 0, failedUserIds: [] }
   try {
     const body = (await req.json().catch(() => ({}))) as { reset?: boolean }
     const id = invitationBatchId(req, actor.id, 'card-rules-campaign')
@@ -259,7 +266,13 @@ export async function POST(req: NextRequest): Promise<Response> {
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
       try {
-        await sendEmail(u.email, subject, html)
+        // The cursor-driven campaign is a queue: the block is checked when each email goes out.
+        if (await sendMarketingEmail(u.email, subject, html, { category: 'card_rules_campaign', userId: u.id }) === 'suppressed') {
+          state.cursor = u.id
+          outcome.skipped++
+          outcome.suppressed++
+          continue
+        }
         state.sentCount++
         outcome.sent++
       } catch (err) {

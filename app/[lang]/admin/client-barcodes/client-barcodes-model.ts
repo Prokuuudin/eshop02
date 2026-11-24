@@ -31,7 +31,18 @@ export type CardHolder = {
   registered: boolean
   registeredAt: string | null
   updatedAt: string
+  /** «Рассылки запрещены» (lib/marketing-suppression); null when mailings are allowed. */
+  marketingSuppression?: MarketingSuppressionInfo | null
 }
+
+export type MarketingSuppressionInfo = {
+  since: string
+  source: 'admin' | 'self_service' | 'erasure'
+  setByName: string | null
+  reason: string | null
+}
+
+export type MailingFilter = 'all' | 'suppressed' | 'allowed'
 
 export type NoCardDraft = {
   customerType: 'individual' | 'company'

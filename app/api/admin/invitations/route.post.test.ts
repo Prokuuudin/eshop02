@@ -74,6 +74,7 @@ function db(s: State) {
   }
 }
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => {
@@ -447,5 +448,81 @@ describe('POST /api/admin/invitations — repeats and concurrency', () => {
 
     expect((await res.json()).results[0].status).toBe('sent')
     expect(h.state.tokens.map((t) => t.tokenHash)).not.toContain('stale')
+  })
+})
+
+describe('POST /api/admin/invitations — «Рассылки запрещены»', () => {
+  const blocked = new Set<string>()
+
+  beforeEach(async () => {
+    blocked.clear()
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.suppressedUserIds).mockImplementation(async (_db?: unknown, ids?: string[]) => (ids ?? []).filter((id) => blocked.has(id)))
+  })
+
+  afterEach(async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.suppressedUserIds).mockImplementation(async () => [])
+  })
+
+  it('a direct API request for a blocked client issues no token and sends nothing; the rest of the bulk batch goes out', async () => {
+    blocked.add('u1')
+    const res = await post(['u1', 'u2', 'u3'], 'blocked-bulk', { skipInvited: true })
+
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.suppressed).toBe(1)
+    expect(body.results.find((r: { userId: string }) => r.userId === 'u1')).toMatchObject({ status: 'suppressed' })
+    expect(h.state.tokens.filter((t) => t.userId === 'u1')).toHaveLength(0)
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u2@inbox.lv', 'u3@inbox.lv'])
+    const delivery = h.state.audits.find((a) => a.action === 'invitation.delivery_recorded')
+    expect(delivery?.after).toMatchObject({ sent: ['u2', 'u3'], suppressed: ['u1'] })
+  })
+
+  it('a batch of only blocked clients sends nothing and still records the exclusion', async () => {
+    blocked.add('u1')
+    const res = await post(['u1'], 'only-blocked')
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ results: [{ userId: 'u1', email: 'u1@inbox.lv', status: 'suppressed' }], suppressed: 1 })
+    expect(h.state.tokens).toHaveLength(0)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+    expect(actions()).toEqual(['invitation.delivery_recorded'])
+  })
+
+  it('a repeat (resend) to a client blocked after the first invitation is refused', async () => {
+    expect((await post(['u1'], 'first-send')).status).toBe(200)
+    expect(h.sendEmail).toHaveBeenCalledTimes(1)
+
+    blocked.add('u1')
+    const res = await post(['u1'], 'resend-after-block')
+    expect((await res.json()).results).toEqual([{ userId: 'u1', email: 'u1@inbox.lv', status: 'suppressed' }])
+    expect(h.sendEmail).toHaveBeenCalledTimes(1)
+    // The earlier, already delivered invitation is not touched: the block is not a sign-in ban.
+    expect(live('u1')).toHaveLength(1)
+  })
+
+  it('a block set after the token was issued stops the email at send time and retires the token', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.sendMarketingEmail).mockImplementationOnce(async () => 'suppressed')
+
+    const res = await post(['u1', 'u2'], 'late-block')
+    const body = await res.json()
+
+    expect(body.results.map((r: { userId: string; status: string }) => [r.userId, r.status])).toEqual([['u1', 'suppressed'], ['u2', 'sent']])
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u2@inbox.lv'])
+    expect(live('u1')).toHaveLength(0)
+    expect(h.state.tokens.find((t) => t.userId === 'u1')?.status).toBe('error')
+    expect(h.state.audits.find((a) => a.action === 'invitation.delivery_recorded')?.after).toMatchObject({ suppressed: ['u1'], sent: ['u2'] })
+  })
+
+  it('a technical retry of the batch replays the exclusion without sending', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.sendMarketingEmail).mockImplementationOnce(async () => 'suppressed')
+    await post(['u1', 'u2'], 'late-block-retry')
+    const retry = await post(['u1', 'u2'], 'late-block-retry')
+
+    expect((await retry.json()).results.map((r: { status: string }) => r.status)).toEqual(['suppressed', 'sent'])
+    expect(h.sendEmail).toHaveBeenCalledTimes(1)
   })
 })

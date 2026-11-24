@@ -4,7 +4,7 @@ import { logApiError } from '@/lib/observability'
 import { requireAdminPermission } from '@/lib/server-auth'
 import { appendServerAudit } from '@/lib/server-audit'
 import { prisma } from '@/lib/prisma'
-import { sendEmail } from '@/lib/mailer'
+import { sendMarketingEmail, suppressedUserIds } from '@/lib/marketing-suppression'
 
 export const runtime = 'nodejs'
 const MAX_RECIPIENTS = 500
@@ -70,21 +70,28 @@ export async function POST(req: NextRequest): Promise<Response> {
     const emailRecipients = consented.filter((u) => u.notificationChannel === 'email' || u.notificationChannel === 'both')
     const now = new Date()
     if (appRecipients.length) await prisma.userNotification.createMany({ data: appRecipients.map((u) => ({ userId: u.id, type, title, message, link, attachments, channel: u.notificationChannel, createdAt: now })) })
-    let emailsSent = 0; let emailsFailed = 0; let invalidEmailSkipped = 0
+    let emailsSent = 0; let emailsFailed = 0; let invalidEmailSkipped = 0; let marketingSuppressedSkipped = 0
     if (emailRecipients.length) {
-      const deliverable = emailRecipients.filter((u) => { const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(u.email); if (!valid) invalidEmailSkipped++; return valid })
+      // Admin mass notifications are mailings: «Рассылки запрещены» drops the email channel
+      // (the in-app notification above is not an email and still arrives).
+      const suppressedIds = new Set(await suppressedUserIds(prisma, emailRecipients.map((u) => u.id)))
+      const deliverable = emailRecipients.filter((u) => {
+        if (suppressedIds.has(u.id)) { marketingSuppressedSkipped++; return false }
+        const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(u.email); if (!valid) invalidEmailSkipped++; return valid
+      })
       const html = buildHtml(title, message, type, link, process.env.NEXT_PUBLIC_SITE_URL ?? '')
       const emailAttachments = attachmentAssets.map(({ item, asset }) => ({ filename: item.name, content: Buffer.from(asset.data), contentType: asset.mimeType }))
       for (let i = 0; i < deliverable.length; i += EMAIL_CONCURRENCY) {
-        const results = await Promise.allSettled(deliverable.slice(i, i + EMAIL_CONCURRENCY).map((u) => sendEmail(u.email, title, html, { attachments: emailAttachments })))
-        emailsSent += results.filter((r) => r.status === 'fulfilled').length
+        const results = await Promise.allSettled(deliverable.slice(i, i + EMAIL_CONCURRENCY).map((u) => sendMarketingEmail(u.email, title, html, { category: 'admin_notification', userId: u.id }, { attachments: emailAttachments })))
+        emailsSent += results.filter((r) => r.status === 'fulfilled' && r.value === 'sent').length
+        marketingSuppressedSkipped += results.filter((r) => r.status === 'fulfilled' && r.value === 'suppressed').length
         emailsFailed += results.filter((r) => r.status === 'rejected').length
       }
     }
     const result = { selected: userIds.length, appDelivered: appRecipients.length, emailsSent, emailsFailed,
       preferencesSkipped: users.filter((u) => !u.notificationsSubscribed).length,
       marketingConsentSkipped: type === 'promo' ? subscribed.filter((u) => !u.marketingConsent).length : 0,
-      invalidEmailSkipped, ineligibleSkipped: userIds.length - users.length }
+      invalidEmailSkipped, marketingSuppressedSkipped, ineligibleSkipped: userIds.length - users.length }
     await prisma.$transaction(async (tx) => appendServerAudit(tx, req, caller, { action: 'notification.delivery_completed', entityType: 'notification_batch', entityId: `batch:${now.toISOString()}`, after: { ...result, title, type, link, delivery: 'customer_preferences' } }))
     return NextResponse.json({ ok: true, ...result })
   } catch (error) {

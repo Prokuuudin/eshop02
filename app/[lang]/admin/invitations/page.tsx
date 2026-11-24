@@ -14,6 +14,7 @@ import AdminGate from '@/components/admin/AdminGate';
 import { INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmail } from './invitation-models';
 import { InvitationPager, SortArrow } from './invitation-list-ui';
 import { useInvitationsPage } from './useInvitationsPage';
+import { MarketingSuppressedBadge } from '../client-barcodes/MarketingSuppression';
 
 export default function AdminInvitationsPage(): React.ReactElement {
     const {
@@ -45,6 +46,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
         setHolderContactFilter,
         holderInvitationFilter,
         setHolderInvitationFilter,
+        holderMailingFilter,
+        setHolderMailingFilter,
+        eligibleSuppressedCount,
         segment,
         setSegment,
         cardDialogOpen,
@@ -443,6 +447,18 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                     <SelectItem value="notInvited">{l('Не приглашённые', 'Not invited', 'Nav uzaicināti')}</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <Select value={holderMailingFilter} onValueChange={(value) => {
+                                setHolderMailingFilter(value as typeof holderMailingFilter);
+                                setHolderPage(0);
+                                setSelectedIds(new Set());
+                            }}>
+                                <SelectTrigger className="w-full sm:w-56" aria-label={l('Фильтр по рассылкам', 'Mailing filter', 'Sūtījumu filtrs')}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{l('Все (рассылки)', 'All (mailings)', 'Visi (sūtījumi)')}</SelectItem>
+                                    <SelectItem value="suppressed">{l('Рассылки запрещены', 'Mailings blocked', 'Sūtījumi aizliegti')}</SelectItem>
+                                    <SelectItem value="allowed">{l('Без запрета рассылок', 'Mailings not blocked', 'Bez sūtījumu aizlieguma')}</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {loading && holders.length === 0 ? (
@@ -499,7 +515,10 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                                         <Checkbox checked={selectedIds.has(h.userId)} disabled={bulkBusy} onCheckedChange={() => toggleSelect(h.userId)} aria-label={l('Выбрать', 'Select', 'Atlasīt')} />
                                                     )}
                                                 </td>
-                                                <td className="py-2 pr-3 text-foreground">{h.name || '—'}</td>
+                                                <td className="py-2 pr-3 text-foreground">
+                                                    {h.name || '—'}
+                                                    {h.marketingSuppressed && <div><MarketingSuppressedBadge l={l} /></div>}
+                                                </td>
                                                 <td className="py-2 pr-3 text-foreground">
                                                     {h.email}
                                                     {isTechEmail(h.email) && (
@@ -517,7 +536,17 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                                 </td>
                                                 <td className="py-2 pr-3 text-muted-foreground">{h.sentAt ? new Date(h.sentAt).toLocaleDateString(locale) : '—'}</td>
                                                 <td className="py-2 pr-3 text-right whitespace-nowrap">
-                                                    {h.status === 'accepted' ? null : (
+                                                    {h.status === 'accepted' ? null : h.marketingSuppressed ? (
+                                                        // Buttons stay visible but locked; the server refuses these sends anyway.
+                                                        <Hint content={l(
+                                                            'Клиенту запрещены рассылки и приглашения. Снять запрет может администратор в «Базе клиентов» после нового согласия клиента.',
+                                                            'Mailings and invitations are blocked for this client. An administrator can lift the block in the Customer database after the client gives new consent.',
+                                                            'Klientam aizliegti sūtījumi un ielūgumi. Administrators var atcelt aizliegumu “Klientu datubāzē” pēc klienta jaunas piekrišanas.'
+                                                        )}><span className="inline-flex gap-1">
+                                                            <Button size="sm" variant="outline" disabled>{l('Email', 'Email', 'E-pasts')}</Button>
+                                                            {h.phone && <Button size="sm" variant="outline" disabled>{l('Сообщение', 'Message', 'Ziņa')}</Button>}
+                                                        </span></Hint>
+                                                    ) : (
                                                         <>
                                                     {!isTechEmail(h.email) && (
                                                         <Button size="sm" variant={h.status === 'none' ? 'default' : 'outline'} disabled={busyIds.has(h.userId)} onClick={() => handleInviteOne(h.userId)}>
@@ -585,6 +614,16 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             </h2>
                         </div>
 
+                        {eligibleSuppressedCount > 0 && (
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                                {l(
+                                    `Из них с запретом рассылок: ${eligibleSuppressedCount.toLocaleString(locale)} — рассылка их пропустит.`,
+                                    `With mailings blocked: ${eligibleSuppressedCount.toLocaleString(locale)} — the mailing skips them.`,
+                                    `No tiem ar sūtījumu aizliegumu: ${eligibleSuppressedCount.toLocaleString(locale)} — izsūtīšana tos izlaidīs.`
+                                )}
+                            </p>
+                        )}
+
                         <Input
                             value={eligibleSearch}
                             onChange={(e) => {
@@ -627,7 +666,10 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                             const sent = isEligibleSent(u.id);
                                             return (
                                                 <tr key={u.id} className="border-b border-border/50">
-                                                    <td className="py-2 pr-3 text-foreground break-words">{u.name || '—'}</td>
+                                                    <td className="py-2 pr-3 text-foreground break-words">
+                                                        {u.name || '—'}
+                                                        {u.marketingSuppressed && <div><MarketingSuppressedBadge l={l} /></div>}
+                                                    </td>
                                                     <td className="py-2 pr-3 text-foreground break-words">{u.email}</td>
                                                     <td className="py-2">
                                                         <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${ELIGIBLE_STATUS_CLASS[sent ? 'sent' : 'pending']}`}>

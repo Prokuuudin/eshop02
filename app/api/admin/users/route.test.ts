@@ -6,6 +6,7 @@ const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transa
   permissionMock: vi.fn(), userFindMock: vi.fn(), verifyPasswordMock: vi.fn(), verifyTotpMock: vi.fn(), transactionMock: vi.fn(), auditMock: vi.fn(),
   settingMock: vi.fn(), userFindManyMock: vi.fn(), userCountMock: vi.fn(),
 }))
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: permissionMock, verifyPassword: verifyPasswordMock }))
 vi.mock('@/lib/mfa', () => ({ verifyTotpCode: verifyTotpMock, decryptSecret: (s: string) => s }))
@@ -127,6 +128,9 @@ describe('PATCH /api/admin/users privilege boundaries', () => {
     expect(response.status).toBe(200)
     expect(tx.invitationToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1', status: { not: 'accepted' } } })
     expect(tx.passwordResetToken.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } })
+    // «Рассылки запрещены» follows the person to the corrected address, inside the same transaction.
+    const { carryMarketingSuppression } = await import('@/lib/marketing-suppression')
+    expect(carryMarketingSuppression).toHaveBeenCalledWith(tx, 'buyer@gamil.com', 'buyer@gmail.com')
   })
 
   it('refuses when the target became staff after the pre-check', async () => {
@@ -558,5 +562,45 @@ describe('revoked client cards', () => {
     const response = await patch({ id: 'u1', expectedUpdatedAt: now, cardNumber: ' 07001 ' })
     expect(response.status).toBe(200)
     expect(tx.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ cardNumber: '7001' }) }))
+  })
+})
+
+describe('GET /api/admin/users — «Рассылки запрещены»', () => {
+  const get = (query: string) => GET(new NextRequest(`https://shop.test/api/admin/users${query}`))
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetRevokedCardPolicyCache()
+    permissionMock.mockResolvedValue(SUPER_ADMIN)
+    settingMock.mockResolvedValue(null)
+    userFindManyMock.mockResolvedValue([])
+    userCountMock.mockResolvedValue(0)
+  })
+
+  it('filters the list to blocked clients (and the opposite) by user id', async () => {
+    const { suppressedUserIds } = await import('@/lib/marketing-suppression')
+    vi.mocked(suppressedUserIds).mockResolvedValue(['u7', 'u9'])
+    await get('?hasCard=1&mailing=suppressed')
+    expect(userFindManyMock.mock.calls[0][0].where.id).toEqual({ in: ['u7', 'u9'] })
+    await get('?hasCard=1&mailing=allowed')
+    expect(userFindManyMock.mock.calls[1][0].where.id).toEqual({ notIn: ['u7', 'u9'] })
+    await get('?hasCard=1')
+    expect(userFindManyMock.mock.calls[2][0].where.id).toBeUndefined()
+    vi.mocked(suppressedUserIds).mockResolvedValue([])
+  })
+
+  it('marks a blocked client with date, author and reason, matched on the normalized email', async () => {
+    const { getMarketingSuppressions } = await import('@/lib/marketing-suppression')
+    vi.mocked(getMarketingSuppressions).mockResolvedValueOnce(new Map([['client@example.lv', {
+      email: 'client@example.lv', optedOutAt: '2026-11-24T08:00:00.000Z', source: 'admin' as const,
+      setByUserId: 'admin-1', setByName: 'Anna Admin', reason: 'asked by phone',
+    }]]))
+    userFindManyMock.mockResolvedValue([
+      { id: 'u1', email: 'Client@Example.LV', platformRole: 'customer', checkoutProfile: null, privacyAcknowledgedAt: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'u2', email: 'free@example.lv', platformRole: 'customer', checkoutProfile: null, privacyAcknowledgedAt: null, createdAt: new Date(), updatedAt: new Date() },
+    ])
+    const { users } = await (await get('?hasCard=1')).json()
+    expect(users[0].marketingSuppression).toEqual({ since: '2026-11-24T08:00:00.000Z', source: 'admin', setByName: 'Anna Admin', reason: 'asked by phone' })
+    expect(users[1].marketingSuppression).toBeNull()
   })
 })

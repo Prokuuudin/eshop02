@@ -15,7 +15,8 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 
 import { useAdminClientBarcodesPage, type CardHolder } from './useAdminClientBarcodesPage';
 import { RevokeCardDialog, RevokedCardsPanel } from './CardRevocation';
-import { isCompleteClientStepUp } from './client-barcodes-model';
+import { MarketingSuppressedBadge, MarketingSuppressionDialog, MarketingSuppressionSwitch } from './MarketingSuppression';
+import { isCompleteClientStepUp, type MailingFilter } from './client-barcodes-model';
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
@@ -32,6 +33,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         setSearch,
         customerType,
         setCustomerType,
+        mailingFilter,
+        setMailingFilter,
         cardHoldersPage,
         setCardHoldersPage,
         cardHolders,
@@ -57,6 +60,10 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
     const [revokeHolder, setRevokeHolder] = useState<CardHolder | null>(null);
     const [revokeNotice, setRevokeNotice] = useState('');
     const [revokedRefresh, setRevokedRefresh] = useState(0);
+    // «Запретить рассылки и приглашения»: setting is open to customer editors, lifting to admins only
+    // (the server enforces both).
+    const [suppressionRequest, setSuppressionRequest] = useState<{ holder: CardHolder; mode: 'set' | 'lift' } | null>(null);
+    const [suppressionNotice, setSuppressionNotice] = useState('');
     const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
     return (
         <AdminGate>
@@ -79,11 +86,12 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     </div>
                 </div>
 
-                {(formError || message || revokeNotice) && (
+                {(formError || message || revokeNotice || suppressionNotice) && (
                     <div className="rounded-lg border px-4 py-3 text-sm">
                         {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
                         {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
                         {revokeNotice && <p className="text-emerald-600 dark:text-emerald-400">{revokeNotice}</p>}
+                        {suppressionNotice && <p className="text-emerald-600 dark:text-emerald-400">{suppressionNotice}</p>}
                     </div>
                 )}
 
@@ -130,6 +138,22 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                 <SelectItem value="company">{l('Юрлица', 'Companies', 'Uzņēmumi')}</SelectItem>
                             </SelectContent>
                         </Select>
+                        <Select
+                            value={mailingFilter}
+                            onValueChange={(value) => {
+                                setMailingFilter(value as MailingFilter);
+                                setCardHoldersPage(0);
+                            }}
+                        >
+                            <SelectTrigger className="w-52" aria-label={l('Фильтр по рассылкам', 'Mailing filter', 'Sūtījumu filtrs')}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">{l('Все (рассылки)', 'All (mailings)', 'Visi (sūtījumi)')}</SelectItem>
+                                <SelectItem value="suppressed">{l('Рассылки запрещены', 'Mailings blocked', 'Sūtījumi aizliegti')}</SelectItem>
+                                <SelectItem value="allowed">{l('Без запрета рассылок', 'Mailings not blocked', 'Bez sūtījumu aizlieguma')}</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {cardHoldersError && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{cardHoldersError}</p>}
@@ -169,7 +193,10 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                         const edit = getClientEdit(holder);
                                         return (
                                             <tr key={holder.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                                <td className="py-2 pr-4 font-mono text-xs">{holder.cardNumber ?? '—'}</td>
+                                                <td className="py-2 pr-4 font-mono text-xs">
+                                                    {holder.cardNumber ?? '—'}
+                                                    {holder.marketingSuppression && <div><MarketingSuppressedBadge l={l} /></div>}
+                                                </td>
                                                 <td className="py-2 pr-4">
                                                     <Input
                                                         className="min-w-36"
@@ -361,6 +388,13 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                             {l('Отозвать карту', 'Revoke card', 'Atsaukt karti')}
                                                         </Button>
                                                     )}
+                                                    <MarketingSuppressionSwitch
+                                                        holder={holder}
+                                                        l={l}
+                                                        locale={locale}
+                                                        canLift={canEditBankDetails}
+                                                        onRequest={(target, mode) => { setSuppressionNotice(''); setSuppressionRequest({ holder: target, mode }); }}
+                                                    />
                                                     {clientRowErrors[holder.id] && (
                                                         <p role="alert" className="mt-1 w-48 whitespace-normal text-xs text-red-600 dark:text-red-400">
                                                             {clientRowErrors[holder.id]}
@@ -409,6 +443,20 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                             `Karte ${holder.cardNumber} atsaukta. Klients izņemts no karšu īpašnieku saraksta; atcelt var sadaļā “Atsauktās kartes” zemāk.`,
                         ));
                         setRevokedRefresh((value) => value + 1);
+                        void loadCardHolders();
+                    }}
+                />
+                <MarketingSuppressionDialog
+                    key={suppressionRequest ? `${suppressionRequest.holder.id}:${suppressionRequest.mode}` : 'none'}
+                    request={suppressionRequest}
+                    l={l}
+                    onClose={() => setSuppressionRequest(null)}
+                    onDone={(holder, mode) => {
+                        setSuppressionRequest(null);
+                        const who = holder.name || holder.email;
+                        setSuppressionNotice(mode === 'set'
+                            ? l(`Рассылки и приглашения для «${who}» запрещены.`, `Mailings and invitations blocked for “${who}”.`, `Sūtījumi un ielūgumi klientam “${who}” aizliegti.`)
+                            : l(`Запрет рассылок для «${who}» снят.`, `Mailing block lifted for “${who}”.`, `Sūtījumu aizliegums klientam “${who}” atcelts.`));
                         void loadCardHolders();
                     }}
                 />

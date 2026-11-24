@@ -195,5 +195,5 @@ export async function anonymizeUser(params: {
   })
 
   // Marketing suppression lives in the KV store (outside the relational tx).
-  await unsubscribeFromMarketing(emailLower)
+  await unsubscribeFromMarketing(emailLower, 'erasure')
 }

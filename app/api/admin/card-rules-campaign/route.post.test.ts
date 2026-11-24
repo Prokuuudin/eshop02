@@ -46,6 +46,7 @@ function db(s: State) {
   }
 }
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => {
@@ -170,7 +171,7 @@ describe('POST /api/admin/card-rules-campaign — batch', () => {
         actorId: 'admin-1', action: 'card_rules_campaign.batch_completed', entityType: 'campaign', entityId: CAMPAIGN_KV_KEY,
         requestId: 'card-rules-campaign:admin-1:batch-key-0001',
         after: {
-          channel: 'email', processed: 3, sent: 2, failed: 1, skipped: 0, failedUserIds: ['u002'], interrupted: false,
+          channel: 'email', processed: 3, sent: 2, failed: 1, skipped: 0, suppressed: 0, failedUserIds: ['u002'], interrupted: false,
           sentCount: 2, errorCount: 1, cursor: 'u004', finished: true, running: false,
         },
       },
@@ -377,5 +378,27 @@ describe('POST /api/admin/card-rules-campaign — revoked cards', () => {
     expect(res.status).toBe(500)
     expect(h.sendEmail).not.toHaveBeenCalled()
     expect(campaign()).toMatchObject({ sentCount: 0, runningSince: null })
+  })
+})
+
+describe('POST /api/admin/card-rules-campaign — «Рассылки запрещены»', () => {
+  it('checks each recipient when the email goes out: a blocked client is skipped, the cursor moves on, a resumed run never mails them', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    const send = vi.mocked(suppression.sendMarketingEmail)
+    const passthrough = send.getMockImplementation()!
+    // u002 was selected for the batch while allowed; the block is found right before SMTP.
+    send.mockImplementation(async (to, subject, html, meta, options) =>
+      meta.userId === 'u002' ? 'suppressed' : passthrough(to, subject, html, meta, options))
+    try {
+      h.users = [client(1), client(2), client(3)]
+      const body = await (await post()).json()
+
+      expect(body.state).toMatchObject({ cursor: 'u003', sentCount: 2, errorCount: 0 })
+      expect(h.sendEmail.mock.calls.map(([to]) => to)).not.toContain(h.users[1].email)
+      expect(h.sendEmail).toHaveBeenCalledTimes(2)
+      expect(h.state.audits[1].after).toMatchObject({ sent: 2, skipped: 1, suppressed: 1, failed: 0 })
+    } finally {
+      send.mockImplementation(passthrough)
+    }
   })
 })

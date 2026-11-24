@@ -33,6 +33,7 @@ type SendResult = {
   preferencesSkipped?: number
   marketingConsentSkipped?: number
   invalidEmailSkipped?: number
+  marketingSuppressedSkipped?: number
   ineligibleSkipped?: number
 }
 
@@ -468,6 +469,15 @@ export default function AdminNotificationsSendPage(): React.ReactElement {
                   </p>
                 )}
                 <p className="text-sm text-yellow-800 dark:text-yellow-200">Skipped by preferences: {result.preferencesSkipped ?? 0}; promo consent: {result.marketingConsentSkipped ?? 0}; invalid email: {result.invalidEmailSkipped ?? 0}; ineligible: {result.ineligibleSkipped ?? 0}</p>
+                {(result.marketingSuppressedSkipped ?? 0) > 0 && (
+                  <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                    {l(
+                      `Email не отправлен из-за запрета рассылок: ${result.marketingSuppressedSkipped}`,
+                      `Email not sent because mailings are blocked: ${result.marketingSuppressedSkipped}`,
+                      `E-pasts nav nosūtīts, jo sūtījumi ir aizliegti: ${result.marketingSuppressedSkipped}`,
+                    )}
+                  </p>
+                )}
                 {result.emailsSent !== undefined && (
                   <p className="text-sm text-green-800 dark:text-green-200">
                     {t('admin.notifications.resultEmailsSent', undefined, { count: result.emailsSent })}

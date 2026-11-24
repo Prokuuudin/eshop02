@@ -36,6 +36,7 @@ function db(s: State) {
   }
 }
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn(), logOperationalEvent: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: h.requireAdminPermission }))

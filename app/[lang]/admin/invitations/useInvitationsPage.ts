@@ -15,6 +15,7 @@ import {
     type Holder,
     type HolderContactFilter,
     type HolderInvitationFilter,
+    type HolderMailingFilter,
     type HolderSortKey,
     type SortDir,
     isTechEmail,
@@ -54,6 +55,7 @@ function useInvitationsPageState() {
     const [holderPage, setHolderPage] = useState(0);
     const [holderContactFilter, setHolderContactFilter] = useState<HolderContactFilter>('all');
     const [holderInvitationFilter, setHolderInvitationFilter] = useState<HolderInvitationFilter>('all');
+    const [holderMailingFilter, setHolderMailingFilter] = useState<HolderMailingFilter>('all');
     const [segment, setSegment] = useState<'withCard' | 'withoutCard'>('withCard');
 
     useEffect(() => {
@@ -75,6 +77,7 @@ function useInvitationsPageState() {
     // Кампания сегмента B
     const [campaign, setCampaign] = useState<CampaignState | null>(null);
     const [totalEligible, setTotalEligible] = useState(0);
+    const [eligibleSuppressedCount, setEligibleSuppressedCount] = useState(0);
     const [eligibleFilteredTotal, setEligibleFilteredTotal] = useState(0);
     const [eligibleUsers, setEligibleUsers] = useState<EligibleUser[]>([]);
     const [eligibleLoading, setEligibleLoading] = useState(true);
@@ -108,11 +111,12 @@ function useInvitationsPageState() {
                 dir: holderServerSortDir ?? undefined,
                 contact: holderContactFilter,
                 invitation: holderInvitationFilter,
+                mailing: holderMailingFilter,
             }, controller.signal);
             if (ok) {
                 setHolders(json.holders ?? []);
                 setHoldersTotal(json.total ?? 0);
-                if (!debouncedHolderSearch && holderContactFilter === 'all' && holderInvitationFilter === 'all') {
+                if (!debouncedHolderSearch && holderContactFilter === 'all' && holderInvitationFilter === 'all' && holderMailingFilter === 'all') {
                     setAllHoldersCount(json.total ?? 0);
                 }
             }
@@ -123,7 +127,7 @@ function useInvitationsPageState() {
             // Отменённый (устаревший) запрос не должен гасить индикатор загрузки за более новый
             if (holdersAbortRef.current === controller) setLoading(false);
         }
-    }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir, holderContactFilter, holderInvitationFilter]);
+    }, [debouncedHolderSearch, holderPage, holderServerSortField, holderServerSortDir, holderContactFilter, holderInvitationFilter, holderMailingFilter]);
 
     const eligibleServerSortField: 'name' | 'email' | null = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.key : null;
     const eligibleServerSortDir = eligibleSort && eligibleSort.key !== 'status' ? eligibleSort.dir : null;
@@ -145,6 +149,7 @@ function useInvitationsPageState() {
             if (ok) {
                 setCampaign(json.state);
                 setTotalEligible(json.totalEligible ?? 0);
+                setEligibleSuppressedCount(json.suppressedCount ?? 0);
                 setEligibleFilteredTotal(json.total ?? 0);
                 setEligibleUsers(json.users ?? []);
             }
@@ -177,9 +182,20 @@ function useInvitationsPageState() {
         const sent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
         // pending: another request is still mailing this client — not an error.
         const pending = (json.results ?? []).filter((r: { status: string }) => r.status === 'pending').length;
-        const failed = (json.results ?? []).length - sent - pending;
+        const suppressed = (json.results ?? []).filter((r: { status: string }) => r.status === 'suppressed').length;
+        const failed = (json.results ?? []).length - sent - pending - suppressed;
         const pendingNote = pending ? l(`, уже отправляется: ${pending}`, `, already being sent: ${pending}`, `, jau tiek sūtīts: ${pending}`) : '';
-        setMessage(l(`Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`, `Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`, `Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`) + pendingNote);
+        const summary = l(`Отправлено: ${sent}${failed ? `, ошибок: ${failed}` : ''}`, `Sent: ${sent}${failed ? `, errors: ${failed}` : ''}`, `Nosūtīts: ${sent}${failed ? `, kļūdas: ${failed}` : ''}`) + pendingNote;
+        if (suppressed) {
+            setFormError(l(
+                `Не отправлено: у клиента запрещены рассылки и приглашения (${suppressed}).`,
+                `Not sent: mailings and invitations are blocked for this client (${suppressed}).`,
+                `Nav nosūtīts: klientam aizliegti sūtījumi un ielūgumi (${suppressed}).`,
+            ));
+            if (sent) setMessage(summary);
+        } else {
+            setMessage(summary);
+        }
         await loadHolders();
     };
 
@@ -198,16 +214,19 @@ function useInvitationsPageState() {
 
     // Телефонное приглашение не использует email и персональные токены:
     // администратор копирует готовый текст и отправляет его по SMS или в мессенджере.
-    const sendPhoneInvites = async (userIds: string[]) => {
+    const sendPhoneInvites = async (userIds: string[]): Promise<{ processed: number; suppressed: number }> => {
         const { ok, data } = await sendSmsInvitationBatch(userIds, language);
         if (!ok) {
             setFormError(data.error === 'sms_provider_not_configured'
                 ? l('SMS-провайдер ещё не подключён', 'SMS provider is not connected yet', 'SMS pakalpojuma sniedzējs vēl nav pieslēgts')
                 : l('Не удалось отправить SMS', 'Failed to send SMS', 'Neizdevās nosūtīt SMS'));
-            return 0;
+            return { processed: 0, suppressed: 0 };
         }
-        return data.results?.length ?? 0;
+        return { processed: data.results?.length ?? 0, suppressed: data.suppressed ?? 0 };
     };
+    const suppressedNote = (count: number) => count
+        ? l(`; исключено из-за запрета рассылок: ${count}`, `; excluded because mailings are blocked: ${count}`, `; izslēgti sūtījumu aizlieguma dēļ: ${count}`)
+        : '';
 
     const handlePhoneMessage = async (h: Holder) => {
         if (!h.phone) return;
@@ -215,8 +234,11 @@ function useInvitationsPageState() {
         setFormError('');
         setMessage('');
         try {
-            const sent = await sendPhoneInvites([h.userId]);
-            if (sent) {
+            const { processed, suppressed } = await sendPhoneInvites([h.userId]);
+            if (suppressed) {
+                setFormError(l('Не отправлено: у клиента запрещены рассылки и приглашения.', 'Not sent: mailings and invitations are blocked for this client.', 'Nav nosūtīts: klientam aizliegti sūtījumi un ielūgumi.'));
+            }
+            if (processed) {
                 setMessage(l('Тестовая SMS-отправка выполнена', 'Simulated SMS sending completed', 'SMS testa sūtīšana pabeigta'));
                 await loadHolders();
             }
@@ -236,12 +258,15 @@ function useInvitationsPageState() {
         setFormError('');
         setMessage('');
         let sent = 0;
+        let suppressed = 0;
         try {
             for (let index = 0; index < ids.length; index += INVITE_BATCH) {
-                sent += await sendPhoneInvites(ids.slice(index, index + INVITE_BATCH));
+                const chunk = await sendPhoneInvites(ids.slice(index, index + INVITE_BATCH));
+                sent += chunk.processed;
+                suppressed += chunk.suppressed;
                 if (sent === 0 && formError) break;
             }
-            if (sent) setMessage(l(`Тестовых SMS обработано: ${sent}`, `Simulated SMS messages processed: ${sent}`, `Apstrādātas testa SMS: ${sent}`));
+            if (sent || suppressed) setMessage(l(`Тестовых SMS обработано: ${sent}`, `Simulated SMS messages processed: ${sent}`, `Apstrādātas testa SMS: ${sent}`) + suppressedNote(suppressed));
             setSelectedIds(new Set());
             await loadHolders();
         } finally {
@@ -277,7 +302,7 @@ function useInvitationsPageState() {
         bulkStopRequested.current = false;
         setFormError('');
         setMessage('');
-        const tally = { sent: 0, skipped: 0, failed: 0 };
+        const tally = { sent: 0, skipped: 0, failed: 0, suppressed: 0 };
         let requestFailed = false;
         try {
             for (let i = 0; i < ids.length; i += EMAIL_INVITE_BATCH) {
@@ -294,19 +319,20 @@ function useInvitationsPageState() {
                 tally.sent += chunkTally.sent;
                 tally.skipped += chunkTally.skipped;
                 tally.failed += chunkTally.failed;
+                tally.suppressed += chunkTally.suppressed;
                 setSelectedIds((prev) => {
                     const next = new Set(prev);
                     chunk.forEach((id) => next.delete(id));
                     return next;
                 });
-                setBulkProgress({ processed: tally.sent + tally.skipped + tally.failed, total: ids.length });
+                setBulkProgress({ processed: tally.sent + tally.skipped + tally.failed + tally.suppressed, total: ids.length });
             }
-            const unprocessed = ids.length - tally.sent - tally.skipped - tally.failed;
+            const unprocessed = ids.length - tally.sent - tally.skipped - tally.failed - tally.suppressed;
             const counts = l(
                 `Отправлено: ${tally.sent}, пропущено: ${tally.skipped}, ошибок: ${tally.failed}${unprocessed ? `, не обработано: ${unprocessed}` : ''} (из ${ids.length})`,
                 `Sent: ${tally.sent}, skipped: ${tally.skipped}, errors: ${tally.failed}${unprocessed ? `, not processed: ${unprocessed}` : ''} (of ${ids.length})`,
                 `Nosūtīts: ${tally.sent}, izlaists: ${tally.skipped}, kļūdas: ${tally.failed}${unprocessed ? `, nav apstrādāts: ${unprocessed}` : ''} (no ${ids.length})`
-            );
+            ) + suppressedNote(tally.suppressed);
             const outcome = bulkInviteOutcome(tally, { requestFailed, stopped: bulkStopRequested.current });
             const retryHint = requestFailed
                 ? l(' Необработанные клиенты остались выбранными — можно повторить: уже приглашённым письмо повторно не уйдёт.', ' Unprocessed clients stay selected — you can retry: clients already invited will not be emailed again.', ' Neapstrādātie klienti palika atlasīti — varat mēģināt vēlreiz: jau uzaicinātajiem e-pasts atkārtoti netiks sūtīts.')
@@ -393,9 +419,12 @@ function useInvitationsPageState() {
             if (json.created && !isTechEmail(email)) {
                 const { ok: inviteOk, data: inviteJson } = await sendInvitationBatch([json.userId]);
                 const sent = inviteOk && (inviteJson.results ?? []).some((r) => r.status === 'sent');
+                const blocked = inviteOk && (inviteJson.results ?? []).some((r) => r.status === 'suppressed');
                 parts.push(
                     sent
                         ? l('приглашение отправлено', 'invitation sent', 'ielūgums nosūtīts')
+                        : blocked
+                        ? l('приглашение не отправлено: для этого email запрещены рассылки и приглашения', 'invitation not sent: mailings and invitations are blocked for this email', 'ielūgums nav nosūtīts: šim e-pastam aizliegti sūtījumi un ielūgumi')
                         : l('приглашение не отправлено — отправьте вручную из таблицы', 'invitation not sent — send it manually from the table', 'ielūgums nav nosūtīts — nosūtiet to no tabulas')
                 );
             }
@@ -414,6 +443,7 @@ function useInvitationsPageState() {
             // или быть скрыт активным фильтром контактов и остаться незамеченным.
             setHolderContactFilter('all');
             setHolderInvitationFilter('all');
+            setHolderMailingFilter('all');
             setHolderPage(0);
             setHolderSearch(email);
             await loadCampaign();
@@ -549,6 +579,9 @@ function useInvitationsPageState() {
         setHolderContactFilter,
         holderInvitationFilter,
         setHolderInvitationFilter,
+        holderMailingFilter,
+        setHolderMailingFilter,
+        eligibleSuppressedCount,
         segment,
         setSegment,
         cardDialogOpen,

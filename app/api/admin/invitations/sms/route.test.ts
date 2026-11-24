@@ -38,6 +38,7 @@ function db(s: State) {
   }
 }
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => {
@@ -149,7 +150,7 @@ describe('POST /api/admin/invitations/sms', () => {
     expect(body).toEqual({ simulated: true, results: [
       { userId: 'u1', phone: '+37120000001', status: 'simulated', message: 'Sveiki, Anna Liepa! Karte 1001: https://example.test/auth/register' },
       { userId: 'u2', phone: '+37120000002', status: 'simulated', message: 'Sveiki, Jānis Ozols! Karte 1002: https://example.test/auth/register' },
-    ] })
+    ], suppressed: 0 })
     expect(h.state.deliveries).toEqual([
       { userId: 'u1', channel: 'sms', status: 'sent' },
       { userId: 'u2', channel: 'sms', status: 'sent' },
@@ -195,7 +196,22 @@ describe('POST /api/admin/invitations/sms', () => {
   it('records nothing for a batch without eligible clients', async () => {
     h.users = []
     const res = await post(['u9'])
-    expect(await res.json()).toEqual({ simulated: true, results: [] })
+    expect(await res.json()).toEqual({ simulated: true, results: [], suppressed: 0 })
     expect(h.state).toEqual({ deliveries: [], audits: [] })
+  })
+})
+
+describe('POST /api/admin/invitations/sms — «Рассылки запрещены»', () => {
+  it('leaves blocked clients out of the phone invitation and reports how many', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.suppressedUserIds).mockResolvedValueOnce(['u1'])
+
+    const res = await post(['u1', 'u2'], 'sms-blocked')
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.suppressed).toBe(1)
+    expect(body.results.map((r: { userId: string }) => r.userId)).toEqual(['u2'])
+    expect(h.state.deliveries.map((d) => d.userId)).toEqual(['u2'])
   })
 })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
-import { sendEmail } from '@/lib/mailer'
+import { sendMarketingEmail } from '@/lib/marketing-suppression'
 import { getSiteUrl } from '@/lib/site-url'
 import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
 import { CUSTOMER_SEGMENTS, getCustomerRecipients, type CustomerSegment } from '@/lib/admin/customer-segments'
@@ -122,7 +122,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       const personalHtml = wrapHtml(renderVars(bodyText, vars), unsubUrl)
 
       try {
-        await sendEmail(recipient.email, personalSubject, personalHtml, { listUnsubscribeUrl: unsubUrl })
+        // Re-checked right before SMTP: a block set while this broadcast runs still applies.
+        const delivery = await sendMarketingEmail(recipient.email, personalSubject, personalHtml, { category: 'broadcast' }, { listUnsubscribeUrl: unsubUrl })
+        if (delivery === 'suppressed') {
+          skipped++
+          continue
+        }
         sent++
       } catch {
         failed++

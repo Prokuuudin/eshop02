@@ -8,6 +8,7 @@ import { interpolate } from '@/lib/invitation-emails'
 import { getSiteUrl } from '@/lib/site-url'
 import { logApiError } from '@/lib/observability'
 import { INVITE_BATCH_SIZE, resolveInviteLang } from '@/lib/invitations'
+import { suppressedUserIds } from '@/lib/marketing-suppression'
 import { activeCardNumberFilter, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 
 export const runtime = 'nodejs'
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!template) return NextResponse.json({ error: 'template_not_found' }, { status: 500 })
     const revokedCardPolicy = await getRevokedCardPolicy()
 
-    const users = await prisma.user.findMany({
+    const candidates = await prisma.user.findMany({
       where: {
         id: { in: userIds },
         cardNumber: activeCardNumberFilter(revokedCardPolicy),
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest): Promise<Response> {
       },
       select: { id: true, name: true, phone: true, cardNumber: true },
     })
+    // «Запретить рассылки и приглашения» covers the phone invitation as well.
+    const suppressed = new Set(await suppressedUserIds(prisma, candidates.map((user) => user.id)))
+    const users = candidates.filter((user) => !suppressed.has(user.id))
 
     // Development-only transport. Production must never report a fake delivery.
     if (process.env.NODE_ENV === 'production') {
@@ -83,7 +87,9 @@ export async function POST(req: NextRequest): Promise<Response> {
         registration_url: registrationUrl,
       }),
     }))
-    return NextResponse.json(recorded.replayed ? { simulated: true, results, replayed: true } : { simulated: true, results })
+    return NextResponse.json(recorded.replayed
+      ? { simulated: true, results, suppressed: suppressed.size, replayed: true }
+      : { simulated: true, results, suppressed: suppressed.size })
   } catch (error) {
     if (isRevokedCardPolicyError(error)) {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })

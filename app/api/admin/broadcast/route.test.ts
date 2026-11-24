@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   appendServerAudit: vi.fn(),
 }))
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/server-auth', () => ({ requireAdmin: vi.fn() }))
@@ -260,5 +261,20 @@ describe('POST /api/admin/broadcast — repeats and concurrency', () => {
     await request(THREE, 'bcast-key-0006')
     await request(THREE, 'bcast-key-0007')
     expect(sendEmail).toHaveBeenCalledTimes(6)
+  })
+})
+
+describe('POST /api/admin/broadcast — «Рассылки запрещены»', () => {
+  it('skips a recipient blocked after the list was read (checked right before SMTP)', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.sendMarketingEmail).mockResolvedValueOnce('suppressed')
+
+    const res = await request([
+      { email: 'late@test.com', firstName: 'Late', lastName: 'Block' },
+      { email: 'ok@test.com', firstName: 'Ok', lastName: 'Two' },
+    ])
+
+    expect(await res.json()).toEqual({ ok: true, sent: 1, failed: 0, skipped: 1, failedEmails: [] })
+    expect(vi.mocked(sendEmail).mock.calls.map(([to]) => to)).toEqual(['ok@test.com'])
   })
 })

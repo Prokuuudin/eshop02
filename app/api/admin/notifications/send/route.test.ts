@@ -16,6 +16,7 @@ const {
   notificationCreateManyMock: vi.fn(),
 }))
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: getServerUserMock }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: vi.fn() }))
 vi.mock('@/lib/mailer', () => ({ sendEmail: sendEmailMock }))
@@ -271,5 +272,37 @@ describe('POST /api/admin/notifications/send', () => {
       expect.objectContaining({ filename: 'Greeting.png', contentType: 'image/png' }),
       expect.objectContaining({ filename: 'Offer.pdf', contentType: 'application/pdf' }),
     ] })
+  })
+})
+
+describe('POST /api/admin/notifications/send — «Рассылки запрещены»', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('drops only the email channel for a blocked client and reports the count; the in-app notification is kept', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.suppressedUserIds).mockResolvedValueOnce(['u1'])
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    notificationCreateManyMock.mockResolvedValue({ count: 2 })
+    userFindManyMock.mockResolvedValue([
+      { id: 'u1', email: 'blocked@example.com', notificationChannel: 'both', notificationsSubscribed: true, marketingConsent: true },
+      { id: 'u2', email: 'ok@example.com', notificationChannel: 'both', notificationsSubscribed: true, marketingConsent: true },
+    ])
+
+    const res = await POST(makeRequest({ userIds: ['u1', 'u2'], title: 'T', message: 'M', type: 'info' }))
+
+    expect(await res.json()).toMatchObject({ appDelivered: 2, emailsSent: 1, marketingSuppressedSkipped: 1 })
+    expect(sendEmailMock.mock.calls.map(([to]) => to)).toEqual(['ok@example.com'])
+  })
+
+  it('counts a block found at send time as suppressed, not as sent or failed', async () => {
+    const suppression = await import('@/lib/marketing-suppression')
+    vi.mocked(suppression.sendMarketingEmail).mockResolvedValueOnce('suppressed')
+    getServerUserMock.mockResolvedValue({ id: 'a1', platformRole: 'admin' })
+    userFindManyMock.mockResolvedValue([{ id: 'u1', email: 'late@example.com', notificationChannel: 'email', notificationsSubscribed: true, marketingConsent: true }])
+
+    const res = await POST(makeRequest({ userIds: ['u1'], title: 'T', message: 'M', type: 'info' }))
+
+    expect(await res.json()).toMatchObject({ emailsSent: 0, emailsFailed: 0, marketingSuppressedSkipped: 1 })
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 })

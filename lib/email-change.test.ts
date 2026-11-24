@@ -23,6 +23,7 @@ const { calls, tx, appendServerAuditMock } = vi.hoisted(() => {
   }
 })
 
+vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/prisma', () => ({ prisma: { $transaction: (fn: (client: typeof tx) => unknown) => fn(tx) } }))
 vi.mock('@/lib/server-audit', () => ({ appendServerAudit: appendServerAuditMock }))
@@ -83,6 +84,12 @@ describe('confirmEmailChange under concurrency', () => {
     expect(tx.user.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { email: { equals: 'new@example.test', mode: 'insensitive' }, NOT: { id: USER_ID } },
     }))
+  })
+
+  it('carries «Рассылки запрещены» from the old to the confirmed new address in the same transaction', async () => {
+    const { carryMarketingSuppression } = await import('@/lib/marketing-suppression')
+    await confirmEmailChange(TOKEN, request, null)
+    expect(carryMarketingSuppression).toHaveBeenCalledWith(tx, 'old@example.test', 'new@example.test')
   })
 
   it('locks on the normalized address, so two accounts claiming it serialize', async () => {

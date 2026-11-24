@@ -7,6 +7,7 @@ import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND, consumePendingPreview,
 } from './manual-import-pending'
 import { evaluatePriceFeed } from './manual-price-preflight'
+import { PRODUCT_RETAIL_COLUMNS_OMIT } from '@/lib/prisma-omit'
 import {
   applyRetailPrices, diffRetailPrices, isRetailPriceSyncActive, restoreRetailPrices, snapshotRetailPrices, type RetailSnapshotRow,
 } from './retail-price'
@@ -22,6 +23,49 @@ type Snapshot = { rows: SnapshotRow[]; fingerprint: string }
 type SafeBackup = { version: 3; mode: typeof MANUAL_IMPORT_MODE; runId: string; sha256: string; rows: SnapshotRow[]; afterFingerprint: string; afterExtraHash: string; restored?: boolean; retailRows?: RetailSnapshotRow[] }
 const rowSignature = (row: SnapshotRow) => JSON.stringify([row.id, row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice])
 
+const fingerprintSql = (source: string) =>
+  `SELECT encode(sha256(convert_to(COALESCE(string_agg(row_to_json(p)::text, ',' ORDER BY p.id), ''), 'UTF8')), 'hex') AS fingerprint FROM ${source} p`
+/** Whole-row Product fingerprint stored as afterFingerprint (unchanged since backup v3). */
+export async function productFingerprint(db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>): Promise<string> {
+  const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(fingerprintSql('"Product"'))
+  return rows[0].fingerprint
+}
+const RETAIL_MIGRATION_COLUMNS: ReadonlySet<string> = new Set(Object.keys(PRODUCT_RETAIL_COLUMNS_OMIT))
+const quoteIdent = (name: string) => `"${name.replace(/"/g, '""')}"`
+
+/**
+ * Whole-row Product fingerprint as it was before the retail migration: every current
+ * column except the six it added, in table order. ADD COLUMN appends, so for an
+ * unchanged catalogue this is byte-identical to a pre-migration fingerprint, and any
+ * change to a pre-existing column still changes it. Null when the columns are absent
+ * (then the plain fingerprint already is the pre-migration one).
+ */
+export async function preRetailMigrationFingerprint(db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>): Promise<string | null> {
+  const columns = await db.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT attname AS name FROM pg_attribute WHERE attrelid = '"Product"'::regclass AND attnum > 0 AND NOT attisdropped ORDER BY attnum`,
+  )
+  if (!columns.some(({ name }) => RETAIL_MIGRATION_COLUMNS.has(name))) return null
+  const kept = columns.filter(({ name }) => !RETAIL_MIGRATION_COLUMNS.has(name)).map(({ name }) => quoteIdent(name))
+  const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(fingerprintSql(`(SELECT ${kept.join(', ')} FROM "Product")`))
+  return rows[0].fingerprint
+}
+
+/**
+ * Restore guard. The catalogue must be exactly as the import left it. A backup without
+ * retailRows (taken before the retail migration, or with the retail step off) never
+ * restores retail columns, so it may also match on the pre-migration column set; a
+ * backup with retailRows restores them and therefore needs the full-row match.
+ */
+export async function restoreFingerprintMatches(
+  db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>,
+  backup: Pick<SafeBackup, 'afterFingerprint' | 'retailRows'>,
+  currentFullFingerprint: string,
+): Promise<boolean> {
+  if (currentFullFingerprint === backup.afterFingerprint) return true
+  if (backup.retailRows) return false
+  return (await preRetailMigrationFingerprint(db)) === backup.afterFingerprint
+}
+
 // Includes identity, deletion, revisions and timestamps for ALL Products. A sale
 // or an ABA change must invalidate recovery, even when the current stock is equal.
 async function snapshot(db: ExtendedPrismaClient): Promise<Snapshot> {
@@ -29,10 +73,7 @@ async function snapshot(db: ExtendedPrismaClient): Promise<Snapshot> {
     `SELECT id, "externalId", price::text AS price, "erpPriceMissing", "manualPriceApproved", "manualApprovedPrice"::text AS "manualApprovedPrice"
      FROM "Product" WHERE "externalId" IS NOT NULL AND NOT "isDeleted" ORDER BY id`,
   )
-  const hashes = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(
-    `SELECT encode(sha256(convert_to(COALESCE(string_agg(row_to_json(p)::text, ',' ORDER BY p.id), ''), 'UTF8')), 'hex') AS fingerprint FROM "Product" p`,
-  )
-  return { rows, fingerprint: hashes[0].fingerprint }
+  return { rows, fingerprint: await productFingerprint(db) }
 }
 
 async function lockTransaction(tx: ExtendedPrismaClient, runId: string) {
@@ -240,7 +281,7 @@ export async function restoreAtomic(db: ExtendedPrismaClient, key: string, execu
         if (run) await tx.syncRun.update({ where: { id: run.id }, data: { status: 'skipped', finishedAt: new Date(), errorSample: json({ kind: MANUAL_IMPORT_RESTORE_KIND, mode: MANUAL_IMPORT_MODE, backupKey: key, reason: 'already_restored' }) } })
         return result
       }
-      if (current.fingerprint !== backup.afterFingerprint || await extraHash(tx) !== backup.afterExtraHash) throw new Error('restore_conflict: catalog changed after import; reconciliation required')
+      if (!await restoreFingerprintMatches(tx, backup, current.fingerprint) || await extraHash(tx) !== backup.afterExtraHash) throw new Error('restore_conflict: catalog changed after import; reconciliation required')
       // JSONB canonicalizes object key order; compare explicit fields rather
       // than treating serialization order as a Product change.
       const currentById = new Map(current.rows.map(row => [row.id, rowSignature(row)]))

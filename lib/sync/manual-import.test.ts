@@ -49,6 +49,8 @@ function makeDb(overrides: Partial<DbState> = {}) {
   const db = {
     $queryRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => {
       if (sql.includes('information_schema.columns')) return [{ count: state.retailColumns ?? 3 }]
+      // Column list for the pre-migration fingerprint; real-SQL coverage is in manual-import-restore-compat.test.ts.
+      if (sql.includes('FROM pg_attribute')) return []
       if (sql.includes('AS owned')) return [{ owned: true }]
       if (sql.includes('AS closed')) return [{ closed: true }]
       if (sql.includes('AS fingerprint')) return [{ fingerprint: sha256Hex(JSON.stringify(sql.includes('FROM (SELECT') ? state.linked.map(row => [row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice]) : state.linked)) }]

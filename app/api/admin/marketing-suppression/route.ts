@@ -5,9 +5,12 @@ import { prisma } from '@/lib/prisma'
 import { requireAdmin, requireAdminPermission } from '@/lib/server-auth'
 import { guardOrigin } from '@/lib/api-guard'
 import { appendServerAudit } from '@/lib/server-audit'
+import { getPermissionAccessLevel } from '@/lib/admin-permissions'
 import {
   addMarketingSuppression,
   CONSENT_NOTE_MAX_LENGTH,
+  getMarketingSuppressions,
+  normalizeMarketingEmail,
   removeMarketingSuppression,
   SUPPRESSION_REASON_MAX_LENGTH,
 } from '@/lib/marketing-suppression'
@@ -45,6 +48,10 @@ export async function POST(req: NextRequest): Promise<Response> {
   if (blocked) return blocked
   const caller = await requireAdminPermission('customers.read')
   if (caller instanceof NextResponse) return caller
+  // Explicit staff check on top of the permission: only a platform admin (incl. Super Admin)
+  // or a staff manager may change mailing status. A company-owner teamRole ('admin') or any
+  // future role that is granted customers.read for viewing does not qualify.
+  if (getPermissionAccessLevel(caller) === 'none') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const parsed = setSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
@@ -87,7 +94,7 @@ export async function DELETE(req: NextRequest): Promise<Response> {
   if (blocked) return blocked
   const caller = await requireAdmin()
   if (caller instanceof NextResponse) return caller
-  if (caller.platformRole !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  if (getPermissionAccessLevel(caller) !== 'admin') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
 
   const parsed = liftSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) {
@@ -101,6 +108,11 @@ export async function DELETE(req: NextRequest): Promise<Response> {
       const [target] = await tx.$queryRaw<TargetRow[]>`
         SELECT email, "platformRole" FROM "User" WHERE id = ${userId} FOR UPDATE`
       if (!target) throw new RouteError('not_found', 404)
+      // A GDPR-erasure entry is a legal record of the erased person's address, not a
+      // marketing preference of this account: the client-card switch never removes it.
+      const current = (await getMarketingSuppressions([target.email], tx)).get(normalizeMarketingEmail(target.email))
+      if (!current) throw new RouteError('not_suppressed', 409)
+      if (current.source === 'erasure') throw new RouteError('erasure_protected', 409)
       const removed = await removeMarketingSuppression(tx, target.email)
       if (!removed) throw new RouteError('not_suppressed', 409)
       await appendServerAudit(tx, req, caller, {

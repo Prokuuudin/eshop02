@@ -447,7 +447,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     }}
                 />
                 <MarketingSuppressionDialog
-                    key={suppressionRequest ? `${suppressionRequest.holder.id}:${suppressionRequest.mode}` : 'none'}
+                    key={suppressionRequest ? `suppression:${suppressionRequest.holder.id}:${suppressionRequest.mode}` : 'suppression:none'}
                     request={suppressionRequest}
                     l={l}
                     onClose={() => setSuppressionRequest(null)}

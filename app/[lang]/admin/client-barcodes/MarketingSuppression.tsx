@@ -31,6 +31,8 @@ function errorText(l: L, code: string | undefined, status: number): string {
     switch (code) {
         case 'already_suppressed':
             return l('Запрет уже установлен.', 'The block is already set.', 'Aizliegums jau ir iestatīts.');
+        case 'erasure_protected':
+            return l('Этот запрет связан с удалением персональных данных (GDPR) — снять его здесь нельзя.', 'This block comes from a personal data erasure (GDPR) and cannot be lifted here.', 'Šis aizliegums ir saistīts ar personas datu dzēšanu (VDAR) — to šeit atcelt nevar.');
         case 'not_suppressed':
             return l('Запрет уже снят.', 'The block has already been lifted.', 'Aizliegums jau ir atcelts.');
         case 'consent_confirmation_required':
@@ -73,6 +75,8 @@ export function MarketingSuppressionSwitch({ holder, l, locale, canLift, onReque
     const id = useId();
     const suppression = holder.marketingSuppression ?? null;
     const suppressed = suppression !== null;
+    // GDPR-erasure entries are never lifted from the client card (the server refuses it too).
+    const erasure = suppression?.source === 'erasure';
     const details = suppression
         ? [
               `${l('С', 'Since', 'Kopš')} ${new Date(suppression.since).toLocaleDateString(locale)}`,
@@ -80,7 +84,9 @@ export function MarketingSuppressionSwitch({ holder, l, locale, canLift, onReque
                   ? `${l('установил', 'set by', 'iestatīja')} ${suppression.setByName}`
                   : suppression.source === 'self_service'
                     ? l('клиент отписался сам', 'unsubscribed by the client', 'klients atteicās pats')
-                    : null,
+                    : erasure
+                      ? l('удаление данных (GDPR)', 'data erasure (GDPR)', 'datu dzēšana (VDAR)')
+                      : null,
               suppression.reason ? `${l('причина', 'reason', 'iemesls')}: ${suppression.reason}` : null,
           ].filter(Boolean).join(' · ')
         : '';
@@ -90,14 +96,19 @@ export function MarketingSuppressionSwitch({ holder, l, locale, canLift, onReque
                 <Switch
                     id={id}
                     checked={suppressed}
-                    disabled={suppressed && !canLift}
+                    disabled={suppressed && (!canLift || erasure)}
                     onCheckedChange={(checked) => onRequest(holder, checked ? 'set' : 'lift')}
                     aria-label={l('Запретить рассылки и приглашения', 'Block mailings and invitations', 'Aizliegt sūtījumus un ielūgumus')}
                 />
                 <span className="whitespace-nowrap">{l('Запретить рассылки и приглашения', 'Block mailings and invitations', 'Aizliegt sūtījumus un ielūgumus')}</span>
             </label>
             {suppressed && details && <p className="w-56 whitespace-normal text-[11px] text-muted-foreground">{details}</p>}
-            {suppressed && !canLift && (
+            {erasure && (
+                <p className="w-56 whitespace-normal text-[11px] text-muted-foreground">
+                    {l('Запрет из-за удаления данных снять нельзя.', 'A block from data erasure cannot be lifted.', 'Datu dzēšanas aizliegumu nevar atcelt.')}
+                </p>
+            )}
+            {suppressed && !canLift && !erasure && (
                 <p className="w-56 whitespace-normal text-[11px] text-muted-foreground">
                     {l('Снять запрет может только администратор.', 'Only an administrator can lift the block.', 'Aizliegumu var atcelt tikai administrators.')}
                 </p>

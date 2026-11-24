@@ -20,6 +20,8 @@ vi.mock('@/lib/server-audit', () => ({ appendServerAudit: h.appendServerAudit })
 vi.mock('@/lib/prisma', () => {
   const kvClient = (kv: Record<string, unknown>) => ({
     findUnique: async ({ where }: { where: { key: string } }) => (where.key in kv ? { key: where.key, value: structuredClone(kv[where.key]) } : null),
+    findMany: async ({ where }: { where: { key: { in: string[] } } }) =>
+      where.key.in.filter((key) => key in kv).map((key) => ({ key, value: structuredClone(kv[key]) })),
     upsert: async ({ where, create }: { where: { key: string }; create: { key: string; value: unknown } }) => {
       if (!(where.key in kv)) kv[create.key] = structuredClone(create.value)
     },
@@ -110,6 +112,24 @@ describe('POST /api/admin/marketing-suppression — set the block', () => {
     expect(h.kv['marketing:optout:staff@shop.lv']).toBeUndefined()
   })
 
+  it.each([
+    ['a company owner (teamRole admin) on a customer account', { id: 'own-1', email: 'owner@salon.lv', platformRole: 'customer', teamRole: 'admin' }],
+    ['a buyer', { id: 'buy-1', email: 'buyer@salon.lv', platformRole: 'customer', teamRole: 'buyer' }],
+    ['a plain customer', { id: 'cus-1', email: 'c@salon.lv', platformRole: 'customer' }],
+  ])('refuses %s even if a customers.read permission were granted', async (_label, caller) => {
+    h.requireAdminPermission.mockResolvedValue(caller)
+    const res = await call('POST', { userId: 'c1' })
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ error: 'forbidden' })
+    expect(h.kv).toEqual({})
+    expect(h.audits).toEqual([])
+  })
+
+  it('lets a Super Admin set the block', async () => {
+    h.requireAdminPermission.mockResolvedValue({ ...ADMIN, id: 'sa-1', superAdmin: true })
+    expect((await call('POST', { userId: 'c1' })).status).toBe(200)
+  })
+
   it('rejects callers without customer access before reading anything', async () => {
     h.requireAdminPermission.mockResolvedValue(NextResponse.json({ error: 'forbidden' }, { status: 403 }))
     expect((await call('POST', { userId: 'c1' })).status).toBe(403)
@@ -176,6 +196,21 @@ describe('DELETE /api/admin/marketing-suppression — lift the block', () => {
       after: { marketingSuppressed: false, newConsentConfirmed: true },
       reason: 'Signed consent form, 24.11.2026',
     }])
+  })
+
+  it('never lifts a GDPR-erasure entry from the client card, even with consent', async () => {
+    h.kv[KEY] = { email: 'client@example.lv', optedOutAt: '2026-11-01T00:00:00.000Z', source: 'erasure' }
+    const res = await call('DELETE', { userId: 'c1', consentConfirmed: true, consentNote: 'Signed consent form' })
+    expect(res.status).toBe(409)
+    expect(await res.json()).toEqual({ error: 'erasure_protected' })
+    expect(h.kv[KEY]).toMatchObject({ source: 'erasure' })
+    expect(h.audits).toEqual([])
+  })
+
+  it('refuses a lift by a non-admin even if users.manage were granted', async () => {
+    h.requireAdmin.mockResolvedValue(MANAGER)
+    expect((await call('DELETE', { userId: 'c1', consentConfirmed: true, consentNote: 'phone call' })).status).toBe(403)
+    expect(h.kv[KEY]).toBeDefined()
   })
 
   it('is admin-only: a manager cannot lift it', async () => {

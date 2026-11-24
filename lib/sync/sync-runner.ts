@@ -3,6 +3,7 @@ import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { getErpExtraData, mergeEnabledPriceTiers, replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { getSyncRules } from './sync-rules'
+import { applyRetailPrices, isRetailPriceSyncActive, retailRowsFromErpProducts } from './retail-price'
 import { withRetry } from './retry'
 import { SyncLogger, type SyncError } from './logger'
 import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
@@ -100,6 +101,9 @@ export async function runSync(
   const seenExternalIds = new Set<string>()
   const extraDataByExternalId: Record<string, ErpExtraData> = {}
   const rules = getSyncRules()
+  // Retail price1 is an extra, separate write; when off (default) this run is unchanged.
+  // A failing probe means "retail off", never an aborted run holding the sync lease.
+  const retailEnabled = rules.enabledPriceTiers.has('price1') && await isRetailPriceSyncActive(db).catch(() => false)
   const currentExtraData = await getErpExtraData(db)
 
   try {
@@ -203,6 +207,7 @@ export async function runSync(
         try {
           const committed = await withRetry(() => db.$transaction(async tx => {
             const affected = await upsertProducts(tx as ExtendedPrismaClient, valid, runId)
+            if (retailEnabled) await applyRetailPrices(tx as ExtendedPrismaClient, retailRowsFromErpProducts(valid))
             await tx.syncRun.update({ where: { id: runId }, data: { productsTotal, productsSynced: productsSynced + affected } })
             return affected
           }), {

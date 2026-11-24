@@ -7,6 +7,10 @@ import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND, consumePendingPreview,
 } from './manual-import-pending'
 import { evaluatePriceFeed } from './manual-price-preflight'
+import { PRODUCT_RETAIL_COLUMNS_OMIT } from '@/lib/prisma-omit'
+import {
+  applyRetailPrices, diffRetailPrices, isRetailPriceSyncActive, restoreRetailPrices, snapshotRetailPrices, type RetailSnapshotRow,
+} from './retail-price'
 import type { ManualApplyDeps, ManualApplyOutcome, RestoreResult } from './manual-import'
 
 const LEASE_MS = 30 * 60 * 1000
@@ -14,8 +18,53 @@ const SHA_PREFIX = 'grins-manual-import-applied:prices-only:'
 const json = (value: unknown) => value as Prisma.InputJsonValue
 type SnapshotRow = { id: string; externalId: string; price: string; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }
 type Snapshot = { rows: SnapshotRow[]; fingerprint: string }
-type SafeBackup = { version: 3; mode: typeof MANUAL_IMPORT_MODE; runId: string; sha256: string; rows: SnapshotRow[]; afterFingerprint: string; afterExtraHash: string; restored?: boolean }
+// retailRows exists only when the retail price1 step ran; older/disabled backups lack it
+// and their restore never touches the retail columns.
+type SafeBackup = { version: 3; mode: typeof MANUAL_IMPORT_MODE; runId: string; sha256: string; rows: SnapshotRow[]; afterFingerprint: string; afterExtraHash: string; restored?: boolean; retailRows?: RetailSnapshotRow[] }
 const rowSignature = (row: SnapshotRow) => JSON.stringify([row.id, row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice])
+
+const fingerprintSql = (source: string) =>
+  `SELECT encode(sha256(convert_to(COALESCE(string_agg(row_to_json(p)::text, ',' ORDER BY p.id), ''), 'UTF8')), 'hex') AS fingerprint FROM ${source} p`
+/** Whole-row Product fingerprint stored as afterFingerprint (unchanged since backup v3). */
+export async function productFingerprint(db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>): Promise<string> {
+  const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(fingerprintSql('"Product"'))
+  return rows[0].fingerprint
+}
+const RETAIL_MIGRATION_COLUMNS: ReadonlySet<string> = new Set(Object.keys(PRODUCT_RETAIL_COLUMNS_OMIT))
+const quoteIdent = (name: string) => `"${name.replace(/"/g, '""')}"`
+
+/**
+ * Whole-row Product fingerprint as it was before the retail migration: every current
+ * column except the six it added, in table order. ADD COLUMN appends, so for an
+ * unchanged catalogue this is byte-identical to a pre-migration fingerprint, and any
+ * change to a pre-existing column still changes it. Null when the columns are absent
+ * (then the plain fingerprint already is the pre-migration one).
+ */
+export async function preRetailMigrationFingerprint(db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>): Promise<string | null> {
+  const columns = await db.$queryRawUnsafe<Array<{ name: string }>>(
+    `SELECT attname AS name FROM pg_attribute WHERE attrelid = '"Product"'::regclass AND attnum > 0 AND NOT attisdropped ORDER BY attnum`,
+  )
+  if (!columns.some(({ name }) => RETAIL_MIGRATION_COLUMNS.has(name))) return null
+  const kept = columns.filter(({ name }) => !RETAIL_MIGRATION_COLUMNS.has(name)).map(({ name }) => quoteIdent(name))
+  const rows = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(fingerprintSql(`(SELECT ${kept.join(', ')} FROM "Product")`))
+  return rows[0].fingerprint
+}
+
+/**
+ * Restore guard. The catalogue must be exactly as the import left it. A backup without
+ * retailRows (taken before the retail migration, or with the retail step off) never
+ * restores retail columns, so it may also match on the pre-migration column set; a
+ * backup with retailRows restores them and therefore needs the full-row match.
+ */
+export async function restoreFingerprintMatches(
+  db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>,
+  backup: Pick<SafeBackup, 'afterFingerprint' | 'retailRows'>,
+  currentFullFingerprint: string,
+): Promise<boolean> {
+  if (currentFullFingerprint === backup.afterFingerprint) return true
+  if (backup.retailRows) return false
+  return (await preRetailMigrationFingerprint(db)) === backup.afterFingerprint
+}
 
 // Includes identity, deletion, revisions and timestamps for ALL Products. A sale
 // or an ABA change must invalidate recovery, even when the current stock is equal.
@@ -24,10 +73,7 @@ async function snapshot(db: ExtendedPrismaClient): Promise<Snapshot> {
     `SELECT id, "externalId", price::text AS price, "erpPriceMissing", "manualPriceApproved", "manualApprovedPrice"::text AS "manualApprovedPrice"
      FROM "Product" WHERE "externalId" IS NOT NULL AND NOT "isDeleted" ORDER BY id`,
   )
-  const hashes = await db.$queryRawUnsafe<Array<{ fingerprint: string }>>(
-    `SELECT encode(sha256(convert_to(COALESCE(string_agg(row_to_json(p)::text, ',' ORDER BY p.id), ''), 'UTF8')), 'hex') AS fingerprint FROM "Product" p`,
-  )
-  return { rows, fingerprint: hashes[0].fingerprint }
+  return { rows, fingerprint: await productFingerprint(db) }
 }
 
 async function lockTransaction(tx: ExtendedPrismaClient, runId: string) {
@@ -86,6 +132,9 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
+  // Decided inside the locked transaction (no DDL can interleave there); the same answer
+  // then covers the backup, the write and the journal entry.
+  let retailEnabled = false
   const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
   const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'manual', errorSample: json(base) } })
   const runId = run.id
@@ -140,13 +189,18 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
         return { status: 'rejected', error: 'preflight_failed', hard: preflight.hard, runId } as ManualApplyOutcome
       }
       stage = 'backup'
+      retailEnabled = await isRetailPriceSyncActive(tx)
+      if (retailEnabled) Object.assign(base, { retailWriteFields: ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] })
       const before = await snapshot(tx)
       const identities = new Set(before.rows.map(row => row.externalId))
       if (identities.size !== before.rows.length) throw new Error('duplicate_claimants')
       const valid = products.filter(product => identities.has(product.externalId))
       backupKey = `${BACKUP_KEY_PREFIX}${now.toISOString()}:${input.previewId}`
       Object.assign(base, { backupKey, stage: 'applying', warnings: preflight.warnings, metrics: preflight.metrics, changes: { price: evaluation.summary.priceChanges, stock: evaluation.summary.stockChanges } })
-      const backup: SafeBackup = { version: 3, mode: MANUAL_IMPORT_MODE, runId, sha256: input.sha256, rows: before.rows, afterFingerprint: '', afterExtraHash: '' }
+      const backup: SafeBackup = {
+        version: 3, mode: MANUAL_IMPORT_MODE, runId, sha256: input.sha256, rows: before.rows, afterFingerprint: '', afterExtraHash: '',
+        ...(retailEnabled && { retailRows: await snapshotRetailPrices(tx) }),
+      }
       await tx.keyValueSetting.create({ data: { key: backupKey, value: json(backup) } })
       stage = 'applying'
       let affected = 0
@@ -154,6 +208,12 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
         const batch = valid.slice(index, index + 200)
         affected += await tx.$executeRawUnsafe(buildManualPriceQuery(batch.length), ...batch.flatMap(product => [product.externalId, product.price.toFixed(2)]))
       }
+      // Separate retail-only statement after the unchanged B2B one; the after-fingerprint
+      // below covers both, so a later restore detects any interleaved change.
+      const retailAffected = retailEnabled
+        ? await applyRetailPrices(tx, valid.map(product => ({ externalId: product.externalId, retailPrice: product.retailPrice ?? null })))
+        : undefined
+      if (retailAffected !== undefined) Object.assign(base, { retailAffected })
       backup.afterFingerprint = (await snapshot(tx)).fingerprint
       backup.afterExtraHash = await extraHash(tx)
       await tx.keyValueSetting.update({ where: { key: backupKey }, data: { value: json(backup) } })
@@ -221,12 +281,14 @@ export async function restoreAtomic(db: ExtendedPrismaClient, key: string, execu
         if (run) await tx.syncRun.update({ where: { id: run.id }, data: { status: 'skipped', finishedAt: new Date(), errorSample: json({ kind: MANUAL_IMPORT_RESTORE_KIND, mode: MANUAL_IMPORT_MODE, backupKey: key, reason: 'already_restored' }) } })
         return result
       }
-      if (current.fingerprint !== backup.afterFingerprint || await extraHash(tx) !== backup.afterExtraHash) throw new Error('restore_conflict: catalog changed after import; reconciliation required')
+      if (!await restoreFingerprintMatches(tx, backup, current.fingerprint) || await extraHash(tx) !== backup.afterExtraHash) throw new Error('restore_conflict: catalog changed after import; reconciliation required')
       // JSONB canonicalizes object key order; compare explicit fields rather
       // than treating serialization order as a Product change.
       const currentById = new Map(current.rows.map(row => [row.id, rowSignature(row)]))
       const differing = backup.rows.filter(row => currentById.get(row.id) !== rowSignature(row))
       result.differing = differing.length
+      const retailDiffering = backup.retailRows ? await diffRetailPrices(tx, backup.retailRows) : undefined
+      if (retailDiffering) result.retailDiffering = retailDiffering.length
       if (!execute) return result
       for (let index = 0; index < differing.length; index += 500) {
         const batch = differing.slice(index, index + 500)
@@ -241,6 +303,7 @@ export async function restoreAtomic(db: ExtendedPrismaClient, key: string, execu
           ...batch.flatMap(row => [row.id, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice]),
         )
       }
+      if (retailDiffering) result.retailRestored = await restoreRetailPrices(tx, retailDiffering)
       await tx.keyValueSetting.update({ where: { key }, data: { value: json({ ...backup, restored: true }) } })
       await tx.syncRun.update({ where: { id: run!.id }, data: { status: 'completed', finishedAt: new Date(), productsSynced: result.restored, errorSample: json({ kind: MANUAL_IMPORT_RESTORE_KIND, mode: MANUAL_IMPORT_MODE, backupKey: key, stage: 'committed' }) } })
       pendingResult = result

@@ -1,6 +1,7 @@
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import { auditManualXml, manualDecimal } from './manual-import-validation'
 import { parseGrinsXml, readGrinsXmlItems } from './grins-xml-parser'
+import { normalizeRetailPrice } from './retail-price'
 import { loadPreflightState, PREFLIGHT_THRESHOLDS as T, structuralFailures, toCents, type PreflightMetrics } from './sync-preflight'
 import type { FeedEvaluation } from './manual-import'
 
@@ -20,7 +21,12 @@ export async function evaluatePriceFeed(db: ExtendedPrismaClient, xml: string): 
   const audit = auditManualXml(xml)
   const raw = audit.validXml ? readGrinsXmlItems(xml) : []
   const products = audit.validXml && !audit.invalidPrices.length && !audit.invalidStocks.length
-    ? parseGrinsXml(xml, { primaryPriceTier: 'price2', enabledPriceTiers: new Set(['price2']) }).map((product, index) => ({ ...product, price: manualDecimal(raw[index].price2)! })) : []
+    ? parseGrinsXml(xml, { primaryPriceTier: 'price2', enabledPriceTiers: new Set(['price2']) }).map((product, index) => ({
+      ...product,
+      price: manualDecimal(raw[index].price2)!,
+      // Reference retail price1: never gates the B2B import; invalid/absent → missing.
+      retailPrice: normalizeRetailPrice(raw[index].price1),
+    })) : []
   const state = await loadPreflightState(db)
   const hard = structuralFailures(audit)
   const warnings: string[] = []

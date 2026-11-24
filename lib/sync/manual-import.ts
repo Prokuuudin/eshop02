@@ -168,6 +168,9 @@ export interface RestoreResult {
   differing: number
   restored: number
   runId?: string
+  /** Present only for backups taken with the retail price1 sync enabled. */
+  retailDiffering?: number
+  retailRestored?: number
 }
 
 /** Version-2 recovery refuses any catalog/ERP change since the successful

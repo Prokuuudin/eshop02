@@ -439,6 +439,20 @@ model Product {
   // Revoked by sync when ERP supplies a price again and by any manual price change.
   manualPriceApproved Boolean  @default(false)
   manualApprovedPrice Decimal? @db.Decimal(12, 2)
+  // Retail (B2C) pricing foundation. None of these fields is read by B2B pricing,
+  // checkout, bonuses or orders; Product.price stays the only B2B price (GrinS price2).
+  // ERP-owned reference: GrinS price1 (assumed VAT-inclusive, unconfirmed in GrinS).
+  // Written only by the GrinS retail sync step when GRINS_RETAIL_PRICE_SYNC_ENABLED=true.
+  // Null = never synced. A non-positive/invalid price1 keeps the last value and sets
+  // retailPriceMissing. Never copied into b2cBasePrice automatically.
+  retailPrice          Decimal?  @db.Decimal(12, 2)
+  retailPriceMissing   Boolean   @default(false)
+  retailPriceUpdatedAt DateTime?
+  // Owner-decided base price the hairshop.lv customer sees (may differ from price1),
+  // before B2C promotions. Never written by any GrinS sync. Null = not set.
+  b2cBasePrice          Decimal?  @db.Decimal(12, 2)
+  b2cBasePriceSource    String?
+  b2cBasePriceUpdatedAt DateTime?
   stockAllocations    StockAllocation[]
   stockSnapshotEntries StockSnapshotEntry[]
   brandLines           ProductBrandLine[]
@@ -450,6 +464,24 @@ model Product {
   @@index([isDeleted, isActive])
   @@index([lastSyncRunId])
   @@index([grinsStockRunId])
+}
+
+// Append-only history of B2C customer-facing prices (Omnibus 30-day lowest prior price).
+// kind: 'base' (b2cBasePrice) or 'promotion' (an effective promotional price).
+// No writer exists yet; B2C base price/promotion editing will append rows here.
+// No foreign key on purpose: price history must outlive product cleanup.
+model B2cPriceHistory {
+  id          String    @id @default(cuid())
+  productId   String
+  kind        String
+  price       Decimal   @db.Decimal(12, 2)
+  validFrom   DateTime
+  validTo     DateTime?
+  source      String
+  actorUserId String?
+  createdAt   DateTime  @default(now())
+
+  @@index([productId, kind, validFrom])
 }
 
 model Order {

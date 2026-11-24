@@ -7,6 +7,9 @@ import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MODE, MANUAL_IMPORT_KIND, MANUAL_IMPORT_RESTORE_KIND, consumePendingPreview,
 } from './manual-import-pending'
 import { evaluatePriceFeed } from './manual-price-preflight'
+import {
+  applyRetailPrices, diffRetailPrices, isRetailPriceSyncEnabled, restoreRetailPrices, snapshotRetailPrices, type RetailSnapshotRow,
+} from './retail-price'
 import type { ManualApplyDeps, ManualApplyOutcome, RestoreResult } from './manual-import'
 
 const LEASE_MS = 30 * 60 * 1000
@@ -14,7 +17,9 @@ const SHA_PREFIX = 'grins-manual-import-applied:prices-only:'
 const json = (value: unknown) => value as Prisma.InputJsonValue
 type SnapshotRow = { id: string; externalId: string; price: string; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }
 type Snapshot = { rows: SnapshotRow[]; fingerprint: string }
-type SafeBackup = { version: 3; mode: typeof MANUAL_IMPORT_MODE; runId: string; sha256: string; rows: SnapshotRow[]; afterFingerprint: string; afterExtraHash: string; restored?: boolean }
+// retailRows exists only when the retail price1 step ran; older/disabled backups lack it
+// and their restore never touches the retail columns.
+type SafeBackup = { version: 3; mode: typeof MANUAL_IMPORT_MODE; runId: string; sha256: string; rows: SnapshotRow[]; afterFingerprint: string; afterExtraHash: string; restored?: boolean; retailRows?: RetailSnapshotRow[] }
 const rowSignature = (row: SnapshotRow) => JSON.stringify([row.id, row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice])
 
 // Includes identity, deletion, revisions and timestamps for ALL Products. A sale
@@ -86,7 +91,13 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
-  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
+  // Read once: the same decision covers the backup, the write and the journal entry.
+  const retailEnabled = isRetailPriceSyncEnabled()
+  const base: Record<string, unknown> = {
+    kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'],
+    ...(retailEnabled && { retailWriteFields: ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] }),
+    ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring',
+  }
   const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'manual', errorSample: json(base) } })
   const runId = run.id
   let owned = false
@@ -146,7 +157,10 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
       const valid = products.filter(product => identities.has(product.externalId))
       backupKey = `${BACKUP_KEY_PREFIX}${now.toISOString()}:${input.previewId}`
       Object.assign(base, { backupKey, stage: 'applying', warnings: preflight.warnings, metrics: preflight.metrics, changes: { price: evaluation.summary.priceChanges, stock: evaluation.summary.stockChanges } })
-      const backup: SafeBackup = { version: 3, mode: MANUAL_IMPORT_MODE, runId, sha256: input.sha256, rows: before.rows, afterFingerprint: '', afterExtraHash: '' }
+      const backup: SafeBackup = {
+        version: 3, mode: MANUAL_IMPORT_MODE, runId, sha256: input.sha256, rows: before.rows, afterFingerprint: '', afterExtraHash: '',
+        ...(retailEnabled && { retailRows: await snapshotRetailPrices(tx) }),
+      }
       await tx.keyValueSetting.create({ data: { key: backupKey, value: json(backup) } })
       stage = 'applying'
       let affected = 0
@@ -154,6 +168,12 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
         const batch = valid.slice(index, index + 200)
         affected += await tx.$executeRawUnsafe(buildManualPriceQuery(batch.length), ...batch.flatMap(product => [product.externalId, product.price.toFixed(2)]))
       }
+      // Separate retail-only statement after the unchanged B2B one; the after-fingerprint
+      // below covers both, so a later restore detects any interleaved change.
+      const retailAffected = retailEnabled
+        ? await applyRetailPrices(tx, valid.map(product => ({ externalId: product.externalId, retailPrice: product.retailPrice ?? null })))
+        : undefined
+      if (retailAffected !== undefined) Object.assign(base, { retailAffected })
       backup.afterFingerprint = (await snapshot(tx)).fingerprint
       backup.afterExtraHash = await extraHash(tx)
       await tx.keyValueSetting.update({ where: { key: backupKey }, data: { value: json(backup) } })
@@ -227,6 +247,8 @@ export async function restoreAtomic(db: ExtendedPrismaClient, key: string, execu
       const currentById = new Map(current.rows.map(row => [row.id, rowSignature(row)]))
       const differing = backup.rows.filter(row => currentById.get(row.id) !== rowSignature(row))
       result.differing = differing.length
+      const retailDiffering = backup.retailRows ? await diffRetailPrices(tx, backup.retailRows) : undefined
+      if (retailDiffering) result.retailDiffering = retailDiffering.length
       if (!execute) return result
       for (let index = 0; index < differing.length; index += 500) {
         const batch = differing.slice(index, index + 500)
@@ -241,6 +263,7 @@ export async function restoreAtomic(db: ExtendedPrismaClient, key: string, execu
           ...batch.flatMap(row => [row.id, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice]),
         )
       }
+      if (retailDiffering) result.retailRestored = await restoreRetailPrices(tx, retailDiffering)
       await tx.keyValueSetting.update({ where: { key }, data: { value: json({ ...backup, restored: true }) } })
       await tx.syncRun.update({ where: { id: run!.id }, data: { status: 'completed', finishedAt: new Date(), productsSynced: result.restored, errorSample: json({ kind: MANUAL_IMPORT_RESTORE_KIND, mode: MANUAL_IMPORT_MODE, backupKey: key, stage: 'committed' }) } })
       pendingResult = result

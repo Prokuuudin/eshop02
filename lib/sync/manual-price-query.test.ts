@@ -3,7 +3,9 @@ import { PGlite } from '@electric-sql/pglite'
 import { buildManualPriceQuery } from './manual-price-query'
 import { manualDecimal } from './manual-import-validation'
 
-describe('prices-only SQL and decimal cents', () => {
+// PGlite boots a full Postgres; with other PGlite suites running in parallel the 5 s
+// default is too tight on slower machines.
+describe('prices-only SQL and decimal cents', { timeout: 60_000 }, () => {
   it('has no stock/reservation/ERP warehouse write or insert', () => {
     const query = buildManualPriceQuery(2)
     expect(query).not.toMatch(/stock|warehouse|reservation|INSERT/iu)

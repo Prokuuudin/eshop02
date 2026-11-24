@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ExtendedPrismaClient } from '@/lib/prisma'
 import {
   BACKUP_KEY_PREFIX, MANUAL_IMPORT_MAX_BYTES, applyManualImport, consumePendingPreview, createPreImportBackup,
@@ -16,12 +16,12 @@ const originalFeedMinRows = thresholds.feedMinRows
 beforeAll(() => { thresholds.feedMinRows = originalFeedMinRows / 10 })
 afterAll(() => { thresholds.feedMinRows = originalFeedMinRows })
 
-type Item = { sku: string; price2?: string; wh?: number[] }
+type Item = { sku: string; price1?: string; price2?: string; wh?: number[] }
 
 /** wh = quantities for XML warehouse ids 1..9 (ids 1,2,3,6 = 10000,10001,10002,10005 count). */
 function makeXml(items: Item[]): string {
-  const body = items.map(({ sku, price2 = '10.00', wh = [1, 1, 1, 0, 0, 1, 0, 0, 0] }) =>
-    `<item><sku>${sku}</sku><price1>12</price1><price2>${price2}</price2><price3>5</price3><price4>0</price4><quantity>4</quantity>` +
+  const body = items.map(({ sku, price1 = '12', price2 = '10.00', wh = [1, 1, 1, 0, 0, 1, 0, 0, 0] }) =>
+    `<item><sku>${sku}</sku><price1>${price1}</price1><price2>${price2}</price2><price3>5</price3><price4>0</price4><quantity>4</quantity>` +
     `<warehouses>${wh.map((q, i) => `<warehouse id="${i + 1}">${q}</warehouse>`).join('')}</warehouses></item>`).join('')
   return `﻿<?xml version="1.0" encoding="utf-8"?><root>${body}</root>`
 }
@@ -383,6 +383,63 @@ describe('applyManualImport orchestration (SQL guarantees verified separately)',
     expect(await applyManualImport({ db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })).toMatchObject({ status: 'rejected', error: 'backup_failed' })
     expect(raw.$executeRawUnsafe.mock.calls.some(([sql]) => sql.includes('UPDATE "Product"'))).toBe(false)
     expect(JSON.stringify(raw.syncRun.update.mock.calls)).not.toContain('secret-canary')
+  })
+})
+
+describe('retail price1 step in the prices-only import', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  type Raw = ReturnType<typeof makeDb>['raw']
+  const productUpdates = (raw: Raw) => raw.$executeRawUnsafe.mock.calls.filter(([sql]) => String(sql).includes('UPDATE "Product"'))
+  const b2bUpdates = (raw: Raw) => productUpdates(raw).filter(([sql]) => !String(sql).includes('"retailPrice"'))
+  const retailUpdates = (raw: Raw) => productUpdates(raw).filter(([sql]) => String(sql).includes('"retailPrice"'))
+  const backupOf = (state: DbState) => [...state.kv.entries()].find(([key]) => key.startsWith(BACKUP_KEY_PREFIX))?.[1] as Record<string, unknown>
+  const journal = (raw: Raw) => raw.syncRun.update.mock.calls
+    .map((args) => ((args as unknown[])[0] as { data: { errorSample?: Record<string, unknown> } }).data.errorSample).filter(Boolean)
+  const items = () => baseItems().map((item, index) => (index === 0 ? { ...item, price1: 'abc' } : index === 1 ? { ...item, price1: '0' } : index === 2 ? { ...item, price1: '23.5' } : item))
+
+  async function run(enabled: boolean) {
+    if (enabled) vi.stubEnv('GRINS_RETAIL_PRICE_SYNC_ENABLED', 'true')
+    const harness = makeDb()
+    const { pending } = await preview(harness.db, makeXml(items()))
+    const outcome = await applyManualImport({ db: harness.db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })
+    vi.unstubAllEnvs()
+    return { ...harness, outcome }
+  }
+
+  it('is off by default: no retail SQL, journal field or backup rows', async () => {
+    const { raw, state, outcome } = await run(false)
+    expect(outcome.status).toBe('completed')
+    expect(retailUpdates(raw)).toHaveLength(0)
+    expect(backupOf(state)).not.toHaveProperty('retailRows')
+    expect(journal(raw).some((sample) => 'retailWriteFields' in sample!)).toBe(false)
+  })
+
+  it('when enabled, B2B writes are identical and price1 is written afterwards, invalid price1 never blocks', async () => {
+    const off = await run(false)
+    const on = await run(true)
+    expect(on.outcome.status).toBe('completed')
+    expect(b2bUpdates(on.raw)).toEqual(b2bUpdates(off.raw))
+    const retail = retailUpdates(on.raw)
+    expect(retail.length).toBeGreaterThan(0)
+    const params = retail.flatMap(([, ...rest]) => rest)
+    expect(params.slice(0, 6)).toEqual(['S0', null, 'S1', null, 'S2', '23.50'])
+    expect(params.slice(6, 8)).toEqual(['S3', '12.00'])
+    const lastB2b = Math.max(...on.raw.$executeRawUnsafe.mock.calls.map(([sql], index) => (b2bUpdates(on.raw).some(([other]) => other === sql) ? index : -1)))
+    const firstRetail = on.raw.$executeRawUnsafe.mock.calls.findIndex(([sql]) => String(sql).includes('"retailPrice"'))
+    expect(firstRetail).toBeGreaterThan(lastB2b)
+    expect(backupOf(on.state)).toHaveProperty('retailRows')
+    expect(journal(on.raw).some((sample) => JSON.stringify(sample!.retailWriteFields) === JSON.stringify(['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt']))).toBe(true)
+    expect(journal(on.raw).every((sample) => !sample!.writeFields || JSON.stringify(sample!.writeFields) === JSON.stringify(['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt']))).toBe(true)
+  })
+
+  it('restore inspection reports retail differences only for backups taken with the step enabled', async () => {
+    const on = await run(true)
+    const onKey = [...on.state.kv.keys()].find((key) => key.startsWith(BACKUP_KEY_PREFIX))!
+    expect(await restorePreImportBackup(on.db, onKey, { execute: false })).toMatchObject({ restored: 0, retailDiffering: 0 })
+    const off = await run(false)
+    const offKey = [...off.state.kv.keys()].find((key) => key.startsWith(BACKUP_KEY_PREFIX))!
+    expect(await restorePreImportBackup(off.db, offKey, { execute: false })).not.toHaveProperty('retailDiffering')
   })
 })
 

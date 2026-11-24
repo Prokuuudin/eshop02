@@ -3,7 +3,7 @@ import { applyProductOverride, type ProductOverride } from '@/lib/product-overri
 import { mapDbToProduct, mapProductToDbCreate } from '@/lib/product-overrides-mapping'
 import type { ExtendedTransactionClient } from '@/lib/prisma'
 import type { ProductChanges } from '@/lib/product-mutation-schema'
-import type { Product as PrismaProduct } from '@/generated/prisma/client'
+import type { StoredProduct } from '@/lib/prisma-omit'
 import type { Product } from '@/data/products'
 import { hasSkuChanged } from '@/lib/product-sku'
 import { approvalAfterPriceChange } from '@/lib/product-sellability'
@@ -38,7 +38,7 @@ export async function applyProductChanges(
   id: string,
   revision: number,
   changes: Partial<Omit<ProductChanges, 'oldPrice'>> & { oldPrice?: number | null },
-): Promise<{ before: Product; next: PrismaProduct }> {
+): Promise<{ before: Product; next: StoredProduct }> {
   const current = await tx.product.findUnique({ where: { id } })
   if (!current || current.isDeleted) throw new ProductMutationError('Product not found', 404)
   if (current.revision !== revision) throw new ProductMutationError('Product was changed by another administrator. Reload and try again.', 409)

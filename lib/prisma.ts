@@ -5,6 +5,7 @@ import type { ITXClientDenyList } from '@prisma/client/runtime/client'
 import ws from 'ws'
 import { PrismaClient } from '../generated/prisma/client'
 import { moneyFieldsExtension } from './prisma-money-extension'
+import { PRISMA_GLOBAL_OMIT } from './prisma-omit'
 
 // WebSocket через 443 вместо TCP 5432 — не режется VPN/файрволами
 neonConfig.webSocketConstructor = ws
@@ -28,7 +29,7 @@ function createPrismaClient() {
   const adapter = isLocalDatabase
     ? new PrismaPg({ connectionString })
     : new PrismaNeon({ connectionString })
-  return new PrismaClient({ adapter }).$extends(moneyFieldsExtension)
+  return new PrismaClient({ adapter, omit: PRISMA_GLOBAL_OMIT }).$extends(moneyFieldsExtension)
 }
 
 // `.$extends()` returns a client type that is a structural superset of the

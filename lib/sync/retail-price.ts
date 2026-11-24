@@ -22,6 +22,26 @@ export function isRetailPriceSyncEnabled(env: NodeJS.ProcessEnv = process.env): 
   return env[RETAIL_PRICE_SYNC_FLAG]?.trim() === 'true'
 }
 
+const RETAIL_COLUMNS = ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] as const
+
+/**
+ * Whether this run writes price1: the flag is "true" AND the migration's columns exist.
+ * Enabling the flag before the migration therefore skips the retail step instead of
+ * failing the B2B import transaction it runs in.
+ */
+export async function isRetailPriceSyncActive(
+  db: Pick<ExtendedPrismaClient, '$queryRawUnsafe'>,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<boolean> {
+  if (!isRetailPriceSyncEnabled(env)) return false
+  const rows = await db.$queryRawUnsafe<Array<{ count: number }>>(
+    `SELECT count(*)::int AS count FROM information_schema.columns
+      WHERE table_schema = current_schema() AND table_name = 'Product' AND column_name = ANY($1::text[])`,
+    [...RETAIL_COLUMNS],
+  )
+  return Number(rows[0]?.count) === RETAIL_COLUMNS.length
+}
+
 /**
  * Valid positive price1 as a 2-decimal string, or null for "missing" (absent, zero,
  * negative, non-decimal, out of Product bounds). Same strict decimal rules as prices-only.

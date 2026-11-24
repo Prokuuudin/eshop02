@@ -31,7 +31,9 @@ function makeDb(): ExtendedPrismaClient {
         (where.externalId.in as string[]).map((externalId) => ({ externalId, isDeleted: false })),
       )),
     },
-    $queryRawUnsafe: vi.fn().mockResolvedValue([{ key: 'sync-run-lock' }]),
+    // Retail columns present (migrated DB) unless a test overrides it.
+    $queryRawUnsafe: vi.fn().mockImplementation(async (sql: string) =>
+      (sql.includes('information_schema.columns') ? [{ count: 3 }] : [{ key: 'sync-run-lock' }])),
     $executeRawUnsafe: vi.fn().mockResolvedValue(1),
   }
   ;(db as typeof db & { $transaction: unknown }).$transaction = vi.fn(async (operation: (tx: unknown) => unknown) => operation(db))
@@ -73,6 +75,17 @@ describe('FULL sync retail step', () => {
     vi.stubEnv('SYNC_ENABLED_PRICE_TIERS', 'price2')
     await runSync(adapter(), makeDb())
     expect(applyRetailPrices).not.toHaveBeenCalled()
+  })
+
+  it('flag on before the migration: retail step skipped, B2B sync completes', async () => {
+    vi.stubEnv('GRINS_RETAIL_PRICE_SYNC_ENABLED', 'true')
+    const db = makeDb()
+    vi.mocked(db.$queryRawUnsafe).mockImplementation((async (sql: string) =>
+      (sql.includes('information_schema.columns') ? [{ count: 0 }] : [{ key: 'sync-run-lock' }])) as never)
+    const result = await runSync(adapter(), db)
+    expect(result.status).toBe('completed')
+    expect(applyRetailPrices).not.toHaveBeenCalled()
+    expect(upsertProducts).toHaveBeenCalledOnce()
   })
 
   it('a misspelt flag never breaks the B2B sync', async () => {

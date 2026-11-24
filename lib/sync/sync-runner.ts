@@ -3,7 +3,7 @@ import type { ErpAdapter, ErpProduct } from './erp-adapter'
 import { upsertProducts } from './upsert-products'
 import { getErpExtraData, mergeEnabledPriceTiers, replaceErpExtraData, type ErpExtraData } from './erp-extra-data-store'
 import { getSyncRules } from './sync-rules'
-import { applyRetailPrices, isRetailPriceSyncEnabled, retailRowsFromErpProducts } from './retail-price'
+import { applyRetailPrices, isRetailPriceSyncActive, retailRowsFromErpProducts } from './retail-price'
 import { withRetry } from './retry'
 import { SyncLogger, type SyncError } from './logger'
 import { acquireSyncLock, refreshSyncLock, releaseSyncLock } from './sync-lock'
@@ -102,7 +102,7 @@ export async function runSync(
   const extraDataByExternalId: Record<string, ErpExtraData> = {}
   const rules = getSyncRules()
   // Retail price1 is an extra, separate write; when off (default) this run is unchanged.
-  const retailEnabled = isRetailPriceSyncEnabled() && rules.enabledPriceTiers.has('price1')
+  const retailEnabled = rules.enabledPriceTiers.has('price1') && await isRetailPriceSyncActive(db)
   const currentExtraData = await getErpExtraData(db)
 
   try {

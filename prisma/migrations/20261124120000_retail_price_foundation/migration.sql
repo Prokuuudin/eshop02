@@ -3,8 +3,9 @@
 -- constant default is metadata-only on PostgreSQL 11+ (no table rewrite).
 --
 -- DO NOT apply to production without the owner's explicit approval of this step.
--- Deploy order: apply this migration first, then deploy code that knows these columns
--- (Prisma reads all scalar columns when a query has no explicit select).
+-- Deploy order is free: the app's Prisma client omits these Product columns globally
+-- (lib/prisma-omit.ts), and the retail sync skips itself while the columns are absent.
+-- Enable GRINS_RETAIL_PRICE_SYNC_ENABLED only after this migration is applied.
 --
 -- Rollback (only while no code depends on the columns):
 --   DROP TABLE "B2cPriceHistory";

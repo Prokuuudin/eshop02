@@ -32,6 +32,8 @@ interface DbState {
   kv: Map<string, unknown>
   lockHeld: boolean
   previousProductsTotal: number | null
+  /** Retail migration columns present in "Product" (3 = migrated). */
+  retailColumns?: number
   linked: Array<{ externalId: string; sku: string | null; price: string; stock: number; isActive: boolean; isDeleted: boolean; erpPriceMissing: boolean; manualPriceApproved: boolean; manualApprovedPrice: string | null }>
 }
 
@@ -46,6 +48,7 @@ function makeDb(overrides: Partial<DbState> = {}) {
   let runSeq = 0
   const db = {
     $queryRawUnsafe: vi.fn(async (sql: string, ...params: unknown[]) => {
+      if (sql.includes('information_schema.columns')) return [{ count: state.retailColumns ?? 3 }]
       if (sql.includes('AS owned')) return [{ owned: true }]
       if (sql.includes('AS closed')) return [{ closed: true }]
       if (sql.includes('AS fingerprint')) return [{ fingerprint: sha256Hex(JSON.stringify(sql.includes('FROM (SELECT') ? state.linked.map(row => [row.externalId, row.price, row.erpPriceMissing, row.manualPriceApproved, row.manualApprovedPrice]) : state.linked)) }]
@@ -398,9 +401,9 @@ describe('retail price1 step in the prices-only import', () => {
     .map((args) => ((args as unknown[])[0] as { data: { errorSample?: Record<string, unknown> } }).data.errorSample).filter(Boolean)
   const items = () => baseItems().map((item, index) => (index === 0 ? { ...item, price1: 'abc' } : index === 1 ? { ...item, price1: '0' } : index === 2 ? { ...item, price1: '23.5' } : item))
 
-  async function run(enabled: boolean) {
+  async function run(enabled: boolean, overrides: Partial<DbState> = {}) {
     if (enabled) vi.stubEnv('GRINS_RETAIL_PRICE_SYNC_ENABLED', 'true')
-    const harness = makeDb()
+    const harness = makeDb(overrides)
     const { pending } = await preview(harness.db, makeXml(items()))
     const outcome = await applyManualImport({ db: harness.db, runSync: vi.fn() }, { ...pending, actorId: 'admin-1' })
     vi.unstubAllEnvs()
@@ -431,6 +434,15 @@ describe('retail price1 step in the prices-only import', () => {
     expect(backupOf(on.state)).toHaveProperty('retailRows')
     expect(journal(on.raw).some((sample) => JSON.stringify(sample!.retailWriteFields) === JSON.stringify(['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt']))).toBe(true)
     expect(journal(on.raw).every((sample) => !sample!.writeFields || JSON.stringify(sample!.writeFields) === JSON.stringify(['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt']))).toBe(true)
+  })
+
+  it('flag on before the migration: retail step skipped, B2B import completes unchanged', async () => {
+    const off = await run(false)
+    const premigration = await run(true, { retailColumns: 0 })
+    expect(premigration.outcome.status).toBe('completed')
+    expect(retailUpdates(premigration.raw)).toHaveLength(0)
+    expect(b2bUpdates(premigration.raw)).toEqual(b2bUpdates(off.raw))
+    expect(backupOf(premigration.state)).not.toHaveProperty('retailRows')
   })
 
   it('restore inspection reports retail differences only for backups taken with the step enabled', async () => {

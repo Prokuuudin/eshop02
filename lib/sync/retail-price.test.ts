@@ -3,7 +3,7 @@ import path from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { PGlite } from '@electric-sql/pglite'
 import {
-  RETAIL_PRICE_SYNC_FLAG, applyRetailPrices, buildRetailPriceQuery, diffRetailPrices, isRetailPriceSyncEnabled,
+  RETAIL_PRICE_SYNC_FLAG, applyRetailPrices, buildRetailPriceQuery, diffRetailPrices, isRetailPriceSyncActive, isRetailPriceSyncEnabled,
   normalizeRetailPrice, restoreRetailPrices, retailRowsFromErpProducts, snapshotRetailPrices,
 } from './retail-price'
 import { buildUpsertQuery } from './upsert-products'
@@ -171,6 +171,19 @@ describe('retail price SQL', { timeout: 60_000 }, () => {
       expect(rows.get('p-deleted')).toMatchObject({ retailPrice: '12.00', retailPriceMissing: false, updatedAt: '2026-02-02 10:00:00.123' })
       expect(rows.get('p-local')).toMatchObject({ retailPrice: null, b2cBasePrice: '9.00' })
       expect(await applyRetailPrices(rawDb(pg), FEED)).toBe(0)
+    })
+  })
+
+  it('is active only with the flag AND the migrated columns present', async () => {
+    const on = { [RETAIL_PRICE_SYNC_FLAG]: 'true' } as unknown as NodeJS.ProcessEnv
+    await withDb(async (pg) => {
+      const db = rawDb(pg)
+      expect(await isRetailPriceSyncActive(db, on)).toBe(true)
+      const query = vi.fn()
+      expect(await isRetailPriceSyncActive({ $queryRawUnsafe: query } as never, {} as NodeJS.ProcessEnv)).toBe(false)
+      expect(query).not.toHaveBeenCalled()
+      await pg.exec('ALTER TABLE "Product" DROP COLUMN "retailPriceUpdatedAt"')
+      expect(await isRetailPriceSyncActive(db, on)).toBe(false)
     })
   })
 

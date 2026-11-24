@@ -8,7 +8,7 @@ import {
 } from './manual-import-pending'
 import { evaluatePriceFeed } from './manual-price-preflight'
 import {
-  applyRetailPrices, diffRetailPrices, isRetailPriceSyncEnabled, restoreRetailPrices, snapshotRetailPrices, type RetailSnapshotRow,
+  applyRetailPrices, diffRetailPrices, isRetailPriceSyncActive, restoreRetailPrices, snapshotRetailPrices, type RetailSnapshotRow,
 } from './retail-price'
 import type { ManualApplyDeps, ManualApplyOutcome, RestoreResult } from './manual-import'
 
@@ -91,8 +91,8 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
-  // Read once: the same decision covers the backup, the write and the journal entry.
-  const retailEnabled = isRetailPriceSyncEnabled()
+  // Decided once: the same answer covers the backup, the write and the journal entry.
+  const retailEnabled = await isRetailPriceSyncActive(db)
   const base: Record<string, unknown> = {
     kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'],
     ...(retailEnabled && { retailWriteFields: ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] }),

@@ -91,13 +91,10 @@ async function resolve(db: ExtendedPrismaClient, runId: string, base: Record<str
 export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: string; sha256: string; actorId: string }): Promise<ManualApplyOutcome> {
   const { db } = deps
   const now = deps.now?.() ?? new Date()
-  // Decided once: the same answer covers the backup, the write and the journal entry.
-  const retailEnabled = await isRetailPriceSyncActive(db)
-  const base: Record<string, unknown> = {
-    kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'],
-    ...(retailEnabled && { retailWriteFields: ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] }),
-    ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring',
-  }
+  // Decided inside the locked transaction (no DDL can interleave there); the same answer
+  // then covers the backup, the write and the journal entry.
+  let retailEnabled = false
+  const base: Record<string, unknown> = { kind: MANUAL_IMPORT_KIND, mode: MANUAL_IMPORT_MODE, writeFields: ['price', 'erpPriceMissing', 'manualPriceApproved', 'manualApprovedPrice', 'revision', 'updatedAt'], ...input, ...deps.operationContext, xmlSha256: input.sha256, stage: 'acquiring' }
   const run = await db.syncRun.create({ data: { status: 'running', triggeredBy: 'manual', errorSample: json(base) } })
   const runId = run.id
   let owned = false
@@ -151,6 +148,8 @@ export async function applyAtomic(deps: ManualApplyDeps, input: { previewId: str
         return { status: 'rejected', error: 'preflight_failed', hard: preflight.hard, runId } as ManualApplyOutcome
       }
       stage = 'backup'
+      retailEnabled = await isRetailPriceSyncActive(tx)
+      if (retailEnabled) Object.assign(base, { retailWriteFields: ['retailPrice', 'retailPriceMissing', 'retailPriceUpdatedAt'] })
       const before = await snapshot(tx)
       const identities = new Set(before.rows.map(row => row.externalId))
       if (identities.size !== before.rows.length) throw new Error('duplicate_claimants')

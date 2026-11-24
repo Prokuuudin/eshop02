@@ -102,7 +102,8 @@ export async function runSync(
   const extraDataByExternalId: Record<string, ErpExtraData> = {}
   const rules = getSyncRules()
   // Retail price1 is an extra, separate write; when off (default) this run is unchanged.
-  const retailEnabled = rules.enabledPriceTiers.has('price1') && await isRetailPriceSyncActive(db)
+  // A failing probe means "retail off", never an aborted run holding the sync lease.
+  const retailEnabled = rules.enabledPriceTiers.has('price1') && await isRetailPriceSyncActive(db).catch(() => false)
   const currentExtraData = await getErpExtraData(db)
 
   try {

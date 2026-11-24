@@ -88,6 +88,19 @@ describe('FULL sync retail step', () => {
     expect(upsertProducts).toHaveBeenCalledOnce()
   })
 
+  it('a failing column probe means "retail off": the run completes and the lease is released', async () => {
+    vi.stubEnv('GRINS_RETAIL_PRICE_SYNC_ENABLED', 'true')
+    const db = makeDb()
+    vi.mocked(db.$queryRawUnsafe).mockImplementation((async (sql: string) => {
+      if (sql.includes('information_schema.columns')) throw new Error('probe failed')
+      return [{ key: 'sync-run-lock' }]
+    }) as never)
+    const result = await runSync(adapter(), db)
+    expect(result.status).toBe('completed')
+    expect(applyRetailPrices).not.toHaveBeenCalled()
+    expect(upsertProducts).toHaveBeenCalledOnce()
+  })
+
   it('a misspelt flag never breaks the B2B sync', async () => {
     vi.stubEnv('GRINS_RETAIL_PRICE_SYNC_ENABLED', 'yes please')
     const result = await runSync(adapter(), makeDb())

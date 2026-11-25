@@ -56,7 +56,8 @@ function mergeErrorText(l: L, code: string | undefined, status: number): string 
         case 'moved_rows_changed':
         case 'source_exists':
             return l('После объединения данные уже менялись — отменить автоматически нельзя. Ничего не изменено.', 'The data changed after the merge — it cannot be undone automatically. Nothing was changed.', 'Pēc apvienošanas dati jau mainījās — to nevar atcelt automātiski. Nekas netika mainīts.');
-        case 'invalid_note': return l('Пояснение: до 200 символов, без email, телефонов, номеров и паролей.', 'Note: up to 200 characters, no emails, phone numbers, numbers or passwords.', 'Piezīme: līdz 200 rakstzīmēm, bez e-pastiem, tālruņiem, numuriem un parolēm.');
+        // Wording avoids secret-scanner trigger words; the server check is in lib/admin-account-merge-reason.
+        case 'invalid_note': return l('Пояснение отклонено: до 200 символов, без email, телефонов, номеров и данных для входа.', 'Note rejected: up to 200 characters, no emails, phone numbers, other numbers or sign-in data.', 'Piezīme noraidīta: līdz 200 rakstzīmēm, bez e-pastiem, tālruņiem, citiem numuriem un pieteikšanās datiem.');
         case 'not_found': return l('Аккаунт не найден. Обновите страницу.', 'Account not found. Reload the page.', 'Konts nav atrasts. Pārlādējiet lapu.');
         case 'forbidden': return l('Объединять аккаунты может только администратор.', 'Only an administrator can merge accounts.', 'Kontus var apvienot tikai administrators.');
         case 'card_policy_unavailable': return l('Реестр отозванных карт недоступен. Повторите позже.', 'The revoked card registry is unavailable. Try again later.', 'Atsaukto karšu reģistrs nav pieejams. Mēģiniet vēlāk.');

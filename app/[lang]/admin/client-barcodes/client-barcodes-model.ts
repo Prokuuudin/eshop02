@@ -159,7 +159,7 @@ export function classifyClientSaveFailure(status: number, code: string | undefin
 /** The account that already holds an email, as the server reports it with email_taken. */
 export type EmailHolder =
   | { staff: true }
-  | { staff: false; name: string | null; cardNumber: string | null; createdAt: string }
+  | { staff: false; id: string | null; name: string | null; cardNumber: string | null; createdAt: string }
 
 export function readEmailHolder(payload: unknown): EmailHolder | null {
   if (typeof payload !== 'object' || payload === null || !('emailHolder' in payload)) return null
@@ -170,6 +170,7 @@ export function readEmailHolder(payload: unknown): EmailHolder | null {
   if (h.staff !== false || typeof h.createdAt !== 'string') return null
   return {
     staff: false,
+    id: typeof h.id === 'string' && h.id ? h.id : null,
     name: typeof h.name === 'string' && h.name.trim() ? h.name.trim() : null,
     cardNumber: typeof h.cardNumber === 'string' && h.cardNumber ? h.cardNumber : null,
     createdAt: h.createdAt,
@@ -180,3 +181,10 @@ export type ClientStepUp ={ currentPassword: string; mfaCode: string; reason: st
 
 export const isCompleteClientStepUp = (stepUp: ClientStepUp): boolean =>
   stepUp.currentPassword.length > 0 && /^\d{6}$/u.test(stepUp.mfaCode.trim()) && stepUp.reason.trim().length >= 5
+
+/** A legacy account without a card that an admin may fold into the card holder whose save hit it. */
+export function canOfferAccountMerge(holder: EmailHolder | null, target: Pick<CardHolder, 'cardNumber'>, isAdmin: boolean): holder is Extract<EmailHolder, { staff: false }> & { id: string } {
+  return isAdmin && holder !== null && !holder.staff && holder.id !== null && holder.cardNumber === null && Boolean(target.cardNumber)
+}
+
+export type CardFilter = 'with' | 'without'

@@ -437,7 +437,7 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
       expect(response.status).toBe(409)
       expect(await response.json()).toEqual({
         error: 'email_taken',
-        emailHolder: { staff: false, name: 'Anna Ozola', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' },
+        emailHolder: { staff: false, id: 'legacy-1', name: 'Anna Ozola', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' },
       })
       expect(userFindMock).toHaveBeenLastCalledWith(expect.objectContaining({ where: { email: 'salons@example.com' } }))
     })
@@ -513,6 +513,24 @@ describe('revoked client cards', () => {
   it('without a registry the card-holder filter is unchanged', async () => {
     await get('?hasCard=1')
     expect(userCountMock).toHaveBeenCalledWith({ where: { cardNumber: { not: null } } })
+  })
+
+  it('«без карты» lists only card-less customer accounts, never staff, for platform admins', async () => {
+    await get('?hasCard=0&search=anna')
+    const { where } = userFindManyMock.mock.calls[0][0]
+    expect(where).toMatchObject({
+      cardNumber: null, platformRole: 'customer', superAdmin: false,
+      AND: [{ OR: [{ teamRole: null }, { teamRole: { not: 'manager' } }] }],
+    })
+    expect(where.OR).toEqual(expect.arrayContaining([{ email: { contains: 'anna', mode: 'insensitive' } }]))
+  })
+
+  it('a manager asking for «без карты» still gets card holders only', async () => {
+    permissionMock.mockResolvedValue({ id: 'm-1', platformRole: 'customer', teamRole: 'manager', superAdmin: false })
+    await get('?hasCard=0')
+    const { where } = userFindManyMock.mock.calls[0][0]
+    expect(where.cardNumber).toEqual({ not: null })
+    expect(where.platformRole).toBe('customer')
   })
 
   it('a staff list does not read the registry, so a broken registry cannot block it', async () => {

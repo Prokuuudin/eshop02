@@ -66,6 +66,8 @@ export async function GET(req: NextRequest): Promise<Response> {
     const customerType = searchParams.get('customerType') || ''
     const createdSince = searchParams.get('createdSince') || ''
     const hasCard = searchParams.get('hasCard') === '1'
+    // «Без карты» (legacy accounts, merge candidates): platform admins only, never staff accounts.
+    const noCard = searchParams.get('hasCard') === '0' && caller.platformRole === 'admin'
     const registration = searchParams.get('registration') || ''
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
     // Only card-holder views depend on the registry; staff/admin lists keep working if it is unreadable.
@@ -89,6 +91,12 @@ export async function GET(req: NextRequest): Promise<Response> {
     if (companyId) where.companyId = companyId
     if (customerTypeSchema.safeParse(customerType).success) where.customerType = customerType
     if (hasCard) where.cardNumber = cardFilter
+    if (noCard) {
+      where.cardNumber = null
+      where.platformRole = 'customer'
+      where.superAdmin = false
+      where.AND = [{ OR: [{ teamRole: null }, { teamRole: { not: 'manager' } }] }]
+    }
     if (registration === 'registered') {
       where.cardNumber = cardFilter
       where.platformRole = 'customer'
@@ -198,7 +206,8 @@ async function describeEmailHolder(email: string, targetId: string) {
     })
     if (!holder || holder.id === targetId) return null
     if (isStaffSubject(holder)) return { staff: true as const }
-    return { staff: false as const, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
+    // The id lets an admin open the merge preview; merging itself is checked again on the server.
+    return { staff: false as const, id: holder.id, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
   } catch {
     return null
   }

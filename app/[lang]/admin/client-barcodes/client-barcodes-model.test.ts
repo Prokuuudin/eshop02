@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canOfferAccountMerge,
   buildClientDetailsPatch,
   classifyClientSaveFailure,
   createNoCardDraft,
@@ -14,8 +15,11 @@ import {
 
 describe('readEmailHolder', () => {
   it('reads a customer holder and a staff holder', () => {
-    expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: false, name: ' Anna ', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
-      .toEqual({ staff: false, name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' })
+    expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: false, id: 'legacy-1', name: ' Anna ', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
+      .toEqual({ staff: false, id: 'legacy-1', name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' })
+    // Older servers did not send the id: no merge button, the message still works.
+    expect(readEmailHolder({ emailHolder: { staff: false, name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
+      .toMatchObject({ staff: false, id: null })
     expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: true, name: 'leak' } })).toEqual({ staff: true })
   })
 
@@ -23,6 +27,19 @@ describe('readEmailHolder', () => {
     expect(readEmailHolder({ error: 'email_taken' })).toBeNull()
     expect(readEmailHolder(null)).toBeNull()
     expect(readEmailHolder({ emailHolder: { staff: false } })).toBeNull()
+  })
+})
+
+describe('canOfferAccountMerge', () => {
+  const legacy = { staff: false as const, id: 'legacy-1', name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' }
+  it('offers a merge only to an admin, for a card-less customer holder and a card holder row', () => {
+    expect(canOfferAccountMerge(legacy, { cardNumber: '4242' }, true)).toBe(true)
+    expect(canOfferAccountMerge(legacy, { cardNumber: '4242' }, false)).toBe(false)
+    expect(canOfferAccountMerge(legacy, { cardNumber: null }, true)).toBe(false)
+    expect(canOfferAccountMerge({ ...legacy, cardNumber: '9999' }, { cardNumber: '4242' }, true)).toBe(false)
+    expect(canOfferAccountMerge({ ...legacy, id: null }, { cardNumber: '4242' }, true)).toBe(false)
+    expect(canOfferAccountMerge({ staff: true }, { cardNumber: '4242' }, true)).toBe(false)
+    expect(canOfferAccountMerge(null, { cardNumber: '4242' }, true)).toBe(false)
   })
 })
 

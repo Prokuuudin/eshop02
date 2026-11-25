@@ -16,7 +16,8 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useAdminClientBarcodesPage, type CardHolder } from './useAdminClientBarcodesPage';
 import { RevokeCardDialog, RevokedCardsPanel } from './CardRevocation';
 import { MarketingSuppressedBadge, MarketingSuppressionDialog, MarketingSuppressionSwitch } from './MarketingSuppression';
-import { isCompleteClientStepUp, type MailingFilter } from './client-barcodes-model';
+import { AccountMergeDialog, type AccountMergeRequest } from './AccountMerge';
+import { isCompleteClientStepUp, type CardFilter, type MailingFilter } from './client-barcodes-model';
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
 export default function AdminClientBarcodesPage(): React.ReactElement {
@@ -35,6 +36,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
         setCustomerType,
         mailingFilter,
         setMailingFilter,
+        cardFilter,
+        setCardFilter,
+        listWithoutCard,
+        mergeOffers,
+        finishAccountMerge,
         cardHoldersPage,
         setCardHoldersPage,
         cardHolders,
@@ -64,6 +70,10 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
     // (the server enforces both).
     const [suppressionRequest, setSuppressionRequest] = useState<{ holder: CardHolder; mode: 'set' | 'lift' } | null>(null);
     const [suppressionNotice, setSuppressionNotice] = useState('');
+    // «Объединить аккаунты» (admin-only; the server enforces it): legacy account → card holder.
+    const canMergeAccounts = canEditBankDetails;
+    const [mergeRequest, setMergeRequest] = useState<AccountMergeRequest | null>(null);
+    const [mergeNotice, setMergeNotice] = useState('');
     const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
     return (
         <AdminGate>
@@ -86,12 +96,13 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     </div>
                 </div>
 
-                {(formError || message || revokeNotice || suppressionNotice) && (
+                {(formError || message || revokeNotice || suppressionNotice || mergeNotice) && (
                     <div className="rounded-lg border px-4 py-3 text-sm">
                         {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
                         {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
                         {revokeNotice && <p className="text-emerald-600 dark:text-emerald-400">{revokeNotice}</p>}
                         {suppressionNotice && <p className="text-emerald-600 dark:text-emerald-400">{suppressionNotice}</p>}
+                        {mergeNotice && <p className="text-emerald-600 dark:text-emerald-400">{mergeNotice}</p>}
                     </div>
                 )}
 
@@ -101,7 +112,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                 {/* ── Держатели карт ── */}
                 <section className="min-h-[70vh] rounded-lg border border-border bg-card p-6">
                     <h2 className="text-xl font-semibold mb-4">
-                        {registeredOnly ? l('Зарегистрированные клиенты', 'Registered customers', 'Reģistrētie klienti') : l('Все держатели карт', 'All cardholders', 'Visi karšu īpašnieki')}{' '}
+                        {registeredOnly
+                            ? l('Зарегистрированные клиенты', 'Registered customers', 'Reģistrētie klienti')
+                            : listWithoutCard
+                              ? l('Аккаунты без карты', 'Accounts without a card', 'Konti bez kartes')
+                              : l('Все держатели карт', 'All cardholders', 'Visi karšu īpašnieki')}{' '}
                         <span className="text-muted-foreground font-normal text-base">{cardHoldersTotal === 0 ? '0' : `${cardHoldersPage * 50 + 1}–${Math.min((cardHoldersPage + 1) * 50, cardHoldersTotal)} / ${cardHoldersTotal}`}</span>
                     </h2>
 
@@ -154,6 +169,23 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                 <SelectItem value="allowed">{l('Без запрета рассылок', 'Mailings not blocked', 'Bez sūtījumu aizlieguma')}</SelectItem>
                             </SelectContent>
                         </Select>
+                        {!registeredOnly && canMergeAccounts && (
+                            <Select
+                                value={cardFilter}
+                                onValueChange={(value) => {
+                                    setCardFilter(value as CardFilter);
+                                    setCardHoldersPage(0);
+                                }}
+                            >
+                                <SelectTrigger className="w-56" aria-label={l('Фильтр по карте', 'Card filter', 'Kartes filtrs')}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="with">{l('С картой', 'With a card', 'Ar karti')}</SelectItem>
+                                    <SelectItem value="without">{l('Без карты (старые аккаунты)', 'Without a card (old accounts)', 'Bez kartes (vecie konti)')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
 
                     {cardHoldersError && <p className="mb-3 text-sm text-red-600 dark:text-red-400">{cardHoldersError}</p>}
@@ -163,7 +195,9 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         <p className="text-sm text-muted-foreground py-4 text-center">
                             {search.trim()
                                 ? l(`Ничего не найдено по запросу «${search}»`, `Nothing found for “${search}”`, `Vaicājumam “${search}” nekas nav atrasts`)
-                                : l('Держателей карт пока нет.', 'There are no cardholders yet.', 'Karšu īpašnieku vēl nav.')}
+                                : listWithoutCard
+                                  ? l('Аккаунтов без карты нет.', 'There are no accounts without a card.', 'Kontu bez kartes nav.')
+                                  : l('Держателей карт пока нет.', 'There are no cardholders yet.', 'Karšu īpašnieku vēl nav.')}
                         </p>
                     ) : (
                         // On desktop the table gets its own viewport-high scroll box, so its horizontal
@@ -400,6 +434,11 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                             {clientRowErrors[holder.id]}
                                                         </p>
                                                     )}
+                                                    {canMergeAccounts && mergeOffers[holder.id] && (
+                                                        <Button size="sm" variant="outline" className="mt-1" onClick={() => { setMergeNotice(''); setMergeRequest({ sourceId: mergeOffers[holder.id], targetId: holder.id }); }}>
+                                                            {l('Объединить аккаунты', 'Merge accounts', 'Apvienot kontus')}
+                                                        </Button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         );
@@ -458,6 +497,21 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                             ? l(`Рассылки и приглашения для «${who}» запрещены.`, `Mailings and invitations blocked for “${who}”.`, `Sūtījumi un ielūgumi klientam “${who}” aizliegti.`)
                             : l(`Запрет рассылок для «${who}» снят.`, `Mailing block lifted for “${who}”.`, `Sūtījumu aizliegums klientam “${who}” atcelts.`));
                         void loadCardHolders();
+                    }}
+                />
+                <AccountMergeDialog
+                    key={mergeRequest ? `merge:${mergeRequest.sourceId}:${mergeRequest.targetId}` : 'merge:none'}
+                    request={mergeRequest}
+                    l={l}
+                    locale={locale}
+                    onClose={() => setMergeRequest(null)}
+                    onMerged={({ email, alreadyMerged }) => {
+                        const targetId = mergeRequest?.targetId;
+                        setMergeRequest(null);
+                        setMergeNotice(alreadyMerged
+                            ? l('Аккаунты уже были объединены.', 'The accounts were already merged.', 'Konti jau tika apvienoti.')
+                            : l(`Аккаунты объединены: история перенесена, email ${email} теперь у аккаунта с картой.`, `Accounts merged: history moved, ${email} now belongs to the card account.`, `Konti apvienoti: vēsture pārnesta, ${email} tagad pieder kontam ar karti.`));
+                        if (targetId) void finishAccountMerge(targetId);
                     }}
                 />
                 <Dialog open={clientStepUp !== null} onOpenChange={(open) => { if (!open) closeClientStepUp(); }}>

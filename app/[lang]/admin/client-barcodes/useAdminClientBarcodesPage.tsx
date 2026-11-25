@@ -116,8 +116,16 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         if (holder.staff) {
             return l('Не сохранено: этот email занят аккаунтом сотрудника.', 'Not saved: this email belongs to a staff account.', 'Nav saglabāts: šis e-pasts pieder darbinieka kontam.');
         }
+        if (!holder.cardNumber && !holder.createdAt) {
+            // Only staff who may merge accounts see who the older account is.
+            return l(
+                'Не сохранено: этот email у старого аккаунта без карты. Объединить аккаунты может администратор.',
+                'Not saved: this email belongs to an older account without a card. An administrator can merge the accounts.',
+                'Nav saglabāts: šis e-pasts pieder vecam kontam bez kartes. Kontus var apvienot administrators.',
+            );
+        }
         const name = holder.name ?? l('без имени', 'no name', 'bez vārda');
-        const created = new Date(holder.createdAt).toLocaleDateString('lv-LV');
+        const created = holder.createdAt ? new Date(holder.createdAt).toLocaleDateString('lv-LV') : '—';
         if (holder.cardNumber) {
             return l(
                 `Не сохранено: этот email уже у клиента «${name}» (карта ${holder.cardNumber}). Найдите его поиском по номеру карты.`,

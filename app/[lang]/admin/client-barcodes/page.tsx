@@ -16,7 +16,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useAdminClientBarcodesPage, type CardHolder } from './useAdminClientBarcodesPage';
 import { RevokeCardDialog, RevokedCardsPanel } from './CardRevocation';
 import { MarketingSuppressedBadge, MarketingSuppressionDialog, MarketingSuppressionSwitch } from './MarketingSuppression';
-import { AccountMergeDialog, type AccountMergeRequest } from './AccountMerge';
+import { AccountMergeDialog, AccountMergeUndoDialog, type AccountMergeRequest } from './AccountMerge';
 import { isCompleteClientStepUp, type CardFilter, type MailingFilter } from './client-barcodes-model';
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
 
@@ -74,6 +74,9 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
     const canMergeAccounts = canEditBankDetails;
     const [mergeRequest, setMergeRequest] = useState<AccountMergeRequest | null>(null);
     const [mergeNotice, setMergeNotice] = useState('');
+    // The merge just made can be undone from its recovery record (server re-checks everything).
+    const [undoSourceId, setUndoSourceId] = useState<string | null>(null);
+    const [undoOpen, setUndoOpen] = useState(false);
     const bankAdminOnlyHint = l('Банк и IBAN может менять только администратор.', 'Only an administrator can change the bank and IBAN.', 'Banku un IBAN var mainīt tikai administrators.');
     return (
         <AdminGate>
@@ -102,7 +105,16 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
                         {revokeNotice && <p className="text-emerald-600 dark:text-emerald-400">{revokeNotice}</p>}
                         {suppressionNotice && <p className="text-emerald-600 dark:text-emerald-400">{suppressionNotice}</p>}
-                        {mergeNotice && <p className="text-emerald-600 dark:text-emerald-400">{mergeNotice}</p>}
+                        {mergeNotice && (
+                            <p className="text-emerald-600 dark:text-emerald-400">
+                                {mergeNotice}
+                                {undoSourceId && (
+                                    <Button size="sm" variant="outline" className="ml-2" onClick={() => setUndoOpen(true)}>
+                                        {l('Отменить объединение', 'Undo the merge', 'Atcelt apvienošanu')}
+                                    </Button>
+                                )}
+                            </p>
+                        )}
                     </div>
                 )}
 
@@ -505,13 +517,26 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     l={l}
                     locale={locale}
                     onClose={() => setMergeRequest(null)}
-                    onMerged={({ email, alreadyMerged }) => {
+                    onMerged={({ sourceId, email, alreadyMerged }) => {
                         const targetId = mergeRequest?.targetId;
                         setMergeRequest(null);
+                        setUndoSourceId(alreadyMerged ? null : sourceId);
                         setMergeNotice(alreadyMerged
                             ? l('Аккаунты уже были объединены.', 'The accounts were already merged.', 'Konti jau tika apvienoti.')
                             : l(`Аккаунты объединены: история перенесена, email ${email} теперь у аккаунта с картой.`, `Accounts merged: history moved, ${email} now belongs to the card account.`, `Konti apvienoti: vēsture pārnesta, ${email} tagad pieder kontam ar karti.`));
                         if (targetId) void finishAccountMerge(targetId);
+                    }}
+                />
+                <AccountMergeUndoDialog
+                    key={undoOpen && undoSourceId ? `undo:${undoSourceId}` : 'undo:none'}
+                    sourceId={undoOpen ? undoSourceId : null}
+                    l={l}
+                    onClose={() => setUndoOpen(false)}
+                    onRestored={() => {
+                        setUndoOpen(false);
+                        setUndoSourceId(null);
+                        setMergeNotice(l('Объединение отменено: старый аккаунт и его данные восстановлены.', 'Merge undone: the old account and its data are restored.', 'Apvienošana atcelta: vecais konts un tā dati ir atjaunoti.'));
+                        void loadCardHolders();
                     }}
                 />
                 <Dialog open={clientStepUp !== null} onOpenChange={(open) => { if (!open) closeClientStepUp(); }}>

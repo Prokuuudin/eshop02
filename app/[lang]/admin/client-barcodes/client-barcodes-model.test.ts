@@ -17,6 +17,9 @@ describe('readEmailHolder', () => {
   it('reads a customer holder and a staff holder', () => {
     expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: false, id: 'legacy-1', name: ' Anna ', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
       .toEqual({ staff: false, id: 'legacy-1', name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' })
+    // A manager only learns that an older account holds the email.
+    expect(readEmailHolder({ error: 'email_taken', emailHolder: { staff: false, legacy: true } }))
+      .toEqual({ staff: false, id: null, name: null, cardNumber: null, createdAt: null })
     // Older servers did not send the id: no merge button, the message still works.
     expect(readEmailHolder({ emailHolder: { staff: false, name: 'Anna', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' } }))
       .toMatchObject({ staff: false, id: null })
@@ -39,6 +42,7 @@ describe('canOfferAccountMerge', () => {
     expect(canOfferAccountMerge({ ...legacy, cardNumber: '9999' }, { cardNumber: '4242' }, true)).toBe(false)
     expect(canOfferAccountMerge({ ...legacy, id: null }, { cardNumber: '4242' }, true)).toBe(false)
     expect(canOfferAccountMerge({ staff: true }, { cardNumber: '4242' }, true)).toBe(false)
+    expect(canOfferAccountMerge({ staff: false, id: null, name: null, cardNumber: null, createdAt: null }, { cardNumber: '4242' }, true)).toBe(false)
     expect(canOfferAccountMerge(null, { cardNumber: '4242' }, true)).toBe(false)
   })
 })

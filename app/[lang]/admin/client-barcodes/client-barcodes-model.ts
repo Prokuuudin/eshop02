@@ -156,10 +156,13 @@ export function classifyClientSaveFailure(status: number, code: string | undefin
   return 'unknown'
 }
 
-/** The account that already holds an email, as the server reports it with email_taken. */
+/**
+ * The account that already holds an email, as the server reports it with email_taken. A card-less
+ * (legacy) holder is described only to a caller who may merge accounts; others get no id, name or date.
+ */
 export type EmailHolder =
   | { staff: true }
-  | { staff: false; id: string | null; name: string | null; cardNumber: string | null; createdAt: string }
+  | { staff: false; id: string | null; name: string | null; cardNumber: string | null; createdAt: string | null }
 
 export function readEmailHolder(payload: unknown): EmailHolder | null {
   if (typeof payload !== 'object' || payload === null || !('emailHolder' in payload)) return null
@@ -167,13 +170,13 @@ export function readEmailHolder(payload: unknown): EmailHolder | null {
   if (typeof holder !== 'object' || holder === null) return null
   const h = holder as Record<string, unknown>
   if (h.staff === true) return { staff: true }
-  if (h.staff !== false || typeof h.createdAt !== 'string') return null
+  if (h.staff !== false || (typeof h.createdAt !== 'string' && h.legacy !== true)) return null
   return {
     staff: false,
     id: typeof h.id === 'string' && h.id ? h.id : null,
     name: typeof h.name === 'string' && h.name.trim() ? h.name.trim() : null,
     cardNumber: typeof h.cardNumber === 'string' && h.cardNumber ? h.cardNumber : null,
-    createdAt: h.createdAt,
+    createdAt: typeof h.createdAt === 'string' ? h.createdAt : null,
   }
 }
 

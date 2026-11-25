@@ -1,4 +1,5 @@
 import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { isAccountOwnerMissing } from '@/lib/account-owner-lock'
 import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
 import { calcDeliveryFee } from '@/lib/delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
@@ -172,10 +173,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const delivery = calcDeliveryFee(input.deliveryMethod, subtotal - discount, input.country, shippingSettings)
     const total = Math.max(0, Math.round((subtotal - discount + delivery) * 100) / 100)
 
-    const existingCustomer = await prisma.user.findFirst({
+    const findCustomer = () => prisma.user.findFirst({
       where: { email: { equals: input.email, mode: 'insensitive' } },
       select: { id: true, companyId: true },
     })
+    const existingCustomer = await findCustomer()
 
     const orderBase: Omit<ServerOrder, 'id'> = {
       createdAt: new Date().toISOString(),
@@ -200,11 +202,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Staff typed every unit price: customer sellability (ERP B2B price) does not apply here.
-    const created = await createServerOrder(orderBase, undefined, {
-      staffPricedSale: true,
-      notificationSource: 'admin',
-      notificationCorrelationId: correlationId,
-    })
+    const createOptions = { staffPricedSale: true, notificationSource: 'admin', notificationCorrelationId: correlationId } as const
+    let created: Awaited<ReturnType<typeof createServerOrder>>
+    try {
+      created = await createServerOrder(orderBase, undefined, createOptions)
+    } catch (e) {
+      // The customer looked up above was merged into another account meanwhile (nothing was
+      // written): look the email up again, it now belongs to the kept account.
+      if (!isAccountOwnerMissing(e)) throw e
+      const current = await findCustomer()
+      created = await createServerOrder({ ...orderBase, userId: current?.id, companyId: current?.companyId ?? undefined }, undefined, createOptions)
+    }
     // Runs after this response, i.e. after the status/note/audit write below.
     scheduleImmediateAdminOrderNotification(created.id, correlationId)
 

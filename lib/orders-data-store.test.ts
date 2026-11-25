@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { AccountOwnerMissingError } from '@/lib/account-owner-lock'
 
 const { queryRawMock, transactionMock, orderFindUniqueMock } = vi.hoisted(() => ({
   queryRawMock: vi.fn(),
@@ -40,9 +41,13 @@ const ORDER: Omit<ServerOrder, 'id'> = {
   language: 'ru',
 }
 
+/** The owner lock (lib/account-owner-lock) finds the user; every other raw query returns no rows. */
+const ownerLockAware = (strings: TemplateStringsArray, ...values: unknown[]) =>
+  Promise.resolve(strings.join('?').includes('FOR KEY SHARE') ? [{ id: values[0] }] : [])
+
 function makeTx() {
   return {
-    $queryRaw: vi.fn().mockResolvedValue([]),
+    $queryRaw: vi.fn(ownerLockAware),
     order: {
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({ ...data })),
     },
@@ -266,6 +271,29 @@ describe('createServerOrder — server-side id generation', () => {
       data: { bonusPoints: { decrement: 500 } },
     })
     expect(tx.order.create).not.toHaveBeenCalled()
+  })
+
+  it('locks the owner first and writes nothing when the account was merged away meanwhile', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    tx.$queryRaw.mockImplementation((strings: TemplateStringsArray) =>
+      Promise.resolve(strings.join('?').includes('FOR KEY SHARE') ? [] : []))
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+
+    await expect(createServerOrder({ ...ORDER, userId: 'merged-away' })).rejects.toBeInstanceOf(AccountOwnerMissingError)
+
+    const [firstQuery] = tx.$queryRaw.mock.calls[0] as [TemplateStringsArray]
+    expect(firstQuery.join('?')).toContain('FOR KEY SHARE')
+    expect(tx.order.create).not.toHaveBeenCalled()
+    expect(tx.user.updateMany).not.toHaveBeenCalled()
+  })
+
+  it('takes no owner lock for a guest order', async () => {
+    queryRawMock.mockResolvedValue([{ max: 1042n }])
+    const tx = makeTx()
+    transactionMock.mockImplementation(async (fn) => fn(tx))
+    await createServerOrder({ ...ORDER, userId: undefined })
+    expect(tx.$queryRaw.mock.calls.some(([strings]) => (strings as TemplateStringsArray).join('?').includes('FOR KEY SHARE'))).toBe(false)
   })
 
   it('rolls back a discounted order when another checkout claims the final promo use', async () => {

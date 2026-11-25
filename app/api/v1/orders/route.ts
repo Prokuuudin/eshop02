@@ -1,4 +1,5 @@
 import { CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { isAccountOwnerMissing } from '@/lib/account-owner-lock'
 import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
 import { NextRequest } from 'next/server'
@@ -229,6 +230,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     )
   } catch (error) {
     if (error instanceof CheckoutMaintenanceError) return errorResponse('checkout_maintenance', 503)
+    if (isAccountOwnerMissing(error)) return errorResponse('account_changed', 409)
     if (error instanceof OrderDeliveryError) return errorResponse(error.message, 400)
     if (error instanceof ExistingCheckoutOrderError) {
       if (error.order.stockReservationStatus === 'released' || (error.order.stockReservationStatus === 'reserved'

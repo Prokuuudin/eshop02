@@ -1,4 +1,5 @@
 import { assertGrinsCheckoutOpen, CheckoutMaintenanceError } from '@/lib/grins-import-maintenance'
+import { isAccountOwnerMissing } from '@/lib/account-owner-lock'
 import { prisma } from '@/lib/prisma'
 import { validateOrderDelivery, OrderDeliveryError } from '@/lib/validate-order-delivery'
 import { getShippingSettings } from '@/lib/shipping-settings-server'
@@ -447,6 +448,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, orderId: created.id, order: created, deliveryLocation: created.deliveryLocation, ...(paymentUrl ? { paymentUrl } : {}) })
   } catch (error) {
     if (error instanceof CheckoutMaintenanceError) return NextResponse.json({ error: 'checkout_maintenance' }, { status: 503 })
+    // The signed-in account was merged into another one while this order was being placed.
+    if (isAccountOwnerMissing(error)) return NextResponse.json({ error: 'account_changed' }, { status: 409 })
     if (error instanceof OrderDeliveryError) return NextResponse.json({ error: error.message }, { status: 400 })
     if (error instanceof ExistingCheckoutOrderError) {
       const existing = error.order

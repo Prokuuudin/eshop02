@@ -196,9 +196,11 @@ const requiresStaffManage = (target: StaffTarget, updates: PatchUpdates, isSelf:
 /**
  * Who already holds the email a save collided with, so the admin can find that account. Often
  * it is a legacy (pre-card) account that the card-holder list never shows. A staff holder is
- * reported only as staff. Best effort: without an answer the plain email_taken still stands.
+ * reported only as staff. A card-less holder is described (id, name, date) only to a caller who
+ * may merge accounts (users.manage); anyone else learns only that it is an older account.
+ * Best effort: without an answer the plain email_taken still stands.
  */
-async function describeEmailHolder(email: string, targetId: string) {
+async function describeEmailHolder(email: string, targetId: string, canMerge: boolean) {
   try {
     const holder = await prisma.user.findUnique({
       where: { email },
@@ -206,14 +208,17 @@ async function describeEmailHolder(email: string, targetId: string) {
     })
     if (!holder || holder.id === targetId) return null
     if (isStaffSubject(holder)) return { staff: true as const }
-    // The id lets an admin open the merge preview; merging itself is checked again on the server.
-    return { staff: false as const, id: holder.id, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
+    // A card holder is listed in «База клиентов» for every customer editor anyway.
+    if (holder.cardNumber) return { staff: false as const, name: holder.name, cardNumber: holder.cardNumber, createdAt: holder.createdAt.toISOString() }
+    if (!canMerge) return { staff: false as const, legacy: true as const }
+    // The id opens the merge preview; the merge itself is authorised again on the server.
+    return { staff: false as const, legacy: true as const, id: holder.id, name: holder.name, cardNumber: null, createdAt: holder.createdAt.toISOString() }
   } catch {
     return null
   }
 }
 
-type UniqueSave = { targetId: string; email?: string; cardNumber?: string }
+type UniqueSave = { targetId: string; email?: string; cardNumber?: string; canMerge: boolean }
 
 /**
  * User has two unique columns, email and cardNumber, and P2002 does not reliably say which one
@@ -221,7 +226,7 @@ type UniqueSave = { targetId: string; email?: string; cardNumber?: string }
  */
 async function uniqueViolationResponse(save: UniqueSave | null): Promise<Response> {
   if (save?.email) {
-    const emailHolder = await describeEmailHolder(save.email, save.targetId)
+    const emailHolder = await describeEmailHolder(save.email, save.targetId, save.canMerge)
     if (emailHolder) return NextResponse.json({ error: 'email_taken', emailHolder }, { status: 409 })
   }
   if (save?.cardNumber) {
@@ -256,7 +261,10 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       }
       updates = { ...updates, cardNumber: normalized }
     }
-    uniqueSave = { targetId: id, email: updates.email, cardNumber: updates.cardNumber ?? undefined }
+    uniqueSave = {
+      targetId: id, email: updates.email, cardNumber: updates.cardNumber ?? undefined,
+      canMerge: hasAdminPermission(caller, 'users.manage'),
+    }
     if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'no_updates' }, { status: 400 })
     // Fields a staff manager may edit. Bank name and IBAN are deliberately absent: they are
     // payment details printed on invoices, so only a platform admin (incl. Super Admin) may change them.

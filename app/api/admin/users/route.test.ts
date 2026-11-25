@@ -427,19 +427,38 @@ describe('PATCH /api/admin/users from Clients → all card holders', () => {
       transactionMock.mockRejectedValueOnce(Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }))
     }
 
-    it('names the legacy customer account that holds the email', async () => {
-      permissionMock.mockResolvedValue(MANAGER)
-      userFindMock
-        .mockResolvedValueOnce(CUSTOMER_TARGET)
-        .mockResolvedValueOnce({ id: 'legacy-1', name: 'Anna Ozola', cardNumber: null, createdAt: new Date('2023-09-22T04:53:39.590Z'), platformRole: 'customer', teamRole: null, superAdmin: false })
+    const LEGACY_HOLDER = { id: 'legacy-1', name: 'Anna Ozola', cardNumber: null, createdAt: new Date('2023-09-22T04:53:39.590Z'), platformRole: 'customer', teamRole: null, superAdmin: false }
+
+    it('describes the legacy account (id, name, date) to an admin who may merge accounts', async () => {
+      permissionMock.mockResolvedValue(REGULAR_ADMIN)
+      userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET).mockResolvedValueOnce(LEGACY_HOLDER)
       uniqueViolation()
       const response = await patch({ id: 'u1', ...CLIENT_SAVE })
       expect(response.status).toBe(409)
       expect(await response.json()).toEqual({
         error: 'email_taken',
-        emailHolder: { staff: false, id: 'legacy-1', name: 'Anna Ozola', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' },
+        emailHolder: { staff: false, legacy: true, id: 'legacy-1', name: 'Anna Ozola', cardNumber: null, createdAt: '2023-09-22T04:53:39.590Z' },
       })
       expect(userFindMock).toHaveBeenLastCalledWith(expect.objectContaining({ where: { email: 'salons@example.com' } }))
+    })
+
+    it('tells a manager only that an older account holds the email — no id, name or date', async () => {
+      permissionMock.mockResolvedValue(MANAGER)
+      userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET).mockResolvedValueOnce(LEGACY_HOLDER)
+      uniqueViolation()
+      const response = await patch({ id: 'u1', ...CLIENT_SAVE })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ error: 'email_taken', emailHolder: { staff: false, legacy: true } })
+    })
+
+    it('names a card holder to a manager as before (card holders are listed to them anyway)', async () => {
+      permissionMock.mockResolvedValue(MANAGER)
+      userFindMock.mockResolvedValueOnce(CUSTOMER_TARGET).mockResolvedValueOnce({ ...LEGACY_HOLDER, id: 'holder-2', cardNumber: '5070' })
+      uniqueViolation()
+      const response = await patch({ id: 'u1', ...CLIENT_SAVE })
+      expect(await response.json()).toEqual({
+        error: 'email_taken', emailHolder: { staff: false, name: 'Anna Ozola', cardNumber: '5070', createdAt: '2023-09-22T04:53:39.590Z' },
+      })
     })
 
     it('reports a staff holder only as staff', async () => {

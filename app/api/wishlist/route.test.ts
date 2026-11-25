@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/prisma', () => ({ prisma: { wishlistItem: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() } } }))
+const { ownerRows } = vi.hoisted(() => ({ ownerRows: { current: [{ id: 'user-a' }] as Array<{ id: string }> } }))
+vi.mock('@/lib/prisma', () => {
+  const prisma: Record<string, unknown> = {
+    wishlistItem: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+    $queryRaw: vi.fn(async () => ownerRows.current),
+  }
+  // The upsert runs in a transaction with the owner lock (lib/account-owner-lock).
+  prisma.$transaction = vi.fn(async (run: (tx: unknown) => Promise<unknown>) => run(prisma))
+  return { prisma }
+})
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'
@@ -30,6 +39,16 @@ describe('/api/wishlist ownership and retry behavior', () => {
       where: { userId_productId: { userId: 'user-a', productId: 'product-1' } },
       create: { userId: 'user-a', productId: 'product-1' }, update: {},
     })
+  })
+
+  it('locks the owner row and adds nothing for an account merged away meanwhile', async () => {
+    ownerRows.current = []
+    const response = await POST(new NextRequest('https://shop.test/api/wishlist', {
+      method: 'POST', body: JSON.stringify({ productId: 'product-1' }),
+    }))
+    ownerRows.current = [{ id: 'user-a' }]
+    expect(response.status).toBe(401)
+    expect(prisma.wishlistItem.upsert).not.toHaveBeenCalled()
   })
 
   it('cannot delete another user through a forged body userId', async () => {

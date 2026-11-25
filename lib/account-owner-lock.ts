@@ -18,10 +18,24 @@ export class AccountOwnerMissingError extends Error {
   }
 }
 
-export async function lockAccountOwner(tx: Pick<ExtendedTransactionClient, '$queryRaw'>, userId: string): Promise<void> {
-  const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM "User" WHERE id = ${userId} FOR KEY SHARE`
+/**
+ * `expected.email`: the address a token is about to be mailed to. Re-checked on the locked row, so a
+ * reset link or invitation is never issued for an account whose email a merge or its undo changed
+ * meanwhile (the lock waits for that transaction; READ COMMITTED then sees the new address).
+ */
+export async function lockAccountOwner(
+  tx: Pick<ExtendedTransactionClient, '$queryRaw'>,
+  userId: string,
+  expected?: { email: string },
+): Promise<void> {
+  const rows = expected
+    ? await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM "User" WHERE id = ${userId} AND lower(email) = lower(${expected.email}) FOR KEY SHARE`
+    : await tx.$queryRaw<Array<{ id: string }>>`SELECT id FROM "User" WHERE id = ${userId} FOR KEY SHARE`
   if (rows.length !== 1) throw new AccountOwnerMissingError(userId)
 }
+
+/** Audit actors that are not accounts (e.g. `system:hairshop-catalog-sync`) have no row to lock. */
+export const isSystemActorId = (id: string): boolean => id.startsWith('system:')
 
 export const isAccountOwnerMissing = (error: unknown): error is AccountOwnerMissingError =>
   error instanceof AccountOwnerMissingError

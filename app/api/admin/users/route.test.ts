@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest, NextResponse } from 'next/server'
 
 const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transactionMock, auditMock, settingMock, userFindManyMock, userCountMock, adminRevocations } = vi.hoisted(() => ({

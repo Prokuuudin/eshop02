@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 
 const client = vi.hoisted(() => ({
   companyActivityLog: {
@@ -6,8 +7,10 @@ const client = vi.hoisted(() => ({
     deleteMany: vi.fn(),
     findMany: vi.fn(),
   },
-  $transaction: vi.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
+  $transaction: vi.fn(),
 }))
+// The entry is written in an interactive transaction with the account's owner lock.
+client.$transaction.mockImplementation(async (run: (tx: unknown) => Promise<unknown>) => run(client))
 
 vi.mock('@/lib/prisma', () => ({ prisma: client }))
 

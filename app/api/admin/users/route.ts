@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAccountOwnerMissing, lockAccountOwner } from '@/lib/account-owner-lock'
 import { logApiError } from '@/lib/observability'
 import { Prisma } from '@/generated/prisma/client'
 import { z } from 'zod'
@@ -326,6 +327,8 @@ export async function PATCH(req: NextRequest): Promise<Response> {
       if (promotionTarget.platformRole !== 'admin') {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
         const approval = await prisma.$transaction(async (tx) => {
+          // AdminRoleChangeRequest.targetUserId has no foreign key (lib/account-owner-lock).
+          await lockAccountOwner(tx, id)
           await tx.adminRoleChangeRequest.updateMany({
             where: { targetUserId: id, status: 'pending' },
             data: { status: 'superseded', resolvedAt: new Date() },
@@ -438,6 +441,7 @@ export async function PATCH(req: NextRequest): Promise<Response> {
     }
     if (message === 'reauthentication_required') return NextResponse.json({ error: message }, { status: 401 })
     if (message === 'forbidden') return NextResponse.json({ error: message }, { status: 403 })
+    if (isAccountOwnerMissing(e)) return NextResponse.json({ error: 'not_found' }, { status: 404 })
     if (isRevokedCardPolicyError(e, 'card_revoked')) {
       return NextResponse.json({ error: 'card_revoked' }, { status: 409 })
     }

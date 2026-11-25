@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { isSystemActorId, lockAccountOwner } from '@/lib/account-owner-lock'
 import type { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import type { ServerUser } from '@/lib/server-auth'
@@ -42,6 +43,10 @@ export async function appendServerAudit(
   actor: ServerUser,
   input: ServerAuditInput,
 ): Promise<void> {
+  // AuditLog.actorUserId has no foreign key (customers are actors too, e.g. returns and RFQs):
+  // lock the actor's account like an FK would, so an account merge cannot leave an audit row
+  // naming a deleted actor (lib/account-owner-lock). System actors have no account.
+  if (!isSystemActorId(actor.id)) await lockAccountOwner(tx, actor.id)
   // Serialize writers so two concurrent mutations cannot fork the integrity chain.
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(203948721)`
   const previous = await tx.auditLog.findFirst({ orderBy: { sequence: 'desc' }, select: { integrityHash: true } })

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAccountOwnerMissing, lockAccountOwner } from '@/lib/account-owner-lock'
 import { escapeHtml as escHtml } from '@/lib/escape-html'
 import { logApiError } from '@/lib/observability'
 import crypto from 'crypto'
@@ -97,10 +98,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-  await prisma.$transaction(async (tx) => {
-    await tx.passwordResetToken.deleteMany({ where: { userId: user.id } })
-    await tx.passwordResetToken.create({ data: { tokenHash: tokenHash(token), userId: user.id, expiresAt } })
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      // The link goes to `email`: issue it only while the account still has that address (an
+      // account merge or its undo may have moved the address meanwhile, see lib/account-owner-lock).
+      await lockAccountOwner(tx, user.id, { email })
+      await tx.passwordResetToken.deleteMany({ where: { userId: user.id } })
+      await tx.passwordResetToken.create({ data: { tokenHash: tokenHash(token), userId: user.id, expiresAt } })
+    })
+  } catch (e) {
+    // Same answer as for an unknown address: nothing is issued, nothing is revealed.
+    if (isAccountOwnerMissing(e)) return NextResponse.json({ ok: true })
+    throw e
+  }
 
   // Never derive the reset base URL from the client-controlled Host header —
   // a poisoned Host would send the victim a reset link (with token) to an attacker

@@ -442,6 +442,10 @@ export type MergeRecoveryRecord = {
   /** Immutable history left pointing at the source id (counts). */
   kept: Record<string, number>
   sideEffects: { suppressionCreated: { key: string; value: unknown } | null }
+  /** Database clock at the start of the merge (UTC, timestamp text): tokens/sessions after it block the undo. */
+  dbMergedAt: string
+  /** Mailing-block rows of both addresses right after the merge (null = none); any change blocks the undo. */
+  suppressionAfterMerge: Record<string, unknown>
 }
 
 export type MergeOutcome =
@@ -477,6 +481,7 @@ export async function executeAccountMerge(tx: Db, input: MergeInput): Promise<Me
 
   // Waiting writers or merges fail fast instead of piling up behind each other.
   await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`
+  const [{ t: dbMergedAt }] = await tx.$queryRaw<Array<{ t: string }>>`SELECT (now() AT TIME ZONE 'UTC')::text AS t`
   // Same lock order for every merge (by id), so two merges sharing an account cannot deadlock.
   // FOR UPDATE also holds back every writer of a reference to either account (FK or owner lock).
   const locked = await tx.$queryRaw<Array<{ id: string }>>`
@@ -547,6 +552,10 @@ export async function executeAccountMerge(tx: Db, input: MergeInput): Promise<Me
 
   // 6. Recovery record: everything needed to put the database back as it was.
   const after = await userJson(tx, targetId)
+  const suppressionAfterMerge: Record<string, unknown> = {}
+  for (const key of [marketingSuppressionKey(source.email), marketingSuppressionKey(target.email)]) {
+    suppressionAfterMerge[key] = (await tx.keyValueSetting.findUnique({ where: { key }, select: { value: true } }))?.value ?? null
+  }
   const record: MergeRecoveryRecord = {
     version: ACCOUNT_MERGE_RECORD_VERSION,
     mergedAt: (input.now ?? new Date()).toISOString(),
@@ -563,6 +572,8 @@ export async function executeAccountMerge(tx: Db, input: MergeInput): Promise<Me
     dropped,
     kept,
     sideEffects: { suppressionCreated },
+    dbMergedAt,
+    suppressionAfterMerge,
   }
   await tx.keyValueSetting.create({ data: { key: recoveryKey, value: record as unknown as Prisma.InputJsonObject } })
 

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { lockAccountOwner } from '@/lib/account-owner-lock'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 
@@ -33,8 +34,10 @@ function jsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNu
  */
 export async function recordCompanyActivity(input: RecordCompanyActivityInput): Promise<void> {
   const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
-  await prisma.$transaction([
-    prisma.companyActivityLog.create({
+  // CompanyActivityLog.userId has no foreign key: lock the account (lib/account-owner-lock).
+  await prisma.$transaction(async (tx) => {
+    await lockAccountOwner(tx, input.userId)
+    await tx.companyActivityLog.create({
       data: {
         id: randomUUID(),
         companyId: input.companyId,
@@ -45,11 +48,11 @@ export async function recordCompanyActivity(input: RecordCompanyActivityInput): 
         details: jsonValue(input.details),
         ipAddress: input.ipAddress ?? null,
       },
-    }),
-    prisma.companyActivityLog.deleteMany({
+    })
+    await tx.companyActivityLog.deleteMany({
       where: { companyId: input.companyId, createdAt: { lt: cutoff } },
-    }),
-  ])
+    })
+  })
 }
 
 export type CompanyActivityEntry = {

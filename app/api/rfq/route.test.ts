@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest } from 'next/server'
 
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 vi.mock('@/lib/admin-permissions', () => ({ hasAdminPermission: vi.fn().mockReturnValue(false) }))
 vi.mock('@/lib/company-activity-log', () => ({ recordCompanyActivity: vi.fn().mockResolvedValue(undefined) }))
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
+vi.mock('@/lib/prisma', () => {
+  const prisma: Record<string, unknown> = {
     rFQRequest: {
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn(),
@@ -13,8 +14,11 @@ vi.mock('@/lib/prisma', () => ({
     product: { findMany: vi.fn().mockResolvedValue([{ id: 'p1', title: 'Product', sku: 'SKU-1', price: 10 }]) },
     user: { findMany: vi.fn().mockResolvedValue([]) },
     userNotification: { createMany: vi.fn() },
-  },
-}))
+  }
+  // The RFQ is created in a transaction with the author's owner lock (lib/account-owner-lock).
+  prisma.$transaction = vi.fn(async (run: (tx: unknown) => Promise<unknown>) => run(prisma))
+  return { prisma }
+})
 
 import { getServerUser } from '@/lib/server-auth'
 import { prisma } from '@/lib/prisma'

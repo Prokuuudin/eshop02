@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest } from 'next/server'
 
-vi.mock('@/lib/prisma', () => ({ prisma: { companyMember: { upsert: vi.fn() } } }))
+vi.mock('@/lib/prisma', () => {
+  const prisma: Record<string, unknown> = { companyMember: { upsert: vi.fn() } }
+  prisma.$transaction = vi.fn(async (run: (tx: unknown) => Promise<unknown>) => run(prisma))
+  return { prisma }
+})
 vi.mock('@/lib/server-auth', () => ({ getServerUser: vi.fn() }))
 
 import { prisma } from '@/lib/prisma'

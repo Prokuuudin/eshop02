@@ -53,6 +53,8 @@ function mergeErrorText(l: L, code: string | undefined, status: number): string 
             return l('Один из аккаунтов только что изменился. Ничего не изменено — откройте объединение заново.', 'One of the accounts has just changed. Nothing was changed — open the merge again.', 'Viens no kontiem tikko mainījās. Nekas netika mainīts — atveriet apvienošanu vēlreiz.');
         case 'already_merged': return l('Этот аккаунт уже объединён с другим клиентом.', 'This account was already merged into another customer.', 'Šis konts jau ir apvienots ar citu klientu.');
         case 'target_changed':
+        case 'target_new_access':
+        case 'suppression_changed':
         case 'moved_rows_changed':
         case 'source_exists':
             return l('После объединения данные уже менялись — отменить автоматически нельзя. Ничего не изменено.', 'The data changed after the merge — it cannot be undone automatically. Nothing was changed.', 'Pēc apvienošanas dati jau mainījās — to nevar atcelt automātiski. Nekas netika mainīts.');

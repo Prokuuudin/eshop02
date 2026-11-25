@@ -59,7 +59,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npx prisma db push --url "$DATABASE_URL"
-      - run: npx vitest run --config vitest.integration.config.ts tests/integration/account-merge-postgres.integration.test.ts
+      - run: npx vitest run --config vitest.integration.config.ts tests/integration/account-merge-postgres.integration.test.ts tests/integration/account-merge-undo-postgres.integration.test.ts
 
   accessibility-webkit:
     runs-on: ubuntu-24.04

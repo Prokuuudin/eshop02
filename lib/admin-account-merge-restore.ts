@@ -24,6 +24,14 @@ import {
  *  - the mailing block the merge created, if it is still the one it created.
  * The record is deleted at the end. Refused when anything changed since the merge (the target was
  * edited, a moved row was moved again): such a case is resolved by hand, never half-restored.
+ *
+ * Also refused, before any write, when since the merge:
+ *  - the card account got a password reset, an MFA challenge, an open invitation, an invitation
+ *    delivery or a session — after the undo the merged address would no longer be the account's,
+ *    yet such a link or session would still open the card account. Tokens issued concurrently
+ *    cannot slip in: their writers re-check the address under the owner lock (lib/account-owner-lock),
+ *    which waits for this transaction and then sees the old address;
+ *  - the mailing block of either address changed (KeyValueSetting is locked for the check).
  */
 
 type Db = ExtendedTransactionClient
@@ -42,7 +50,8 @@ export type RestoreOutcome = {
 function readRecord(value: unknown): MergeRecoveryRecord {
   const record = value as Partial<MergeRecoveryRecord> | null
   if (!record || record.version !== ACCOUNT_MERGE_RECORD_VERSION || !record.source || !record.targetBefore || !record.targetAfter
-    || typeof record.sourceId !== 'string' || typeof record.targetId !== 'string') {
+    || typeof record.sourceId !== 'string' || typeof record.targetId !== 'string'
+    || typeof record.dbMergedAt !== 'string' || !record.suppressionAfterMerge || typeof record.suppressionAfterMerge !== 'object') {
     throw new AccountMergeError('unsupported_record', 409)
   }
   return record as MergeRecoveryRecord
@@ -62,6 +71,25 @@ export async function restoreAccountMerge(tx: Db, sourceId: string): Promise<Res
   const current = await userJson(tx, targetId)
   if (current.email !== record.targetAfter.email || current.updatedAt !== record.targetAfter.updatedAt) {
     throw new AccountMergeError('target_changed', 409)
+  }
+
+  // New ways into the card account since the merge (the merge refused open tokens on it).
+  const mergedAt = record.dbMergedAt
+  const [{ n: access }] = await tx.$queryRaw<Array<{ n: number }>>`
+    SELECT ((SELECT count(*) FROM "PasswordResetToken" WHERE "userId" = ${targetId})
+          + (SELECT count(*) FROM "MfaChallenge" WHERE "userId" = ${targetId})
+          + (SELECT count(*) FROM "InvitationToken" WHERE "userId" = ${targetId} AND (status <> 'accepted' OR "createdAt" >= ${mergedAt}::timestamp))
+          + (SELECT count(*) FROM "InvitationDelivery" WHERE "userId" = ${targetId} AND "sentAt" >= ${mergedAt}::timestamp)
+          + (SELECT count(*) FROM "Session" WHERE "userId" = ${targetId} AND "createdAt" >= ${mergedAt}::timestamp))::int AS n`
+  if (access > 0) throw new AccountMergeError('target_new_access', 409)
+
+  // Mailing blocks exactly as the merge left them; nobody may change them until this commits.
+  await tx.$executeRaw`LOCK TABLE "KeyValueSetting" IN SHARE ROW EXCLUSIVE MODE`
+  for (const [suppressionKey, expected] of Object.entries(record.suppressionAfterMerge)) {
+    const [row] = await tx.$queryRaw<Array<{ same: boolean }>>`
+      SELECT value = ${JSON.stringify(expected)}::jsonb AS same FROM "KeyValueSetting" WHERE key = ${suppressionKey}`
+    const unchanged = expected === null ? row === undefined : row?.same === true
+    if (!unchanged) throw new AccountMergeError('suppression_changed', 409)
   }
 
   // 1. Target columns back (this also frees the source's email), updatedAt included.
@@ -99,13 +127,14 @@ export async function restoreAccountMerge(tx: Db, sourceId: string): Promise<Res
     reinserted[referenceKey(ref)] = rows.length
   }
 
-  // 5. The mailing block the merge created for the new address, if nobody changed it since.
+  // 5. The mailing block the merge created for the new address (checked unchanged above).
   let suppressionRemoved = false
   const created = record.sideEffects.suppressionCreated
   if (created) {
     const removed = await tx.$executeRaw`
       DELETE FROM "KeyValueSetting" WHERE key = ${created.key} AND value = ${JSON.stringify(created.value)}::jsonb`
-    suppressionRemoved = removed === 1
+    if (removed !== 1) throw new AccountMergeError('suppression_changed', 409)
+    suppressionRemoved = true
   }
 
   await tx.keyValueSetting.delete({ where: { key } })

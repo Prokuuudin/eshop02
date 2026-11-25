@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAccountOwnerMissing, lockAccountOwner } from '@/lib/account-owner-lock'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -24,22 +25,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'invalid_role' }, { status: 400 })
     }
 
-    const member = await prisma.companyMember.upsert({
-      where: { companyId_userId: { companyId, userId } },
-      create: {
-        id: `cm_${randomBytes(8).toString('hex')}`,
-        companyId,
-        userId,
-        email,
-        role: memberRole,
-        name,
-        addedBy: user.id,
-      },
-      update: { role: memberRole, name, email },
+    // CompanyMember.userId and .addedBy have no foreign key: lock both accounts (lib/account-owner-lock).
+    const member = await prisma.$transaction(async (tx) => {
+      for (const id of [...new Set([userId, user.id])].sort()) await lockAccountOwner(tx, id)
+      return tx.companyMember.upsert({
+        where: { companyId_userId: { companyId, userId } },
+        create: {
+          id: `cm_${randomBytes(8).toString('hex')}`,
+          companyId,
+          userId,
+          email,
+          role: memberRole,
+          name,
+          addedBy: user.id,
+        },
+        update: { role: memberRole, name, email },
+      })
     })
 
     return NextResponse.json({ member })
   } catch (e) {
+    if (isAccountOwnerMissing(e)) return NextResponse.json({ error: 'user_not_found' }, { status: 404 })
     logApiError("[companies/:id/members POST]", e)
     return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }

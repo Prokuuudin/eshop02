@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
 import { hashInviteToken } from '@/lib/invitations'

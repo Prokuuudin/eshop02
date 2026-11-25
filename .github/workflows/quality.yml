@@ -29,6 +29,38 @@ jobs:
       - run: npm run test:integration
       - run: npm run test:erp:performance
 
+  # Account merge (admin «Объединить аккаунты») on a real PostgreSQL: transactions, rollback,
+  # row locks against concurrent writers and the exact undo round trip. Disposable service DB only.
+  account-merge-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: merge_it
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d merge_it"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/merge_it
+      ALLOW_ACCOUNT_MERGE_DB_TESTS: isolated-postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma db push --url "$DATABASE_URL"
+      - run: npx vitest run --config vitest.integration.config.ts tests/integration/account-merge-postgres.integration.test.ts tests/integration/account-merge-undo-postgres.integration.test.ts
+
   accessibility-webkit:
     runs-on: ubuntu-24.04
     timeout-minutes: 20

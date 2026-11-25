@@ -75,6 +75,9 @@ beforeAll(async () => {
     { id: 'u-real-a', email: 'a@example.test', passwordHash: 'x', bonusPoints: 20 },
     { id: 'u-real-b', email: 'b@example.test', passwordHash: 'x', bonusPoints: 20 },
     { id: 'u-other', email: 'other@example.test', passwordHash: 'x' },
+    // The operator is a real account, as in scripts/repair-test-bonus-order-links.ts
+    // (resolveCleanupOperator): the audit locks its actor row (lib/account-owner-lock).
+    { id: 'u-op', email: 'op@example.test', passwordHash: 'x', platformRole: 'admin', superAdmin: true },
   ] })
   await db.order.createMany({ data: [order('1019', 'u-real-a'), order('1020', 'u-real-b')] })
   await db.bonusTransaction.createMany({ data: [

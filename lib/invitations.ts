@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { lockAccountOwner } from '@/lib/account-owner-lock'
 import { Prisma } from '@/generated/prisma/client'
 import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/prisma'
 
@@ -83,6 +84,8 @@ export async function readInvitations(db: Db, emails?: string[]): Promise<ProInv
 
 /** Replaces the user's open invitations; resolves to how many were replaced. */
 export async function replaceInvitation(db: Db, invitation: NewInvitation): Promise<number> {
+  // The link is mailed to invitation.email: issue it only while the account still has that address.
+  await lockAccountOwner(db, invitation.userId, { email: invitation.email })
   const { count } = await db.invitationToken.deleteMany({
     where: { userId: invitation.userId, status: { not: 'accepted' } },
   })

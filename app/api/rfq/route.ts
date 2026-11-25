@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isAccountOwnerMissing, lockAccountOwner } from '@/lib/account-owner-lock'
 import { logApiError } from '@/lib/observability'
 import { prisma } from '@/lib/prisma'
 import { getServerUser } from '@/lib/server-auth'
@@ -126,18 +127,23 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     let rfq
     try {
-      rfq = await prisma.rFQRequest.create({
-        data: {
-          id,
-          companyId: resolvedCompanyId,
-          items: persistedItems,
-          notes: notes ?? '',
-          status: 'pending',
-          timeline: [{ at: new Date().toISOString(), type: 'created' }] as unknown as Prisma.InputJsonValue,
-          createdByUserId: user.id,
-        },
+      // RFQRequest.createdByUserId has no foreign key: lock the author's account (lib/account-owner-lock).
+      rfq = await prisma.$transaction(async (tx) => {
+        await lockAccountOwner(tx, user.id)
+        return tx.rFQRequest.create({
+          data: {
+            id,
+            companyId: resolvedCompanyId,
+            items: persistedItems,
+            notes: notes ?? '',
+            status: 'pending',
+            timeline: [{ at: new Date().toISOString(), type: 'created' }] as unknown as Prisma.InputJsonValue,
+            createdByUserId: user.id,
+          },
+        })
       })
     } catch (e) {
+      if (isAccountOwnerMissing(e)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
       if ((e as { code?: string })?.code === 'P2002') {
         const race = await prisma.rFQRequest.findUniqueOrThrow({ where: { id } })
         if (race.companyId !== resolvedCompanyId && !hasAdminPermission(user, 'rfq.read')) {

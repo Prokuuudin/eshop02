@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { AccountOwnerMissingError } from '@/lib/account-owner-lock'
 import { NextRequest, NextResponse } from 'next/server'
 
 const { txMock } = vi.hoisted(() => ({
@@ -350,6 +351,22 @@ describe('POST /api/admin/orders', () => {
     const orderArg = vi.mocked(createServerOrder).mock.calls[0][0]
     expect(orderArg.userId).toBe('u-9')
     expect(orderArg.companyId).toBe('company-1')
+  })
+
+  it('re-resolves the customer once when the looked-up account was merged away meanwhile', async () => {
+    vi.mocked(requireAdminPermission).mockResolvedValue(ADMIN_USER as never)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([CATALOG_PRODUCT] as never)
+    vi.mocked(prisma.user.findFirst)
+      .mockResolvedValueOnce({ id: 'legacy-1', companyId: null } as never)
+      .mockResolvedValueOnce({ id: 'card-1', companyId: null } as never)
+    vi.mocked(createServerOrder)
+      .mockRejectedValueOnce(new AccountOwnerMissingError('legacy-1'))
+      .mockResolvedValueOnce({ id: '1045', firstName: 'Ivan', lastName: 'Petrov', total: 55, items: [{}], paymentMethod: 'Наличные' } as never)
+
+    const response = await POST(makeRequest())
+
+    expect(response.status).toBeLessThan(300)
+    expect(vi.mocked(createServerOrder).mock.calls.map(([order]) => order.userId)).toEqual(['legacy-1', 'card-1'])
   })
 
   it('maps InsufficientStockError to 409 with the offending item ids', async () => {

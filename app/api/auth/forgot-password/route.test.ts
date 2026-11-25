@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest } from 'next/server'
 import crypto from 'crypto'
 

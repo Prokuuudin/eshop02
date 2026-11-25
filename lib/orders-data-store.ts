@@ -1,4 +1,5 @@
 import { assertGrinsCheckoutOpen } from './grins-import-maintenance'
+import { lockAccountOwner } from '@/lib/account-owner-lock'
 import { validateOrderDelivery } from './validate-order-delivery'
 import { Prisma } from '@/generated/prisma/client'
 import { calcDeliveryFee } from './delivery'
@@ -70,6 +71,9 @@ export type CreateOrderOptions = {
 const createOrderWithSideEffects = async (id: string, initialOrder: Omit<ServerOrder, 'id'>, prepare?: PrepareOrder, options: CreateOrderOptions = {}): Promise<PrismaOrder> => {
   await assertGrinsCheckoutOpen(prisma)
   return prisma.$transaction(async (tx) => {
+    // Order.userId and PromoCodeRedemption.userId have no foreign key: lock the owner like an FK
+    // would, so an account merge cannot leave this order pointing at a deleted account.
+    if (initialOrder.userId) await lockAccountOwner(tx, initialOrder.userId)
     await assertGrinsCheckoutOpen(tx, true)
     if (initialOrder.userId) await expireBonusPoints(tx, initialOrder.userId)
     const currentUser = initialOrder.userId

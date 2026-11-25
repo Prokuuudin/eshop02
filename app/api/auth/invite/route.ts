@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { lockAccountOwner } from '@/lib/account-owner-lock'
 import { logApiError } from '@/lib/observability'
 import { randomUUID } from 'node:crypto'
 import { prisma } from '@/lib/prisma'
@@ -114,6 +115,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         if (!user.companyId) {
           const cardTaken = await tx.company.findUnique({ where: { cardNumber: inv.cardNumber }, select: { id: true } })
           await tx.company.create({ data: { id: companyId, companyName, cardNumber: cardTaken ? null : inv.cardNumber } })
+          // CompanyMember.userId has no foreign key (see lib/account-owner-lock).
+          await lockAccountOwner(tx, user.id)
           await tx.companyMember.create({
             data: {
               id: randomUUID(), companyId, userId: user.id, email: inv.email,

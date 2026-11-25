@@ -1,4 +1,5 @@
 import { Prisma } from '@/generated/prisma/client'
+import { isAccountOwnerMissing, lockAccountOwner } from '@/lib/account-owner-lock'
 import type { Review as PrismaReview } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 
@@ -131,6 +132,8 @@ export const markReviewHelpful = async (
 ): Promise<HelpfulVoteResult> => {
   try {
     await prisma.$transaction(async (tx) => {
+      // ReviewHelpfulVote.voterKey ("user:<id>") has no foreign key: lock the voter's account.
+      if (voterKey.startsWith('user:')) await lockAccountOwner(tx, voterKey.slice('user:'.length))
       await tx.reviewHelpfulVote.create({ data: { reviewId, voterKey } })
       const changed = await tx.review.updateMany({
         where: { id: reviewId, status: 'approved' },
@@ -141,6 +144,8 @@ export const markReviewHelpful = async (
     return 'incremented'
   } catch (error) {
     if (error instanceof ReviewNotFoundError) return 'not_found'
+    // The signed-in account was merged away meanwhile: nothing is recorded.
+    if (isAccountOwnerMissing(error)) return 'not_found'
     if ((error as { code?: string })?.code === 'P2002') return 'duplicate'
     // A missing/deleted review can surface as a foreign-key violation before updateMany.
     if ((error as { code?: string })?.code === 'P2003') return 'not_found'

@@ -5,12 +5,14 @@ import { useTranslation } from '@/lib/use-translation';
 import { useAuthStore } from '@/lib/auth-store';
 import {
     buildClientDetailsPatch,
+    canOfferAccountMerge,
     classifyClientSaveFailure,
     getCardHolderEdit,
     isCompleteClientStepUp,
     normalizeRegistrationNumber,
     readEmailHolder,
     type CardHolder,
+    type CardFilter,
     type CardHolderEdit,
     type ClientSaveFailure,
     type EmailHolder,
@@ -40,6 +42,11 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [customerType, setCustomerType] = useState('all');
     const [mailingFilter, setMailingFilter] = useState<MailingFilter>('all');
+    // «Без карты» lists legacy accounts (merge candidates); admin-only, full customer database only.
+    const [cardFilter, setCardFilter] = useState<CardFilter>('with');
+    const listWithoutCard = cardFilter === 'without' && canEditBankDetails && !registeredOnly;
+    // Card holder id → legacy account id, after a save hit that account's email.
+    const [mergeOffers, setMergeOffers] = useState<Record<string, string>>({});
     const [cardHoldersPage, setCardHoldersPage] = useState(0);
 
     // Список держателей карт — из Neon по /api/admin/users, фильтр по email/
@@ -62,7 +69,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
     const loadCardHolders = useCallback(async () => {
         setCardHoldersLoading(true);
         try {
-            const params = new URLSearchParams({ take: '50', hasCard: '1' });
+            const params = new URLSearchParams({ take: '50', hasCard: listWithoutCard ? '0' : '1' });
             if (registeredOnly) params.set('registration', 'registered');
             params.set('skip', String(cardHoldersPage * 50));
             if (debouncedSearch) params.set('search', debouncedSearch);
@@ -86,7 +93,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         } finally {
             setCardHoldersLoading(false);
         }
-    }, [debouncedSearch, customerType, mailingFilter, cardHoldersPage, language, registeredOnly]);
+    }, [debouncedSearch, customerType, mailingFilter, cardHoldersPage, language, registeredOnly, listWithoutCard]);
 
     useEffect(() => {
         queueMicrotask(() => void loadCardHolders());
@@ -102,20 +109,35 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             return next;
         });
 
-    const emailTakenText = (holder: EmailHolder | null) => {
+    const emailTakenText = (holder: EmailHolder | null, mergeOffered = false) => {
         if (!holder) {
             return l('Не сохранено: этот email уже занят другим аккаунтом.', 'Not saved: this email is already used by another account.', 'Nav saglabāts: šo e-pastu jau izmanto cits konts.');
         }
         if (holder.staff) {
             return l('Не сохранено: этот email занят аккаунтом сотрудника.', 'Not saved: this email belongs to a staff account.', 'Nav saglabāts: šis e-pasts pieder darbinieka kontam.');
         }
+        if (!holder.cardNumber && !holder.createdAt) {
+            // Only staff who may merge accounts see who the older account is.
+            return l(
+                'Не сохранено: этот email у старого аккаунта без карты. Объединить аккаунты может администратор.',
+                'Not saved: this email belongs to an older account without a card. An administrator can merge the accounts.',
+                'Nav saglabāts: šis e-pasts pieder vecam kontam bez kartes. Kontus var apvienot administrators.',
+            );
+        }
         const name = holder.name ?? l('без имени', 'no name', 'bez vārda');
-        const created = new Date(holder.createdAt).toLocaleDateString('lv-LV');
+        const created = holder.createdAt ? new Date(holder.createdAt).toLocaleDateString('lv-LV') : '—';
         if (holder.cardNumber) {
             return l(
                 `Не сохранено: этот email уже у клиента «${name}» (карта ${holder.cardNumber}). Найдите его поиском по номеру карты.`,
                 `Not saved: this email already belongs to customer “${name}” (card ${holder.cardNumber}). Search by the card number to find them.`,
                 `Nav saglabāts: šis e-pasts jau pieder klientam “${name}” (karte ${holder.cardNumber}). Atrodiet to, meklējot pēc kartes numura.`,
+            );
+        }
+        if (mergeOffered) {
+            return l(
+                `Не сохранено: этот email у старого аккаунта «${name}» без карты (создан ${created}). Если это тот же клиент, нажмите «Объединить аккаунты» и проверьте предпросмотр.`,
+                `Not saved: this email belongs to an older account “${name}” without a card (created ${created}). If it is the same customer, click “Merge accounts” and check the preview.`,
+                `Nav saglabāts: šis e-pasts pieder vecam kontam “${name}” bez kartes (izveidots ${created}). Ja tas ir tas pats klients, nospiediet “Apvienot kontus” un pārbaudiet priekšskatījumu.`,
             );
         }
         return l(
@@ -125,10 +147,10 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         );
     };
 
-    const clientSaveErrorText = (failure: ClientSaveFailure, status: number, emailHolder: EmailHolder | null = null) => {
+    const clientSaveErrorText = (failure: ClientSaveFailure, status: number, emailHolder: EmailHolder | null = null, mergeOffered = false) => {
         switch (failure) {
             case 'email_taken':
-                return emailTakenText(emailHolder);
+                return emailTakenText(emailHolder, mergeOffered);
             case 'card_taken':
                 return l('Не сохранено: этот номер карты уже у другого клиента.', 'Not saved: this card number already belongs to another customer.', 'Nav saglabāts: šis kartes numurs jau pieder citam klientam.');
             case 'invalid':
@@ -185,7 +207,15 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
             const payload = await response.json().catch(() => null);
             if (!response.ok) {
                 const failure = classifyClientSaveFailure(response.status, typeof payload?.error === 'string' ? payload.error : undefined);
-                const error = clientSaveErrorText(failure, response.status, readEmailHolder(payload));
+                const emailHolder = readEmailHolder(payload);
+                const mergeOffered = failure === 'email_taken' && canOfferAccountMerge(emailHolder, holder, canEditBankDetails);
+                setMergeOffers((prev) => {
+                    const next = { ...prev };
+                    if (mergeOffered && emailHolder && !emailHolder.staff && emailHolder.id) next[holder.id] = emailHolder.id;
+                    else delete next[holder.id];
+                    return next;
+                });
+                const error = clientSaveErrorText(failure, response.status, emailHolder, mergeOffered);
                 if (failure === 'step_up_required' || failure === 'step_up_failed') {
                     // Keep the draft and ask (again) for the confirmation instead of a dead-end error.
                     setClientStepUp((prev) => ({
@@ -206,6 +236,11 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
                 return;
             }
             closeClientStepUp();
+            setMergeOffers((prev) => {
+                const next = { ...prev };
+                delete next[holder.id];
+                return next;
+            });
             setMessage(l('Данные клиента обновлены.', 'Customer details updated.', 'Klienta dati atjaunināti.'));
             setFormError('');
             // Drop the draft so the row shows what the server actually stored.
@@ -225,6 +260,23 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         }
     };
 
+    /** After a merge the row reloads with the stored email; the draft and the error go. */
+    const finishAccountMerge = async (holderId: string) => {
+        setMergeOffers((prev) => {
+            const next = { ...prev };
+            delete next[holderId];
+            return next;
+        });
+        setClientRowError(holderId, '');
+        setFormError('');
+        setClientEdits((prev) => {
+            const next = { ...prev };
+            delete next[holderId];
+            return next;
+        });
+        await loadCardHolders();
+    };
+
     const submitClientStepUp = async () => {
         if (!clientStepUp || !isCompleteClientStepUp(clientStepUp)) return;
         const holder = cardHolders.find((candidate) => candidate.id === clientStepUp.holderId);
@@ -235,7 +287,7 @@ function useAdminClientBarcodesPageState(registeredOnly: boolean) {
         await handleSaveClientDetails(holder, clientStepUp);
     };
 
-      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, mailingFilter, setMailingFilter, cardHoldersPage, setCardHoldersPage, cardHolders, loadCardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp }
+      return { t, language, l, tl, formError, setFormError, message, setMessage, search, setSearch, customerType, setCustomerType, mailingFilter, setMailingFilter, cardFilter, setCardFilter, listWithoutCard, mergeOffers, finishAccountMerge, cardHoldersPage, setCardHoldersPage, cardHolders, loadCardHolders, cardHoldersTotal, cardHoldersLoading, cardHoldersError, clientEdits, setClientEdits, canEditBankDetails, clientSaveBusy, clientRowErrors, getClientEdit, handleSaveClientDetails, clientStepUp, setClientStepUp, closeClientStepUp, submitClientStepUp }
 }
 
 export function useAdminClientBarcodesPage(registeredOnly = true): ReturnType<typeof useAdminClientBarcodesPageState> {

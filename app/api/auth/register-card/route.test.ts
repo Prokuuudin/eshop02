@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { createHash } from 'node:crypto'
 
 const {

@@ -6,7 +6,10 @@ import type { ExtendedPrismaClient, ExtendedTransactionClient } from '@/lib/pris
 type Db = ExtendedPrismaClient | ExtendedTransactionClient
 
 export const CAMPAIGN_KV_KEY = 'card-rules-campaign'
-export const INVITE_TTL_DAYS = 7
+// New invitation links stay valid for 30 days from their creation. Existing
+// tokens keep the expiresAt stored when they were issued.
+export const INVITE_TTL_DAYS = 30
+export const INVITE_TTL_MS = INVITE_TTL_DAYS * 24 * 60 * 60 * 1000
 export const CAMPAIGN_BATCH_SIZE = 50
 export const CAMPAIGN_LOCK_MS = 120_000
 export const INVITE_BATCH_SIZE = 20

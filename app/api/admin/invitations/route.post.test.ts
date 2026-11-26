@@ -363,6 +363,37 @@ describe('POST /api/admin/invitations — repeats and concurrency', () => {
     ])
   })
 
+  it('issues a 30-day link; a resend days later voids it and issues a fresh 30-day link', async () => {
+    await post(['u1'])
+    const first = h.state.tokens[0]
+    expect(new Date(first.expiresAt).toISOString()).toBe('2026-12-09T10:00:00.000Z')
+
+    vi.setSystemTime(new Date('2026-11-20T08:00:00Z'))
+    const res = await post(['u1'])
+
+    expect((await res.json()).results[0].status).toBe('sent')
+    expect(h.state.tokens.some((t) => t.tokenHash === first.tokenHash)).toBe(false)
+    expect(live('u1')).toHaveLength(1)
+    expect(new Date(live('u1')[0].expiresAt).toISOString()).toBe('2026-12-20T08:00:00.000Z')
+    expect(h.state.audits.find((a) => a.action === 'invitation.replaced')?.after)
+      .toMatchObject({ expiresAt: '2026-12-20T08:00:00.000Z' })
+  })
+
+  it('records a failed resend as a send error and leaves no usable link', async () => {
+    await post(['u1'])
+    const first = h.state.tokens[0].tokenHash
+    vi.setSystemTime(new Date('2026-11-20T08:00:00Z'))
+    h.sendEmail.mockRejectedValueOnce(new Error('SMTP down'))
+
+    const res = await post(['u1'])
+
+    expect((await res.json()).results[0].status).toBe('error')
+    expect(h.state.tokens.some((t) => t.tokenHash === first)).toBe(false)
+    expect(live('u1')).toHaveLength(0)
+    expect(h.state.tokens.filter((t) => t.userId === 'u1').map((t) => t.status)).toEqual(['error'])
+    expect(h.state.deliveries.filter((d) => d.userId === 'u1').map((d) => d.status)).toEqual(['sent', 'error'])
+  })
+
   it('allows an immediate resend after a failed delivery', async () => {
     h.sendEmail.mockRejectedValueOnce(new Error('SMTP down'))
     await post(['u1'])

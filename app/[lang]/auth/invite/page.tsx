@@ -8,12 +8,27 @@ import { Input } from '@/components/ui/input';
 import { syncCurrentSessionUser } from '@/lib/auth';
 import { useTranslation } from '@/lib/use-translation';
 import { trackClientCardActivation, trackSignUp } from '@/lib/analytics';
+import { COMPANY } from '@/data/company';
 
 type Stage = 'loading' | 'form' | 'submitting' | 'done' | 'error';
 
 const ERROR_TEXT: Record<string, [string, string, string]> = {
     invalid_token: ['Ссылка недействительна.', 'The link is invalid.', 'Saite nav derīga.'],
-    token_expired: ['Ссылка устарела. Запросите новое приглашение.', 'The link has expired. Request a new invitation.', 'Saites derīgums ir beidzies. Pieprasiet jaunu ielūgumu.'],
+    token_expired: [
+        `Срок действия ссылки истёк. Чтобы получить новое приглашение, обратитесь в службу поддержки Hairshop Pro: ${COMPANY.email}.`,
+        `This link has expired. To receive a new invitation, please contact Hairshop Pro support at ${COMPANY.email}.`,
+        `Saites derīguma termiņš ir beidzies. Lai saņemtu jaunu ielūgumu, lūdzu, sazinieties ar Hairshop Pro atbalsta dienestu: ${COMPANY.email}.`,
+    ],
+    card_revoked: [
+        `Клиентская карта из этого приглашения больше не действует. Обратитесь в службу поддержки Hairshop Pro: ${COMPANY.email}.`,
+        `The client card in this invitation is no longer valid. Please contact Hairshop Pro support at ${COMPANY.email}.`,
+        `Šajā ielūgumā norādītā klienta karte vairs nav derīga. Lūdzu, sazinieties ar Hairshop Pro atbalsta dienestu: ${COMPANY.email}.`,
+    ],
+    temporarily_unavailable: [
+        'Активация временно недоступна. Попробуйте ещё раз через несколько минут.',
+        'Activation is temporarily unavailable. Please try again in a few minutes.',
+        'Aktivizēšana īslaicīgi nav pieejama. Lūdzu, mēģiniet vēlreiz pēc dažām minūtēm.',
+    ],
     already_used: ['Приглашение уже использовано. Войдите со своим паролем.', 'This invitation was already used. Log in with your password.', 'Ielūgums jau ir izmantots. Piesakieties ar savu paroli.'],
     weak_password: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],
     password_too_short: ['Пароль должен быть не короче 8 символов.', 'Password must be at least 8 characters.', 'Parolei jābūt vismaz 8 rakstzīmēm.'],

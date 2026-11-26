@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import PhoneInput from '@/components/ui/phone-input';
 import AdminGate from '@/components/admin/AdminGate';
-import { INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmail } from './invitation-models';
+import { EMAIL_INVITE_BATCH_SIZE, INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmail } from './invitation-models';
 import { InvitationPager, SortArrow } from './invitation-list-ui';
 import { useInvitationsPage } from './useInvitationsPage';
 import { MarketingSuppressedBadge } from '../client-barcodes/MarketingSuppression';
@@ -161,8 +161,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             <h4 className="font-medium">{l('Приглашение по email', 'Invitation by email', 'Ielūgums e-pastā')}</h4>
                             <ol className="mt-2 list-decimal space-y-1 pl-5 text-blue-900/80 dark:text-blue-100/80">
                                 <li>{l('Отметьте клиента/-ов с реальными email. Помните, что @client.local почтой клиента не является — это технический адрес.', 'Select the client(s) with real email addresses. Remember that @client.local is not a client email — it is a technical address.', 'Atlasiet klientu/-us ar īstām e-pasta adresēm. Atcerieties, ka @client.local nav klienta e-pasts — tā ir tehniska adrese.')}</li>
-                                <li>{l('Отправьте приглашение кнопкой «Email» или общей кнопкой отправки. Система обрабатывает ваш выбор порциями по 20 писем.', 'Send the invitation using the “Email” button or the bulk-send button. The system processes your selection in batches of 20 emails.', 'Nosūtiet ielūgumu ar pogu “E-pasts” vai kopējās sūtīšanas pogu. Sistēma apstrādā jūsu atlasi 20 e-pastu partijās.')}</li>
+                                <li>{l(`Отправьте приглашение кнопкой «Email» или общей кнопкой отправки. Система обрабатывает ваш выбор порциями по ${EMAIL_INVITE_BATCH_SIZE} писем.`, `Send the invitation using the “Email” button or the bulk-send button. The system processes your selection in batches of ${EMAIL_INVITE_BATCH_SIZE} emails.`, `Nosūtiet ielūgumu ar pogu “E-pasts” vai kopējās sūtīšanas pogu. Sistēma apstrādā jūsu atlasi ${EMAIL_INVITE_BATCH_SIZE} e-pastu partijās.`)}</li>
                                 <li>{l('После отправки обратите внимание на ответ системы — нет ли ошибки отправки. При необходимости повторите отправку ещё раз.', 'After sending, check the system response for a sending error. If necessary, send the invitation again.', 'Pēc sūtīšanas pārbaudiet sistēmas atbildi — vai nav sūtīšanas kļūdas. Ja nepieciešams, nosūtiet ielūgumu vēlreiz.')}</li>
+                                <li>{l('Ссылка из письма действует 30 дней. Если срок прошёл (статус «истёк срок приглашения»), нажмите «Email повторно»: клиент получит новую ссылку, а прежняя перестанет действовать.', 'The link in the email is valid for 30 days. If it has lapsed (status “invitation expired”), click “Resend email”: the client receives a new link and the previous one stops working.', 'Saite e-pastā ir derīga 30 dienas. Ja termiņš ir beidzies (statuss “ielūguma termiņš beidzies”), nospiediet “Sūtīt e-pastu atkārtoti”: klients saņems jaunu saiti, bet iepriekšējā vairs nedarbosies.')}</li>
                             </ol>
                             <Link href="/admin/config/email-templates?template=pro-invite" className="mt-2 inline-block text-xs font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100">
                                 {l('Редактировать шаблон письма', 'Edit email template', 'Rediģēt e-pasta veidni')}

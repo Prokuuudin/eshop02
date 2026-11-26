@@ -10,6 +10,7 @@ import { logApiError } from '@/lib/observability'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getSiteUrl } from '@/lib/site-url'
 import { assertCardAssignable } from '@/lib/revoked-card-policy'
+import { invitationOptOutUrl } from '@/lib/invitation-suppression'
 
 /** A self-requested activation link is short-lived; staff-sent invitations keep INVITE_TTL_DAYS. */
 export const CARD_ACTIVATION_TTL_HOURS = 24
@@ -93,7 +94,13 @@ export async function sendCardActivationInvite(user: ActivationCandidate & { car
     const tpl = pickInviteTemplate(templates, language)
     const { subject, html } = buildInviteEmail(
       language,
-      { name: user.name ?? '', cardNumber: user.cardNumber, inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}`, bonus: await getBonusProgramConfig() },
+      {
+        name: user.name ?? '',
+        cardNumber: user.cardNumber,
+        inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}`,
+        optOutUrl: invitationOptOutUrl(user.id, language, getSiteUrl()),
+        bonus: await getBonusProgramConfig(),
+      },
       tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
     )
     try {

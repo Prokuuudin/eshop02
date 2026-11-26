@@ -16,6 +16,7 @@ import { formatEuro, getLocaleFromLanguage } from '@/lib/utils';
 import { useAdminClientBarcodesPage, type CardHolder } from './useAdminClientBarcodesPage';
 import { RevokeCardDialog, RevokedCardsPanel } from './CardRevocation';
 import { MarketingSuppressedBadge, MarketingSuppressionDialog, MarketingSuppressionSwitch } from './MarketingSuppression';
+import { InvitationSuppressedBadge, InvitationSuppressionDialog, InvitationSuppressionSwitch } from './InvitationSuppression';
 import { AccountMergeDialog, AccountMergeUndoDialog, type AccountMergeRequest } from './AccountMerge';
 import { isCompleteClientStepUp, type CardFilter, type MailingFilter } from './client-barcodes-model';
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits';
@@ -70,6 +71,8 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
     // (the server enforces both).
     const [suppressionRequest, setSuppressionRequest] = useState<{ holder: CardHolder; mode: 'set' | 'lift' } | null>(null);
     const [suppressionNotice, setSuppressionNotice] = useState('');
+    const [invitationSuppressionRequest, setInvitationSuppressionRequest] = useState<{ holder: CardHolder; mode: 'set' | 'lift' } | null>(null);
+    const [invitationSuppressionNotice, setInvitationSuppressionNotice] = useState('');
     // «Объединить аккаунты» (admin-only; the server enforces it): legacy account → card holder.
     const canMergeAccounts = canEditBankDetails;
     const [mergeRequest, setMergeRequest] = useState<AccountMergeRequest | null>(null);
@@ -99,12 +102,13 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                     </div>
                 </div>
 
-                {(formError || message || revokeNotice || suppressionNotice || mergeNotice) && (
+                {(formError || message || revokeNotice || suppressionNotice || invitationSuppressionNotice || mergeNotice) && (
                     <div className="rounded-lg border px-4 py-3 text-sm">
                         {formError && <p className="text-red-600 dark:text-red-400">{formError}</p>}
                         {message && <p className="text-emerald-600 dark:text-emerald-400">{message}</p>}
                         {revokeNotice && <p className="text-emerald-600 dark:text-emerald-400">{revokeNotice}</p>}
                         {suppressionNotice && <p className="text-emerald-600 dark:text-emerald-400">{suppressionNotice}</p>}
+                        {invitationSuppressionNotice && <p className="text-emerald-600 dark:text-emerald-400">{invitationSuppressionNotice}</p>}
                         {mergeNotice && (
                             <p className="text-emerald-600 dark:text-emerald-400">
                                 {mergeNotice}
@@ -242,6 +246,7 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                 <td className="py-2 pr-4 font-mono text-xs">
                                                     {holder.cardNumber ?? '—'}
                                                     {holder.marketingSuppression && <div><MarketingSuppressedBadge l={l} /></div>}
+                                                    {holder.invitationSuppression && <div><InvitationSuppressedBadge l={l} /></div>}
                                                 </td>
                                                 <td className="py-2 pr-4">
                                                     <Input
@@ -441,6 +446,16 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                                                         canLift={canEditBankDetails}
                                                         onRequest={(target, mode) => { setSuppressionNotice(''); setSuppressionRequest({ holder: target, mode }); }}
                                                     />
+                                                    <InvitationSuppressionSwitch
+                                                        holder={holder}
+                                                        l={l}
+                                                        locale={locale}
+                                                        canLift={canEditBankDetails}
+                                                        onRequest={(target, mode) => {
+                                                            setInvitationSuppressionNotice('');
+                                                            setInvitationSuppressionRequest({ holder: target, mode });
+                                                        }}
+                                                    />
                                                     {clientRowErrors[holder.id] && (
                                                         <p role="alert" className="mt-1 w-48 whitespace-normal text-xs text-red-600 dark:text-red-400">
                                                             {clientRowErrors[holder.id]}
@@ -508,6 +523,20 @@ export default function AdminClientBarcodesPage(): React.ReactElement {
                         setSuppressionNotice(mode === 'set'
                             ? l(`Рассылки и приглашения для «${who}» запрещены.`, `Mailings and invitations blocked for “${who}”.`, `Sūtījumi un ielūgumi klientam “${who}” aizliegti.`)
                             : l(`Запрет рассылок для «${who}» снят.`, `Mailing block lifted for “${who}”.`, `Sūtījumu aizliegums klientam “${who}” atcelts.`));
+                        void loadCardHolders();
+                    }}
+                />
+                <InvitationSuppressionDialog
+                    key={invitationSuppressionRequest ? `invitation-suppression:${invitationSuppressionRequest.holder.id}:${invitationSuppressionRequest.mode}` : 'invitation-suppression:none'}
+                    request={invitationSuppressionRequest}
+                    l={l}
+                    onClose={() => setInvitationSuppressionRequest(null)}
+                    onDone={(holder, mode) => {
+                        setInvitationSuppressionRequest(null);
+                        const who = holder.name || holder.email;
+                        setInvitationSuppressionNotice(mode === 'set'
+                            ? l(`Повторные приглашения для «${who}» запрещены.`, `Further invitations blocked for “${who}”.`, `Turpmāki uzaicinājumi klientam “${who}” aizliegti.`)
+                            : l(`Запрет повторных приглашений для «${who}» снят.`, `Further-invitation block lifted for “${who}”.`, `Turpmāku uzaicinājumu aizliegums klientam “${who}” atcelts.`));
                         void loadCardHolders();
                     }}
                 />

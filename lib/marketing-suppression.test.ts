@@ -49,6 +49,7 @@ import {
   suppressedUserIds,
 } from '@/lib/marketing-suppression'
 import { getMarketingOptedOutSet, unsubscribeFromMarketing } from '@/lib/newsletter-store'
+import { addInvitationSuppression } from '@/lib/invitation-suppression'
 
 const db = prisma as unknown as Parameters<typeof addMarketingSuppression>[0]
 
@@ -116,6 +117,22 @@ describe('sendMarketingEmail — the check runs right before SMTP', () => {
     // A retry of the same email later is refused again.
     expect(await sendMarketingEmail('q2@x.lv', 'S', 'H', { category: 'card_rules_campaign' })).toBe('suppressed')
     expect(h.sendEmail).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops an invitation-only opt-out immediately before SMTP without blocking other mailings', async () => {
+    await addInvitationSuppression(db, { userId: 'u-opted-out', source: 'client_link' })
+    expect(await sendMarketingEmail('client@x.lv', 'S', 'H', { category: 'invitation', userId: 'u-opted-out' })).toBe('invitation_suppressed')
+    expect(h.sendEmail).not.toHaveBeenCalled()
+
+    expect(await sendMarketingEmail('client@x.lv', 'S', 'H', { category: 'broadcast', userId: 'u-opted-out' })).toBe('sent')
+    expect(h.sendEmail).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the full mailing block as the priority when both restrictions exist', async () => {
+    await addMarketingSuppression(db, { email: 'both@x.lv', source: 'admin' })
+    await addInvitationSuppression(db, { userId: 'u-both', source: 'admin' })
+    expect(await sendMarketingEmail('both@x.lv', 'S', 'H', { category: 'invitation', userId: 'u-both' })).toBe('suppressed')
+    expect(h.sendEmail).not.toHaveBeenCalled()
   })
 
   it('fails closed: when the list cannot be read, nothing is sent', async () => {

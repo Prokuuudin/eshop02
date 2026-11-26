@@ -13,6 +13,7 @@ import { parseOffsetPagination } from '@/lib/pagination'
 import { omitProfileOnlyFields, readCustomerDetails, syncCheckoutProfile } from '@/lib/admin-customer-details'
 import { LEGAL_ADDRESS_MAX_LENGTH } from '@/lib/legal-details-limits'
 import { carryMarketingSuppression, getMarketingSuppressions, suppressedUserIds } from '@/lib/marketing-suppression'
+import { getInvitationSuppressions } from '@/lib/invitation-suppression'
 import { isValidCardNumber, normalizeCardNumber } from '@/lib/card-number'
 import {
   activeCardNumberFilter,
@@ -153,7 +154,10 @@ export async function GET(req: NextRequest): Promise<Response> {
       prisma.user.count({ where }),
     ])
 
-    const suppressions = await getMarketingSuppressions(users.map((u) => u.email))
+    const [suppressions, invitationSuppressions] = await Promise.all([
+      getMarketingSuppressions(users.map((u) => u.email)),
+      getInvitationSuppressions(users.map((u) => u.id)),
+    ])
     const mapped = users.map(({ checkoutProfile, ...u }) => {
       const suppression = suppressions.get(u.email.trim().toLowerCase())
       return {
@@ -161,6 +165,14 @@ export async function GET(req: NextRequest): Promise<Response> {
         ...readCustomerDetails(u, checkoutProfile),
         marketingSuppression: suppression
           ? { since: suppression.optedOutAt, source: suppression.source, setByName: suppression.setByName, reason: suppression.reason }
+          : null,
+        invitationSuppression: invitationSuppressions.has(u.id)
+          ? {
+              since: invitationSuppressions.get(u.id)!.optedOutAt,
+              source: invitationSuppressions.get(u.id)!.source,
+              setByName: invitationSuppressions.get(u.id)!.setByName,
+              reason: invitationSuppressions.get(u.id)!.reason,
+            }
           : null,
         registered: u.privacyAcknowledgedAt !== null && u.platformRole === 'customer',
         registeredAt: u.privacyAcknowledgedAt instanceof Date ? u.privacyAcknowledgedAt.toISOString() : null,

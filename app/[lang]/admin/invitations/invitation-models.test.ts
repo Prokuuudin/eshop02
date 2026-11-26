@@ -5,13 +5,18 @@ import { bulkInviteOutcome, isEligibleUserSent, nextSort, sortEligibleByStatus, 
 describe('bulk invitation results', () => {
     it('counts sent, errors and skipped (already invited, pending, or not returned by the server)', () => {
         const results = [{ status: 'sent' }, { status: 'error' }, { status: 'skipped' }, { status: 'pending' }];
-        expect(tallyInviteChunk(5, results)).toEqual({ sent: 1, failed: 1, skipped: 3, suppressed: 0 });
+        expect(tallyInviteChunk(5, results)).toEqual({ sent: 1, failed: 1, skipped: 3, suppressed: 0, optedOut: 0 });
     });
 
     it('counts clients excluded by «Рассылки запрещены» separately from skipped and errors', () => {
         const results = [{ status: 'sent' }, { status: 'suppressed' }, { status: 'suppressed' }];
-        expect(tallyInviteChunk(4, results)).toEqual({ sent: 1, failed: 0, skipped: 1, suppressed: 2 });
+        expect(tallyInviteChunk(4, results)).toEqual({ sent: 1, failed: 0, skipped: 1, suppressed: 2, optedOut: 0 });
         expect(bulkInviteOutcome({ sent: 0, skipped: 0, failed: 0, suppressed: 5 }, { requestFailed: false, stopped: false })).toBe('done');
+    });
+
+    it('counts invitation-only opt-outs independently', () => {
+        const results = [{ status: 'sent' }, { status: 'opted_out' }, { status: 'suppressed' }];
+        expect(tallyInviteChunk(4, results)).toEqual({ sent: 1, failed: 0, skipped: 1, suppressed: 1, optedOut: 1 });
     });
 
     it('never reports "done" when a request failed or nothing was sent', () => {

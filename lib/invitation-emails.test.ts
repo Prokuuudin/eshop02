@@ -3,6 +3,7 @@ import path from 'path'
 import { buildInviteEmail, buildRulesEmail, formatPointsAsEuros, interpolate, pickInviteTemplate } from './invitation-emails'
 
 const bonus = { enabled: true, welcomeBonusPoints: 500, earnRatePercent: 0.5 }
+const optOutUrl = 'https://x.lv/lv/invitation-opt-out?userId=u1&token=signed'
 const INVITE_SUBJECT_LV =
   'SIA MIKS PLUS aicina pievienoties Hairshop Pro — jaunajam interneta veikalam profesionāļiem!'
 
@@ -19,7 +20,7 @@ describe('interpolate', () => {
 describe('buildInviteEmail', () => {
   it('фолбэк ru содержит карту и ссылку', () => {
     const { subject, html } = buildInviteEmail('ru', {
-      name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus,
+      name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', optOutUrl, bonus,
     })
     expect(subject.length).toBeGreaterThan(0)
     expect(html).toContain('1001')
@@ -31,25 +32,27 @@ describe('buildInviteEmail', () => {
   it('старый плейсхолдер {{registration_link}} в сохранённом шаблоне тоже ведёт по персональной ссылке', () => {
     const { html } = buildInviteEmail(
       'ru',
-      { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus },
+      { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', optOutUrl, bonus },
       { subject: 'S', body: 'B {{registration_link}}' }
     )
-    expect(html).toBe('B https://x.lv/auth/invite?token=t')
+    expect(html).toContain('B https://x.lv/auth/invite?token=t')
+    expect(html).toContain('Не приглашать повторно')
   })
 
   it('DB-шаблон имеет приоритет', () => {
     const { subject, html } = buildInviteEmail(
       'ru',
-      { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x', bonus },
+      { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x', optOutUrl, bonus },
       { subject: 'S {{card_number}}', body: 'B {{invite_link}} {{name}}' }
     )
     expect(subject).toBe('S 1001')
-    expect(html).toBe('B https://x Anna')
+    expect(html).toContain('B https://x Anna')
+    expect(html).toContain(optOutUrl.replace('&', '&amp;'))
   })
 
   it('экранирует HTML в имени', () => {
     const { html } = buildInviteEmail('en', {
-      name: '<img>', cardNumber: '1', inviteUrl: 'https://x', bonus,
+      name: '<img>', cardNumber: '1', inviteUrl: 'https://x', optOutUrl, bonus,
     })
     expect(html).not.toContain('<img>')
     expect(html).toContain('&lt;img&gt;')
@@ -57,21 +60,21 @@ describe('buildInviteEmail', () => {
 })
 
 describe('buildInviteEmail — латышский дефолт', () => {
-  it('письмо только на латышском, при любом языке приглашения', () => {
+  it('основное письмо латышское, а кнопка отказа соответствует языку приглашения', () => {
+    const labels = { lv: 'Turpmāk nesūtīt uzaicinājumus', ru: 'Не приглашать повторно', en: 'Do not send further invitations' }
     for (const lang of ['lv', 'ru', 'en'] as const) {
       const { subject, html } = buildInviteEmail(lang, {
-        name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus,
+        name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', optOutUrl, bonus,
       })
       expect(html).toContain('Aktivizēt kontu')
-      expect(html).not.toMatch(/[А-Яа-яЁё]/)
-      expect(html).not.toContain('Activate account')
+      expect(html).toContain(labels[lang])
       expect(subject).toBe(INVITE_SUBJECT_LV)
     }
   })
 
   it('MIKS PLUS везде с SIA, синие шапка и кнопка, дисклеймер в конце', () => {
     const { html } = buildInviteEmail('lv', {
-      name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', bonus,
+      name: 'Ilze', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', optOutUrl, bonus,
     })
     expect(html).toContain('SIA MIKS PLUS')
     expect(html).not.toMatch(/(?<!SIA )MIKS PLUS/)
@@ -84,7 +87,7 @@ describe('buildInviteEmail — латышский дефолт', () => {
 
   it('инструкция пошаговая: есть нумерованный список', () => {
     const { html } = buildInviteEmail('lv', {
-      name: '', cardNumber: '1001', inviteUrl: 'https://x', bonus,
+      name: '', cardNumber: '1001', inviteUrl: 'https://x', optOutUrl, bonus,
     })
     expect(html).toContain('<ol')
     expect(html).toContain('</ol>')
@@ -92,7 +95,7 @@ describe('buildInviteEmail — латышский дефолт', () => {
 
   it('ссылка присутствует и как кнопка, и текстом (если кнопка не работает)', () => {
     const { html } = buildInviteEmail('en', {
-      name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc', bonus,
+      name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc', optOutUrl, bonus,
     })
     const occurrences = html.split('https://x.lv/auth/invite?token=abc').length - 1
     expect(occurrences).toBeGreaterThanOrEqual(2)
@@ -100,14 +103,14 @@ describe('buildInviteEmail — латышский дефолт', () => {
 
   it('не учит активировать карту по номеру и цифрам телефона', () => {
     const { html } = buildInviteEmail('en', {
-      name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc', bonus,
+      name: '', cardNumber: '1', inviteUrl: 'https://x.lv/auth/invite?token=abc', optOutUrl, bonus,
     })
     expect(html).not.toMatch(/4 cipar|4 цифр|last 4 digits/)
   })
 })
 
 describe('buildInviteEmail — приветственный бонус', () => {
-  const base = { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t' }
+  const base = { name: 'Anna', cardNumber: '1001', inviteUrl: 'https://x.lv/auth/invite?token=t', optOutUrl }
   const tpl = {
     subject: 'S',
     body: 'A<!--bonus-->{{welcome_bonus_points}}|{{welcome_bonus_eur}}|{{bonus_earn_rate}}<!--/bonus-->Z',
@@ -115,12 +118,12 @@ describe('buildInviteEmail — приветственный бонус', () => {
 
   it('подставляет баллы, сумму в евро и процент начисления из конфига', () => {
     const { html } = buildInviteEmail('ru', { ...base, bonus: { enabled: true, welcomeBonusPoints: 750, earnRatePercent: 1 } }, tpl)
-    expect(html).toBe('A<!--bonus-->750|7.50|1<!--/bonus-->Z')
+    expect(html).toContain('A<!--bonus-->750|7.50|1<!--/bonus-->Z')
   })
 
   it('вырезает блок бонуса, если программа выключена или бонус 0', () => {
     for (const b of [{ ...bonus, enabled: false }, { ...bonus, welcomeBonusPoints: 0 }]) {
-      expect(buildInviteEmail('ru', { ...base, bonus: b }, tpl).html).toBe('AZ')
+      expect(buildInviteEmail('ru', { ...base, bonus: b }, tpl).html).toContain('AZ')
     }
   })
 

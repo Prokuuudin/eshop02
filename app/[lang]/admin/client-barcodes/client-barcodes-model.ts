@@ -33,11 +33,20 @@ export type CardHolder = {
   updatedAt: string
   /** «Рассылки запрещены» (lib/marketing-suppression); null when mailings are allowed. */
   marketingSuppression?: MarketingSuppressionInfo | null
+  /** Invitation-only block, independent of marketing consent and account activation. */
+  invitationSuppression?: InvitationSuppressionInfo | null
 }
 
 export type MarketingSuppressionInfo = {
   since: string
   source: 'admin' | 'self_service' | 'erasure'
+  setByName: string | null
+  reason: string | null
+}
+
+export type InvitationSuppressionInfo = {
+  since: string
+  source: 'client_link' | 'admin'
   setByName: string | null
   reason: string | null
 }

@@ -19,7 +19,7 @@ import {
   hashInviteToken,
   replaceInvitation,
   resolveInviteLang,
-  INVITE_TTL_DAYS,
+  INVITE_TTL_MS,
   EMAIL_INVITE_BATCH_SIZE,
   type NewInvitation,
 } from '@/lib/invitations'
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const bonus = await getBonusProgramConfig()
     const base = getSiteUrl()
     const now = new Date()
-    const expiresAt = new Date(now.getTime() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const expiresAt = new Date(now.getTime() + INVITE_TTL_MS).toISOString()
 
     const records: NewInvitation[] = invitable.map((u) => ({
       userId: u.id,

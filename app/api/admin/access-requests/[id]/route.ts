@@ -12,7 +12,7 @@ import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
   hashInviteToken,
-  INVITE_TTL_DAYS,
+  INVITE_TTL_MS,
   newInviteToken,
   replaceInvitation,
   resolveInviteLang,
@@ -156,7 +156,7 @@ export async function PATCH(
       // leaves a live invitation behind.
       const token = newInviteToken()
       const language = resolveInviteLang(existing.language ?? undefined)
-      const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000)
+      const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
 
       let result: { request: Prisma.AccessRequestGetPayload<{ select: typeof REQUEST_SELECT }>; targetUserId: string }
       try {

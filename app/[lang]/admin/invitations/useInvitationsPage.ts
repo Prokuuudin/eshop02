@@ -477,7 +477,7 @@ function useInvitationsPageState() {
         none: l('не приглашён', 'not invited', 'nav ielūgts'),
         sent: l('отправлено', 'sent', 'nosūtīts'),
         accepted: l('зарегистрировался', 'registered', 'reģistrējies'),
-        expired: l('просрочено', 'expired', 'beidzies termiņš'),
+        expired: l('истёк срок приглашения', 'invitation expired', 'ielūguma termiņš beidzies'),
         error: l('ошибка отправки', 'send error', 'sūtīšanas kļūda'),
     };
     const STATUS_CLASS: Record<Holder['status'], string> = {

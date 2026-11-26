@@ -44,7 +44,7 @@ export default function EmailTemplatesPage(): React.ReactElement {
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl border border-border bg-card p-4"><p className="text-2xl font-bold">{templates.length}</p><p className="text-xs text-muted-foreground">{l('актуальных шаблонов', 'active templates', 'aktīvās veidnes')}</p></div>
                     <div className="rounded-xl border border-border bg-card p-4"><p className="text-2xl font-bold">3</p><p className="text-xs text-muted-foreground">{l('языка: RU, EN, LV', 'languages: RU, EN, LV', 'valodas: RU, EN, LV')}</p></div>
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30"><p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">{l('Invite-регистрация', 'Invite registration', 'Reģistrācija ar ielūgumu')}</p><p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{l('Одноразовая ссылка, 7 дней', 'One-time link, 7 days', 'Vienreizēja saite, 7 dienas')}</p></div>
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30"><p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">{l('Invite-регистрация', 'Invite registration', 'Reģistrācija ar ielūgumu')}</p><p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{l('Одноразовая ссылка, 30 дней', 'One-time link, 30 days', 'Vienreizēja saite, 30 dienas')}</p></div>
                 </div>
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">

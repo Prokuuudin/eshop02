@@ -60,6 +60,24 @@ const INVITE_STEPS = [
 const INVITE_BUTTON = 'Aktivizēt kontu'
 const INVITE_LINK_FALLBACK = 'Ja poga nedarbojas, atveriet šo saiti:'
 
+const INVITE_OPT_OUT_LABEL: Record<InviteLang, string> = {
+  lv: 'Turpmāk nesūtīt uzaicinājumus',
+  ru: 'Не приглашать повторно',
+  en: 'Do not send further invitations',
+}
+
+function invitationOptOutAction(lang: InviteLang, url: string): string {
+  return `<div data-invitation-opt-out="true" style="margin:24px 0 0;text-align:center">
+    <a href="${escapeHtml(url)}" style="display:inline-block;padding:10px 18px;border:1px solid #7aaec5;border-radius:8px;background:#fff;color:#4a6878;text-decoration:none;font-size:13px;font-weight:600">
+      ${INVITE_OPT_OUT_LABEL[lang]}
+    </a>
+  </div>`
+}
+
+function ensureInvitationOptOutAction(html: string, lang: InviteLang, url: string): string {
+  return html.includes('data-invitation-opt-out=') ? html : `${html}\n${invitationOptOutAction(lang, url)}`
+}
+
 /** Конфиденциальность/отписка — мелким шрифтом в самом конце письма-приглашения. */
 export const INVITE_DISCLAIMER = [
   'Šī e-pasta ziņojuma saturs ir konfidenciāls un juridiski aizsargāts. Tas ir paredzēts tikai norādītajam adresātam. Ja neesat šī ziņojuma adresāts, jebkāda tā satura izpaušana, kopēšana, izplatīšana vai cita veida izmantošana, kā arī jebkāda rīcība, pamatojoties uz tajā ietverto informāciju, ir stingri aizliegta un var būt prettiesiska.',
@@ -106,8 +124,8 @@ function wrap(title: string, paragraphs: string[], buttonText: string, buttonUrl
 }
 
 export function buildInviteEmail(
-  _lang: InviteLang,
-  vars: { name: string; cardNumber: string; inviteUrl: string; bonus: InviteBonusInfo },
+  lang: InviteLang,
+  vars: { name: string; cardNumber: string; inviteUrl: string; optOutUrl: string; bonus: InviteBonusInfo },
   tpl?: Tpl
 ): { subject: string; html: string } {
   // Card activation happens only through the personal one-time link. A stored template that still
@@ -119,13 +137,17 @@ export function buildInviteEmail(
     card_number: escapeHtml(vars.cardNumber),
     invite_link: activationLink,
     registration_link: activationLink,
+    invite_opt_out_link: escapeHtml(vars.optOutUrl),
     welcome_bonus_points: String(bonusPoints),
     welcome_bonus_eur: formatPointsAsEuros(bonusPoints),
     bonus_earn_rate: String(Math.max(0, vars.bonus.earnRatePercent)),
   }
   if (tpl) {
     const body = bonusPoints > 0 ? tpl.body : tpl.body.replace(BONUS_SECTION_RE, '')
-    return { subject: interpolate(tpl.subject, safe), html: interpolate(body, safe) }
+    return {
+      subject: interpolate(tpl.subject, safe),
+      html: ensureInvitationOptOutAction(interpolate(body, safe), lang, vars.optOutUrl),
+    }
   }
   const html = `<div style="font-family:sans-serif;max-width:560px;margin:0 auto">
     <div style="padding:20px;background:${INVITE_BRAND_BLUE};color:#fff;text-align:center;border-radius:8px 8px 0 0">
@@ -142,6 +164,7 @@ export function buildInviteEmail(
       </a>
     </p>
     <p style="color:#6b7280;font-size:13px">${INVITE_LINK_FALLBACK}<br><a href="${activationLink}" style="color:${INVITE_LIGHT_BLUE}">${activationLink}</a></p>
+    ${invitationOptOutAction(lang, vars.optOutUrl)}
     <div style="margin-top:24px;color:#6b8290;font-size:11px;line-height:1.5">${INVITE_DISCLAIMER.map((p) => `<p style="margin:0 0 6px">${p}</p>`).join('')}</div>
   </div>`
   return { subject: INVITE_SUBJECT, html }

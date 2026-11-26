@@ -1,4 +1,4 @@
-import type { CampaignState, EligibleUser, Holder, HolderContactFilter, HolderInvitationFilter, HolderMailingFilter, SortDir } from './invitation-models';
+import type { CampaignState, EligibleUser, Holder, HolderContactFilter, HolderInvitationFilter, HolderMailingFilter, HolderOptOutFilter, SortDir } from './invitation-models';
 
 type PageQuery = {
     take: number;
@@ -9,6 +9,7 @@ type PageQuery = {
     contact?: HolderContactFilter;
     invitation?: HolderInvitationFilter;
     mailing?: HolderMailingFilter;
+    optOut?: HolderOptOutFilter;
 };
 
 export type InvitationResult = {
@@ -22,6 +23,9 @@ export type InvitationsResponse = {
     results?: InvitationResult[];
     /** Recipients left out because of «Рассылки запрещены». */
     suppressed?: number;
+    /** Recipients left out because they declined further invitations. */
+    optedOut?: number;
+    invitationOptOutCount?: number;
     error?: string;
 };
 
@@ -54,6 +58,7 @@ function buildPageQuery(query: PageQuery): URLSearchParams {
     if (query.contact && query.contact !== 'all') params.set('contact', query.contact);
     if (query.invitation && query.invitation !== 'all') params.set('invitation', query.invitation);
     if (query.mailing && query.mailing !== 'all') params.set('mailing', query.mailing);
+    if (query.optOut && query.optOut !== 'all') params.set('optOut', query.optOut);
     return params;
 }
 
@@ -111,7 +116,7 @@ export async function sendInvitationBatch(
 export async function sendSmsInvitationBatch(
     userIds: string[],
     language: 'ru' | 'en' | 'lv'
-): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; suppressed?: number; error?: string } }> {
+): Promise<{ ok: boolean; data: { simulated?: boolean; results?: Array<{ userId: string; status: string }>; suppressed?: number; optedOut?: number; error?: string } }> {
     return parseResponse(await fetch('/api/admin/invitations/sms', {
         method: 'POST',
         headers: idempotencyHeaders(),

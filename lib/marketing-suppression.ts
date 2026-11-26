@@ -3,6 +3,7 @@ import { Prisma } from '@/generated/prisma/client'
 import { prisma, type ExtendedTransactionClient } from '@/lib/prisma'
 import { sendEmail } from '@/lib/mailer'
 import { logOperationalEvent } from '@/lib/observability'
+import { isInvitationSuppressed } from '@/lib/invitation-suppression'
 
 /**
  * Marketing suppression list: the single source of truth for "do not send this person
@@ -173,12 +174,16 @@ export async function sendMarketingEmail(
   html: string,
   meta: { category: MarketingCategory; userId?: string },
   options?: Parameters<typeof sendEmail>[3],
-): Promise<'sent' | 'suppressed'> {
+): Promise<'sent' | 'suppressed' | 'invitation_suppressed'> {
   // One recipient per marketing email: a list would slip extra addresses past the check.
   if (!to || /[,;]/u.test(to)) throw new Error('marketing_email_single_recipient_required')
   if (await isMarketingSuppressed(to)) {
     logOperationalEvent({ event: 'marketing_email_suppressed', level: 'info', category: meta.category, userId: meta.userId })
     return 'suppressed'
+  }
+  if (meta.category === 'invitation' && meta.userId && await isInvitationSuppressed(meta.userId)) {
+    logOperationalEvent({ event: 'invitation_email_suppressed', level: 'info', category: meta.category, userId: meta.userId })
+    return 'invitation_suppressed'
   }
   await sendEmail(to, subject, html, options)
   return 'sent'

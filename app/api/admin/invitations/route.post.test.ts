@@ -76,6 +76,11 @@ function db(s: State) {
 }
 
 vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
+vi.mock('@/lib/invitation-suppression', () => ({
+  getInvitationSuppressions: vi.fn(async () => new Map()),
+  invitationSuppressedUserIds: vi.fn(async () => []),
+  invitationOptOutUrl: vi.fn((userId: string) => `https://example.test/lv/invitation-opt-out?userId=${userId}&token=signed`),
+}))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => {
@@ -516,7 +521,7 @@ describe('POST /api/admin/invitations — «Рассылки запрещены�
     const res = await post(['u1'], 'only-blocked')
 
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ results: [{ userId: 'u1', email: 'u1@inbox.lv', status: 'suppressed' }], suppressed: 1 })
+    expect(await res.json()).toEqual({ results: [{ userId: 'u1', email: 'u1@inbox.lv', status: 'suppressed' }], suppressed: 1, optedOut: 0 })
     expect(h.state.tokens).toHaveLength(0)
     expect(h.sendEmail).not.toHaveBeenCalled()
     expect(actions()).toEqual(['invitation.delivery_recorded'])
@@ -556,5 +561,60 @@ describe('POST /api/admin/invitations — «Рассылки запрещены�
 
     expect((await retry.json()).results.map((r: { status: string }) => r.status)).toEqual(['suppressed', 'sent'])
     expect(h.sendEmail).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('POST /api/admin/invitations — отказ только от приглашений', () => {
+  const optedOut = new Set<string>()
+
+  beforeEach(async () => {
+    optedOut.clear()
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationSuppressedUserIds).mockImplementation(async (_db?: unknown, ids?: string[]) => (ids ?? []).filter((id) => optedOut.has(id)))
+  })
+
+  afterEach(async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationSuppressedUserIds).mockImplementation(async () => [])
+  })
+
+  it('blocks an individual invitation without issuing an activation token', async () => {
+    optedOut.add('u1')
+    const response = await post(['u1'], 'opted-out-one')
+
+    expect(await response.json()).toEqual({
+      results: [{ userId: 'u1', email: 'u1@inbox.lv', status: 'opted_out' }],
+      suppressed: 0,
+      optedOut: 1,
+    })
+    expect(h.state.tokens).toHaveLength(0)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('excludes opted-out clients from a bulk batch while sending to the rest', async () => {
+    optedOut.add('u2')
+    const response = await post(['u1', 'u2', 'u3'], 'opted-out-bulk', { skipInvited: true })
+    const body = await response.json()
+
+    expect(body.results.map((result: { userId: string; status: string }) => [result.userId, result.status])).toEqual([
+      ['u1', 'sent'], ['u2', 'opted_out'], ['u3', 'sent'],
+    ])
+    expect(h.state.tokens.filter((token) => token.userId === 'u2')).toHaveLength(0)
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u1@inbox.lv', 'u3@inbox.lv'])
+  })
+
+  it('blocks an already prepared invitation at the final send check and retires its token', async () => {
+    const marketing = await import('@/lib/marketing-suppression')
+    vi.mocked(marketing.sendMarketingEmail).mockImplementationOnce(async () => 'invitation_suppressed')
+
+    const response = await post(['u1', 'u2'], 'late-invitation-opt-out')
+    const body = await response.json()
+
+    expect(body.results.map((result: { userId: string; status: string }) => [result.userId, result.status])).toEqual([
+      ['u1', 'opted_out'], ['u2', 'sent'],
+    ])
+    expect(live('u1')).toHaveLength(0)
+    expect(h.state.tokens.find((token) => token.userId === 'u1')?.status).toBe('error')
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u2@inbox.lv'])
   })
 })

@@ -28,6 +28,11 @@ import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getSiteUrl } from '@/lib/site-url'
 import { parseOffsetPagination } from '@/lib/pagination'
 import { activeCardNumberFilter, assertCardsAssignable, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
+import {
+  getInvitationSuppressions,
+  invitationOptOutUrl,
+  invitationSuppressedUserIds,
+} from '@/lib/invitation-suppression'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -58,14 +63,19 @@ export async function GET(req: NextRequest): Promise<Response> {
     const contact = searchParams.get('contact')
     const invitation = searchParams.get('invitation')
     const mailing = searchParams.get('mailing')
+    const optOut = searchParams.get('optOut')
     const { skip, take } = parseOffsetPagination(searchParams, { defaultTake: 50, maxTake: 100 })
-    const revokedCardPolicy = await getRevokedCardPolicy()
+    const [revokedCardPolicy, allInvitationOptOutIds] = await Promise.all([
+      getRevokedCardPolicy(),
+      invitationSuppressedUserIds(),
+    ])
 
-    const where: Record<string, unknown> = {
+    const baseWhere: Record<string, unknown> = {
       cardNumber: activeCardNumberFilter(revokedCardPolicy),
       // Этот же признак используется разделом «Зарегистрированные клиенты».
       privacyAcknowledgedAt: null,
     }
+    const where: Record<string, unknown> = { ...baseWhere }
     const and: Array<Record<string, unknown>> = []
     const hasRealEmail = {
       AND: [
@@ -104,6 +114,8 @@ export async function GET(req: NextRequest): Promise<Response> {
     // «Рассылки запрещены»: список запретов по нормализованному email (lib/marketing-suppression).
     if (mailing === 'suppressed') and.push({ id: { in: await suppressedUserIds() } })
     if (mailing === 'allowed') and.push({ id: { notIn: await suppressedUserIds() } })
+    if (optOut === 'suppressed') and.push({ id: { in: allInvitationOptOutIds } })
+    if (optOut === 'allowed') and.push({ id: { notIn: allInvitationOptOutIds } })
     if (and.length > 0) where.AND = and
 
     const orderBy =
@@ -111,7 +123,7 @@ export async function GET(req: NextRequest): Promise<Response> {
       : sortField === 'cardNumber' ? { cardNumber: sortDir } as const
       : { email: sortDir } as const
 
-    const [rows, total] = await Promise.all([
+    const [rows, total, invitationOptOutCount] = await Promise.all([
       prisma.user.findMany({
         where,
         select: { id: true, name: true, email: true, phone: true, cardNumber: true },
@@ -120,12 +132,16 @@ export async function GET(req: NextRequest): Promise<Response> {
         take,
       }),
       prisma.user.count({ where }),
+      allInvitationOptOutIds.length === 0
+        ? 0
+        : prisma.user.count({ where: { ...baseWhere, id: { in: allInvitationOptOutIds } } }),
     ])
 
     const emails = rows.map((u) => u.email.toLowerCase())
-    const [invitations, suppressions] = await Promise.all([
+    const [invitations, suppressions, invitationSuppressions] = await Promise.all([
       readInvitations(prisma, emails),
       getMarketingSuppressions(rows.map((u) => u.email)),
+      getInvitationSuppressions(rows.map((u) => u.id)),
     ])
     const byEmail = new Map<string, (typeof invitations)[number]>()
     // readInvitations is newest-first; keep the current invitation on resends.
@@ -135,8 +151,10 @@ export async function GET(req: NextRequest): Promise<Response> {
 
     return NextResponse.json({
       total,
+      invitationOptOutCount,
       holders: rows.map((u) => {
         const inv = byEmail.get(u.email.toLowerCase())
+        const invitationSuppression = invitationSuppressions.get(u.id)
         const status = inv ? deriveStatus(inv) : 'none'
         return {
           userId: u.id,
@@ -147,6 +165,12 @@ export async function GET(req: NextRequest): Promise<Response> {
           status,
           sentAt: inv?.sentAt ?? null,
           marketingSuppressed: suppressions.has(u.email.trim().toLowerCase()),
+          invitationSuppression: invitationSuppression
+            ? {
+                since: invitationSuppression.optedOutAt,
+                source: invitationSuppression.source,
+              }
+            : null,
           // Ссылку показываем только пока инвайт живой — админ может скопировать вручную
           inviteUrl: null,
         }
@@ -201,8 +225,15 @@ export async function POST(req: NextRequest): Promise<Response> {
     }).then((rows) => rows.filter((u) => !isProtectedStaffAccount(u)))
     // Клиенты с запретом рассылок не получают ни новых, ни повторных приглашений:
     // токен им не выпускается. Перед самой отправкой sendMarketingEmail проверяет ещё раз.
-    const suppressed = new Set(await suppressedUserIds(prisma, users.map((u) => u.id)))
-    const invitable = users.filter((u) => !suppressed.has(u.id))
+    const [suppressedIds, optedOutIds] = await Promise.all([
+      suppressedUserIds(prisma, users.map((u) => u.id)),
+      invitationSuppressedUserIds(prisma, users.map((u) => u.id)),
+    ])
+    const suppressed = new Set(suppressedIds)
+    const optedOut = new Set(optedOutIds)
+    // The full mailing block has priority if both independent restrictions exist.
+    for (const userId of suppressed) optedOut.delete(userId)
+    const invitable = users.filter((u) => !suppressed.has(u.id) && !optedOut.has(u.id))
 
     const templates = await getTemplates()
     // Базовый pro-invite трёхъязычный; языковой вариант — опциональный override
@@ -285,13 +316,26 @@ export async function POST(req: NextRequest): Promise<Response> {
       const inviteUrl = inviteUrlFor(base, r.token)
       const { subject, html } = buildInviteEmail(
         language,
-        { name: user.name ?? '', cardNumber: r.cardNumber, inviteUrl, bonus },
+        {
+          name: user.name ?? '',
+          cardNumber: r.cardNumber,
+          inviteUrl,
+          optOutUrl: invitationOptOutUrl(r.userId, language, base),
+          bonus,
+        },
         tpl ? { subject: tpl.subject, body: tpl.body } : undefined
       )
       try {
-        if (await sendMarketingEmail(user.email, subject, html, { category: 'invitation', userId: r.userId }) === 'suppressed') {
+        const delivery = await sendMarketingEmail(user.email, subject, html, { category: 'invitation', userId: r.userId })
+        if (delivery === 'suppressed') {
           blockedAtSend.push(r)
           suppressed.add(r.userId)
+          optedOut.delete(r.userId)
+          continue
+        }
+        if (delivery === 'invitation_suppressed') {
+          blockedAtSend.push(r)
+          optedOut.add(r.userId)
           continue
         }
         sent.push(r.userId)
@@ -305,8 +349,11 @@ export async function POST(req: NextRequest): Promise<Response> {
 
     // 3. Результат доставки известен: неушедшие письма помечаем error (их токены
     // гасятся — findValid отвергает error), доставку и итог пишем после коммита токенов.
-    if (prepared.issued.length > 0 || suppressed.size > 0) {
-      await recordEmailDelivery(req, actor, batchId, records.length, sent, failed, prepared.pending, prepared.skipped, [...suppressed], blockedAtSend)
+    if (prepared.issued.length > 0 || suppressed.size > 0 || optedOut.size > 0) {
+      await recordEmailDelivery(
+        req, actor, batchId, records.length, sent, failed, prepared.pending, prepared.skipped,
+        [...suppressed], [...optedOut], blockedAtSend,
+      )
     }
 
     const skipped = new Set(prepared.skipped)
@@ -314,9 +361,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       const delivered = outcome.get(user.id)
       if (delivered) return { userId: user.id, email: user.email, status: delivered.status, inviteUrl: delivered.inviteUrl }
       if (suppressed.has(user.id)) return { userId: user.id, email: user.email, status: 'suppressed' as const }
+      if (optedOut.has(user.id)) return { userId: user.id, email: user.email, status: 'opted_out' as const }
       return { userId: user.id, email: user.email, status: skipped.has(user.id) ? 'skipped' as const : 'pending' as const }
     })
-    return NextResponse.json({ results, suppressed: suppressed.size })
+    return NextResponse.json({ results, suppressed: suppressed.size, optedOut: optedOut.size })
   } catch (e) {
     if (isRevokedCardPolicyError(e)) {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })
@@ -336,6 +384,7 @@ async function recordEmailDelivery(
   pending: string[],
   skipped: string[],
   suppressed: string[] = [],
+  optedOut: string[] = [],
   blockedAtSend: NewInvitation[] = [],
 ): Promise<void> {
   const failedUserIds = failed.map((r) => r.userId)
@@ -360,7 +409,7 @@ async function recordEmailDelivery(
         entityType: 'invitation_batch',
         entityId: batchId,
         requestId: batchId,
-        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending, skipped, suppressed },
+        after: { channel: 'email', batchSize, sent, failed: failedUserIds, pending, skipped, suppressed, optedOut },
       })
     })
   } catch (error) {
@@ -381,12 +430,12 @@ async function replayEmailResults(
   batchId: string,
   issuedUserIds: string[],
   users: Array<{ id: string; email: string }>,
-): Promise<Array<{ userId: string; email: string; status: 'sent' | 'error' | 'pending' | 'suppressed' }>> {
+): Promise<Array<{ userId: string; email: string; status: 'sent' | 'error' | 'pending' | 'suppressed' | 'opted_out' }>> {
   const delivery = await prisma.auditLog.findFirst({
     where: { requestId: batchId, action: 'invitation.delivery_recorded' },
     select: { after: true },
   })
-  const recorded = (delivery?.after ?? {}) as { sent?: string[]; failed?: string[]; suppressed?: string[] }
+  const recorded = (delivery?.after ?? {}) as { sent?: string[]; failed?: string[]; suppressed?: string[]; optedOut?: string[] }
   const issued = new Set(issuedUserIds)
   return users
     .filter((user) => issued.has(user.id))
@@ -395,6 +444,7 @@ async function replayEmailResults(
       email: user.email,
       status: recorded.sent?.includes(user.id) ? 'sent'
         : recorded.suppressed?.includes(user.id) ? 'suppressed'
+        : recorded.optedOut?.includes(user.id) ? 'opted_out'
         : recorded.failed?.includes(user.id) ? 'error' : 'pending',
     }))
 }

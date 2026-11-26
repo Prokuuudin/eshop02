@@ -51,6 +51,8 @@ export type AdminLogAction =
   | 'invitation.delivery_recorded'
   | 'invitation.sms_recorded'
   | 'invitation.card_assigned'
+  | 'invitation.suppression_set'
+  | 'invitation.suppression_lifted'
   | 'card.revoked'
   | 'card.restored'
   | 'access_request.rejection_email_prepared'
@@ -139,6 +141,8 @@ export const ACTION_LABELS: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Результат отправки приглашений',
   'invitation.sms_recorded': 'Запись SMS-приглашений',
   'invitation.card_assigned': 'Назначение карты клиенту',
+  'invitation.suppression_set': 'Запрет повторных приглашений',
+  'invitation.suppression_lifted': 'Снятие запрета повторных приглашений',
   'card.revoked': 'Отзыв карты клиента',
   'card.restored': 'Возврат отозванной карты',
   'access_request.rejection_email_prepared': 'Подготовка письма об отклонении заявки',
@@ -214,6 +218,8 @@ const ACTION_LABELS_EN: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Invitation delivery result',
   'invitation.sms_recorded': 'SMS invitations recorded',
   'invitation.card_assigned': 'Customer card assigned',
+  'invitation.suppression_set': 'Repeat invitations blocked',
+  'invitation.suppression_lifted': 'Repeat invitation block lifted',
   'card.revoked': 'Customer card revoked',
   'card.restored': 'Revoked card restored',
   'access_request.rejection_email_prepared': 'Rejection email prepared',
@@ -289,6 +295,8 @@ const ACTION_LABELS_LV: Record<AdminLogAction, string> = {
   'invitation.delivery_recorded': 'Ielūgumu nosūtīšanas rezultāts',
   'invitation.sms_recorded': 'SMS ielūgumi reģistrēti',
   'invitation.card_assigned': 'Klientam piešķirta karte',
+  'invitation.suppression_set': 'Atkārtoti ielūgumi aizliegti',
+  'invitation.suppression_lifted': 'Atkārtotu ielūgumu aizliegums atcelts',
   'card.revoked': 'Klienta karte atsaukta',
   'card.restored': 'Atsauktā karte atjaunota',
   'access_request.rejection_email_prepared': 'Sagatavota pieteikuma noraidījuma vēstule',

@@ -8,6 +8,7 @@ const { permissionMock, userFindMock, verifyPasswordMock, verifyTotpMock, transa
   settingMock: vi.fn(), userFindManyMock: vi.fn(), userCountMock: vi.fn(),
 }))
 vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
+vi.mock('@/lib/invitation-suppression', () => ({ getInvitationSuppressions: vi.fn(async () => new Map()) }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/server-auth', () => ({ requireAdminPermission: permissionMock, verifyPassword: verifyPasswordMock }))
 vi.mock('@/lib/mfa', () => ({ verifyTotpCode: verifyTotpMock, decryptSecret: (s: string) => s }))

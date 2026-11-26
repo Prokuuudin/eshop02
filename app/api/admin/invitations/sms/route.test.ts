@@ -39,6 +39,7 @@ function db(s: State) {
 }
 
 vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
+vi.mock('@/lib/invitation-suppression', () => ({ invitationSuppressedUserIds: vi.fn(async () => []) }))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => {
@@ -150,7 +151,7 @@ describe('POST /api/admin/invitations/sms', () => {
     expect(body).toEqual({ simulated: true, results: [
       { userId: 'u1', phone: '+37120000001', status: 'simulated', message: 'Sveiki, Anna Liepa! Karte 1001: https://example.test/auth/register' },
       { userId: 'u2', phone: '+37120000002', status: 'simulated', message: 'Sveiki, Jānis Ozols! Karte 1002: https://example.test/auth/register' },
-    ], suppressed: 0 })
+    ], suppressed: 0, optedOut: 0 })
     expect(h.state.deliveries).toEqual([
       { userId: 'u1', channel: 'sms', status: 'sent' },
       { userId: 'u2', channel: 'sms', status: 'sent' },
@@ -196,7 +197,7 @@ describe('POST /api/admin/invitations/sms', () => {
   it('records nothing for a batch without eligible clients', async () => {
     h.users = []
     const res = await post(['u9'])
-    expect(await res.json()).toEqual({ simulated: true, results: [], suppressed: 0 })
+    expect(await res.json()).toEqual({ simulated: true, results: [], suppressed: 0, optedOut: 0 })
     expect(h.state).toEqual({ deliveries: [], audits: [] })
   })
 })

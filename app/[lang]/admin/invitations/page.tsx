@@ -15,6 +15,7 @@ import { EMAIL_INVITE_BATCH_SIZE, INVITATIONS_PAGE_SIZE as PAGE_SIZE, isTechEmai
 import { InvitationPager, SortArrow } from './invitation-list-ui';
 import { useInvitationsPage } from './useInvitationsPage';
 import { MarketingSuppressedBadge } from '../client-barcodes/MarketingSuppression';
+import { InvitationSuppressedBadge } from '../client-barcodes/InvitationSuppression';
 
 export default function AdminInvitationsPage(): React.ReactElement {
     const {
@@ -26,6 +27,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
         holders,
         holdersTotal,
         allHoldersCount,
+        invitationOptOutCount,
         loading,
         message,
         setMessage,
@@ -48,6 +50,8 @@ export default function AdminInvitationsPage(): React.ReactElement {
         setHolderInvitationFilter,
         holderMailingFilter,
         setHolderMailingFilter,
+        holderOptOutFilter,
+        setHolderOptOutFilter,
         eligibleSuppressedCount,
         segment,
         setSegment,
@@ -164,6 +168,7 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                 <li>{l(`Отправьте приглашение кнопкой «Email» или общей кнопкой отправки. Система обрабатывает ваш выбор порциями по ${EMAIL_INVITE_BATCH_SIZE} писем.`, `Send the invitation using the “Email” button or the bulk-send button. The system processes your selection in batches of ${EMAIL_INVITE_BATCH_SIZE} emails.`, `Nosūtiet ielūgumu ar pogu “E-pasts” vai kopējās sūtīšanas pogu. Sistēma apstrādā jūsu atlasi ${EMAIL_INVITE_BATCH_SIZE} e-pastu partijās.`)}</li>
                                 <li>{l('После отправки обратите внимание на ответ системы — нет ли ошибки отправки. При необходимости повторите отправку ещё раз.', 'After sending, check the system response for a sending error. If necessary, send the invitation again.', 'Pēc sūtīšanas pārbaudiet sistēmas atbildi — vai nav sūtīšanas kļūdas. Ja nepieciešams, nosūtiet ielūgumu vēlreiz.')}</li>
                                 <li>{l('Ссылка из письма действует 30 дней. Если срок прошёл (статус «истёк срок приглашения»), нажмите «Email повторно»: клиент получит новую ссылку, а прежняя перестанет действовать.', 'The link in the email is valid for 30 days. If it has lapsed (status “invitation expired”), click “Resend email”: the client receives a new link and the previous one stops working.', 'Saite e-pastā ir derīga 30 dienas. Ja termiņš ir beidzies (statuss “ielūguma termiņš beidzies”), nospiediet “Sūtīt e-pastu atkārtoti”: klients saņems jaunu saiti, bet iepriekšējā vairs nedarbosies.')}</li>
+                                <li>{l('В каждом письме есть отдельная ссылка отказа от повторных приглашений. После подтверждения клиент получает статус «Отказался от приглашений» и исключается из индивидуальной и массовой отправки. Ограничение можно установить или снять в карточке клиента с обязательной причиной; полный запрет рассылок при этом не меняется.', 'Every email has a separate link for opting out of further invitations. After confirmation, the client is marked “Opted out of invitations” and excluded from individual and bulk sends. The restriction can be set or lifted in the client card with a required reason; the full mailing block is unchanged.', 'Katrā e-pastā ir atsevišķa saite, lai atteiktos no turpmākiem uzaicinājumiem. Pēc apstiprināšanas klientam tiek piešķirts statuss “Atteicās no uzaicinājumiem”, un viņš tiek izslēgts no individuālas un masveida sūtīšanas. Ierobežojumu var iestatīt vai atcelt klienta kartītē, obligāti norādot iemeslu; pilns sūtījumu aizliegums nemainās.')}</li>
                             </ol>
                             <Link href="/admin/config/email-templates?template=pro-invite" className="mt-2 inline-block text-xs font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-100">
                                 {l('Редактировать шаблон письма', 'Edit email template', 'Rediģēt e-pasta veidni')}
@@ -377,6 +382,9 @@ export default function AdminInvitationsPage(): React.ReactElement {
                             <h2 className="text-xl font-semibold text-foreground">
                                 {l('Клиенты с картой', 'Clients with a card', 'Klienti ar karti')} <span className="text-muted-foreground font-normal text-base">{holdersTotal.toLocaleString(locale)}</span>
                             </h2>
+                            <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                                {l('Отказались от приглашений', 'Opted out of invitations', 'Atteicās no uzaicinājumiem')}: {invitationOptOutCount.toLocaleString(locale)}
+                            </span>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">LV+RU+EN</span>
                                 {(selectedIds.size > 0 || bulkBusy || smsBulkBusy) &&
@@ -460,6 +468,18 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                     <SelectItem value="allowed">{l('Без запрета рассылок', 'Mailings not blocked', 'Bez sūtījumu aizlieguma')}</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <Select value={holderOptOutFilter} onValueChange={(value) => {
+                                setHolderOptOutFilter(value as typeof holderOptOutFilter);
+                                setHolderPage(0);
+                                setSelectedIds(new Set());
+                            }}>
+                                <SelectTrigger className="w-full sm:w-64" aria-label={l('Фильтр по отказу от приглашений', 'Invitation opt-out filter', 'Uzaicinājumu atteikuma filtrs')}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">{l('Все (приглашения)', 'All (invitations)', 'Visi (uzaicinājumi)')}</SelectItem>
+                                    <SelectItem value="suppressed">{l('Отказался от приглашений', 'Opted out of invitations', 'Atteicās no uzaicinājumiem')}</SelectItem>
+                                    <SelectItem value="allowed">{l('Можно приглашать', 'Invitations allowed', 'Uzaicinājumi atļauti')}</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {loading && holders.length === 0 ? (
@@ -512,13 +532,21 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                         {displayedHolders.map((h) => (
                                             <tr key={h.userId} className="border-b border-border/50">
                                                 <td className="py-2 pr-2 pl-1">
-                                                    {h.status !== 'accepted' && (!isTechEmail(h.email) || Boolean(h.phone)) && (
+                                                    {h.status !== 'accepted' && !h.marketingSuppressed && !h.invitationSuppression && (!isTechEmail(h.email) || Boolean(h.phone)) && (
                                                         <Checkbox checked={selectedIds.has(h.userId)} disabled={bulkBusy} onCheckedChange={() => toggleSelect(h.userId)} aria-label={l('Выбрать', 'Select', 'Atlasīt')} />
                                                     )}
                                                 </td>
                                                 <td className="py-2 pr-3 text-foreground">
                                                     {h.name || '—'}
                                                     {h.marketingSuppressed && <div><MarketingSuppressedBadge l={l} /></div>}
+                                                    {h.invitationSuppression && (
+                                                        <div>
+                                                            <InvitationSuppressedBadge l={l} />
+                                                            <p className="mt-0.5 text-[11px] text-muted-foreground">
+                                                                {l('С', 'Since', 'Kopš')} {new Date(h.invitationSuppression.since).toLocaleDateString(locale)}
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="py-2 pr-3 text-foreground">
                                                     {h.email}
@@ -537,12 +565,16 @@ export default function AdminInvitationsPage(): React.ReactElement {
                                                 </td>
                                                 <td className="py-2 pr-3 text-muted-foreground">{h.sentAt ? new Date(h.sentAt).toLocaleDateString(locale) : '—'}</td>
                                                 <td className="py-2 pr-3 text-right whitespace-nowrap">
-                                                    {h.status === 'accepted' ? null : h.marketingSuppressed ? (
+                                                    {h.status === 'accepted' ? null : h.marketingSuppressed || h.invitationSuppression ? (
                                                         // Buttons stay visible but locked; the server refuses these sends anyway.
-                                                        <Hint content={l(
+                                                        <Hint content={h.marketingSuppressed ? l(
                                                             'Клиенту запрещены рассылки и приглашения. Снять запрет может администратор в «Базе клиентов» после нового согласия клиента.',
                                                             'Mailings and invitations are blocked for this client. An administrator can lift the block in the Customer database after the client gives new consent.',
                                                             'Klientam aizliegti sūtījumi un ielūgumi. Administrators var atcelt aizliegumu “Klientu datubāzē” pēc klienta jaunas piekrišanas.'
+                                                        ) : l(
+                                                            'Клиент отказался от повторных приглашений. Ограничение можно снять в карточке клиента с указанием причины.',
+                                                            'The client opted out of further invitations. The restriction can be lifted in the client card with a reason.',
+                                                            'Klients atteicās no turpmākiem uzaicinājumiem. Ierobežojumu var atcelt klienta kartītē, norādot iemeslu.'
                                                         )}><span className="inline-flex gap-1">
                                                             <Button size="sm" variant="outline" disabled>{l('Email', 'Email', 'E-pasts')}</Button>
                                                             {h.phone && <Button size="sm" variant="outline" disabled>{l('Сообщение', 'Message', 'Ziņa')}</Button>}

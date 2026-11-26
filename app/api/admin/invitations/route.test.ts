@@ -14,6 +14,11 @@ const { userFindManyMock, userCountMock, invitationDeliveryFindManyMock, require
 }))
 
 vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helpers/marketing-suppression-mock')).marketingSuppressionPassthrough())
+vi.mock('@/lib/invitation-suppression', () => ({
+  getInvitationSuppressions: vi.fn(async () => new Map()),
+  invitationSuppressedUserIds: vi.fn(async () => []),
+  invitationOptOutUrl: vi.fn(),
+}))
 vi.mock('server-only', () => ({}))
 vi.mock('@/lib/observability', () => ({ logApiError: vi.fn() }))
 vi.mock('@/lib/prisma', () => ({
@@ -139,6 +144,20 @@ describe('GET /api/admin/invitations', () => {
     }))
   })
 
+  it('filters invitation opt-outs separately and reports their count', async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationSuppressedUserIds).mockResolvedValueOnce(['u2'])
+    userCountMock.mockResolvedValue(1)
+
+    const response = await GET(makeGetRequest('?optOut=suppressed'))
+    const json = await response.json()
+
+    expect(userFindManyMock).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ AND: [{ id: { in: ['u2'] } }] }),
+    }))
+    expect(json.invitationOptOutCount).toBe(1)
+  })
+
   it('bounds the invitation-token join to the fetched page emails and returns total', async () => {
     userFindManyMock.mockResolvedValue([
       { id: 'u1', name: 'Maija', email: 'Maija@Example.LV', phone: null, cardNumber: '1001' },
@@ -153,7 +172,7 @@ describe('GET /api/admin/invitations', () => {
     expect(readInvitationsMock).toHaveBeenCalledWith(expect.anything(), ['maija@example.lv'])
     expect(json.total).toBe(1)
     expect(json.holders).toEqual([
-      { userId: 'u1', name: 'Maija', email: 'Maija@Example.LV', phone: null, cardNumber: '1001', status: 'none', sentAt: null, inviteUrl: null, marketingSuppressed: false },
+      { userId: 'u1', name: 'Maija', email: 'Maija@Example.LV', phone: null, cardNumber: '1001', status: 'none', sentAt: null, inviteUrl: null, marketingSuppressed: false, invitationSuppression: null },
     ])
   })
 

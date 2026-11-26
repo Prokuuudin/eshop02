@@ -10,6 +10,7 @@ import { logApiError } from '@/lib/observability'
 import { INVITE_BATCH_SIZE, resolveInviteLang } from '@/lib/invitations'
 import { suppressedUserIds } from '@/lib/marketing-suppression'
 import { activeCardNumberFilter, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
+import { invitationSuppressedUserIds } from '@/lib/invitation-suppression'
 
 export const runtime = 'nodejs'
 
@@ -43,8 +44,14 @@ export async function POST(req: NextRequest): Promise<Response> {
       select: { id: true, name: true, phone: true, cardNumber: true },
     })
     // «Запретить рассылки и приглашения» covers the phone invitation as well.
-    const suppressed = new Set(await suppressedUserIds(prisma, candidates.map((user) => user.id)))
-    const users = candidates.filter((user) => !suppressed.has(user.id))
+    const [suppressedIds, optedOutIds] = await Promise.all([
+      suppressedUserIds(prisma, candidates.map((user) => user.id)),
+      invitationSuppressedUserIds(prisma, candidates.map((user) => user.id)),
+    ])
+    const suppressed = new Set(suppressedIds)
+    const optedOut = new Set(optedOutIds)
+    for (const userId of suppressed) optedOut.delete(userId)
+    const users = candidates.filter((user) => !suppressed.has(user.id) && !optedOut.has(user.id))
 
     // Development-only transport. Production must never report a fake delivery.
     if (process.env.NODE_ENV === 'production') {
@@ -88,8 +95,8 @@ export async function POST(req: NextRequest): Promise<Response> {
       }),
     }))
     return NextResponse.json(recorded.replayed
-      ? { simulated: true, results, suppressed: suppressed.size, replayed: true }
-      : { simulated: true, results, suppressed: suppressed.size })
+      ? { simulated: true, results, suppressed: suppressed.size, optedOut: optedOut.size, replayed: true }
+      : { simulated: true, results, suppressed: suppressed.size, optedOut: optedOut.size })
   } catch (error) {
     if (isRevokedCardPolicyError(error)) {
       return NextResponse.json({ error: 'card_policy_unavailable' }, { status: 503 })

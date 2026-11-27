@@ -10,7 +10,7 @@ import { logApiError } from '@/lib/observability'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { getSiteUrl } from '@/lib/site-url'
 import { assertCardAssignable } from '@/lib/revoked-card-policy'
-import { invitationOptOutUrl } from '@/lib/invitation-suppression'
+import { invitationOptOutAvailable, invitationOptOutUrl } from '@/lib/invitation-suppression'
 
 /** A self-requested activation link is short-lived; staff-sent invitations keep INVITE_TTL_DAYS. */
 export const CARD_ACTIVATION_TTL_HOURS = 24
@@ -68,6 +68,12 @@ export async function findCardActivationCandidate(cardNumber: string): Promise<A
  */
 export async function sendCardActivationInvite(user: ActivationCandidate & { cardNumber: string }, language: InviteLang): Promise<void> {
   try {
+    // The email carries a signed opt-out link: without its secret nothing is issued, so no
+    // live link is left without an email and the daily quota is not spent.
+    if (!invitationOptOutAvailable()) {
+      logApiError('[auth/register-card] activation invite skipped: NEWSLETTER_UNSUB_SECRET missing')
+      return
+    }
     // Re-check after the response: the policy may have been activated while this task was queued.
     await assertCardAssignable(user.cardNumber)
     // Anyone can submit a card number, so a request must never cancel a link the cardholder may
@@ -90,20 +96,21 @@ export async function sendCardActivationInvite(user: ActivationCandidate & { car
     }, { isolationLevel: 'Serializable' })
     if (!issued) return
 
-    const templates = await getTemplates()
-    const tpl = pickInviteTemplate(templates, language)
-    const { subject, html } = buildInviteEmail(
-      language,
-      {
-        name: user.name ?? '',
-        cardNumber: user.cardNumber,
-        inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}`,
-        optOutUrl: invitationOptOutUrl(user.id, language, getSiteUrl()),
-        bonus: await getBonusProgramConfig(),
-      },
-      tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
-    )
     try {
+      // Built inside the try: any failure before SMTP also retires the just-issued link.
+      const templates = await getTemplates()
+      const tpl = pickInviteTemplate(templates, language)
+      const { subject, html } = buildInviteEmail(
+        language,
+        {
+          name: user.name ?? '',
+          cardNumber: user.cardNumber,
+          inviteUrl: `${getSiteUrl()}/auth/invite?token=${token}`,
+          optOutUrl: invitationOptOutUrl(user.id, language, getSiteUrl()),
+          bonus: await getBonusProgramConfig(),
+        },
+        tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
+      )
       await sendEmail(email, subject, html)
     } catch (error) {
       // Same as the staff batch: an undelivered link is retired so it cannot be used later.

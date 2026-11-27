@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { unsubscribeFromMarketing, verifyMarketingUnsubToken } from '@/lib/newsletter-store'
+import { marketingUnsubAvailable, unsubscribeFromMarketing, verifyMarketingUnsubToken } from '@/lib/newsletter-store'
+import { logApiError } from '@/lib/observability'
 
 export const runtime = 'nodejs'
 
@@ -23,9 +24,25 @@ function confirmationPage(ok: boolean): NextResponse {
   })
 }
 
+// Without NEWSLETTER_UNSUB_SECRET no token can be verified: answer 503 instead of crashing.
+function signingAvailable(): boolean {
+  if (marketingUnsubAvailable()) return true
+  logApiError('newsletter_unsubscribe_secret_missing')
+  return false
+}
+
+function unavailablePage(): NextResponse {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unsubscribe</title></head><body style="font-family:sans-serif;max-width:520px;margin:64px auto;padding:0 24px;color:#111827;text-align:center"><h1>Сервис временно недоступен</h1><p>Please try again later. / Lūdzu, mēģiniet vēlāk.</p></body></html>`
+  return new NextResponse(html, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  })
+}
+
 // Human clicks the link in a marketing email.
 export async function GET(req: NextRequest): Promise<Response> {
   const { email, token } = extract(req)
+  if (!signingAvailable()) return unavailablePage()
   if (!EMAIL_RE.test(email) || !token || !verifyMarketingUnsubToken(email, token)) {
     return confirmationPage(false)
   }
@@ -49,6 +66,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   }
 
   const { email, token } = extract(req, body)
+  if (!signingAvailable()) return NextResponse.json({ ok: false, error: 'unavailable' }, { status: 503 })
   if (!EMAIL_RE.test(email) || !token || !verifyMarketingUnsubToken(email, token)) {
     return NextResponse.json({ ok: false, error: 'invalid' }, { status: 400 })
   }

@@ -117,8 +117,11 @@ export async function removeInvitationSuppression(db: Db, userId: string): Promi
   return count === 1 ? parseInvitationSuppression(row.key, row.value) : null
 }
 
-// Domain-separate this signature from newsletter unsubscribe tokens. Production already
-// provisions NEWSLETTER_UNSUB_SECRET for PR #70, so this adds no second deployment secret.
+// Shares NEWSLETTER_UNSUB_SECRET with the newsletter unsubscribe links (lib/newsletter-store.ts)
+// and is domain-separated from them by the "invitation-opt-out:v1:" prefix. The variable is
+// REQUIRED in production (docs/deploy-plesk.md): without it every invitation email fails.
+// Callers that issue an activation token check invitationOptOutAvailable() BEFORE the token
+// is committed, so a missing secret never leaves a live link without an email.
 const developmentSecret = crypto.randomBytes(32).toString('hex')
 
 function signatureSecret(): string {
@@ -128,6 +131,16 @@ function signatureSecret(): string {
     throw new Error('NEWSLETTER_UNSUB_SECRET is required in production')
   }
   return developmentSecret
+}
+
+/** False only in production without NEWSLETTER_UNSUB_SECRET: no opt-out link can be signed or verified. */
+export function invitationOptOutAvailable(): boolean {
+  try {
+    signatureSecret()
+    return true
+  } catch {
+    return false
+  }
 }
 
 export function invitationOptOutToken(userId: string): string {

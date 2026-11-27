@@ -30,6 +30,7 @@ import { parseOffsetPagination } from '@/lib/pagination'
 import { activeCardNumberFilter, assertCardsAssignable, getRevokedCardPolicy, isRevokedCardPolicyError } from '@/lib/revoked-card-policy'
 import {
   getInvitationSuppressions,
+  invitationOptOutAvailable,
   invitationOptOutUrl,
   invitationSuppressedUserIds,
 } from '@/lib/invitation-suppression'
@@ -209,6 +210,12 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     const batchId = invitationBatchId(req, actor.id, 'invitations-email')
     if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
+    // Every invitation email carries a signed opt-out link. Without the signing secret no
+    // email can be built, so refuse before any token is committed (no live link without an email).
+    if (!invitationOptOutAvailable()) {
+      logApiError('admin_invitations_opt_out_secret_missing')
+      return NextResponse.json({ error: 'invitation_opt_out_unavailable' }, { status: 503 })
+    }
     const language = resolveInviteLang(body.language)
     const revokedCardPolicy = await getRevokedCardPolicy()
 
@@ -314,18 +321,20 @@ export async function POST(req: NextRequest): Promise<Response> {
     for (const r of prepared.issued) {
       const user = users.find((u) => u.id === r.userId)!
       const inviteUrl = inviteUrlFor(base, r.token)
-      const { subject, html } = buildInviteEmail(
-        language,
-        {
-          name: user.name ?? '',
-          cardNumber: r.cardNumber,
-          inviteUrl,
-          optOutUrl: invitationOptOutUrl(r.userId, language, base),
-          bonus,
-        },
-        tpl ? { subject: tpl.subject, body: tpl.body } : undefined
-      )
       try {
+        // Built inside the try: a failure here is a send error for this client, so the
+        // token is retired and the delivery is recorded instead of the whole request failing.
+        const { subject, html } = buildInviteEmail(
+          language,
+          {
+            name: user.name ?? '',
+            cardNumber: r.cardNumber,
+            inviteUrl,
+            optOutUrl: invitationOptOutUrl(r.userId, language, base),
+            bonus,
+          },
+          tpl ? { subject: tpl.subject, body: tpl.body } : undefined
+        )
         const delivery = await sendMarketingEmail(user.email, subject, html, { category: 'invitation', userId: r.userId })
         if (delivery === 'suppressed') {
           blockedAtSend.push(r)

@@ -17,6 +17,7 @@ import {
   marketingUnsubToken,
   verifyMarketingUnsubToken,
   marketingUnsubUrl,
+  marketingUnsubAvailable,
 } from '@/lib/newsletter-store'
 
 beforeEach(() => {
@@ -59,6 +60,15 @@ describe('marketing unsubscribe token', () => {
     expect(() => verifyMarketingUnsubToken('user@test.com', 'anything')).toThrow(
       'NEWSLETTER_UNSUB_SECRET is required in production'
     )
+  })
+
+  it('reports availability so callers can answer 503 before doing any work', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEWSLETTER_UNSUB_SECRET', '')
+    expect(marketingUnsubAvailable()).toBe(false)
+
+    vi.stubEnv('NEWSLETTER_UNSUB_SECRET', 'configured-secret')
+    expect(marketingUnsubAvailable()).toBe(true)
   })
 })
 

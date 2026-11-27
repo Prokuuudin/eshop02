@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 vi.mock('@/lib/account-owner-lock', async () => (await import('@/tests/helpers/account-owner-lock-mock')).accountOwnerLockPassthrough())
 import { NextRequest } from 'next/server'
 import { Prisma } from '@/generated/prisma/client'
@@ -162,6 +162,7 @@ vi.mock('node:crypto', async (importOriginal) => {
 })
 
 import { PATCH } from './route'
+import { buildInviteEmail } from '@/lib/invitation-emails'
 
 const ADMIN = { id: 'admin1', email: 'admin@test.com', platformRole: 'admin' }
 
@@ -595,5 +596,47 @@ describe('PATCH /api/admin/access-requests/[id] — email delivery failure', () 
     expect(h.state.invitations).toHaveLength(1)
     expect(h.state.audits).toHaveLength(1)
     expect(h.sendEmail).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('PATCH /api/admin/access-requests/[id] — opt-out link secret (regression 2026-11-27)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('without NEWSLETTER_UNSUB_SECRET in production refuses with 503 before the decision, account or invitation', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEWSLETTER_UNSUB_SECRET', '')
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: 'invitation_opt_out_unavailable' })
+    expect(h.state.requests.req1.status).toBe('pending')
+    expect(usersWithCard('77001')).toHaveLength(0)
+    expect(h.state.invitations).toHaveLength(0)
+    expect(h.state.audits).toHaveLength(0)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('a rejection does not need the secret', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEWSLETTER_UNSUB_SECRET', '')
+
+    const res = await patch('req1', { status: 'rejected' })
+
+    expect(res.status).toBe(200)
+    expect(h.state.requests.req1.status).toBe('rejected')
+  })
+
+  it('a failure while building the email retires the committed link and returns 502 instead of 500', async () => {
+    vi.mocked(buildInviteEmail).mockImplementationOnce(() => { throw new Error('template failure') })
+
+    const res = await patch('req1', { status: 'approved', cardNumber: '77001' })
+
+    expect(res.status).toBe(502)
+    expect(await res.json()).toMatchObject({ emailStatus: 'error', cardNumber: '77001', request: { status: 'approved' } })
+    expect(h.state.invitations).toEqual([expect.objectContaining({ status: 'error' })])
+    expect(h.sendEmail).not.toHaveBeenCalled()
   })
 })

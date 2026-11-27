@@ -61,6 +61,16 @@ function unsubSecret(): string {
   return developmentUnsubSecret
 }
 
+/** False only in production without NEWSLETTER_UNSUB_SECRET: unsubscribe links can be neither made nor checked. */
+export function marketingUnsubAvailable(): boolean {
+  try {
+    unsubSecret()
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function marketingUnsubToken(email: string): string {
   return crypto.createHmac('sha256', unsubSecret()).update(email.toLowerCase()).digest('hex').slice(0, 32)
 }

@@ -45,6 +45,7 @@ Vercel-конфигурация в репозитории пока не удал
 | `DATABASE_URL` | Neon Postgres: используется рантаймом и явной операторской командой `npm run db:migrate:deploy`; обычная сборка миграции не запускает |
 | `NEXT_PUBLIC_SITE_URL` | canonical/OG/JSON-LD/robots/sitemap; без него в production `lib/site-url.ts` **бросает исключение** |
 | `NODE_ENV=production` | переключает secure-cookie флаг, CSP (`upgrade-insecure-requests`, HSTS), режим Next.js |
+| `NEWSLETTER_UNSUB_SECRET` | подпись ссылок отписки от рассылки и ссылки отказа от приглашений (`lib/newsletter-store.ts`, `lib/invitation-suppression.ts`). Независимое случайное значение ≥ 32 байт (`openssl rand -hex 32`), не переиспользовать другие секреты. Без него в production приглашения (массовые, одобрение заявки, самоактивация карты) и рассылки отвечают **503** и ничего не создают; ссылки отписки/отказа отвечают 503. Смена значения делает недействительными ранее выданные ссылки отписки и отказа. Задаётся в env Plesk + Restart App, пересборка не нужна |
 
 ### Обязательные только для конкретных функций (без них соответствующая функция не работает или падает при вызове)
 
@@ -59,7 +60,6 @@ Vercel-конфигурация в репозитории пока не удал
 | `PAYSERA_CHECKOUT_ENABLED` | `true` — Paysera виден в чекауте и выдаёт новые ссылки; любое другое значение/отсутствие — скрыт, API отвечает `payment_method_unavailable`. Webhook работает всегда. Читается в рантайме: смена env + recycle, без пересборки. Включать только для live-проекта Paysera |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_API_BASE` | PayPal Orders v2 REST |
 | `PAYPAL_WEBHOOK_ID` | верификация подписи `/api/webhooks/paypal` |
-| `NEWSLETTER_UNSUB_SECRET` | подпись ссылок отписки от рассылки |
 | `GRINS_FTPS_HOST`, `GRINS_FTPS_USER`, `GRINS_FTPS_PASSWORD`, `GRINS_FTPS_REMOTE_PATH` | ERP-синк (сейчас выключен — см. раздел 9) |
 
 ### Optional (есть безопасный дефолт/деградацию)

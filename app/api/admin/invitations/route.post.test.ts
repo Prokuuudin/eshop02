@@ -79,6 +79,7 @@ vi.mock('@/lib/marketing-suppression', async () => (await import('@/tests/helper
 vi.mock('@/lib/invitation-suppression', () => ({
   getInvitationSuppressions: vi.fn(async () => new Map()),
   invitationSuppressedUserIds: vi.fn(async () => []),
+  invitationOptOutAvailable: vi.fn(() => true),
   invitationOptOutUrl: vi.fn((userId: string) => `https://example.test/lv/invitation-opt-out?userId=${userId}&token=signed`),
 }))
 vi.mock('server-only', () => ({}))
@@ -616,5 +617,74 @@ describe('POST /api/admin/invitations — отказ только от приг�
     expect(live('u1')).toHaveLength(0)
     expect(h.state.tokens.find((token) => token.userId === 'u1')?.status).toBe('error')
     expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u2@inbox.lv'])
+  })
+})
+
+describe('POST /api/admin/invitations — opt-out link secret (regression 2026-11-27)', () => {
+  // Production had no NEWSLETTER_UNSUB_SECRET: invitationOptOutUrl threw after the token
+  // transaction had committed, the request ended in 500 and every chunk left 5 live links without an email.
+  afterEach(async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationOptOutAvailable).mockReturnValue(true)
+    vi.mocked(suppression.invitationOptOutUrl).mockImplementation((userId: string) => `https://example.test/lv/invitation-opt-out?userId=${userId}&token=signed`)
+  })
+
+  it('answers 503 before any token, audit row or email when the secret is missing', async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationOptOutAvailable).mockReturnValue(false)
+    const before = structuredClone(h.state)
+
+    const res = await post(['u1', 'u2', 'u3'], 'no-secret-batch', { skipInvited: true })
+
+    expect(res.status).toBe(503)
+    expect(await res.json()).toEqual({ error: 'invitation_opt_out_unavailable' })
+    expect(h.state).toEqual(before)
+    expect(h.transactionOptions).toHaveLength(0)
+    expect(h.sendEmail).not.toHaveBeenCalled()
+  })
+
+  it('a bulk repeat after the secret is configured invites everyone: nothing was left half-issued', async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationOptOutAvailable).mockReturnValue(false)
+    expect((await post(['u1', 'u2'], 'no-secret-first', { skipInvited: true })).status).toBe(503)
+
+    vi.mocked(suppression.invitationOptOutAvailable).mockReturnValue(true)
+    const body = await (await post(['u1', 'u2'], 'no-secret-retry', { skipInvited: true })).json()
+
+    expect(body.results.map((r: { userId: string; status: string }) => [r.userId, r.status])).toEqual([['u1', 'sent'], ['u2', 'sent']])
+    expect(h.sendEmail).toHaveBeenCalledTimes(2)
+  })
+
+  it('a failure while building one email is a send error: its token is retired, the rest go out, delivery is recorded', async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationOptOutUrl).mockImplementation((userId: string) => {
+      if (userId === 'u2') throw new Error('NEWSLETTER_UNSUB_SECRET is required in production')
+      return `https://example.test/lv/invitation-opt-out?userId=${userId}&token=signed`
+    })
+
+    const res = await post(['u1', 'u2', 'u3'], 'build-failure')
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.results.map((r: { userId: string; status: string }) => [r.userId, r.status])).toEqual([['u1', 'sent'], ['u2', 'error'], ['u3', 'sent']])
+    expect(live('u2')).toHaveLength(0)
+    expect(h.state.tokens.find((t) => t.userId === 'u2')?.status).toBe('error')
+    expect(actions()).toContain('invitation.delivery_recorded')
+    expect(h.state.audits.find((a) => a.action === 'invitation.delivery_recorded')?.after).toMatchObject({ sent: ['u1', 'u3'], failed: ['u2'] })
+    expect(h.sendEmail.mock.calls.map(([to]) => to)).toEqual(['u1@inbox.lv', 'u3@inbox.lv'])
+  })
+
+  it('when every email of the chunk fails to build, no live link is left and a bulk repeat re-invites them', async () => {
+    const suppression = await import('@/lib/invitation-suppression')
+    vi.mocked(suppression.invitationOptOutUrl).mockImplementation(() => { throw new Error('NEWSLETTER_UNSUB_SECRET is required in production') })
+
+    const first = await (await post(['u1', 'u2'], 'all-build-fail', { skipInvited: true })).json()
+    expect(first.results.map((r: { status: string }) => r.status)).toEqual(['error', 'error'])
+    expect(live('u1')).toHaveLength(0)
+    expect(live('u2')).toHaveLength(0)
+
+    vi.mocked(suppression.invitationOptOutUrl).mockImplementation((userId: string) => `https://example.test/lv/invitation-opt-out?userId=${userId}&token=signed`)
+    const retry = await (await post(['u1', 'u2'], 'all-build-retry', { skipInvited: true })).json()
+    expect(retry.results.map((r: { status: string }) => r.status)).toEqual(['sent', 'sent'])
   })
 })

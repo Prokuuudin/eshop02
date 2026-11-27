@@ -35,6 +35,9 @@ import {
     type InvitationsResponse,
 } from './invitations-api';
 
+/** Server error code: the opt-out link secret is missing, nothing was issued or sent. */
+const OPT_OUT_UNAVAILABLE = 'invitation_opt_out_unavailable';
+
 function useInvitationsPageState() {
     const { l, locale, language } = useAdminLocale();
 
@@ -175,13 +178,22 @@ function useInvitationsPageState() {
         queueMicrotask(() => void loadCampaign());
     }, [loadCampaign]);
 
+    // 503 from the server: the opt-out link secret is missing, so nothing was issued or sent.
+    const optOutUnavailableText = () => l(
+        'Отправка приглашений временно недоступна: на сервере не настроена ссылка отказа (NEWSLETTER_UNSUB_SECRET). Приглашения не создавались и не отправлялись.',
+        'Sending invitations is temporarily unavailable: the opt-out link is not configured on the server (NEWSLETTER_UNSUB_SECRET). No invitations were created or sent.',
+        'Ielūgumu sūtīšana īslaicīgi nav pieejama: serverī nav iestatīta atteikuma saite (NEWSLETTER_UNSUB_SECRET). Ielūgumi netika izveidoti un nosūtīti.'
+    );
+
     const sendInvites = async (userIds: string[]) => {
         setFormError('');
         setMessage('');
         // Письмо трёхъязычное (LV+RU+EN) — язык не передаём
         const { ok, data: json } = await sendInvitationBatch(userIds);
         if (!ok) {
-            setFormError(l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
+            setFormError(json.error === OPT_OUT_UNAVAILABLE
+                ? optOutUnavailableText()
+                : l('Не удалось отправить приглашения', 'Failed to send invitations', 'Neizdevās nosūtīt ielūgumus'));
             return;
         }
         const sent = (json.results ?? []).filter((r: { status: string }) => r.status === 'sent').length;
@@ -318,6 +330,7 @@ function useInvitationsPageState() {
         setMessage('');
         const tally = { sent: 0, skipped: 0, failed: 0, suppressed: 0, optedOut: 0 };
         let requestFailed = false;
+        let optOutUnavailable = false;
         try {
             for (let i = 0; i < ids.length; i += EMAIL_INVITE_BATCH) {
                 if (bulkStopRequested.current) break;
@@ -327,6 +340,7 @@ function useInvitationsPageState() {
                 if (!ok) {
                     // The chunk stays selected; retrying it is safe thanks to skipInvited.
                     requestFailed = true;
+                    optOutUnavailable = json.error === OPT_OUT_UNAVAILABLE;
                     break;
                 }
                 const chunkTally = tallyInviteChunk(chunk.length, json.results ?? []);
@@ -352,10 +366,11 @@ function useInvitationsPageState() {
             const retryHint = requestFailed
                 ? l(' Необработанные клиенты остались выбранными — можно повторить: уже приглашённым письмо повторно не уйдёт.', ' Unprocessed clients stay selected — you can retry: clients already invited will not be emailed again.', ' Neapstrādātie klienti palika atlasīti — varat mēģināt vēlreiz: jau uzaicinātajiem e-pasts atkārtoti netiks sūtīts.')
                 : '';
+            const unavailableNote = optOutUnavailable ? optOutUnavailableText() + ' ' : '';
             if (outcome === 'failed') {
-                setFormError(l('Не удалось отправить приглашения. ', 'Failed to send invitations. ', 'Neizdevās nosūtīt ielūgumus. ') + counts + retryHint);
+                setFormError(unavailableNote + l('Не удалось отправить приглашения. ', 'Failed to send invitations. ', 'Neizdevās nosūtīt ielūgumus. ') + counts + retryHint);
             } else if (outcome === 'partial') {
-                setFormError(l('Отправлено с ошибками. ', 'Sent with errors. ', 'Nosūtīts ar kļūdām. ') + counts + retryHint);
+                setFormError(unavailableNote + l('Отправлено с ошибками. ', 'Sent with errors. ', 'Nosūtīts ar kļūdām. ') + counts + retryHint);
             } else if (outcome === 'stopped') {
                 setMessage(l('Остановлено. ', 'Stopped. ', 'Apturēts. ') + counts);
             } else {

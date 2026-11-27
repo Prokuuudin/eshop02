@@ -22,6 +22,7 @@ vi.mock('@/lib/mailer', () => ({ sendEmail: vi.fn() }))
 vi.mock('@/lib/site-url', () => ({ getSiteUrl: vi.fn(() => 'https://shop.test') }))
 vi.mock('@/lib/newsletter-store', () => ({
   getMarketingOptedOutSet: vi.fn(),
+  marketingUnsubAvailable: vi.fn(() => true),
   marketingUnsubUrl: vi.fn((email: string) => `https://shop.test/api/newsletter/unsubscribe?email=${encodeURIComponent(email)}&token=signed`),
 }))
 vi.mock('@/lib/admin/customer-segments', () => ({
@@ -56,7 +57,7 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { sendEmail } from '@/lib/mailer'
-import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
+import { getMarketingOptedOutSet, marketingUnsubAvailable, marketingUnsubUrl } from '@/lib/newsletter-store'
 import { requireAdmin } from '@/lib/server-auth'
 import { POST } from './route'
 import { getCustomerRecipients } from '@/lib/admin/customer-segments'
@@ -92,6 +93,7 @@ beforeEach(() => {
   vi.mocked(getMarketingOptedOutSet).mockResolvedValue(new Set())
   vi.mocked(sendEmail).mockResolvedValue(undefined)
   vi.mocked(getCustomerRecipients).mockResolvedValue([])
+  vi.mocked(marketingUnsubAvailable).mockReturnValue(true)
 })
 
 describe('POST /api/admin/broadcast email lifecycle', () => {
@@ -195,6 +197,16 @@ describe('POST /api/admin/broadcast — audit', () => {
     vi.mocked(getCustomerRecipients).mockResolvedValue([{ email: 'vip@test.com', firstName: 'V', lastName: 'IP' }])
     await send({ audience: {}, subject: 'Hi', body: 'Text' })
     expect(h.audits[0].after).toMatchObject({ audience: 'segment', segment: 'all', recipients: 1 })
+  })
+
+  it('refuses with 503 before claiming the send when NEWSLETTER_UNSUB_SECRET is missing', async () => {
+    vi.mocked(marketingUnsubAvailable).mockReturnValue(false)
+    const res = await request(THREE, 'broadcast-no-secret')
+    expect(res.status).toBe(503)
+    expect((await res.json()).error).toBe('unsubscribe_unavailable')
+    expect(h.audits).toHaveLength(0)
+    expect(getMarketingOptedOutSet).not.toHaveBeenCalled()
+    expect(sendEmail).not.toHaveBeenCalled()
   })
 
   it('sends nothing when the audit before SMTP fails', async () => {

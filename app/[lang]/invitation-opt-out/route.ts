@@ -3,8 +3,10 @@ import { escapeHtml } from '@/lib/escape-html'
 import { prisma } from '@/lib/prisma'
 import {
   addInvitationSuppression,
+  invitationOptOutAvailable,
   verifyInvitationOptOutToken,
 } from '@/lib/invitation-suppression'
+import { logApiError } from '@/lib/observability'
 import type { InviteLang } from '@/lib/invitations'
 
 export const runtime = 'nodejs'
@@ -20,6 +22,8 @@ const COPY: Record<InviteLang, {
   success: string
   invalidTitle: string
   invalid: string
+  unavailableTitle: string
+  unavailable: string
 }> = {
   lv: {
     title: 'Atteikties no turpmākiem uzaicinājumiem?',
@@ -29,6 +33,8 @@ const COPY: Record<InviteLang, {
     success: 'Turpmāki Hairshop Pro uzaicinājumi jums netiks sūtīti.',
     invalidTitle: 'Saite nav derīga',
     invalid: 'Šī atteikuma saite nav derīga. Dati netika mainīti.',
+    unavailableTitle: 'Pakalpojums īslaicīgi nav pieejams',
+    unavailable: 'Atteikumu pašlaik nevar apstrādāt. Lūdzu, mēģiniet vēlāk. Dati netika mainīti.',
   },
   ru: {
     title: 'Отказаться от повторных приглашений?',
@@ -38,6 +44,8 @@ const COPY: Record<InviteLang, {
     success: 'Повторные приглашения Hairshop Pro больше не будут вам отправляться.',
     invalidTitle: 'Ссылка недействительна',
     invalid: 'Эта ссылка отказа недействительна. Данные не изменены.',
+    unavailableTitle: 'Сервис временно недоступен',
+    unavailable: 'Сейчас отказ не может быть обработан. Попробуйте позже. Данные не изменены.',
   },
   en: {
     title: 'Stop further invitations?',
@@ -47,6 +55,8 @@ const COPY: Record<InviteLang, {
     success: 'Hairshop Pro will not send you further invitations.',
     invalidTitle: 'Invalid link',
     invalid: 'This opt-out link is invalid. No data was changed.',
+    unavailableTitle: 'Temporarily unavailable',
+    unavailable: 'Your request cannot be processed right now. Please try again later. No data was changed.',
   },
 }
 
@@ -54,16 +64,18 @@ function language(input: string): InviteLang {
   return input === 'ru' || input === 'en' ? input : 'lv'
 }
 
-function page(lang: InviteLang, state: 'confirm' | 'success' | 'invalid', fields?: { userId: string; token: string }): NextResponse {
+function page(lang: InviteLang, state: 'confirm' | 'success' | 'invalid' | 'unavailable', fields?: { userId: string; token: string }): NextResponse {
   const copy = COPY[lang]
   const body = state === 'confirm' && fields
     ? `<h1>${copy.title}</h1><p>${copy.description}</p><form method="post"><input type="hidden" name="userId" value="${escapeHtml(fields.userId)}"><input type="hidden" name="token" value="${escapeHtml(fields.token)}"><button type="submit">${copy.confirm}</button></form>`
     : state === 'success'
       ? `<h1>${copy.successTitle}</h1><p>${copy.success}</p>`
-      : `<h1>${copy.invalidTitle}</h1><p>${copy.invalid}</p>`
+      : state === 'unavailable'
+        ? `<h1>${copy.unavailableTitle}</h1><p>${copy.unavailable}</p>`
+        : `<h1>${copy.invalidTitle}</h1><p>${copy.invalid}</p>`
   const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Hairshop Pro</title><style>body{margin:0;background:#f2f9fd;color:#17212b;font:16px/1.55 Arial,sans-serif}.card{max-width:560px;margin:10vh auto;padding:32px;background:#fff;border:1px solid #bfe3f4;border-radius:18px;box-shadow:0 12px 35px rgba(0,88,130,.1)}h1{margin:0 0 16px;font-size:28px}p{color:#4a6878}button{margin-top:12px;padding:12px 20px;border:1px solid #0088c4;border-radius:8px;background:#fff;color:#0075a9;font:inherit;font-weight:700;cursor:pointer}button:hover{background:#eaf6fc}@media(max-width:620px){.card{margin:24px 12px;padding:24px}}</style></head><body><main class="card">${body}</main></body></html>`
   return new NextResponse(html, {
-    status: state === 'invalid' ? 400 : 200,
+    status: state === 'invalid' ? 400 : state === 'unavailable' ? 503 : 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
@@ -71,6 +83,13 @@ function page(lang: InviteLang, state: 'confirm' | 'success' | 'invalid', fields
       'Referrer-Policy': 'no-referrer',
     },
   })
+}
+
+// Without NEWSLETTER_UNSUB_SECRET no link can be verified: answer 503 instead of crashing.
+function signingAvailable(): boolean {
+  if (invitationOptOutAvailable()) return true
+  logApiError('invitation_opt_out_secret_missing')
+  return false
 }
 
 async function validTarget(userId: string, token: string): Promise<boolean> {
@@ -83,6 +102,7 @@ export async function GET(req: NextRequest, context: RouteContext): Promise<Resp
   const lang = language((await context.params).lang)
   const userId = req.nextUrl.searchParams.get('userId')?.trim() ?? ''
   const token = req.nextUrl.searchParams.get('token')?.trim() ?? ''
+  if (!signingAvailable()) return page(lang, 'unavailable')
   if (!await validTarget(userId, token)) return page(lang, 'invalid')
   return page(lang, 'confirm', { userId, token })
 }
@@ -93,6 +113,7 @@ export async function POST(req: NextRequest, context: RouteContext): Promise<Res
   const form = await req.formData().catch(() => null)
   const userId = String(form?.get('userId') ?? '').trim()
   const token = String(form?.get('token') ?? '').trim()
+  if (!signingAvailable()) return page(lang, 'unavailable')
   if (!await validTarget(userId, token)) return page(lang, 'invalid')
   await addInvitationSuppression(prisma, { userId, source: 'client_link' })
   return page(lang, 'success')

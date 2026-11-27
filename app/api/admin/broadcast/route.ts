@@ -3,7 +3,7 @@ import { logApiError } from '@/lib/observability'
 import { requireAdmin } from "@/lib/server-auth"
 import { sendMarketingEmail } from '@/lib/marketing-suppression'
 import { getSiteUrl } from '@/lib/site-url'
-import { getMarketingOptedOutSet, marketingUnsubUrl } from '@/lib/newsletter-store'
+import { getMarketingOptedOutSet, marketingUnsubAvailable, marketingUnsubUrl } from '@/lib/newsletter-store'
 import { CUSTOMER_SEGMENTS, getCustomerRecipients, type CustomerSegment } from '@/lib/admin/customer-segments'
 import { invitationBatchId } from '@/lib/invitation-dispatch'
 import { prepareAuditedDelivery, recordAuditedDelivery } from '@/lib/audited-delivery'
@@ -55,6 +55,12 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
     const batchId = invitationBatchId(request, actor.id, 'broadcast')
     if (!batchId) return NextResponse.json({ error: 'invalid_idempotency_key' }, { status: 400 })
+    // Every broadcast email carries a signed unsubscribe link: refuse before the send is
+    // claimed in the audit, instead of failing on the first recipient.
+    if (!marketingUnsubAvailable()) {
+      logApiError('broadcast_unsubscribe_secret_missing')
+      return NextResponse.json({ error: 'unsubscribe_unavailable' }, { status: 503 })
+    }
 
     const requestedSegment = body.audience?.segment
     if (requestedSegment && !CUSTOMER_SEGMENTS.includes(requestedSegment)) {

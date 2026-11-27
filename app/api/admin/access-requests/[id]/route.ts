@@ -8,7 +8,7 @@ import { appendServerAudit } from '@/lib/server-audit'
 import { deleteCertificate } from '@/lib/certificate-store'
 import { sendEmail } from '@/lib/mailer'
 import { buildInviteEmail, pickInviteTemplate } from '@/lib/invitation-emails'
-import { invitationOptOutUrl } from '@/lib/invitation-suppression'
+import { invitationOptOutAvailable, invitationOptOutUrl } from '@/lib/invitation-suppression'
 import { getBonusProgramConfig } from '@/lib/bonus-config-server-store'
 import { getTemplates } from '@/lib/email-templates-server-store'
 import {
@@ -125,6 +125,12 @@ export async function PATCH(
       const cardNumber = normalizeCardNumber(body.cardNumber ?? existing.cardNumber ?? '')
       if (!isValidCardNumber(cardNumber)) {
         return NextResponse.json({ error: 'invalid_card' }, { status: 400 })
+      }
+      // The invitation email carries a signed opt-out link. Without its secret the email
+      // cannot be built: refuse before the decision, account and token are committed.
+      if (!invitationOptOutAvailable()) {
+        logApiError('[admin/access-requests/:id PATCH] NEWSLETTER_UNSUB_SECRET missing')
+        return NextResponse.json({ error: 'invitation_opt_out_unavailable' }, { status: 503 })
       }
       await assertCardAssignable(cardNumber)
 
@@ -243,21 +249,23 @@ export async function PATCH(
         throw error
       }
 
-      const templates = await getTemplates()
-      const tpl = pickInviteTemplate(templates, language)
-      const inviteUrl = `${getSiteUrl()}/auth/invite?token=${token}`
-      const mail = buildInviteEmail(
-        language,
-        {
-          name: existing.name ?? '',
-          cardNumber,
-          inviteUrl,
-          optOutUrl: invitationOptOutUrl(result.targetUserId, language, getSiteUrl()),
-          bonus: await getBonusProgramConfig(),
-        },
-        tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
-      )
       try {
+        // Built inside the try: any failure before SMTP is a send error, so the committed
+        // link is retired and the admin gets emailStatus 'error' instead of a bare 500.
+        const templates = await getTemplates()
+        const tpl = pickInviteTemplate(templates, language)
+        const inviteUrl = `${getSiteUrl()}/auth/invite?token=${token}`
+        const mail = buildInviteEmail(
+          language,
+          {
+            name: existing.name ?? '',
+            cardNumber,
+            inviteUrl,
+            optOutUrl: invitationOptOutUrl(result.targetUserId, language, getSiteUrl()),
+            bonus: await getBonusProgramConfig(),
+          },
+          tpl ? { subject: tpl.subject, body: tpl.body } : undefined,
+        )
         await sendEmail(existing.email, mail.subject, mail.html)
       } catch (emailError) {
         // The decision, account, invitation and audit row are already committed.
